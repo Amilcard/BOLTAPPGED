@@ -1,0 +1,89 @@
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+}
+
+datasource db {
+    provider = "sqlite"
+    url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role     @default(VIEWER)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Stay {
+  id               String        @id @default(cuid())
+  slug             String        @unique
+  title            String
+  descriptionShort String        @map("description_short")
+  programme        Json
+  geography        String
+  accommodation    String
+  supervision      String
+  priceFrom        Int           @map("price_from")
+  durationDays     Int           @map("duration_days")
+  period           String
+  ageMin           Int           @map("age_min")
+  ageMax           Int           @map("age_max")
+  themes           Json
+  imageCover       String        @map("image_cover")
+  published        Boolean       @default(false)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+  sessions         StaySession[]
+  bookings         Booking[]
+
+  @@index([slug])
+  @@index([published])
+  @@index([period])
+  @@map("stays")
+}
+
+model StaySession {
+  id         String    @id @default(cuid())
+  stayId     String    @map("stay_id")
+  startDate  DateTime  @map("start_date")
+  endDate    DateTime  @map("end_date")
+  seatsTotal Int       @map("seats_total")
+  seatsLeft  Int       @map("seats_left")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  stay       Stay      @relation(fields: [stayId], references: [id], onDelete: Cascade)
+  bookings   Booking[]
+
+  @@map("stay_sessions")
+}
+
+model Booking {
+  id              String      @id @default(cuid())
+  stayId          String      @map("stay_id")
+  sessionId       String      @map("session_id")
+  organisation    String
+  socialWorkerName String     @map("social_worker_name")
+  email           String
+  phone           String
+  childFirstName  String      @map("child_first_name")
+  childLastName   String      @map("child_last_name")
+  childBirthDate  DateTime    @map("child_birth_date")
+  notes           String?
+  childNotes      String?     @map("child_notes")
+  status          String      @default("new")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  stay            Stay        @relation(fields: [stayId], references: [id])
+  session         StaySession @relation(fields: [sessionId], references: [id])
+
+  @@map("bookings")
+}

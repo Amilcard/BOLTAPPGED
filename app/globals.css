@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
+    --primary: 209 48% 23%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 38 92% 50%;
+    --accent-foreground: 222 47% 11%;
+  }
+
+  * {
+    @apply border-primary-100;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  /* iOS Safe Area padding */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Animation for bottom sheet */
+  .animate-in {
+    animation-duration: 300ms;
+    animation-fill-mode: both;
+  }
+  
+  .slide-in-from-bottom {
+    animation-name: slideInFromBottom;
+  }
+  
+  .slide-in-from-top {
+    animation-name: slideInFromTop;
+  }
+}
+
+@keyframes slideInFromBottom {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInFromTop {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+[data-hydration-error] {
+  display: none !important;
+}

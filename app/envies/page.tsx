@@ -90,7 +90,7 @@ export default function EnviesPage() {
   };
 
   const handleShareSingle = async (stay: Stay) => {
-    const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/sejour/${stay.slug}`;
+    const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/sejour/${stay.id}`;
     const motivation = getMotivation(stay.slug);
     const text = motivation
       ? `Ce séjour m'intéresse : ${stay.title}\nPourquoi : ${motivation}\n${url}`
@@ -193,7 +193,7 @@ export default function EnviesPage() {
                   className="bg-white rounded-xl shadow-card overflow-hidden"
                 >
                   <div className="flex flex-col sm:flex-row">
-                    <Link href={`/sejour/${stay.slug}`} className="relative sm:w-48 aspect-video sm:aspect-square shrink-0">
+                    <Link href={`/sejour/${stay.id}`} className="relative sm:w-48 aspect-video sm:aspect-square shrink-0">
                       <Image
                         src={stay.imageCover ?? '/og-image.png'}
                         alt={stay.title}
@@ -204,7 +204,7 @@ export default function EnviesPage() {
                     </Link>
                     <div className="flex-1 p-4 flex flex-col justify-between">
                       <div>
-                        <Link href={`/sejour/${stay.slug}`}>
+                        <Link href={`/sejour/${stay.id}`}>
                           <h3 className="font-semibold text-primary text-lg hover:text-accent transition">
                             {stay.title}
                           </h3>
@@ -230,7 +230,7 @@ export default function EnviesPage() {
                       <div className="flex items-center justify-between mt-4 pt-3 border-t border-primary-100">
                         <div className="flex gap-2">
                           <Link
-                            href={`/sejour/${stay.slug}`}
+                            href={`/sejour/${stay.id}`}
                             className="text-accent text-sm font-medium hover:underline"
                           >
                             {isKids ? 'Découvrir →' : 'Voir le détail →'}

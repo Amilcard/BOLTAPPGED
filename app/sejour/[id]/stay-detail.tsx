@@ -10,7 +10,7 @@ import { useApp } from '@/components/providers';
 import { BookingModal } from '@/components/booking-modal';
 import { WishlistModal } from '@/components/wishlist-modal';
 
-export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[] } }) {
+export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], price_base?: number | null, price_unit?: string, pro_price_note?: string } }) {
   const { mode, mounted, isInWishlist, toggleWishlist, refreshWishlist } = useApp();
   const [showBooking, setShowBooking] = useState(false);
   const [showWishlistModal, setShowWishlistModal] = useState(false);
@@ -60,7 +60,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[] } 
   const programme = Array.isArray(stay?.programme) ? stay.programme : [];
   const themes = Array.isArray(stay?.themes) ? stay.themes : [];
   const sessions = stay?.sessions ?? [];
-  const miniProgramme = isKids ? programme.slice(0, 3) : programme.slice(0, 5);
+  const miniProgramme = programme.slice(0, 5);
 
   return (
     <main className="pb-12">
@@ -134,10 +134,12 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[] } 
                 <span>{stay?.geography ?? ''}</span>
               </div>
             </div>
-            {/* Prix masqué pour public : communiqué aux professionnels */}
+            {/* Prix / note tarif (Pro) */}
             {mounted && !isKids && (
               <div className="text-sm text-primary-500 italic">
-                Tarif communiqué aux professionnels
+                {stay?.price_base == null
+                  ? (stay?.pro_price_note || "Tarif communiqué aux professionnels")
+                  : `${stay.price_base}${stay?.price_unit ? ` ${stay.price_unit}` : ""}`}
               </div>
             )}
           </div>
@@ -180,23 +182,23 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[] } 
             </section>
 
             {/* Full Programme */}
-            {!isKids && (
-              <section className="bg-white rounded-xl shadow-card p-6">
-                <h2 className="text-xl font-semibold text-primary mb-4">Programme détaillé</h2>
-                <ol className="space-y-3">
-                  {programme.map((item, i) => (
-                    <li key={i} className="flex items-start gap-3 pb-3 border-b border-primary-100 last:border-0">
-                      <span className="w-6 h-6 bg-accent/10 text-accent text-xs font-semibold rounded-full flex items-center justify-center flex-shrink-0">
-                        {i + 1}
-                      </span>
-                      <span className="text-primary-600">{item}</span>
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            )}
+            <section className="bg-white rounded-xl shadow-card p-6">
+              <h2 className="text-xl font-semibold text-primary mb-4">
+                {isKids ? 'Tout le programme' : 'Programme détaillé'}
+              </h2>
+              <ol className="space-y-3">
+                {programme.map((item, i) => (
+                  <li key={i} className="flex items-start gap-3 pb-3 border-b border-primary-100 last:border-0">
+                    <span className="w-6 h-6 bg-accent/10 text-accent text-xs font-semibold rounded-full flex items-center justify-center flex-shrink-0">
+                      {i + 1}
+                    </span>
+                    <span className="text-primary-600">{item}</span>
+                  </li>
+                ))}
+              </ol>
+            </section>
 
-            {/* 3 Columns */}
+            {/* 3 Columns - Lieu/Hébergement/Encadrement */}
             <div className="grid md:grid-cols-3 gap-4">
               <div className="bg-white rounded-xl shadow-card p-5">
                 <div className="flex items-center gap-2 mb-3">

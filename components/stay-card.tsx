@@ -11,6 +11,7 @@ export function StayCard({ stay }: { stay: Stay }) {
   const { mode, mounted, isInWishlist, toggleWishlist } = useApp();
   const isKids = mode === 'kids';
   const slug = stay?.slug ?? '';
+  const stayId = stay?.id ?? '';
   const isLiked = mounted && isInWishlist(slug);
 
   const themes = Array.isArray(stay?.themes) ? stay.themes : [];
@@ -23,7 +24,7 @@ export function StayCard({ stay }: { stay: Stay }) {
   };
 
   return (
-    <Link href={`/sejour/${slug}`}>
+    <Link href={`/sejour/${stayId}`}>
       <article className="bg-white rounded-lg shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden group">
         <div className="relative aspect-[16/10] bg-primary-100">
           <Image

@@ -209,7 +209,7 @@ export default function EspaceProPage() {
                   )}
 
                   <Link
-                    href={`/sejour/${stay.slug}`}
+                    href={`/sejour/${stay.id}`}
                     className="mt-4 block text-center py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition"
                   >
                     Voir le détail

@@ -7,14 +7,14 @@ import { StayDetail } from './stay-detail';
 export const dynamic = 'force-dynamic';
 
 export async function generateStaticParams() {
-  const stays = await prisma.stay.findMany({ where: { published: true }, select: { slug: true } });
-  return stays.map(s => ({ slug: s.slug }));
+  const stays = await prisma.stay.findMany({ where: { published: true }, select: { id: true } });
+  return stays.map(s => ({ id: s.id }));
 }
 
-export default async function StayPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+export default async function StayPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const stay = await prisma.stay.findUnique({
-    where: { slug },
+    where: { id },
     include: {
       sessions: {
         where: { startDate: { gte: new Date() } },
@@ -44,6 +44,9 @@ export default async function StayPage({ params }: { params: Promise<{ slug: str
     published: stay.published,
     createdAt: stay.createdAt.toISOString(),
     updatedAt: stay.updatedAt.toISOString(),
+    price_base: stay.priceFrom,
+    price_unit: '€',
+    pro_price_note: stay.priceFrom ? null : 'Tarif communiqué aux professionnels',
     sessions: stay.sessions.map(s => ({
       id: s.id,
       stayId: s.stayId,

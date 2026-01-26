@@ -44,12 +44,27 @@ model Stay {
   published        Boolean       @default(false)
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  // Existing ingestion fields
+  departureCity       String?   @map("departure_city")
+  educationalOption   String?   @map("educational_option")
+  sourceUrl           String?   @map("source_url")
+  sourcePdfPath       String?   @map("source_pdf_path")
+  importedAt          DateTime? @map("imported_at")
+  lastSyncAt          DateTime? @map("last_sync_at")
+  sourceManual        Boolean   @default(false) @map("source_manual")
+
+  // UFOVAL A+ fields
+  contentKids         Json?
+
   sessions         StaySession[]
   bookings         Booking[]
 
   @@index([slug])
   @@index([published])
   @@index([period])
+  @@index([sourceUrl, sourcePdfPath])
+  @@index([importedAt])
   @@map("stays")
 }
 

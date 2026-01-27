@@ -222,7 +222,8 @@ async function main() {
                 sourceUrl: stay.source_url,
                 contentKids,
                 importedAt: new Date(),
-                lastSyncAt: new Date()
+                lastSyncAt: new Date(),
+                published: true // Publier les UFOVAL
               }
             })
           } else {
@@ -248,7 +249,8 @@ async function main() {
                 sourceUrl: stay.source_url,
                 contentKids,
                 importedAt: new Date(),
-                lastSyncAt: new Date()
+                lastSyncAt: new Date(),
+                published: true // Publier les UFOVAL
               }
             })
           }

@@ -14,3 +14,4 @@ tsconfig.tsbuildinfo
 # UFOVAL outputs
 out/ufoval/*.json
 out/ufoval/_debug_html/
+out/ufoval/_debug_html_sessions/

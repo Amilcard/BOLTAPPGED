@@ -14,6 +14,9 @@ interface BookingModalProps {
   stay: Stay;
   sessions: StaySession[];
   departureCities?: DepartureCity[];
+  sessionBasePrice?: number | null; // Prix de base de la session (pour calcul total)
+  initialSessionId?: string; // Pré-sélection session depuis la page détail
+  initialCity?: string; // Pré-sélection ville depuis la page détail
   onClose: () => void;
 }
 
@@ -37,15 +40,27 @@ const STANDARD_CITIES = [
   'Paris', 'Lyon', 'Lille', 'Marseille', 'Bordeaux', 'Rennes'
 ];
 
-export function BookingModal({ stay, sessions, departureCities = [], onClose }: BookingModalProps) {
-  const [step, setStep] = useState(0); // 0 = session, 1 = ville, 2 = pro info, 3 = child info, 4 = validation, 5 = success
-  const [selectedSessionId, setSelectedSessionId] = useState<string>('');
-  const [selectedCity, setSelectedCity] = useState<string>('');
+export function BookingModal({ stay, sessions, departureCities = [], sessionBasePrice = null, initialSessionId = '', initialCity = '', onClose }: BookingModalProps) {
+  // Déterminer le step initial (si pré-sélections, on peut sauter des étapes)
+  const getInitialStep = () => {
+    if (initialSessionId && initialCity) return 2; // Session + Ville déjà choisis → step Pro
+    if (initialSessionId) return 1; // Session choisie → step Ville
+    return 0; // Rien de pré-sélectionné → step Session
+  };
+  const [step, setStep] = useState(getInitialStep); // 0 = session, 1 = ville, 2 = pro info, 3 = child info, 4 = validation, 5 = success
+  const [selectedSessionId, setSelectedSessionId] = useState<string>(initialSessionId);
+  const [selectedCity, setSelectedCity] = useState<string>(initialCity);
   const [selectedOption, setSelectedOption] = useState<EducationalOption>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [bookingId, setBookingId] = useState('');
   const [showAllSessions, setShowAllSessions] = useState(false);
+
+  // Calcul du prix total dynamique (session + ville + option)
+  const selectedCityData = departureCities.find(dc => dc.city === selectedCity);
+  const extraVille = selectedCityData?.extra_eur ?? 0;
+  const optionPrice = selectedOption === 'ZEN' ? 49 : selectedOption === 'ULTIME' ? 79 : 0;
+  const totalPrice = sessionBasePrice !== null ? sessionBasePrice + extraVille + optionPrice : null;
 
   const [step1, setStep1] = useState<Step1Data>({
     organisation: '',
@@ -131,11 +146,24 @@ export function BookingModal({ stay, sessions, departureCities = [], onClose }: 
         className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-white border-b border-primary-100 p-6 pb-4 flex items-center justify-between">
-          <h2 className="font-semibold text-primary text-lg">Réserver - {stay?.title ?? ''}</h2>
-          <button onClick={onClose} className="p-1 hover:bg-primary-50 rounded">
-            <X className="w-5 h-5" />
-          </button>
+        <div className="sticky top-0 bg-white border-b border-primary-100 p-6 pb-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-primary text-lg">Réserver - {stay?.title ?? ''}</h2>
+            <button onClick={onClose} className="p-1 hover:bg-primary-50 rounded">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          {/* Prix total dynamique (affiché dès qu'on a un prix de base) */}
+          {totalPrice !== null && step < 5 && (
+            <div className="mt-3 p-3 bg-accent/5 rounded-xl border border-accent/20 flex items-center justify-between">
+              <div className="text-sm text-primary-600">
+                <span className="font-medium">Total estimé</span>
+                {extraVille > 0 && <span className="text-xs ml-2 text-primary-500">(+{extraVille}€ transport)</span>}
+                {optionPrice > 0 && <span className="text-xs ml-2 text-primary-500">(+{optionPrice}€ option)</span>}
+              </div>
+              <div className="text-lg font-bold text-accent">{totalPrice} €</div>
+            </div>
+          )}
         </div>
 
         <div className="p-6">
@@ -160,25 +188,36 @@ export function BookingModal({ stay, sessions, departureCities = [], onClose }: 
               <div className="space-y-2">
                 {sessionsUnique.slice(0, showAllSessions ? undefined : 4).map(session => {
                   const isFull = (session?.seatsLeft ?? 0) === 0;
+                  const isSelected = selectedSessionId === session?.id;
                   return (
                     <label
                       key={session?.id}
                       className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                        selectedSessionId === session?.id
-                          ? 'border-accent bg-accent/5'
+                        isSelected
+                          ? 'border-accent bg-accent/5 ring-2 ring-accent/20'
                           : isFull
                           ? 'border-primary-100 bg-primary-50 opacity-50 cursor-not-allowed'
                           : 'border-primary-100 hover:border-primary-200'
                       }`}
                     >
+                      {/* Indicateur checkbox/radio visible */}
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                        isSelected
+                          ? 'border-accent bg-accent'
+                          : isFull
+                          ? 'border-primary-200 bg-primary-100'
+                          : 'border-primary-300'
+                      }`}>
+                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                      </div>
                       <input
                         type="radio"
                         name="session"
                         value={session?.id}
-                        checked={selectedSessionId === session?.id}
+                        checked={isSelected}
                         onChange={e => !isFull && setSelectedSessionId(e.target.value)}
                         disabled={isFull}
-                        className="w-4 h-4 text-accent"
+                        className="sr-only"
                       />
                       <div className="flex-1">
                         <div className="font-medium text-sm">
@@ -200,6 +239,10 @@ export function BookingModal({ stay, sessions, departureCities = [], onClose }: 
                   Voir toutes les dates ({sessionsUnique.length - 4} autres)
                 </button>
               )}
+              {/* Aide contextuelle step 1 */}
+              <div className="bg-primary-50 rounded-lg p-3 text-xs text-primary-600">
+                <p><strong>1.</strong> Sélectionne la session qui correspond le mieux à tes disponibilités</p>
+              </div>
               <button
                 onClick={() => setStep(1)}
                 disabled={!selectedSessionId}
@@ -231,31 +274,42 @@ export function BookingModal({ stay, sessions, departureCities = [], onClose }: 
                       if (bIndex >= 0) return 1;
                       return a.city.localeCompare(b.city);
                     })
-                    .map((city, idx) => (
-                      <label
-                        key={idx}
-                        className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                          selectedCity === city.city
-                            ? 'border-accent bg-accent/5'
-                            : 'border-primary-200 hover:border-primary-300'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="city"
-                          value={city.city}
-                          checked={selectedCity === city.city}
-                          onChange={e => setSelectedCity(e.target.value)}
-                          className="w-4 h-4 text-accent"
-                        />
-                        <span className="flex-1 text-sm font-medium text-primary-700 capitalize">
-                          {city.city === 'Sans transport' ? 'Sans transport' : city.city}
-                        </span>
-                        <span className="text-sm font-semibold text-accent">
-                          {city.extra_eur === 0 ? 'Inclus' : `+${city.extra_eur}€`}
-                        </span>
-                      </label>
-                    ))}
+                    .map((city, idx) => {
+                      const isCitySelected = selectedCity === city.city;
+                      return (
+                        <label
+                          key={idx}
+                          className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                            isCitySelected
+                              ? 'border-accent bg-accent/5 ring-2 ring-accent/20'
+                              : 'border-primary-200 hover:border-primary-300'
+                          }`}
+                        >
+                          {/* Indicateur checkbox/radio visible */}
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                            isCitySelected
+                              ? 'border-accent bg-accent'
+                              : 'border-primary-300'
+                          }`}>
+                            {isCitySelected && <Check className="w-3 h-3 text-white" />}
+                          </div>
+                          <input
+                            type="radio"
+                            name="city"
+                            value={city.city}
+                            checked={isCitySelected}
+                            onChange={e => setSelectedCity(e.target.value)}
+                            className="sr-only"
+                          />
+                          <span className="flex-1 text-sm font-medium text-primary-700 capitalize">
+                            {city.city === 'Sans transport' ? 'Sans transport' : city.city}
+                          </span>
+                          <span className={`text-sm font-semibold ${isCitySelected ? 'text-accent' : 'text-primary-600'}`}>
+                            {city.extra_eur === 0 ? 'Inclus' : `+${city.extra_eur}€`}
+                          </span>
+                        </label>
+                      );
+                    })}
                 </div>
               ) : (
                 <p className="text-sm text-primary-500 italic">Villes de départ non disponibles. Contactez-nous pour plus d'informations.</p>

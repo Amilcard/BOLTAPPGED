@@ -71,7 +71,8 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
     // On a déjà les villes de départ depuis contentKids, on fetche seulement pour les sessions si besoin
     fetch('/api/ufoval-enrichment')
       .then(r => r.json())
-      .then((data: { ok: boolean; generatedAt?: string; total?: number; items?: EnrichmentData[] }) => {
+      .then((data) => {
+        // ✅ API actuelle: { ok, generatedAt, total, stats, items: [...] }
         const list = Array.isArray(data?.items) ? data.items : [];
         const match = list.find((x: any) => String(x?.source_url ?? "").trim() === stayUrl);
         if (match) {

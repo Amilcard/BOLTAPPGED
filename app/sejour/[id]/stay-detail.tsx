@@ -58,6 +58,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
     sessions: []
   } : null;
   const [enrichment, setEnrichment] = useState<EnrichmentData | null>(initialEnrichment);
+
   const isKids = mode === 'kids';
   const isPro = !isKids;
   const slug = stay?.slug ?? '';
@@ -79,13 +80,13 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
           // Conserver les villes de départ depuis contentKids, ajouter les sessions
           setEnrichment({
             source_url: match.source_url,
-            departures: initialEnrichment?.departures ?? match.departures,
+            departures: departureCities,
             sessions: match.sessions ?? []
           });
         }
       })
       .catch(() => {});
-  }, [isPro, stayUrl]);
+  }, [isPro, stayUrl, departureCities]);
 
   // Calcul prix minimum (promo prioritaire, sinon base)
   const minSessionPrice = (() => {
@@ -114,7 +115,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
     const url = typeof window !== 'undefined' ? window.location.href : '';
     const title = stay?.title ?? 'Séjour';
     const motivation = getWishlistMotivation(slug);
-    const text = motivation 
+    const text = motivation
       ? `Ce séjour m'intéresse : ${title}\nPourquoi : ${motivation}`
       : `Ce séjour m'intéresse : ${title}`;
 
@@ -474,7 +475,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   {sessions.map(session => {
                     const isFull = (session?.seatsLeft ?? 0) === 0;
                     return (
-                      <div 
+                      <div
                         key={session?.id}
                         className={`p-3 rounded-lg border ${
                           isFull ? 'border-red-200 bg-red-50' : 'border-primary-100 bg-primary-50'

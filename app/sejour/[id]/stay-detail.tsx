@@ -18,6 +18,7 @@ import {
   GraduationCap,
   Download,
   X,
+  Check,
 } from 'lucide-react';
 import type { Stay, StaySession } from '@/lib/types';
 import { formatDateLong, getWishlistMotivation, addToWishlist } from '@/lib/utils';
@@ -41,6 +42,10 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
   const [showWishlistModal, setShowWishlistModal] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [showDepartures, setShowDepartures] = useState(false);
+
+  // Pré-sélection session et ville (avant d'ouvrir le modal)
+  const [preSelectedSessionId, setPreSelectedSessionId] = useState<string>('');
+  const [preSelectedCity, setPreSelectedCity] = useState<string>('');
 
   // Initialiser enrichment directement depuis stay.contentKids (données déjà en BDD)
   const stayUrl = String((stay as any)?.sourceUrl ?? "").trim();
@@ -361,7 +366,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
                 {enrichment?.departures && enrichment.departures.length > 0 ? (
                   <div className="space-y-3">
-                    {/* Aperçu des 3 premières villes (tri standard) */}
+                    {/* Aperçu des villes cliquables (tri standard) */}
                     <div className="flex flex-wrap gap-1.5">
                       {enrichment.departures
                         .slice()
@@ -375,30 +380,64 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                           if (bIndex >= 0) return 1;
                           return a.city.localeCompare(b.city);
                         })
-                        .slice(0, 3)
-                        .map((dep, i) => (
-                          <span key={i} className="px-2.5 py-1 bg-accent/5 text-accent text-xs font-medium rounded-lg border border-accent/10">
-                            {dep.city === 'Sans transport' ? 'Sans transport' : dep.city}
-                          </span>
-                        ))}
-                      {enrichment.departures.length > 3 && (
-                        <span className="px-2.5 py-1 bg-primary-50 text-primary-500 text-xs font-medium rounded-lg">
-                          +{enrichment.departures.length - 3}
-                        </span>
+                        .slice(0, 4)
+                        .map((dep, i) => {
+                          const isCitySelected = preSelectedCity === dep.city;
+                          return (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => setPreSelectedCity(dep.city)}
+                              className={`px-2.5 py-1.5 text-xs font-medium rounded-lg border-2 transition-all flex items-center gap-1.5 ${
+                                isCitySelected
+                                  ? 'border-accent bg-accent text-white'
+                                  : 'border-accent/20 bg-accent/5 text-accent hover:border-accent/40'
+                              }`}
+                            >
+                              {isCitySelected && <Check className="w-3 h-3" />}
+                              {dep.city === 'Sans transport' ? 'Sans transport' : dep.city}
+                              {!isKids && !isCitySelected && (
+                                <span className="text-accent/70">
+                                  {dep.extra_eur === 0 ? '' : `+${dep.extra_eur}€`}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      {enrichment.departures.length > 4 && (
+                        <button
+                          type="button"
+                          onClick={() => setShowDepartures(true)}
+                          className="px-2.5 py-1.5 bg-primary-50 text-primary-500 text-xs font-medium rounded-lg hover:bg-primary-100 transition-colors"
+                        >
+                          +{enrichment.departures.length - 4}
+                        </button>
                       )}
                     </div>
 
-                    {/* CTA principal */}
+                    {/* Indication sélection */}
+                    {preSelectedCity && (
+                      <div className="flex items-center gap-2 text-xs text-accent font-medium bg-accent/5 px-3 py-2 rounded-lg">
+                        <Check className="w-3.5 h-3.5" />
+                        Ville sélectionnée : {preSelectedCity}
+                        {!isKids && (() => {
+                          const cityData = enrichment.departures.find(d => d.city === preSelectedCity);
+                          return cityData && cityData.extra_eur > 0 ? ` (+${cityData.extra_eur}€)` : ' (inclus)';
+                        })()}
+                      </div>
+                    )}
+
+                    {/* CTA voir toutes les villes */}
                     <button
                       onClick={() => setShowDepartures(true)}
-                      className="w-full py-2.5 bg-accent text-white rounded-xl font-semibold text-sm hover:bg-accent-600 transition-all flex items-center justify-center gap-2 shadow-sm btn-hover-lift active:scale-95"
+                      className="w-full py-2.5 bg-primary-100 text-primary-700 rounded-xl font-semibold text-sm hover:bg-primary-200 transition-all flex items-center justify-center gap-2"
                     >
                       Voir toutes les villes
-                      <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                      <ChevronRight className="w-4 h-4" />
                     </button>
 
                     {/* Prix min (Pro seulement) */}
-                    {!isKids && (
+                    {!isKids && !preSelectedCity && (
                       <p className="text-xs text-center text-primary-500">
                         Transport inclus • Supplément à partir de{' '}
                         <span className="font-semibold">
@@ -474,23 +513,45 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                 <div className="space-y-3 mb-6">
                   {sessions.map(session => {
                     const isFull = (session?.seatsLeft ?? 0) === 0;
+                    const isSelected = preSelectedSessionId === session?.id;
                     return (
-                      <div
+                      <button
                         key={session?.id}
-                        className={`p-3 rounded-lg border ${
-                          isFull ? 'border-red-200 bg-red-50' : 'border-primary-100 bg-primary-50'
+                        type="button"
+                        disabled={isFull}
+                        onClick={() => !isFull && setPreSelectedSessionId(session?.id ?? '')}
+                        className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
+                          isSelected
+                            ? 'border-accent bg-accent/5 ring-2 ring-accent/20'
+                            : isFull
+                            ? 'border-red-200 bg-red-50 opacity-60 cursor-not-allowed'
+                            : 'border-primary-100 bg-primary-50 hover:border-primary-200 cursor-pointer'
                         }`}
                       >
-                        <div className="text-sm font-medium text-primary">
-                          {formatDateLong(session?.startDate ?? '')}
+                        <div className="flex items-start gap-3">
+                          {/* Indicateur de sélection */}
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
+                            isSelected
+                              ? 'border-accent bg-accent'
+                              : isFull
+                              ? 'border-red-300 bg-red-100'
+                              : 'border-primary-300'
+                          }`}>
+                            {isSelected && <Check className="w-3 h-3 text-white" />}
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-primary">
+                              {formatDateLong(session?.startDate ?? '')}
+                            </div>
+                            <div className="text-xs text-primary-500">
+                              au {formatDateLong(session?.endDate ?? '')}
+                            </div>
+                            <div className={`text-xs mt-1 ${isFull ? 'text-red-500' : 'text-green-600'}`}>
+                              {isFull ? 'Complet' : `${session?.seatsLeft ?? 0} places`}
+                            </div>
+                          </div>
                         </div>
-                        <div className="text-xs text-primary-500">
-                          au {formatDateLong(session?.endDate ?? '')}
-                        </div>
-                        <div className={`text-xs mt-1 ${isFull ? 'text-red-500' : 'text-green-600'}`}>
-                          {isFull ? 'Complet' : `${session?.seatsLeft ?? 0} places`}
-                        </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -521,6 +582,9 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
           stay={stay}
           sessions={sessions}
           departureCities={enrichment?.departures}
+          sessionBasePrice={minSessionPrice}
+          initialSessionId={preSelectedSessionId}
+          initialCity={preSelectedCity}
           onClose={() => setShowBooking(false)}
         />
       )}
@@ -572,16 +636,44 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   if (bIndex >= 0) return 1;
                   return a.city.localeCompare(b.city);
                 })
-                .map((dep, i) => (
-                  <div key={i} className="flex items-center justify-between py-3 px-4 rounded-xl hover:bg-primary-50 transition-colors cursor-default">
-                    <span className="text-sm font-medium text-primary-700 capitalize">{dep.city}</span>
-                    {!isKids && (
-                      <span className="text-sm font-semibold text-accent">
-                        {dep.extra_eur === 0 ? 'Inclus' : `+${dep.extra_eur}€`}
-                      </span>
-                    )}
-                  </div>
-                ))}
+                .map((dep, i) => {
+                  const isCitySelected = preSelectedCity === dep.city;
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => {
+                        setPreSelectedCity(dep.city);
+                        // Fermer la modal après sélection
+                        setTimeout(() => setShowDepartures(false), 150);
+                      }}
+                      className={`w-full flex items-center justify-between py-3 px-4 rounded-xl transition-all ${
+                        isCitySelected
+                          ? 'bg-accent/10 border-2 border-accent'
+                          : 'hover:bg-primary-50 border-2 border-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        {/* Indicateur de sélection */}
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                          isCitySelected
+                            ? 'border-accent bg-accent'
+                            : 'border-primary-300'
+                        }`}>
+                          {isCitySelected && <Check className="w-3 h-3 text-white" />}
+                        </div>
+                        <span className={`text-sm font-medium capitalize ${isCitySelected ? 'text-accent' : 'text-primary-700'}`}>
+                          {dep.city}
+                        </span>
+                      </div>
+                      {!isKids && (
+                        <span className={`text-sm font-semibold ${isCitySelected ? 'text-accent' : 'text-primary-600'}`}>
+                          {dep.extra_eur === 0 ? 'Inclus' : `+${dep.extra_eur}€`}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
             </div>
           </div>
         </div>

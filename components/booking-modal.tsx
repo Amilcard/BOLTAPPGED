@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { X, Check, ChevronRight, ChevronLeft, Loader2, Shield, Star } from 'lucide-react';
 import type { Stay, StaySession } from '@/lib/types';
 import { formatDate, formatDateLong } from '@/lib/utils';
-import { findSessionPrice, type EnrichmentSessionData } from '@/lib/pricing';
 
 interface DepartureCity {
   city: string;
@@ -15,7 +14,7 @@ interface BookingModalProps {
   stay: Stay;
   sessions: StaySession[];
   departureCities?: DepartureCity[];
-  enrichmentSessions?: EnrichmentSessionData[]; // Sessions avec prix (pour calcul dynamique)
+  sessionBasePrice?: number | null; // Prix de base de la session (pour calcul total)
   initialSessionId?: string; // Pré-sélection session depuis la page détail
   initialCity?: string; // Pré-sélection ville depuis la page détail
   onClose: () => void;
@@ -41,7 +40,7 @@ const STANDARD_CITIES = [
   'Paris', 'Lyon', 'Lille', 'Marseille', 'Bordeaux', 'Rennes'
 ];
 
-export function BookingModal({ stay, sessions, departureCities = [], enrichmentSessions = [], initialSessionId = '', initialCity = '', onClose }: BookingModalProps) {
+export function BookingModal({ stay, sessions, departureCities = [], sessionBasePrice = null, initialSessionId = '', initialCity = '', onClose }: BookingModalProps) {
   // Déterminer le step initial (si pré-sélections, on peut sauter des étapes)
   const getInitialStep = () => {
     if (initialSessionId && initialCity) return 2; // Session + Ville déjà choisis → step Pro
@@ -57,15 +56,11 @@ export function BookingModal({ stay, sessions, departureCities = [], enrichmentS
   const [bookingId, setBookingId] = useState('');
   const [showAllSessions, setShowAllSessions] = useState(false);
 
-  // Calcul du prix total dynamique (session sélectionnée + ville + option)
-  const selectedSession = sessions?.find(s => s?.id === selectedSessionId);
-  const sessionPrice = selectedSession && enrichmentSessions.length > 0
-    ? findSessionPrice(selectedSession.startDate, selectedSession.endDate, enrichmentSessions)
-    : null;
+  // Calcul du prix total dynamique (session + ville + option)
   const selectedCityData = departureCities.find(dc => dc.city === selectedCity);
   const extraVille = selectedCityData?.extra_eur ?? 0;
   const optionPrice = selectedOption === 'ZEN' ? 49 : selectedOption === 'ULTIME' ? 79 : 0;
-  const totalPrice = sessionPrice !== null ? sessionPrice + extraVille + optionPrice : null;
+  const totalPrice = sessionBasePrice !== null ? sessionBasePrice + extraVille + optionPrice : null;
 
   const [step1, setStep1] = useState<Step1Data>({
     organisation: '',
@@ -86,6 +81,7 @@ export function BookingModal({ stay, sessions, departureCities = [], enrichmentS
     const key = `${s.startDate}-${s.endDate}`;
     return idx === arr.findIndex(x => `${x.startDate}-${x.endDate}` === key);
   });
+  const selectedSession = sessions?.find(s => s?.id === selectedSessionId);
 
   // Filtrer les villes de départ : uniquement la liste standard + "Sans transport"
   const standardDepartureCities = departureCities.filter(dc =>

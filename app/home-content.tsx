@@ -1,67 +1,63 @@
 'use client';
 
-import { useMemo, useState, useCallback, useRef } from 'react';
-import Image from 'next/image';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useMemo, useState, useCallback } from 'react';
 import { useApp } from '@/components/providers';
 import { StayCard } from '@/components/stay-card';
 import { SearchFilterBar } from '@/components/search-filter-bar';
 import { FilterSheet, type Filters, DEFAULT_FILTERS } from '@/components/filter-sheet';
 import { ActiveFilterChips } from '@/components/active-filter-chips';
+import { AGE_OPTIONS, THEMATIQUE_KEYWORDS, calculateBudgetRange, BUDGET_FALLBACK } from '@/config/filters';
 import type { Stay } from '@/lib/types';
 
-// Helper to check age range overlap
+// LOT 1: Helper to check age range overlap with new age groups
 function ageMatchesFilter(ageMin: number, ageMax: number, filterAges: string[]): boolean {
   if (filterAges.length === 0) return true;
   return filterAges.some((range) => {
-    if (range === '3-5') return ageMin <= 5 && ageMax >= 3;
-    if (range === '6-10') return ageMin <= 10 && ageMax >= 6;
-    if (range === '11-17') return ageMin <= 17 && ageMax >= 11;
-    return true;
+    const option = AGE_OPTIONS.find(opt => opt.value === range);
+    if (!option) return true;
+    return ageMin <= option.maxAge && ageMax >= option.minAge;
   });
 }
 
-// Helper to check duration range
-function durationMatchesFilter(days: number, filterDuree: string[]): boolean {
-  if (filterDuree.length === 0) return true;
-  return filterDuree.some((range) => {
-    if (range === '1-7') return days >= 1 && days <= 7;
-    if (range === '8-14') return days >= 8 && days <= 14;
-    if (range === '15+') return days >= 15;
-    return true;
+// LOT 1: Helper to check thematique match (keywords matching from config)
+function thematiqueMatchesFilter(stayThemes: string[], filterThematiques: string[]): boolean {
+  if (filterThematiques.length === 0) return true;
+  const themes = stayThemes.map(t => t.toLowerCase());
+
+  return filterThematiques.some((filter) => {
+    const keywords = THEMATIQUE_KEYWORDS[filter];
+    if (!keywords) return false;
+    return keywords.some(keyword => themes.some(t => t.includes(keyword)));
   });
 }
 
-// Horizontal carousel component
-function StayCarousel({ title, stays }: { title: string; stays: Stay[] }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  
-  const scroll = (dir: 'left' | 'right') => {
-    if (!scrollRef.current) return;
-    const scrollAmount = 300;
-    scrollRef.current.scrollBy({ left: dir === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
-  };
-
+// LOT UX P1: Grid section for desktop (replaces carousels on lg+)
+function StayGrid({ title, stays, columns = 3 }: { title: string; stays: Stay[]; columns?: 3 | 4 }) {
   if (stays.length === 0) return null;
 
   return (
-    <section className="py-4">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold text-primary">{title}</h2>
-          <div className="hidden md:flex gap-1">
-            <button onClick={() => scroll('left')} className="p-1.5 rounded-full bg-primary-50 hover:bg-primary-100 transition">
-              <ChevronLeft className="w-4 h-4 text-primary" />
-            </button>
-            <button onClick={() => scroll('right')} className="p-1.5 rounded-full bg-primary-50 hover:bg-primary-100 transition">
-              <ChevronRight className="w-4 h-4 text-primary" />
-            </button>
-          </div>
+    <section className="pb-6">
+      <div className="max-w-7xl mx-auto px-4">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">{title}</h2>
+        <div className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-${columns}`}>
+          {stays.map((stay) => (
+            <StayCard key={stay.id} stay={stay} />
+          ))}
         </div>
-        <div
-          ref={scrollRef}
-          className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-4 px-4"
-        >
+      </div>
+    </section>
+  );
+}
+
+// LOT UX P1: Mobile carousel component (keeps horizontal scroll)
+function StayCarousel({ title, stays }: { title: string; stays: Stay[] }) {
+  if (stays.length === 0) return null;
+
+  return (
+    <section className="pb-4 lg:hidden">
+      <div className="max-w-7xl mx-auto px-4">
+        <h2 className="text-base font-semibold text-gray-900 mb-3">{title}</h2>
+        <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-4 px-4">
           {stays.map((stay) => (
             <div key={stay.id} className="flex-shrink-0 w-[260px] snap-start">
               <StayCard stay={stay} />
@@ -79,18 +75,23 @@ export function HomeContent({ stays }: { stays: Stay[] }) {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  // Extract unique themes from all stays
-  const availableThemes = useMemo(() => {
-    const themes = new Set<string>();
-    stays.forEach((stay) => {
-      if (Array.isArray(stay?.themes)) {
-        stay.themes.forEach((t) => themes.add(t));
-      }
-    });
-    return Array.from(themes).sort();
+  // Define isKids early (used in multiple hooks)
+  const isKids = mounted && mode === 'kids';
+
+  // LOT 1: Calculate budget range from actual stays (Option A)
+  const budgetRange = useMemo(() => {
+    const prices = stays
+      .map(s => (s as any).priceFrom)
+      .filter((p): p is number => p != null && p > 0);
+    return calculateBudgetRange(prices);
   }, [stays]);
 
-  // Apply all filters
+  // LOT 1: Determine if budget filter should be shown (only if prices are visible AND NOT in Kids mode)
+  const showBudgetFilter = useMemo(() => {
+    return !isKids && budgetRange.max > BUDGET_FALLBACK.MIN;
+  }, [budgetRange, isKids]);
+
+  // Apply all filters (LOT 1: updated filter logic)
   const filteredStays = useMemo(() => {
     return stays.filter((stay) => {
       if (!stay) return false;
@@ -107,8 +108,8 @@ export function HomeContent({ stays }: { stays: Stay[] }) {
         if (!searchFields.includes(q)) return false;
       }
 
-      // Period filter
-      if (filters.periode !== 'toutes' && stay.period !== filters.periode) {
+      // Period filter (multi-choice - LOT 1)
+      if (filters.periodes.length > 0 && !filters.periodes.includes(stay.period)) {
         return false;
       }
 
@@ -117,53 +118,42 @@ export function HomeContent({ stays }: { stays: Stay[] }) {
         return false;
       }
 
-      // Duration filter
-      if (!durationMatchesFilter(stay.durationDays ?? 0, filters.duree)) {
+      // Thématique filter (LOT 1: keyword matching)
+      if (!thematiqueMatchesFilter(stay.themes || [], filters.thematiques)) {
         return false;
       }
 
-      // Location filter
-      if (filters.lieu.trim()) {
-        const lieu = filters.lieu.toLowerCase();
-        if (!stay.geography?.toLowerCase().includes(lieu)) {
-          return false;
-        }
-      }
-
-      // Themes filter
-      if (filters.thematiques.length > 0) {
-        const stayThemes = Array.isArray(stay.themes) ? stay.themes : [];
-        if (!filters.thematiques.some((t) => stayThemes.includes(t))) {
+      // Budget filter (LOT 1: filter by max budget - only for authenticated pros with prices)
+      if (showBudgetFilter && filters.budgetMax !== undefined && filters.budgetMax < budgetRange.max) {
+        const stayPrice = (stay as any).priceFrom;
+        if (stayPrice && stayPrice > filters.budgetMax) {
           return false;
         }
       }
 
       return true;
     });
-  }, [stays, searchQuery, filters]);
+  }, [stays, searchQuery, filters, budgetRange, showBudgetFilter]);
 
-  // Count active filters (excluding search)
+  // Count active filters (excluding search) - LOT 1: dynamic budget max
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (filters.ages.length > 0) count++;
-    if (filters.periode !== 'toutes') count++;
-    if (filters.duree.length > 0) count++;
-    if (filters.lieu.trim()) count++;
+    if (filters.periodes.length > 0) count++;
     if (filters.thematiques.length > 0) count++;
+    if (showBudgetFilter && filters.budgetMax !== undefined && filters.budgetMax < budgetRange.max) count++;
     return count;
-  }, [filters]);
+  }, [filters, budgetRange, showBudgetFilter]);
 
   const handleResetFilters = useCallback(() => {
     setFilters(DEFAULT_FILTERS);
     setSearchQuery('');
   }, []);
 
-  const isKids = mounted && mode === 'kids';
-
-  // Carousel data: Séjours demandés (first 6)
+  // Carousel/Grid data: Séjours demandés (first 6)
   const sejoursDemandes = useMemo(() => stays.slice(0, 6), [stays]);
 
-  // Carousel data: Plein Air (nature, aventure, sport themes)
+  // Carousel/Grid data: Plein Air (nature, aventure, sport themes)
   const sejoursPleinAir = useMemo(() => {
     const pleinAirKeywords = ['nature', 'aventure', 'sport', 'montagne', 'mer', 'nautique'];
     const filtered = stays.filter((s) => {
@@ -174,7 +164,7 @@ export function HomeContent({ stays }: { stays: Stay[] }) {
     return filtered.length > 0 ? filtered.slice(0, 6) : stays.slice(0, 4);
   }, [stays]);
 
-  // Carousel data: Bonnes idées (culture, patrimoine, or fallback)
+  // Carousel/Grid data: Bonnes idées (culture, patrimoine, or fallback)
   const sejoursBonnesIdees = useMemo(() => {
     const cultureKeywords = ['culture', 'patrimoine', 'art', 'histoire', 'découverte'];
     const filtered = stays.filter((s) => {
@@ -185,83 +175,73 @@ export function HomeContent({ stays }: { stays: Stay[] }) {
     return filtered.length > 0 ? filtered.slice(0, 6) : stays.slice(2, 6);
   }, [stays]);
 
-  // Check if any filters are active (to show carousels or filtered grid)
+  // Check if any filters are active (to show carousels/grids or filtered grid)
   const hasActiveFilters = searchQuery.trim() !== '' || activeFiltersCount > 0;
 
   return (
-    <main className="bg-background min-h-screen flex flex-col">
-      {/* Compact hero - desktop only */}
-      <section className="hidden md:block relative h-[20vh] min-h-[140px]">
-        <Image
-          src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1920&q=80"
-          alt="Paysage montagne"
-          fill
-          className="object-cover"
-          priority
-        />
-        <div className="absolute inset-0 bg-primary/60" />
-        <div className="relative z-10 h-full flex items-center justify-center text-white px-4">
-          <h1 className="text-2xl font-bold">
-            {isKids ? 'Des vacances inoubliables !' : 'Trouvez le séjour idéal'}
-          </h1>
-        </div>
-      </section>
-
-      {/* Mobile header - minimal */}
-      <div className="md:hidden bg-primary text-white px-4 py-3 text-center">
-        <h1 className="text-base font-semibold">
-          {isKids ? 'Trouve ton séjour !' : 'Catalogue des séjours'}
-        </h1>
-      </div>
-
-      {/* Sticky Search & Filter Bar */}
+    <main className="bg-gray-50 min-h-screen flex flex-col">
+      {/* Sticky Search & Filter Bar - LOT UX P1: Full width container */}
       <div id="sejours" className="scroll-mt-16">
-        <SearchFilterBar
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onOpenFilters={() => setIsFilterOpen(true)}
-          activeFiltersCount={activeFiltersCount}
-        />
+        <div className="max-w-7xl mx-auto px-4">
+          <SearchFilterBar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onOpenFilters={() => setIsFilterOpen(true)}
+            activeFiltersCount={activeFiltersCount}
+          />
+        </div>
       </div>
 
-      {/* Active Filter Chips */}
+      {/* Active Filter Chips - LOT UX P1: Full width container */}
       <ActiveFilterChips
         filters={filters}
         onFiltersChange={setFilters}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        budgetMax={budgetRange.max}
+        mode={mode}
       />
 
-      {/* Content: Carousels OR Filtered Grid */}
+      {/* Content: Mobile Carousels + Desktop Grids OR Filtered Grid - LOT UX P0: No gray ribbon */}
       {!hasActiveFilters ? (
-        <div className="py-4 space-y-2">
-          <StayCarousel 
-            title={isKids ? '🔥 Les plus demandés' : 'Séjours les plus demandés'} 
-            stays={sejoursDemandes} 
-          />
-          <StayCarousel 
-            title={isKids ? '🌲 Aventures plein air' : 'Séjours Plein Air'} 
-            stays={sejoursPleinAir} 
-          />
-          <StayCarousel 
-            title={isKids ? '💡 Bonnes idées' : 'Séjours bonnes idées'} 
-            stays={sejoursBonnesIdees} 
-          />
-        </div>
+        <>
+          {/* Desktop: Grid sections (3-4 cols) - LOT UX P1 */}
+          <div className="hidden lg:block pb-6 space-y-6">
+            <StayGrid title={isKids ? '🔥 Les plus demandés' : 'Séjours les plus demandés'} stays={sejoursDemandes} columns={3} />
+            <StayGrid title={isKids ? '🌲 Aventures plein air' : 'Séjours Plein Air'} stays={sejoursPleinAir} columns={3} />
+            <StayGrid title={isKids ? '💡 Bonnes idées' : 'Séjours bonnes idées'} stays={sejoursBonnesIdees} columns={3} />
+          </div>
+
+          {/* Mobile: Carousels - LOT UX P1 */}
+          <div className="lg:hidden">
+            <StayCarousel
+              title={isKids ? '🔥 Les plus demandés' : 'Séjours les plus demandés'}
+              stays={sejoursDemandes}
+            />
+            <StayCarousel
+              title={isKids ? '🌲 Aventures plein air' : 'Séjours Plein Air'}
+              stays={sejoursPleinAir}
+            />
+            <StayCarousel
+              title={isKids ? '💡 Bonnes idées' : 'Séjours bonnes idées'}
+              stays={sejoursBonnesIdees}
+            />
+          </div>
+        </>
       ) : (
-        /* Filtered results grid */
+        /* Filtered results grid - LOT UX P1: Full width container */
         <section className="py-6">
-          <div className="max-w-6xl mx-auto px-4">
+          <div className="max-w-7xl mx-auto px-4">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-primary">Résultats</h2>
-              <span className="text-sm text-primary-400">
+              <h2 className="text-lg font-bold text-gray-900">Résultats</h2>
+              <span className="text-sm text-gray-500">
                 {filteredStays.length} séjour{filteredStays.length !== 1 ? 's' : ''}
               </span>
             </div>
 
             {filteredStays.length === 0 ? (
-              <div className="text-center py-12 bg-primary-50/50 rounded-xl">
-                <p className="text-primary-500 mb-4">Aucun séjour ne correspond à vos critères</p>
+              <div className="text-center py-12 bg-gray-100 rounded-xl">
+                <p className="text-gray-500 mb-4">Aucun séjour ne correspond à vos critères</p>
                 <button
                   onClick={handleResetFilters}
                   className="px-6 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition"
@@ -270,7 +250,7 @@ export function HomeContent({ stays }: { stays: Stay[] }) {
                 </button>
               </div>
             ) : (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {filteredStays.map(stay => (
                   <StayCard key={stay?.id} stay={stay} />
                 ))}
@@ -286,16 +266,18 @@ export function HomeContent({ stays }: { stays: Stay[] }) {
         onClose={() => setIsFilterOpen(false)}
         filters={filters}
         onFiltersChange={setFilters}
-        availableThemes={availableThemes}
         resultCount={hasActiveFilters ? filteredStays.length : stays.length}
+        budgetRange={budgetRange}
+        showBudgetFilter={showBudgetFilter}
+        mode={mode}
       />
 
       {/* Spacer to push footer down */}
       <div className="flex-1" />
 
-      {/* Footer */}
-      <footer className="bg-primary text-white py-6 mt-6">
-        <div className="max-w-6xl mx-auto px-4 text-center">
+      {/* Footer - LOT UX P1: Full width */}
+      <footer className="bg-primary text-white py-6">
+        <div className="max-w-7xl mx-auto px-4 text-center">
           <p className="text-primary-200 text-sm">
             © 2026 Groupe & Découverte. Tous droits réservés.
           </p>

@@ -2,108 +2,103 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Calendar, MapPin, Users, Clock, Heart, ChevronRight } from 'lucide-react';
+import { Calendar, MapPin, Users, Clock, ArrowRight } from 'lucide-react';
 import type { Stay } from '@/lib/types';
 import { formatDate } from '@/lib/utils';
-import { useApp } from './providers';
 
 export function StayCard({ stay }: { stay: Stay }) {
-  const { mode, mounted, isInWishlist, toggleWishlist } = useApp();
-  const isKids = mode === 'kids';
-  const slug = stay?.slug ?? '';
-  const stayId = stay?.id ?? '';
-  const isLiked = mounted && isInWishlist(slug);
-
   const themes = Array.isArray(stay?.themes) ? stay.themes : [];
   const nextSession = stay?.nextSessionStart;
 
-  const handleHeartClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (slug) toggleWishlist(slug);
-  };
-
   const period = stay?.period === 'printemps' ? 'Printemps' : 'Été';
+  // LOT GRAPHISME 1: More subtle period badges
   const periodColors = stay?.period === 'printemps'
-    ? 'bg-green-100 text-green-700 border border-green-200'
-    : 'bg-amber-100 text-amber-700 border border-amber-200';
+    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+    : 'bg-amber-50 text-amber-700 border border-amber-200';
 
   return (
-    <Link href={`/sejour/${stayId}`}>
-      <article className="bg-white rounded-xl shadow-brand hover:shadow-brand-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden group">
-        <div className="relative aspect-[16/10] bg-primary-100 rounded-t-xl overflow-hidden">
+    <Link href={`/sejour/${stay?.id ?? ''}`}>
+      <article className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all duration-300 overflow-hidden group">
+        {/* Image container - LOT GRAPHISME 1: Cleaner, larger image focus */}
+        <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
           <Image
             src={stay?.imageCover ?? '/og-image.png'}
             alt={stay?.title ?? 'Séjour'}
             fill
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            className="object-cover group-hover:scale-105 transition-transform duration-700"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
-          <div className="absolute top-3 left-3 flex gap-2">
-            <span className={`px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm ${periodColors}`}>
+          {/* Period badge - LOT GRAPHISME 1: Top-left, cleaner design */}
+          <div className="absolute top-3 left-3">
+            <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${periodColors} backdrop-blur-sm bg-opacity-90`}>
               {period}
             </span>
           </div>
-          {/* Heart button */}
-          <button
-            onClick={handleHeartClick}
-            className={`absolute top-3 right-3 w-10 h-10 rounded-xl backdrop-blur-sm flex items-center justify-center transition-all duration-200 btn-hover-scale ${
-              isLiked
-                ? 'bg-red-500 text-white shadow-md'
-                : 'bg-white/90 text-primary-400 hover:bg-white hover:text-red-500 shadow-sm'
-            }`}
-            aria-label={isLiked ? 'Retirer des envies' : 'Ajouter aux envies'}
-          >
-            <Heart className={`w-5 h-5 transition-transform duration-200 ${isLiked ? 'scale-110' : 'scale-100'}`} />
-          </button>
+          {/* LOT UX P0: No heart/wishlist icon */}
         </div>
 
-        <div className="p-5">
-          <h3 className="font-bold text-primary text-lg mb-2 group-hover:text-accent transition-colors">
+        {/* Content - LOT GRAPHISME 1: Better spacing and typography */}
+        <div className="p-4 sm:p-5">
+          {/* Title - LOT GRAPHISME 1: Better typography */}
+          <h3 className="font-semibold text-gray-900 text-base sm:text-lg mb-2 line-clamp-2 leading-snug group-hover:text-primary transition-colors">
             {stay?.title ?? 'Sans titre'}
           </h3>
 
-          <p className="text-sm text-primary-600 mb-4 line-clamp-2">
+          {/* Description - LOT GRAPHISME 1: More subtle, optional */}
+          <p className="text-sm text-gray-500 mb-4 line-clamp-2 leading-relaxed">
             {stay?.descriptionShort ?? ''}
           </p>
 
-          <div className="flex flex-wrap gap-2 mb-4">
-            {themes.slice(0, 3).map((theme) => (
-              <span
-                key={theme}
-                className="px-2.5 py-1 bg-primary-50 text-primary-600 text-xs rounded-md border border-primary-100"
-              >
-                {theme}
-              </span>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 text-xs text-primary-500 mb-4">
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              <span>{stay?.ageMin ?? 0}-{stay?.ageMax ?? 0} ans</span>
+          {/* Info grid - LOT GRAPHISME 1: Cleaner layout */}
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="flex flex-col items-center text-center p-2 bg-gray-50 rounded-lg">
+              <Users className="w-4 h-4 text-gray-400 mb-1" />
+              <span className="text-xs font-medium text-gray-700">{stay?.ageMin ?? 0}-{stay?.ageMax ?? 0}</span>
+              <span className="text-[10px] text-gray-400">ans</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              <span>{stay?.durationDays ?? 0} jours</span>
+            <div className="flex flex-col items-center text-center p-2 bg-gray-50 rounded-lg">
+              <Clock className="w-4 h-4 text-gray-400 mb-1" />
+              <span className="text-xs font-medium text-gray-700">{stay?.durationDays ?? 0}</span>
+              <span className="text-[10px] text-gray-400">jours</span>
             </div>
-            <div className="flex items-center gap-2 col-span-2">
-              <MapPin className="w-4 h-4" />
-              <span className="truncate">{stay?.geography ?? ''}</span>
+            <div className="flex flex-col items-center text-center p-2 bg-gray-50 rounded-lg">
+              <MapPin className="w-4 h-4 text-gray-400 mb-1" />
+              <span className="text-xs font-medium text-gray-700 truncate w-full">{stay?.geography?.split(' ')[0] ?? ''}</span>
+              <span className="text-[10px] text-gray-400">lieu</span>
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-3 border-t border-primary-100">
+          {/* Themes - LOT GRAPHISME 1: More subtle pills */}
+          {themes.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {themes.slice(0, 3).map((theme) => (
+                <span
+                  key={theme}
+                  className="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] sm:text-xs rounded-md font-medium"
+                >
+                  {theme}
+                </span>
+              ))}
+              {themes.length > 3 && (
+                <span className="px-2 py-0.5 text-gray-400 text-[10px] sm:text-xs">
+                  +{themes.length - 3}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Footer - LOT GRAPHISME 1: Subtle date + cleaner CTA */}
+          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
             {nextSession && (
-              <div className="flex items-center gap-1.5 text-xs text-primary-500">
+              <div className="flex items-center gap-1.5 text-xs text-gray-500">
                 <Calendar className="w-3.5 h-3.5" />
                 <span>{formatDate(nextSession)}</span>
               </div>
             )}
-            {/* Prix masqué : API publique ne retourne pas priceFrom (sécurité) */}
-            <span className="inline-flex items-center gap-1 text-accent font-semibold text-base group-hover:gap-2 transition-all">
-              {isKids ? 'Découvrir ' : 'Voir le séjour '}
-              <ChevronRight className="w-4 h-4" />
+            {/* LOT GRAPHISME 1: More subtle CTA with blue accent */}
+            <span className="inline-flex items-center gap-1 text-sm font-medium text-gray-700 group-hover:text-primary group-hover:gap-2 transition-all">
+              {stay?.period === 'printemps' ? 'Découvrir' : 'Voir le séjour'}
+              <ArrowRight className="w-4 h-4" />
             </span>
           </div>
         </div>

@@ -64,19 +64,19 @@
     scroll-behavior: smooth;
   }
 
-  /* Focus styles for accessibility */
+  /* Focus styles for accessibility (P1-4: Orange primary) */
   *:focus-visible {
-    outline: 2px solid #76C7EE;
+    outline: 2px solid #FF6B35;
     outline-offset: 2px;
   }
 
-  /* Selection styles */
+  /* Selection styles (P1-4: Orange primary) */
   ::selection {
-    background-color: #76C7EE;
+    background-color: #FF6B35;
     color: white;
   }
 
-  /* Scrollbar styling (Design System Vitrine) */
+  /* Scrollbar styling (LOT GRAPHISME 1: Subtle gray instead of orange) */
   ::-webkit-scrollbar {
     width: 8px;
   }
@@ -86,12 +86,12 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #76C7EE;
+    background: #CBD5E1;
     border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #5E9FBE;
+    background: #94A3B8;
   }
 }
 

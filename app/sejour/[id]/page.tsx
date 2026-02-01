@@ -80,7 +80,8 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
-      <Header />
+      {/* LOT 1: Minimal header for app pages */}
+      <Header variant="minimal" />
       <StayDetail stay={stayData} />
       <BottomNav />
     </div>

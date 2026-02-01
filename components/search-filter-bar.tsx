@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { Search, SlidersHorizontal, X } from 'lucide-react';
 
 interface SearchFilterBarProps {
   searchQuery: string;
@@ -15,33 +15,43 @@ export function SearchFilterBar({
   onOpenFilters,
   activeFiltersCount,
 }: SearchFilterBarProps) {
+  const hasQuery = searchQuery.trim().length > 0;
+
   return (
-    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-primary-100 py-3 px-4">
+    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200 py-3 px-4">
       <div className="max-w-6xl mx-auto flex gap-3">
-        {/* Filter Button */}
+        {/* Filter Button - LOT GRAPHISME 1: Cleaner design */}
         <button
           onClick={onOpenFilters}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary-50 text-primary rounded-lg hover:bg-primary-100 transition-colors shrink-0"
+          className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors shrink-0"
         >
           <SlidersHorizontal className="w-4 h-4" />
           <span className="hidden sm:inline text-sm font-medium">Filtrer</span>
           {activeFiltersCount > 0 && (
-            <span className="w-5 h-5 bg-accent text-white text-xs font-bold rounded-full flex items-center justify-center">
+            <span className="w-5 h-5 bg-primary text-white text-xs font-semibold rounded-full flex items-center justify-center">
               {activeFiltersCount}
             </span>
           )}
         </button>
 
-        {/* Search Input */}
+        {/* Search Input - LOT GRAPHISME 1: Cleaner, more subtle */}
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-400" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Rechercher un séjour…"
-            className="w-full pl-10 pr-4 py-2.5 bg-primary-50 border-0 rounded-lg text-sm text-primary placeholder:text-primary-400 focus:ring-2 focus:ring-accent focus:bg-white transition-all"
+            placeholder="Rechercher un séjour, un lieu, une thématique…"
+            className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all"
           />
+          {hasQuery && (
+            <button
+              onClick={() => onSearchChange('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full bg-gray-200 text-gray-500 hover:bg-gray-300 transition-colors"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
         </div>
       </div>
     </div>

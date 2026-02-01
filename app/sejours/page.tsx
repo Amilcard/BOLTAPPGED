@@ -42,7 +42,8 @@ export default async function SejoursPage() {
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
-      <Header />
+      {/* LOT 1: Minimal header variant for app listing page */}
+      <Header variant="minimal" />
       <HomeContent stays={staysData} />
       <BottomNav />
     </div>

@@ -59,4 +59,7 @@ export interface User {
 }
 
 export type ViewMode = 'pro' | 'kids';
-export type PeriodFilter = 'toutes' | 'printemps' | 'été';
+// LOT 1: Updated period filter with all seasons
+// Period filter values for LOT 1 (multi-choice)
+export const PERIODE_VALUES = ['hiver', 'printemps', 'été', 'automne', 'fin-annee'] as const;
+export type PeriodFilter = 'toutes' | typeof PERIODE_VALUES[number];

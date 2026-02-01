@@ -23,23 +23,8 @@ const config: Config = {
         ring: 'hsl(var(--ring))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
-        // Primary = Bleu #76C7EE
+        // Primary = Orange #FF6B35 (Design System Vitrine - P0-1)
         primary: {
-          DEFAULT: '#76C7EE',
-          50: '#F4FAFD',
-          100: '#E9F5FB',
-          200: '#D3EBF7',
-          300: '#B7E1F3',
-          400: '#9BD7EF',
-          500: '#76C7EE',
-          600: '#5E9FBE',
-          700: '#46778E',
-          800: '#2E4F5E',
-          900: '#17272F',
-          foreground: '#FFFFFF',
-        },
-        // Secondary = Orange #FF6B35
-        secondary: {
           DEFAULT: '#FF6B35',
           50: '#FFF4ED',
           100: '#FFE9DB',
@@ -52,6 +37,23 @@ const config: Config = {
           800: '#662C14',
           900: '#33170A',
           foreground: '#FFFFFF',
+          hover: '#FF8555', // P1-3: Hover state
+        },
+        // Secondary = Bleu foncé #2C5F8D (Design System Vitrine - P0-1 + P0-2)
+        secondary: {
+          DEFAULT: '#2C5F8D',
+          50: '#E8F0F7',
+          100: '#D1E1EF',
+          200: '#A3C3DF',
+          300: '#75A5CF',
+          400: '#4787BF',
+          500: '#2C5F8D',
+          600: '#234C71',
+          700: '#1A3955',
+          800: '#122639',
+          900: '#09131D',
+          foreground: '#FFFFFF',
+          hover: '#3A75B0', // P1-3: Hover state
         },
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
@@ -62,7 +64,7 @@ const config: Config = {
           foreground: '#2D3436',
         },
         accent: {
-          DEFAULT: '#FF6B35',
+          DEFAULT: '#2C5F8D', // LOT GRAPHISME 1: Blue instead of orange for subtlety
           foreground: '#FFFFFF',
         },
         popover: {
@@ -73,17 +75,14 @@ const config: Config = {
           DEFAULT: '#FFFFFF',
           foreground: '#2D3436',
         },
-        // Brand colors
+        // Brand colors (Design System Vitrine - P0-2)
         brand: {
-          blue: '#76C7EE',
-          orange: '#FF6B35',
+          blue: '#2C5F8D',    // Blue foncé - P0-2
+          orange: '#FF6B35',  // Orange - Primary
           dark: '#2D3436',
           white: '#FFFFFF',
           light: '#F8F9FA',
         },
-        // Legacy compatibility
-        background: '#F8F9FA',
-        foreground: '#2D3436',
       },
       fontFamily: {
         sans: ['Poppins', 'Inter', 'system-ui', 'sans-serif'],

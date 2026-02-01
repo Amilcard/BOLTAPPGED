@@ -12,7 +12,6 @@ import {
   Clock,
   ChevronRight,
   Tag,
-  Heart,
   Share2,
   Bus,
   GraduationCap,
@@ -38,11 +37,13 @@ const STANDARD_CITIES = [
 ];
 
 export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], price_base?: number | null, price_unit?: string, pro_price_note?: string, sourceUrl?: string | null, geoLabel?: string | null, geoPrecision?: string | null, accommodationLabel?: string | null, contentKids?: any } }) {
-  const { mode, mounted, isInWishlist, toggleWishlist, refreshWishlist } = useApp();
+  const { mode, mounted, refreshWishlist } = useApp();
   const [showBooking, setShowBooking] = useState(false);
   const [showWishlistModal, setShowWishlistModal] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [showDepartures, setShowDepartures] = useState(false);
+  // P1: Collapsible price estimation in Pro mode
+  const [showPriceEstimation, setShowPriceEstimation] = useState(false);
 
   // Pré-sélection session et ville (avant d'ouvrir le modal)
   const [preSelectedSessionId, setPreSelectedSessionId] = useState<string>('');
@@ -68,7 +69,6 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
   const isKids = mode === 'kids';
   const isPro = !isKids;
   const slug = stay?.slug ?? '';
-  const isLiked = mounted && isInWishlist(slug);
 
   // Fetch enrichment (sessions avec prix) en mode PRO - compléter les sessions si absent
   useEffect(() => {
@@ -126,13 +126,9 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
     minSessionPrice,
   });
 
-  const handleToggleWishlist = () => {
-    if (slug) toggleWishlist(slug);
-  };
-
   const handleKidsCTA = () => {
     // Add to wishlist and show modal
-    if (slug && !isLiked) {
+    if (slug) {
       addToWishlist(slug);
       refreshWishlist();
     }
@@ -170,8 +166,8 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
   return (
     <main className="pb-12">
-      {/* Hero */}
-      <section className="relative h-[45vh] min-h-[320px]">
+      {/* Hero - P1: Reduced height for better focus on content */}
+      <section className="relative h-[25vh] min-h-[180px] max-h-[240px]">
         <Image
           src={stay?.imageCover ?? '/og-image.png'}
           alt={stay?.title ?? ''}
@@ -205,17 +201,6 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
               PDF bientôt disponible
             </span>
           )}
-          <button
-            onClick={handleToggleWishlist}
-            className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all shadow-sm ${
-              isLiked
-                ? 'bg-red-500 text-white'
-                : 'bg-white/95 backdrop-blur text-primary hover:bg-white hover:text-red-500'
-            }`}
-            aria-label={isLiked ? 'Retirer des envies' : 'Ajouter aux envies'}
-          >
-            <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-          </button>
         </div>
 
         {/* Share success toast */}
@@ -226,76 +211,38 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
         )}
 
         <div className="absolute bottom-0 left-0 right-0 p-6 max-w-6xl mx-auto">
-          <Link href="/" className="inline-flex items-center gap-1 text-white/90 text-sm mb-3 hover:text-white transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Retour aux séjours
+          {/* P1: More visible back button CTA */}
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-md rounded-xl text-white text-sm font-medium hover:bg-white/30 transition-all border border-white/30"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Retour aux séjours
           </Link>
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white">{stay?.title ?? ''}</h1>
         </div>
       </section>
 
       <div className="max-w-6xl mx-auto px-4 -mt-8 relative z-10">
-        {/* Quick Info Card */}
+        {/* Quick Info Card - P1: Simplified without price block (moved to sidebar) */}
         <div className="bg-white rounded-xl shadow-card p-6 mb-8 md:mb-12">
-          <div className="flex flex-wrap gap-4 items-center justify-between">
-            <div className="flex flex-wrap gap-6 text-sm">
-              <div className="flex items-center gap-2 text-primary-600">
-                <Calendar className="w-4 h-4 text-accent" />
-                <span>{stay?.period === 'printemps' ? 'Printemps' : 'Été'} 2026</span>
-              </div>
-              <div className="flex items-center gap-2 text-primary-600">
-                <Clock className="w-4 h-4 text-accent" />
-                <span>{stay?.durationDays ?? 0} jours</span>
-              </div>
-              <div className="flex items-center gap-2 text-primary-600">
-                <Users className="w-4 h-4 text-accent" />
-                <span>{stay?.ageMin ?? 0}-{stay?.ageMax ?? 0} ans</span>
-              </div>
-              <div className="flex items-center gap-2 text-primary-600">
-                <MapPin className="w-4 h-4 text-accent" />
-                <span>{stay?.geography ?? ''}</span>
-              </div>
+          <div className="flex flex-wrap gap-6 text-sm">
+            <div className="flex items-center gap-2 text-primary-600">
+              <Calendar className="w-4 h-4 text-accent" />
+              <span>{stay?.period === 'printemps' ? 'Printemps' : 'Été'} 2026</span>
             </div>
-            {/* Prix / note tarif (Pro) */}
-            {mounted && !isKids && (
-              <div className="text-right">
-                {priceBreakdown.minPrice !== null ? (
-                  <div className="space-y-1">
-                    {/* Prix minimum "À partir de" */}
-                    <div className="text-sm text-primary-500">
-                      À partir de <span className="font-semibold">{priceBreakdown.minPrice} €</span>
-                    </div>
-                    {/* Estimation dynamique (si session sélectionnée) */}
-                    {priceBreakdown.total !== null && (
-                      <div className="bg-accent/5 border border-accent/20 rounded-lg px-3 py-2">
-                        <div className="text-xs text-primary-600 mb-0.5">Votre estimation</div>
-                        <div className="text-lg font-bold text-accent">{priceBreakdown.total} €</div>
-                        <div className="text-xs text-primary-500 space-y-0.5">
-                          {priceBreakdown.baseSession !== null && (
-                            <div>Session : {priceBreakdown.baseSession}€</div>
-                          )}
-                          {cityExtraEur > 0 && (
-                            <div>Transport : +{cityExtraEur}€</div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    {!priceBreakdown.hasSelection && (
-                      <div className="text-xs text-primary-400">
-                        Sélectionnez une session
-                      </div>
-                    )}
-                  </div>
-                ) : stay?.price_base == null ? (
-                  <div className="text-sm text-primary-500 italic">
-                    {stay?.pro_price_note || "Tarif communiqué aux professionnels"}
-                  </div>
-                ) : (
-                  <div className="text-base font-bold text-accent">
-                    À partir de {stay.price_base} €
-                  </div>
-                )}
-              </div>
-            )}
+            <div className="flex items-center gap-2 text-primary-600">
+              <Clock className="w-4 h-4 text-accent" />
+              <span>{stay?.durationDays ?? 0} jours</span>
+            </div>
+            <div className="flex items-center gap-2 text-primary-600">
+              <Users className="w-4 h-4 text-accent" />
+              <span>{stay?.ageMin ?? 0}-{stay?.ageMax ?? 0} ans</span>
+            </div>
+            <div className="flex items-center gap-2 text-primary-600">
+              <MapPin className="w-4 h-4 text-accent" />
+              <span>{stay?.geography ?? ''}</span>
+            </div>
           </div>
         </div>
 
@@ -596,6 +543,69 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   })}
                 </div>
               )}
+
+              {/* P1: Collapsible price estimation (Pro only) */}
+              {!isKids && mounted && (
+                <div className="border-t border-primary-100 pt-4">
+                  {!showPriceEstimation ? (
+                    <button
+                      onClick={() => setShowPriceEstimation(true)}
+                      className="w-full py-2.5 bg-primary-50 text-primary-700 rounded-xl font-semibold text-sm hover:bg-primary-100 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Tag className="w-4 h-4" />
+                      Voir l'estimation tarifaire
+                    </button>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-primary">Estimation tarifaire</span>
+                        <button
+                          onClick={() => setShowPriceEstimation(false)}
+                          className="p-1 hover:bg-primary-50 rounded-lg transition"
+                        >
+                          <X className="w-4 h-4 text-primary-400" />
+                        </button>
+                      </div>
+                      {priceBreakdown.minPrice !== null ? (
+                        <div className="space-y-2">
+                          <div className="bg-accent/5 border border-accent/20 rounded-lg px-3 py-2">
+                            <div className="text-xs text-primary-600 mb-1">À partir de</div>
+                            <div className="text-lg font-bold text-accent">{priceBreakdown.minPrice} €</div>
+                          </div>
+                          {priceBreakdown.total !== null && (
+                            <div className="bg-primary-50 border border-primary-200 rounded-lg px-3 py-2">
+                              <div className="text-xs text-primary-600 mb-1">Votre estimation</div>
+                              <div className="text-base font-bold text-primary">{priceBreakdown.total} €</div>
+                              <div className="text-xs text-primary-500 space-y-0.5 mt-1">
+                                {priceBreakdown.baseSession !== null && (
+                                  <div>Session : {priceBreakdown.baseSession}€</div>
+                                )}
+                                {cityExtraEur > 0 && (
+                                  <div>Transport : +{cityExtraEur}€</div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          {!priceBreakdown.hasSelection && (
+                            <div className="text-xs text-primary-400 text-center">
+                              Sélectionnez une session pour une estimation précise
+                            </div>
+                          )}
+                        </div>
+                      ) : stay?.price_base == null ? (
+                        <div className="text-sm text-primary-500 text-center py-2">
+                          {stay?.pro_price_note || "Tarif communiqué aux professionnels"}
+                        </div>
+                      ) : (
+                        <div className="text-sm font-semibold text-accent text-center py-2">
+                          À partir de {stay.price_base} €
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {isKids ? (
                 <button
                   onClick={handleKidsCTA}
@@ -622,7 +632,6 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
           stay={stay}
           sessions={sessions}
           departureCities={enrichment?.departures}
-          enrichmentSessions={enrichment?.sessions}
           initialSessionId={preSelectedSessionId}
           initialCity={preSelectedCity}
           onClose={() => setShowBooking(false)}
@@ -648,7 +657,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                 <h2 className="font-bold text-primary text-xl">Villes de départ</h2>
                 <p className="text-sm text-primary-500 mt-1">
                   {isPro
-                    ? `${enrichment.departures.length} villes • Tarifs incluant le transport`
+                    ? `${enrichment.departures.length} villes • Transport inclus`
                     : `${enrichment.departures.length} villes disponibles`
                   }
                 </p>

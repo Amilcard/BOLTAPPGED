@@ -9,7 +9,7 @@ const config: Config = {
   ],
   theme: {
     screens: {
-      'xs': '375px',  // Petits mobiles
+      'xs': '375px',
       'sm': '640px',
       'md': '768px',
       'lg': '1024px',
@@ -18,53 +18,100 @@ const config: Config = {
     },
     extend: {
       colors: {
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        // Primary = Bleu #76C7EE
         primary: {
-          DEFAULT: '#1F3B57',
-          50: '#E8EDF2',
-          100: '#D1DBE5',
-          200: '#A3B7CB',
-          300: '#7593B1',
-          400: '#476F97',
-          500: '#1F3B57',
-          600: '#1A3249',
-          700: '#15283B',
-          800: '#101F2D',
-          900: '#0B151F',
+          DEFAULT: '#76C7EE',
+          50: '#F4FAFD',
+          100: '#E9F5FB',
+          200: '#D3EBF7',
+          300: '#B7E1F3',
+          400: '#9BD7EF',
+          500: '#76C7EE',
+          600: '#5E9FBE',
+          700: '#46778E',
+          800: '#2E4F5E',
+          900: '#17272F',
+          foreground: '#FFFFFF',
+        },
+        // Secondary = Orange #FF6B35
+        secondary: {
+          DEFAULT: '#FF6B35',
+          50: '#FFF4ED',
+          100: '#FFE9DB',
+          200: '#FFD3B7',
+          300: '#FFBD93',
+          400: '#FFA76F',
+          500: '#FF6B35',
+          600: '#CC5629',
+          700: '#99411F',
+          800: '#662C14',
+          900: '#33170A',
+          foreground: '#FFFFFF',
+        },
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
+        },
+        muted: {
+          DEFAULT: '#F8F9FA',
+          foreground: '#2D3436',
         },
         accent: {
-          DEFAULT: '#F59E0B',
-          50: '#FEF3E2',
-          100: '#FDE7C5',
-          200: '#FBCF8B',
-          300: '#F9B751',
-          400: '#F7A017',
-          500: '#F59E0B',
-          600: '#C47F09',
-          700: '#936007',
-          800: '#624005',
-          900: '#312003',
+          DEFAULT: '#FF6B35',
+          foreground: '#FFFFFF',
         },
-        background: '#F5F7FA',
-        foreground: '#0F172A',
+        popover: {
+          DEFAULT: '#FFFFFF',
+          foreground: '#2D3436',
+        },
+        card: {
+          DEFAULT: '#FFFFFF',
+          foreground: '#2D3436',
+        },
+        // Brand colors
+        brand: {
+          blue: '#76C7EE',
+          orange: '#FF6B35',
+          dark: '#2D3436',
+          white: '#FFFFFF',
+          light: '#F8F9FA',
+        },
+        // Legacy compatibility
+        background: '#F8F9FA',
+        foreground: '#2D3436',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Poppins', 'Inter', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
-        sm: '0.5rem',    // 8px
-        md: '0.75rem',   // 12px
-        lg: '1rem',      // 16px (augmenté pour look moderne)
-        xl: '1.25rem',   // 20px
-        '2xl': '1.5rem', // 24px
-        '3xl': '2rem',   // 32px
+        sm: '0.5rem',
+        md: '0.75rem',
+        lg: '1rem',
+        xl: '1.25rem',
+        '2xl': '1.5rem',
+        '3xl': '2rem',
+        brand: '24px',
       },
       boxShadow: {
         sm: '0 1px 2px rgba(0, 0, 0, 0.05)',
         DEFAULT: '0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06)',
         md: '0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05)',
         lg: '0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04)',
-        card: '0 4px 12px rgba(31, 59, 87, 0.1)',
-        'card-hover': '0 8px 24px rgba(31, 59, 87, 0.15)',
+        card: '0 4px 12px rgba(0, 0, 0, 0.08)',
+        'card-hover': '0 8px 24px rgba(0, 0, 0, 0.12)',
+        // Brand shadows (Design System Vitrine)
+        brand: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+        'brand-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)',
+        'brand-xl': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+      },
+      spacing: {
+        section: '120px',
+        card: '80px',
       },
     },
   },

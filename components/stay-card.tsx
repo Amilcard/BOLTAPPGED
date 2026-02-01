@@ -30,7 +30,7 @@ export function StayCard({ stay }: { stay: Stay }) {
 
   return (
     <Link href={`/sejour/${stayId}`}>
-      <article className="bg-white rounded-xl shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 overflow-hidden group">
+      <article className="bg-white rounded-xl shadow-brand hover:shadow-brand-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden group">
         <div className="relative aspect-[16/10] bg-primary-100 rounded-t-xl overflow-hidden">
           <Image
             src={stay?.imageCover ?? '/og-image.png'}

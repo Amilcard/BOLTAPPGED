@@ -36,3 +36,7 @@ scripts/ufoval/merge-departures-and-sessions.js
 # local work notes (keep local)
 docs/
 scripts/
+
+# local backups
+*.bak
+*.backup

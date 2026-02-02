@@ -1,48 +1,61 @@
-import { prisma } from '@/lib/db';
+import { getSejours, supabaseGed } from '@/lib/supabaseGed';
 import { Header } from '@/components/header';
 import { BottomNav } from '@/components/bottom-nav';
 import { HomeContent } from '../home-content';
+import type { Stay } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
 export default async function SejoursPage() {
-  const stays = await prisma.stay.findMany({
-    where: { published: true },
-    include: {
-      sessions: {
-        where: { startDate: { gte: new Date() } },
-        orderBy: { startDate: 'asc' },
-        take: 1,
-      },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+  // Récupérer séjours + âges depuis gd_stay_sessions
+  const [sejoursGed, agesData] = await Promise.all([
+    getSejours(),
+    supabaseGed.from('gd_stay_sessions')
+      .select('stay_slug, age_min, age_max')
+      .then(({ data }) => data || [])
+  ]);
 
-  // Prix exclus du SSR (sécurité : visible uniquement pour pro authentifié)
-  const staysData = stays.map(stay => ({
-    id: stay.id,
-    slug: stay.slug,
-    title: stay.title,
-    descriptionShort: stay.descriptionShort,
-    programme: stay.programme as string[],
-    geography: stay.geography,
-    accommodation: stay.accommodation,
-    supervision: stay.supervision,
-    durationDays: stay.durationDays,
-    period: stay.period,
-    ageMin: stay.ageMin,
-    ageMax: stay.ageMax,
-    themes: stay.themes as string[],
-    imageCover: stay.imageCover,
-    published: stay.published,
-    createdAt: stay.createdAt.toISOString(),
-    updatedAt: stay.updatedAt.toISOString(),
-    nextSessionStart: stay.sessions[0]?.startDate?.toISOString() ?? null,
-  }));
+  // Créer un map slug → {ageMin, ageMax}
+  const agesMap = new Map<string, { ageMin: number; ageMax: number }>();
+  for (const row of agesData) {
+    const existing = agesMap.get(row.stay_slug);
+    if (!existing) {
+      agesMap.set(row.stay_slug, { ageMin: row.age_min, ageMax: row.age_max });
+    } else {
+      agesMap.set(row.stay_slug, {
+        ageMin: Math.min(existing.ageMin, row.age_min),
+        ageMax: Math.max(existing.ageMax, row.age_max)
+      });
+    }
+  }
+
+  // Mapper les données GED vers le type Stay attendu
+  const staysData: Stay[] = sejoursGed.map(sejour => {
+    const ages = agesMap.get(sejour.slug) || { ageMin: 6, ageMax: 17 };
+    return {
+      id: sejour.slug,
+      slug: sejour.slug,
+      title: sejour.title || 'Sans titre',
+      descriptionShort: sejour.accroche || '',
+      programme: sejour.programme ? sejour.programme.split('\n').filter(Boolean) : [],
+      geography: sejour.location_region || sejour.location_city || '',
+      accommodation: sejour.centre_name || '',
+      supervision: 'Équipe UFOVAL',
+      durationDays: 7,
+      period: 'Été 2026',
+      ageMin: ages.ageMin,
+      ageMax: ages.ageMax,
+      themes: [sejour.ged_theme || 'PLEIN_AIR'],
+      imageCover: sejour.images?.[0] || '',
+      published: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      nextSessionStart: null,
+    };
+  });
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
-      {/* LOT 1: Minimal header variant for app listing page */}
       <Header variant="minimal" />
       <HomeContent stays={staysData} />
       <BottomNav />

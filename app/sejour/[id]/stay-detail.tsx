@@ -31,10 +31,8 @@ type DepartureData = { city: string; extra_eur: number };
 type SessionData = { date_text: string; base_price_eur: number | null; promo_price_eur: number | null };
 type EnrichmentData = { source_url: string; departures: DepartureData[]; sessions: SessionData[] };
 
-// Villes de départ standard (même liste pour tous les séjours)
-const STANDARD_CITIES = [
-  'Paris', 'Lyon', 'Lille', 'Marseille', 'Bordeaux', 'Rennes'
-];
+// Villes prioritaires pour le tri (affichées en premier)
+const PRIORITY_CITIES = ['paris', 'lyon', 'marseille', 'lille', 'bordeaux', 'rennes'];
 
 export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], price_base?: number | null, price_unit?: string, pro_price_note?: string, sourceUrl?: string | null, geoLabel?: string | null, geoPrecision?: string | null, accommodationLabel?: string | null, contentKids?: any } }) {
   const { mode, mounted, refreshWishlist } = useApp();
@@ -49,20 +47,24 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
   const [preSelectedSessionId, setPreSelectedSessionId] = useState<string>('');
   const [preSelectedCity, setPreSelectedCity] = useState<string>('');
 
-  // Initialiser enrichment directement depuis stay.contentKids (données déjà en BDD)
+  // Initialiser enrichment directement depuis stay.contentKids (données depuis Supabase)
   const stayUrl = String((stay as any)?.sourceUrl ?? "").trim();
   const contentKidsParsed = typeof stay?.contentKids === 'string' ? JSON.parse(stay.contentKids) : stay?.contentKids;
-  const allDepartureCities = contentKidsParsed?.departureCities ?? [];
-  // Filtrer les villes : uniquement la liste standard + "Sans transport"
-  const departureCities = allDepartureCities.filter((dc: DepartureData) =>
-    STANDARD_CITIES.some(std =>
-      dc.city.toLowerCase().includes(std.toLowerCase())
-    ) || dc.city === 'Sans transport'
-  );
-  const initialEnrichment = (stayUrl && departureCities && departureCities.length > 0) ? {
+  const allDepartureCities: DepartureData[] = contentKidsParsed?.departureCities ?? [];
+  const sessionsFormatted = contentKidsParsed?.sessionsFormatted ?? [];
+
+  // Formater les villes : normaliser les noms (sans_transport → Sans transport)
+  // Afficher TOUTES les villes (pas de filtre restrictif)
+  const departureCities = allDepartureCities.map((dc: DepartureData) => ({
+    city: dc.city === 'sans_transport' ? 'Sans transport' : (dc.city || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+    extra_eur: dc.extra_eur || 0
+  })).filter((dc: DepartureData) => dc.city && dc.city.trim() !== '');
+
+  // Enrichment initialisé avec les données Supabase (plus besoin de fetch API)
+  const initialEnrichment: EnrichmentData | null = departureCities.length > 0 ? {
     source_url: stayUrl,
     departures: departureCities,
-    sessions: []
+    sessions: sessionsFormatted // Sessions formatées depuis Supabase
   } : null;
   const [enrichment, setEnrichment] = useState<EnrichmentData | null>(initialEnrichment);
 
@@ -70,29 +72,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
   const isPro = !isKids;
   const slug = stay?.slug ?? '';
 
-  // Fetch enrichment (sessions avec prix) en mode PRO - compléter les sessions si absent
-  useEffect(() => {
-    if (!isPro) return;
-    if (!stayUrl) return;
-
-    // On a déjà les villes de départ depuis contentKids, on fetche seulement pour les sessions si besoin
-    fetch('/api/ufoval-enrichment')
-      .then(r => r.json())
-      .then((data) => {
-        // ✅ API actuelle: { ok, generatedAt, total, stats, items: [...] }
-        const list = Array.isArray(data?.items) ? data.items : [];
-        const match = list.find((x: any) => String(x?.source_url ?? "").trim() === stayUrl);
-        if (match) {
-          // Conserver les villes de départ depuis contentKids, ajouter les sessions
-          setEnrichment({
-            source_url: match.source_url,
-            departures: departureCities,
-            sessions: match.sessions ?? []
-          });
-        }
-      })
-      .catch(() => {});
-  }, [isPro, stayUrl, departureCities]);
+  // Plus besoin de fetch /api/ufoval-enrichment - données déjà passées depuis page.tsx
 
   // Calcul prix minimum (promo prioritaire, sinon base)
   const minSessionPrice = (() => {
@@ -360,8 +340,8 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                         .sort((a, b) => {
                           if (a.city === 'Sans transport') return -1;
                           if (b.city === 'Sans transport') return 1;
-                          const aIndex = STANDARD_CITIES.findIndex(std => a.city.toLowerCase().includes(std.toLowerCase()));
-                          const bIndex = STANDARD_CITIES.findIndex(std => b.city.toLowerCase().includes(std.toLowerCase()));
+                          const aIndex = PRIORITY_CITIES.findIndex(std => String(a.city || '').toLowerCase().includes(std.toLowerCase()));
+                          const bIndex = PRIORITY_CITIES.findIndex(std => String(b.city || '').toLowerCase().includes(std.toLowerCase()));
                           if (aIndex >= 0 && bIndex >= 0) return aIndex - bIndex;
                           if (aIndex >= 0) return -1;
                           if (bIndex >= 0) return 1;
@@ -675,11 +655,11 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
               {enrichment.departures
                 .slice()
                 .sort((a, b) => {
-                  // Mettre "Sans transport" en premier, puis trier selon STANDARD_CITIES
+                  // Mettre "Sans transport" en premier, puis trier selon PRIORITY_CITIES
                   if (a.city === 'Sans transport') return -1;
                   if (b.city === 'Sans transport') return 1;
-                  const aIndex = STANDARD_CITIES.findIndex(std => a.city.toLowerCase().includes(std.toLowerCase()));
-                  const bIndex = STANDARD_CITIES.findIndex(std => b.city.toLowerCase().includes(std.toLowerCase()));
+                  const aIndex = PRIORITY_CITIES.findIndex(std => String(a.city || '').toLowerCase().includes(std.toLowerCase()));
+                  const bIndex = PRIORITY_CITIES.findIndex(std => String(b.city || '').toLowerCase().includes(std.toLowerCase()));
                   if (aIndex >= 0 && bIndex >= 0) return aIndex - bIndex;
                   if (aIndex >= 0) return -1;
                   if (bIndex >= 0) return 1;

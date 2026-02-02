@@ -150,29 +150,24 @@ export function HomeContent({ stays }: { stays: Stay[] }) {
     setSearchQuery('');
   }, []);
 
-  // Carousel/Grid data: Séjours demandés (first 6)
-  const sejoursDemandes = useMemo(() => stays.slice(0, 6), [stays]);
+  // Tranches d'âge de référence (axe principal du catalogue)
+  const AGE_GROUPS = [
+    { label: '6-8 ans', labelKids: '👶 Pour les 6-8 ans', min: 6, max: 8 },
+    { label: '9-11 ans', labelKids: '🧒 Pour les 9-11 ans', min: 9, max: 11 },
+    { label: '12-14 ans', labelKids: '🎒 Pour les 12-14 ans', min: 12, max: 14 },
+    { label: '15-17 ans', labelKids: '🎓 Pour les 15-17 ans', min: 15, max: 17 },
+  ];
 
-  // Carousel/Grid data: Plein Air (nature, aventure, sport themes)
-  const sejoursPleinAir = useMemo(() => {
-    const pleinAirKeywords = ['nature', 'aventure', 'sport', 'montagne', 'mer', 'nautique'];
-    const filtered = stays.filter((s) => {
-      const themes = Array.isArray(s.themes) ? s.themes.map(t => t.toLowerCase()) : [];
-      const title = s.title?.toLowerCase() || '';
-      return pleinAirKeywords.some(k => themes.some(t => t.includes(k)) || title.includes(k));
-    });
-    return filtered.length > 0 ? filtered.slice(0, 6) : stays.slice(0, 4);
-  }, [stays]);
-
-  // Carousel/Grid data: Bonnes idées (culture, patrimoine, or fallback)
-  const sejoursBonnesIdees = useMemo(() => {
-    const cultureKeywords = ['culture', 'patrimoine', 'art', 'histoire', 'découverte'];
-    const filtered = stays.filter((s) => {
-      const themes = Array.isArray(s.themes) ? s.themes.map(t => t.toLowerCase()) : [];
-      const title = s.title?.toLowerCase() || '';
-      return cultureKeywords.some(k => themes.some(t => t.includes(k)) || title.includes(k));
-    });
-    return filtered.length > 0 ? filtered.slice(0, 6) : stays.slice(2, 6);
+  // Grouper séjours par tranche d'âge
+  const sejoursByAge = useMemo(() => {
+    return AGE_GROUPS.map(group => ({
+      ...group,
+      stays: stays.filter(s => {
+        const sMin = s.ageMin ?? 0;
+        const sMax = s.ageMax ?? 99;
+        return sMin <= group.max && sMax >= group.min;
+      })
+    })).filter(g => g.stays.length > 0);
   }, [stays]);
 
   // Check if any filters are active (to show carousels/grids or filtered grid)
@@ -202,30 +197,30 @@ export function HomeContent({ stays }: { stays: Stay[] }) {
         mode={mode}
       />
 
-      {/* Content: Mobile Carousels + Desktop Grids OR Filtered Grid - LOT UX P0: No gray ribbon */}
+      {/* Content: Sections par TRANCHE D'ÂGE (axe principal) */}
       {!hasActiveFilters ? (
         <>
-          {/* Desktop: Grid sections (3-4 cols) - LOT UX P1 */}
-          <div className="hidden lg:block pb-6 space-y-6">
-            <StayGrid title={isKids ? '🔥 Les plus demandés' : 'Séjours les plus demandés'} stays={sejoursDemandes} columns={3} />
-            <StayGrid title={isKids ? '🌲 Aventures plein air' : 'Séjours Plein Air'} stays={sejoursPleinAir} columns={3} />
-            <StayGrid title={isKids ? '💡 Bonnes idées' : 'Séjours bonnes idées'} stays={sejoursBonnesIdees} columns={3} />
+          {/* Desktop: Grid sections par âge */}
+          <div className="hidden lg:block pb-6 space-y-8">
+            {sejoursByAge.map((group) => (
+              <StayGrid
+                key={group.label}
+                title={isKids ? group.labelKids : `Séjours ${group.label}`}
+                stays={group.stays}
+                columns={3}
+              />
+            ))}
           </div>
 
-          {/* Mobile: Carousels - LOT UX P1 */}
+          {/* Mobile: Carousels par âge */}
           <div className="lg:hidden">
-            <StayCarousel
-              title={isKids ? '🔥 Les plus demandés' : 'Séjours les plus demandés'}
-              stays={sejoursDemandes}
-            />
-            <StayCarousel
-              title={isKids ? '🌲 Aventures plein air' : 'Séjours Plein Air'}
-              stays={sejoursPleinAir}
-            />
-            <StayCarousel
-              title={isKids ? '💡 Bonnes idées' : 'Séjours bonnes idées'}
-              stays={sejoursBonnesIdees}
-            />
+            {sejoursByAge.map((group) => (
+              <StayCarousel
+                key={group.label}
+                title={isKids ? group.labelKids : `Séjours ${group.label}`}
+                stays={group.stays}
+              />
+            ))}
           </div>
         </>
       ) : (

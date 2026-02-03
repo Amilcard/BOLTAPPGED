@@ -164,16 +164,26 @@ export function HomeContent({
     { label: '15-17 ans', labelKids: '🎓 Pour les 15-17 ans', min: 15, max: 17 },
   ];
 
-  // Grouper séjours par tranche d'âge
+  // Grouper séjours par tranche d'âge AVEC DEDUPE GLOBAL
+  // Règle: 1 séjour = 1 apparition max (première section compatible gagne)
   const sejoursByAge = useMemo(() => {
-    return AGE_GROUPS.map(group => ({
-      ...group,
-      stays: stays.filter(s => {
+    const renderedSlugs = new Set<string>();
+
+    return AGE_GROUPS.map(group => {
+      // Filtrer: overlap ET pas encore rendu
+      const groupStays = stays.filter(s => {
         const sMin = s.ageMin ?? 0;
         const sMax = s.ageMax ?? 99;
-        return sMin <= group.max && sMax >= group.min;
-      })
-    })).filter(g => g.stays.length > 0);
+        const hasOverlap = sMin <= group.max && sMax >= group.min;
+        const notRendered = !renderedSlugs.has(s.slug || s.id);
+        return hasOverlap && notRendered;
+      });
+
+      // Marquer comme rendus
+      groupStays.forEach(s => renderedSlugs.add(s.slug || s.id));
+
+      return { ...group, stays: groupStays };
+    }).filter(g => g.stays.length > 0);
   }, [stays]);
 
   // Check if any filters are active (to show carousels/grids or filtered grid)

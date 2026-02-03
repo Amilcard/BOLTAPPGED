@@ -72,6 +72,14 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
   const isPro = !isKids;
   const slug = stay?.slug ?? '';
 
+  // CityCrunch: affichage Pro/Kids avec fallback
+  const displayTitle = isKids
+    ? ((stay as any)?.titleKids || stay?.title)
+    : ((stay as any)?.titlePro || stay?.title);
+  const displayDesc = isKids
+    ? ((stay as any)?.descriptionKids || stay?.descriptionShort)
+    : ((stay as any)?.descriptionPro || stay?.descriptionShort);
+
   // Plus besoin de fetch /api/ufoval-enrichment - données déjà passées depuis page.tsx
 
   // Calcul prix minimum (promo prioritaire, sinon base)
@@ -199,7 +207,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
             <ArrowLeft className="w-4 h-4" />
             Retour aux séjours
           </Link>
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white">{stay?.title ?? ''}</h1>
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white">{displayTitle ?? ''}</h1>
         </div>
       </section>
 
@@ -234,7 +242,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
               <h2 className="text-2xl md:text-3xl font-bold text-primary mb-4">
                 {isKids ? 'C\'est quoi ce séjour ?' : 'Présentation'}
               </h2>
-              <p className="text-primary-600 leading-relaxed">{stay?.descriptionShort ?? ''}</p>
+              <p className="text-primary-600 leading-relaxed">{displayDesc ?? ''}</p>
               <div className="flex flex-wrap gap-2 mt-4">
                 {themes.map(theme => (
                   <span key={theme} className="flex items-center gap-1 px-3 py-1.5 bg-primary-50 text-primary-600 rounded-full text-sm font-medium border border-primary-100">

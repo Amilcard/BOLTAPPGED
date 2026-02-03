@@ -3,6 +3,11 @@ export interface Stay {
   slug: string;
   title: string;
   descriptionShort: string;
+  // CityCrunch: titres/descriptions Pro/Kids (fallback: title/descriptionShort)
+  titlePro?: string;
+  titleKids?: string;
+  descriptionPro?: string;
+  descriptionKids?: string;
   programme: string[];
   geography: string;
   accommodation: string;

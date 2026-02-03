@@ -64,7 +64,7 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
     programme: stay.programme ? stay.programme.split('\n').filter(Boolean) : [],
     geography: stay.location_region || stay.location_city || '',
     accommodation: stay.centre_name || '',
-    supervision: 'Équipe UFOVAL',
+    supervision: 'Équipe Groupe & Découverte',
     durationDays,
     period: 'Été 2026',
     ageMin,

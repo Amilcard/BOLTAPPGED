@@ -5,8 +5,20 @@ import Link from 'next/link';
 import { Calendar, MapPin, Users, Clock, ArrowRight } from 'lucide-react';
 import type { Stay } from '@/lib/types';
 import { formatDate } from '@/lib/utils';
+import { useApp } from '@/components/providers';
 
 export function StayCard({ stay }: { stay: Stay }) {
+  const { mode } = useApp();
+  const isKids = mode === 'kids';
+
+  // CityCrunch: affichage Pro/Kids avec fallback
+  const displayTitle = isKids
+    ? (stay?.titleKids || stay?.title)
+    : (stay?.titlePro || stay?.title);
+  const displayDesc = isKids
+    ? (stay?.descriptionKids || stay?.descriptionShort)
+    : (stay?.descriptionPro || stay?.descriptionShort);
+
   const themes = Array.isArray(stay?.themes) ? stay.themes : [];
   const nextSession = stay?.nextSessionStart;
 
@@ -39,14 +51,14 @@ export function StayCard({ stay }: { stay: Stay }) {
 
         {/* Content - LOT GRAPHISME 1: Better spacing and typography */}
         <div className="p-4 sm:p-5">
-          {/* Title - LOT GRAPHISME 1: Better typography */}
+          {/* Title - LOT GRAPHISME 1: Better typography + CityCrunch Pro/Kids */}
           <h3 className="font-semibold text-gray-900 text-base sm:text-lg mb-2 line-clamp-2 leading-snug group-hover:text-primary transition-colors">
-            {stay?.title ?? 'Sans titre'}
+            {displayTitle ?? 'Sans titre'}
           </h3>
 
-          {/* Description - LOT GRAPHISME 1: More subtle, optional */}
+          {/* Description - LOT GRAPHISME 1: More subtle + CityCrunch Pro/Kids */}
           <p className="text-sm text-gray-500 mb-4 line-clamp-2 leading-relaxed">
-            {stay?.descriptionShort ?? ''}
+            {displayDesc ?? ''}
           </p>
 
           {/* Info grid - LOT GRAPHISME 1: Cleaner layout */}

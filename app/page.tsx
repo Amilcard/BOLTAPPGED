@@ -37,7 +37,7 @@ export default async function HomePage() {
       slug: sejour.slug,
       title: sejour.title || 'Sans titre',
       descriptionShort: sejour.accroche || '',
-      // CityCrunch
+      // CityCrunch: titres/descriptions Pro/Kids (optionnel, fallback côté client)
       titlePro: sejour.title_pro || undefined,
       titleKids: sejour.title_kids || undefined,
       descriptionPro: sejour.description_pro || undefined,
@@ -47,7 +47,7 @@ export default async function HomePage() {
       accommodation: sejour.centre_name || '',
       supervision: 'Équipe Groupe & Découverte',
       durationDays: 7,
-      period: 'Été 2026',
+      period: 'été',
       ageMin: ages.ageMin,
       ageMax: ages.ageMax,
       themes: [sejour.ged_theme || 'PLEIN_AIR'],

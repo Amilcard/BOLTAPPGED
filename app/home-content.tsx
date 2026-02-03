@@ -69,7 +69,7 @@ function StayCarousel({ title, stays }: { title: string; stays: Stay[] }) {
   );
 }
 
-export function HomeContent({ stays }: { stays: Stay[] }) {
+export function HomeContent({ stays, hideInternalSearch = false }: { stays: Stay[]; hideInternalSearch?: boolean }) {
   const { mode, mounted } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
@@ -175,27 +175,31 @@ export function HomeContent({ stays }: { stays: Stay[] }) {
 
   return (
     <main className="bg-gray-50 min-h-screen flex flex-col">
-      {/* Sticky Search & Filter Bar - LOT UX P1: Full width container */}
-      <div id="sejours" className="scroll-mt-16">
-        <div className="max-w-7xl mx-auto px-4">
-          <SearchFilterBar
+      {!hideInternalSearch && (
+        <>
+          {/* Sticky Search & Filter Bar - LOT UX P1: Full width container */}
+          <div id="sejours" className="scroll-mt-16">
+            <div className="max-w-7xl mx-auto px-4">
+              <SearchFilterBar
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                onOpenFilters={() => setIsFilterOpen(true)}
+                activeFiltersCount={activeFiltersCount}
+              />
+            </div>
+          </div>
+
+          {/* Active Filter Chips - LOT UX P1: Full width container */}
+          <ActiveFilterChips
+            filters={filters}
+            onFiltersChange={setFilters}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
-            onOpenFilters={() => setIsFilterOpen(true)}
-            activeFiltersCount={activeFiltersCount}
+            budgetMax={budgetRange.max}
+            mode={mode}
           />
-        </div>
-      </div>
-
-      {/* Active Filter Chips - LOT UX P1: Full width container */}
-      <ActiveFilterChips
-        filters={filters}
-        onFiltersChange={setFilters}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        budgetMax={budgetRange.max}
-        mode={mode}
-      />
+        </>
+      )}
 
       {/* Content: Sections par TRANCHE D'ÂGE (axe principal) */}
       {!hasActiveFilters ? (

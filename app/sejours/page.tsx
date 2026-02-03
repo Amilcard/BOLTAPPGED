@@ -86,7 +86,7 @@ export default async function SejoursPage() {
         </div>
       </div>
 
-      <HomeContent stays={staysData} />
+      <HomeContent stays={staysData} hideInternalSearch={true} />
       <BottomNav />
     </div>
   );

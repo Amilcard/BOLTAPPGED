@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { X, RotateCcw } from 'lucide-react';
 import type { ViewMode } from '@/lib/types';
 import {
@@ -67,6 +68,16 @@ export function FilterSheet({
   const budgetMax = budgetRange.max;
   const hasActiveFilters = filters.ages.length > 0 || filters.periodes.length > 0 ||
     filters.thematiques.length > 0 || (filters.budgetMax !== undefined && filters.budgetMax < budgetMax);
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 

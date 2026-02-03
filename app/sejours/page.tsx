@@ -57,7 +57,7 @@ export default async function SejoursPage() {
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
       <Header variant="minimal" />
-      <HomeContent stays={staysData} />
+      <HomeContent stays={staysData} hideInternalSearch />
       <BottomNav />
     </div>
   );

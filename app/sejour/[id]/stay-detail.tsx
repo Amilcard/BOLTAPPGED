@@ -73,12 +73,9 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
   const slug = stay?.slug ?? '';
 
   // CityCrunch: affichage Pro/Kids avec fallback
-  const displayTitle = isKids
-    ? ((stay as any)?.titleKids || stay?.title)
-    : ((stay as any)?.titlePro || stay?.title);
-  const displayDesc = isKids
-    ? ((stay as any)?.descriptionKids || stay?.descriptionShort)
-    : ((stay as any)?.descriptionPro || stay?.descriptionShort);
+  const displayTitle = isKids ? ((stay as any)?.titleKids || stay?.title) : ((stay as any)?.titlePro || stay?.title);
+  const displayDesc = isKids ? ((stay as any)?.descriptionKids || stay?.descriptionShort) : ((stay as any)?.descriptionPro || stay?.descriptionShort);
+
 
   // Plus besoin de fetch /api/ufoval-enrichment - données déjà passées depuis page.tsx
 

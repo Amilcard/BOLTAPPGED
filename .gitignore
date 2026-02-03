@@ -40,3 +40,4 @@ scripts/
 # local backups
 *.bak
 *.backup
+.env*

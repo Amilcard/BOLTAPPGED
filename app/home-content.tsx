@@ -69,7 +69,13 @@ function StayCarousel({ title, stays }: { title: string; stays: Stay[] }) {
   );
 }
 
-export function HomeContent({ stays, hideInternalSearch = false }: { stays: Stay[]; hideInternalSearch?: boolean }) {
+export function HomeContent({
+  stays,
+  hideInternalSearch = false,
+}: {
+  stays: Stay[];
+  hideInternalSearch?: boolean;
+}) {
   const { mode, mounted } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
@@ -270,6 +276,25 @@ export function HomeContent({ stays, hideInternalSearch = false }: { stays: Stay
         showBudgetFilter={showBudgetFilter}
         mode={mode}
       />
+
+      {/* Spacer to push footer down */}
+      <div className="flex-1" />
+
+      {!hideInternalSearch && (
+        <>
+          {/* Filter Bottom Sheet */}
+          <FilterSheet
+            isOpen={isFilterOpen}
+            onClose={() => setIsFilterOpen(false)}
+            filters={filters}
+            onFiltersChange={setFilters}
+            resultCount={hasActiveFilters ? filteredStays.length : stays.length}
+            budgetRange={budgetRange}
+            showBudgetFilter={showBudgetFilter}
+            mode={mode}
+          />
+        </>
+      )}
 
       {/* Spacer to push footer down */}
       <div className="flex-1" />

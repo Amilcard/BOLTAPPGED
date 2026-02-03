@@ -11,9 +11,9 @@ import { Users, Baby, Menu, X, RotateCcw, ArrowLeft, FileText, Mail } from 'luci
 // LOT GRAPHISME 1: App is search-only engine - no internal nav
 // All links in minimal header point to VITRINE_LINKS (external)
 const vitrineLinks = [
-  { label: 'Retour au site', route: VITRINE_LINKS.HOME, icon: ArrowLeft },
-  { label: 'Demande individualisée', route: VITRINE_LINKS.DEMANDE, icon: FileText },
-  { label: 'Contact', route: VITRINE_LINKS.CONTACT, icon: Mail },
+  { label: 'Retour au site', route: VITRINE_LINKS.HOME, icon: ArrowLeft, showInKids: true },
+  { label: 'Demande individualisée', route: VITRINE_LINKS.DEMANDE, icon: FileText, showInKids: false },
+  { label: 'Contact', route: VITRINE_LINKS.CONTACT, icon: Mail, showInKids: true },
 ];
 
 interface HeaderProps {
@@ -44,24 +44,26 @@ export function Header({ variant = 'minimal' }: HeaderProps) {
 
           {/* Desktop Navigation - Vitrine links only */}
           <nav className="hidden lg:flex items-center gap-1">
-            {vitrineLinks.map((item) => {
-              const Icon = item.icon;
-              return (
-                <a
-                  key={item.route}
-                  href={item.route}
-                  className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-all flex items-center gap-2"
-                >
-                  <Icon className="w-4 h-4" />
-                  {item.label}
-                </a>
-              );
-            })}
+            {vitrineLinks
+              .filter((item) => mode === 'pro' || item.showInKids)
+              .map((item) => {
+                const Icon = item.icon;
+                return (
+                  <a
+                    key={item.route}
+                    href={item.route}
+                    className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-all flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  >
+                    <Icon className="w-4 h-4" />
+                    {item.label}
+                  </a>
+                );
+              })}
             {/* Admin link in vitrine nav - only when on admin page */}
             {showAdminLink && (
               <Link
                 href="/admin"
-                className="px-4 py-2 rounded-lg text-sm font-medium text-primary hover:bg-primary/50 transition-all"
+                className="px-4 py-2 rounded-lg text-sm font-medium text-primary hover:bg-primary/50 transition-all focus:outline-none focus:ring-2 focus:ring-primary/50"
               >
                 Admin
               </Link>
@@ -72,13 +74,14 @@ export function Header({ variant = 'minimal' }: HeaderProps) {
           <div className="flex items-center gap-2">
             {/* Pro/Kids Toggle */}
             {mounted && (
-              <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+              <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 shadow-sm">
                 <button
                   onClick={() => setMode('pro')}
-                  className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-all ${
+                  aria-label="Mode Professionnel"
+                  className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1.5 transition-all focus:outline-none focus:ring-2 ${
                     mode === 'pro'
-                      ? 'bg-primary text-white shadow-sm'
-                      : 'text-gray-600 hover:bg-gray-200'
+                      ? 'bg-gray-700 text-white shadow-sm focus:ring-gray-500'
+                      : 'text-gray-600 hover:bg-gray-200 focus:ring-gray-400'
                   }`}
                 >
                   <Users className="w-3.5 h-3.5" />
@@ -86,10 +89,11 @@ export function Header({ variant = 'minimal' }: HeaderProps) {
                 </button>
                 <button
                   onClick={() => setMode('kids')}
-                  className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-all ${
+                  aria-label="Mode Enfants"
+                  className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-all focus:outline-none focus:ring-2 ${
                     mode === 'kids'
-                      ? 'bg-accent text-white shadow-sm'
-                      : 'text-gray-600 hover:bg-gray-200'
+                      ? 'bg-accent text-white shadow-md focus:ring-accent/50'
+                      : 'text-gray-600 hover:bg-gray-200 focus:ring-gray-400'
                   }`}
                 >
                   <Baby className="w-3.5 h-3.5" />
@@ -102,8 +106,9 @@ export function Header({ variant = 'minimal' }: HeaderProps) {
             {mounted && (
               <button
                 onClick={reset}
-                className="hidden sm:flex p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all"
+                className="hidden sm:flex p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-gray-400/50"
                 title="Réinitialiser"
+                aria-label="Réinitialiser les filtres"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
@@ -112,8 +117,8 @@ export function Header({ variant = 'minimal' }: HeaderProps) {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              aria-label="Menu"
+              className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400/50"
+              aria-label={mobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -124,26 +129,28 @@ export function Header({ variant = 'minimal' }: HeaderProps) {
         {mobileMenuOpen && (
           <nav className="lg:hidden py-4 border-t border-gray-200 animate-in slide-in-from-top">
             <div className="flex flex-col gap-1">
-              {vitrineLinks.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <a
-                    key={item.route}
-                    href={item.route}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 flex items-center gap-3 transition-all"
-                  >
-                    <Icon className="w-4 h-4" />
-                    {item.label}
-                  </a>
-                );
-              })}
+              {vitrineLinks
+                .filter((item) => mode === 'pro' || item.showInKids)
+                .map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <a
+                      key={item.route}
+                      href={item.route}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 flex items-center gap-3 transition-all focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    >
+                      <Icon className="w-4 h-4" />
+                      {item.label}
+                    </a>
+                  );
+                })}
               {/* Admin link in mobile menu */}
               {showAdminLink && (
                 <Link
                   href="/admin"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="px-4 py-3 rounded-lg text-sm font-medium text-primary hover:bg-primary/50 transition-all"
+                  className="px-4 py-3 rounded-lg text-sm font-medium text-primary hover:bg-primary/50 transition-all focus:outline-none focus:ring-2 focus:ring-primary/50"
                 >
                   Admin
                 </Link>
@@ -155,7 +162,7 @@ export function Header({ variant = 'minimal' }: HeaderProps) {
                     reset();
                     setMobileMenuOpen(false);
                   }}
-                  className="px-4 py-3 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 text-left flex items-center gap-2 transition-all"
+                  className="px-4 py-3 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 text-left flex items-center gap-2 transition-all focus:outline-none focus:ring-2 focus:ring-gray-400/50"
                 >
                   <RotateCcw className="w-4 h-4" />
                   Réinitialiser

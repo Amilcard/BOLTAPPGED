@@ -1,7 +1,7 @@
 import { getSejours, supabaseGed } from '@/lib/supabaseGed';
 import { Header } from '@/components/header';
 import { BottomNav } from '@/components/bottom-nav';
-import { HomeContent } from '../home-content';
+import { SejoursContent } from './sejours-content';
 import type { Stay } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -57,7 +57,7 @@ export default async function SejoursPage() {
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
       <Header variant="minimal" />
-      <HomeContent stays={staysData} hideInternalSearch />
+      <SejoursContent stays={staysData} />
       <BottomNav />
     </div>
   );

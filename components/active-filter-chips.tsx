@@ -107,7 +107,7 @@ export function ActiveFilterChips({
         {displayedChips.map((chip) => (
           <span
             key={chip.key}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-700 shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full text-xs font-medium text-gray-700 shadow-brand"
           >
             {chip.label}
             <button

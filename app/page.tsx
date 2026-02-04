@@ -65,7 +65,7 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
       <Header variant="minimal" />
-      <SejoursContent stays={staysData} />
+      <HomeCarousels stays={staysData} />
       <BottomNav />
     </div>
   );

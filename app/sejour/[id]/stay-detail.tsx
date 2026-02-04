@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -11,13 +11,14 @@ import {
   Calendar,
   Clock,
   ChevronRight,
+  ChevronDown,
   Tag,
   Share2,
   Bus,
-  GraduationCap,
   Download,
   X,
   Check,
+  Shield,
 } from 'lucide-react';
 import type { Stay, StaySession } from '@/lib/types';
 import { formatDateLong, getWishlistMotivation, addToWishlist } from '@/lib/utils';
@@ -25,13 +26,13 @@ import { getPriceBreakdown, findSessionPrice } from '@/lib/pricing';
 import { useApp } from '@/components/providers';
 import { BookingModal } from '@/components/booking-modal';
 import { WishlistModal } from '@/components/wishlist-modal';
+import { Button } from '@/components/ui/button';
 
-// Types (pas de mention UFOVAL en commentaire)
+// Types
 type DepartureData = { city: string; extra_eur: number };
 type SessionData = { date_text: string; base_price_eur: number | null; promo_price_eur: number | null };
 type EnrichmentData = { source_url: string; departures: DepartureData[]; sessions: SessionData[] };
 
-// Villes prioritaires pour le tri (affichées en premier)
 const PRIORITY_CITIES = ['paris', 'lyon', 'marseille', 'lille', 'bordeaux', 'rennes'];
 
 export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], price_base?: number | null, price_unit?: string, pro_price_note?: string, sourceUrl?: string | null, geoLabel?: string | null, geoPrecision?: string | null, accommodationLabel?: string | null, contentKids?: any } }) {
@@ -40,46 +41,38 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
   const [showWishlistModal, setShowWishlistModal] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [showDepartures, setShowDepartures] = useState(false);
-  // P1: Collapsible price estimation in Pro mode
   const [showPriceEstimation, setShowPriceEstimation] = useState(false);
+  const [showFullProgramme, setShowFullProgramme] = useState(false);
 
-  // Pré-sélection session et ville (avant d'ouvrir le modal)
   const [preSelectedSessionId, setPreSelectedSessionId] = useState<string>('');
   const [preSelectedCity, setPreSelectedCity] = useState<string>('');
 
-  // Initialiser enrichment directement depuis stay.contentKids (données depuis Supabase)
+  // Enrichment data
   const stayUrl = String((stay as any)?.sourceUrl ?? "").trim();
   const contentKidsParsed = typeof stay?.contentKids === 'string' ? JSON.parse(stay.contentKids) : stay?.contentKids;
   const allDepartureCities: DepartureData[] = contentKidsParsed?.departureCities ?? [];
   const sessionsFormatted = contentKidsParsed?.sessionsFormatted ?? [];
 
-  // Formater les villes : normaliser les noms (sans_transport → Sans transport)
-  // Afficher TOUTES les villes (pas de filtre restrictif)
   const departureCities = allDepartureCities.map((dc: DepartureData) => ({
     city: dc.city === 'sans_transport' ? 'Sans transport' : (dc.city || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
     extra_eur: dc.extra_eur || 0
   })).filter((dc: DepartureData) => dc.city && dc.city.trim() !== '');
 
-  // Enrichment initialisé avec les données Supabase (plus besoin de fetch API)
   const initialEnrichment: EnrichmentData | null = departureCities.length > 0 ? {
     source_url: stayUrl,
     departures: departureCities,
-    sessions: sessionsFormatted // Sessions formatées depuis Supabase
+    sessions: sessionsFormatted
   } : null;
-  const [enrichment, setEnrichment] = useState<EnrichmentData | null>(initialEnrichment);
+  const [enrichment] = useState<EnrichmentData | null>(initialEnrichment);
 
   const isKids = mode === 'kids';
   const isPro = !isKids;
   const slug = stay?.slug ?? '';
 
-  // CityCrunch: affichage Pro/Kids avec fallback
   const displayTitle = isKids ? ((stay as any)?.titleKids || stay?.title) : ((stay as any)?.titlePro || stay?.title);
   const displayDesc = isKids ? ((stay as any)?.descriptionKids || stay?.descriptionShort) : ((stay as any)?.descriptionPro || stay?.descriptionShort);
 
-
-  // Plus besoin de fetch /api/ufoval-enrichment - données déjà passées depuis page.tsx
-
-  // Calcul prix minimum (promo prioritaire, sinon base)
+  // Prix minimum
   const minSessionPrice = (() => {
     if (!enrichment?.sessions || enrichment.sessions.length === 0) return null;
     const prices = enrichment.sessions
@@ -89,11 +82,9 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
     return Math.min(...prices);
   })();
 
-  // Calcul du breakdown de prix dynamique (session + ville sélectionnées)
   const selectedCityData = enrichment?.departures?.find(d => d.city === preSelectedCity);
   const cityExtraEur = selectedCityData?.extra_eur ?? 0;
 
-  // Trouver le prix de la session sélectionnée (via matching date)
   const sessions = stay?.sessions ?? [];
   const selectedSession = preSelectedSessionId
     ? sessions.find(s => s.id === preSelectedSessionId)
@@ -104,15 +95,13 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
     : null;
 
   const priceBreakdown = getPriceBreakdown({
-    // Prix de la session sélectionnée, sinon null (on affiche juste "À partir de")
     sessionPrice: selectedSessionPrice,
     cityExtraEur,
-    optionType: null, // Options choisies dans le modal uniquement
+    optionType: null,
     minSessionPrice,
   });
 
   const handleKidsCTA = () => {
-    // Add to wishlist and show modal
     if (slug) {
       addToWishlist(slug);
       refreshWishlist();
@@ -132,7 +121,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
       try {
         await navigator.share({ title, text, url });
       } catch {
-        // User cancelled or error
+        // User cancelled
       }
     } else {
       try {
@@ -147,342 +136,214 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
   const programme = Array.isArray(stay?.programme) ? stay.programme : [];
   const themes = Array.isArray(stay?.themes) ? stay.themes : [];
-  const miniProgramme = programme.slice(0, 5);
 
   return (
     <main className="pb-12">
-      {/* Hero - P1: Reduced height for better focus on content */}
-      <section className="relative h-[25vh] min-h-[180px] max-h-[240px]">
+      {/* === HERO VISUEL === */}
+      <section className="relative h-[30vh] min-h-[200px] max-h-[300px]">
         <Image
           src={stay?.imageCover ?? '/og-image.png'}
-          alt={stay?.title ?? ''}
+          alt={displayTitle ?? ''}
           fill
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
 
-        {/* Action buttons (top right) */}
-        <div className="absolute top-4 right-4 flex gap-2">
+        {/* Badges discrets (coins) */}
+        <div className="absolute top-3 left-3 flex gap-2">
+          <span className="px-2.5 py-1 bg-white/95 text-gray-800 text-xs font-bold rounded-lg shadow-sm flex items-center gap-1">
+            <Users className="w-3 h-3 text-primary" />
+            {stay?.ageMin ?? 0}-{stay?.ageMax ?? 0} ans
+          </span>
+        </div>
+        <div className="absolute top-3 right-3 flex gap-2">
+          <span className="px-2.5 py-1 bg-white/95 text-gray-800 text-xs font-bold rounded-lg shadow-sm flex items-center gap-1">
+            <Clock className="w-3 h-3 text-primary" />
+            {stay?.durationDays ?? 0}j
+          </span>
           <button
             onClick={handleShare}
-            className="w-11 h-11 bg-white/95 backdrop-blur rounded-xl flex items-center justify-center text-primary hover:bg-white transition-all shadow-sm"
+            className="w-9 h-9 bg-white/95 backdrop-blur rounded-lg flex items-center justify-center text-primary hover:bg-white transition-all shadow-sm"
             aria-label="Partager"
           >
-            <Share2 className="w-5 h-5" />
+            <Share2 className="w-4 h-4" />
           </button>
-          {stay?.pdfUrl ? (
-            <a
-              href={stay.pdfUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-11 h-11 bg-white/95 backdrop-blur rounded-xl flex items-center justify-center text-primary hover:bg-white transition-all shadow-sm"
-              aria-label="Télécharger le PDF"
-            >
-              <Download className="w-5 h-5" />
-            </a>
-          ) : (
-            <span className="text-xs text-white/90 bg-black/40 px-3 py-1.5 rounded-xl backdrop-blur-sm">
-              PDF bientôt disponible
-            </span>
-          )}
         </div>
 
-        {/* Share success toast */}
         {shareSuccess && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-green-500 text-white rounded-xl text-sm font-medium animate-in slide-in-from-top shadow-lg">
+          <div className="absolute top-16 left-1/2 -translate-x-1/2 px-4 py-2 bg-green-500 text-white rounded-xl text-sm font-medium animate-in slide-in-from-top shadow-lg">
             Lien copié !
           </div>
         )}
 
-        <div className="absolute bottom-0 left-0 right-0 p-6 max-w-6xl mx-auto">
-          {/* P1: More visible back button CTA */}
+        <div className="absolute bottom-4 left-4">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-md rounded-xl text-white text-sm font-medium hover:bg-white/30 transition-all border border-white/30"
+            className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/20 backdrop-blur-md rounded-lg text-white text-sm font-medium hover:bg-white/30 transition-all border border-white/30"
           >
             <ArrowLeft className="w-4 h-4" />
-            Retour aux séjours
+            Retour
           </Link>
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white">{displayTitle ?? ''}</h1>
         </div>
       </section>
 
-      <div className="max-w-6xl mx-auto px-4 -mt-8 relative z-10">
-        {/* Quick Info Card - P1: Simplified without price block (moved to sidebar) */}
-        <div className="bg-white rounded-xl shadow-card p-6 mb-8 md:mb-12">
-          <div className="flex flex-wrap gap-6 text-sm">
-            <div className="flex items-center gap-2 text-primary-600">
-              <Calendar className="w-4 h-4 text-accent" />
-              <span>{stay?.period === 'printemps' ? 'Printemps' : 'Été'} 2026</span>
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        {/* === PRÉSENTATION SÉJOUR === */}
+        <section className="mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">{displayTitle}</h1>
+          <p className="text-lg text-gray-600 leading-relaxed">{displayDesc}</p>
+          {themes.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-4">
+              {themes.map(theme => (
+                <span key={theme} className="px-3 py-1 bg-primary/10 text-primary text-sm font-medium rounded-full border border-primary/20">
+                  {theme}
+                </span>
+              ))}
             </div>
-            <div className="flex items-center gap-2 text-primary-600">
-              <Clock className="w-4 h-4 text-accent" />
-              <span>{stay?.durationDays ?? 0} jours</span>
-            </div>
-            <div className="flex items-center gap-2 text-primary-600">
-              <Users className="w-4 h-4 text-accent" />
-              <span>{stay?.ageMin ?? 0}-{stay?.ageMax ?? 0} ans</span>
-            </div>
-            <div className="flex items-center gap-2 text-primary-600">
-              <MapPin className="w-4 h-4 text-accent" />
-              <span>{stay?.geography ?? ''}</span>
-            </div>
-          </div>
-        </div>
+          )}
+        </section>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8 md:space-y-10">
-            {/* Description */}
-            <section className="bg-white rounded-xl shadow-card p-6 md:p-8">
-              <h2 className="text-2xl md:text-3xl font-bold text-primary mb-4">
-                {isKids ? 'C\'est quoi ce séjour ?' : 'Présentation'}
-              </h2>
-              <p className="text-primary-600 leading-relaxed">{displayDesc ?? ''}</p>
-              <div className="flex flex-wrap gap-2 mt-4">
-                {themes.map(theme => (
-                  <span key={theme} className="flex items-center gap-1 px-3 py-1.5 bg-primary-50 text-primary-600 rounded-full text-sm font-medium border border-primary-100">
-                    <Tag className="w-3 h-3" /> {theme}
-                  </span>
-                ))}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* === INFORMATIONS CLÉS === */}
+            <section className="bg-white rounded-xl shadow-brand p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Informations clés</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="flex flex-col items-center text-center p-3 bg-gray-50 rounded-lg">
+                  <MapPin className="w-5 h-5 text-primary mb-2" />
+                  <span className="text-xs font-medium text-gray-700">{stay?.geography}</span>
+                </div>
+                <div className="flex flex-col items-center text-center p-3 bg-gray-50 rounded-lg">
+                  <Home className="w-5 h-5 text-primary mb-2" />
+                  <span className="text-xs font-medium text-gray-700">{stay?.accommodation}</span>
+                </div>
+                <div className="flex flex-col items-center text-center p-3 bg-gray-50 rounded-lg">
+                  <Shield className="w-5 h-5 text-primary mb-2" />
+                  <span className="text-xs font-medium text-gray-700">{stay?.supervision}</span>
+                </div>
+                <div className="flex flex-col items-center text-center p-3 bg-gray-50 rounded-lg">
+                  <Calendar className="w-5 h-5 text-primary mb-2" />
+                  <span className="text-xs font-medium text-gray-700">{stay?.period === 'printemps' ? 'Printemps' : 'Été'}</span>
+                </div>
               </div>
             </section>
 
-            {/* Mini Programme */}
-            <section className="bg-white rounded-xl shadow-card p-6 md:p-8">
-              <h2 className="text-2xl md:text-3xl font-bold text-primary mb-4">
-                {isKids ? 'Au programme' : 'Programme en bref'}
-              </h2>
-              <ul className="space-y-3">
-                {miniProgramme.map((item, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <ChevronRight className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
-                    <span className="text-primary-600">{item}</span>
+            {/* === CONTENU DU SÉJOUR === */}
+            <section className="bg-white rounded-xl shadow-brand p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Contenu du séjour</h2>
+              <ul className="space-y-2 mb-4">
+                {programme.slice(0, 5).map((item, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <ChevronRight className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-gray-700">{item}</span>
                   </li>
                 ))}
               </ul>
-              {programme.length > miniProgramme.length && (
-                <p className="text-sm text-primary-400 mt-3">+ {programme.length - miniProgramme.length} activités supplémentaires</p>
+              
+              {programme.length > 5 && (
+                <button
+                  onClick={() => setShowFullProgramme(!showFullProgramme)}
+                  className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary-600 transition-colors"
+                >
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showFullProgramme ? 'rotate-180' : ''}`} />
+                  {showFullProgramme ? 'Masquer le détail' : `Voir le détail complet (${programme.length - 5} activités)`}
+                </button>
+              )}
+
+              {showFullProgramme && (
+                <ol className="space-y-3 mt-4 pt-4 border-t border-gray-100">
+                  {programme.slice(5).map((item, i) => (
+                    <li key={i + 5} className="flex items-start gap-3">
+                      <span className="w-6 h-6 bg-primary/10 text-primary text-xs font-bold rounded-full flex items-center justify-center flex-shrink-0">
+                        {i + 6}
+                      </span>
+                      <span className="text-sm text-gray-700">{item}</span>
+                    </li>
+                  ))}
+                </ol>
               )}
             </section>
 
-            {/* Full Programme */}
-            <section className="bg-white rounded-xl shadow-card p-6 md:p-8">
-              <h2 className="text-2xl md:text-3xl font-bold text-primary mb-4">
-                {isKids ? 'Tout le programme' : 'Programme détaillé'}
-              </h2>
-              <ol className="space-y-4">
-                {programme.map((item, i) => (
-                  <li key={i} className="flex items-start gap-4 pb-4 border-b border-primary-100 last:border-0">
-                    <span className="w-7 h-7 bg-accent/10 text-accent text-sm font-bold rounded-full flex items-center justify-center flex-shrink-0">
-                      {i + 1}
-                    </span>
-                    <span className="text-primary-600">{item}</span>
-                  </li>
-                ))}
-              </ol>
-            </section>
-
-            {/* 3 Columns - Lieu/Hébergement/Encadrement */}
-            <div className="grid md:grid-cols-3 gap-4 md:gap-6">
-              <div className="bg-white rounded-xl shadow-sm p-5 border border-primary-50">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0">
-                    <MapPin className="w-6 h-6 text-accent" />
-                  </div>
-                  <h3 className="font-bold text-primary text-lg">Lieu</h3>
-                </div>
-                <p className="text-sm text-primary-600 font-medium">
-                  {(stay as any)?.geoLabel && (stay as any)?.geoPrecision
-                    ? `${ (stay as any).geoLabel } (${ (stay as any).geoPrecision })`
-                    : (stay as any)?.geoLabel || stay?.geography || ''}
-                </p>
-              </div>
-              <div className="bg-white rounded-xl shadow-sm p-5 border border-primary-50">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0">
-                    <Home className="w-6 h-6 text-accent" />
-                  </div>
-                  <h3 className="font-bold text-primary text-lg">Hébergement</h3>
-                </div>
-                <p className="text-sm text-primary-600 font-medium">{(stay as any)?.accommodationLabel || stay?.accommodation || ''}</p>
-              </div>
-              <div className="bg-white rounded-xl shadow-sm p-5 border border-primary-50">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0">
-                    <Users className="w-6 h-6 text-accent" />
-                  </div>
-                  <h3 className="font-bold text-primary text-lg">Encadrement</h3>
-                </div>
-                <p className="text-sm text-primary-600 font-medium">{stay?.supervision ?? ''}</p>
-              </div>
-            </div>
-
-            {/* Ville de départ + Option suivi éducatif */}
-            <div className="grid md:grid-cols-2 gap-4 md:gap-6">
-              <div className="bg-white rounded-xl shadow-card p-5 border border-accent/20">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-11 h-11 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0">
-                    <Bus className="w-6 h-6 text-accent" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-primary text-lg">Villes de départ</h3>
-                    {enrichment?.departures && enrichment.departures.length > 0 && (
-                      <p className="text-xs text-primary-500 font-medium mt-0.5">
-                        {enrichment.departures.length} villes disponibles
-                      </p>
-                    )}
-                  </div>
+            {/* === VILLES DE DÉPART === */}
+            {enrichment?.departures && enrichment.departures.length > 0 && (
+              <section className="bg-white rounded-xl shadow-brand p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Bus className="w-5 h-5 text-primary" />
+                  <h2 className="text-xl font-bold text-gray-900">Villes de départ</h2>
+                  <span className="text-xs text-gray-500">({enrichment.departures.length} villes)</span>
                 </div>
 
-                {enrichment?.departures && enrichment.departures.length > 0 ? (
-                  <div className="space-y-3">
-                    {/* Aperçu des villes cliquables (tri standard) */}
-                    <div className="flex flex-wrap gap-1.5">
-                      {enrichment.departures
-                        .slice()
-                        .sort((a, b) => {
-                          if (a.city === 'Sans transport') return -1;
-                          if (b.city === 'Sans transport') return 1;
-                          const aIndex = PRIORITY_CITIES.findIndex(std => String(a.city || '').toLowerCase().includes(std.toLowerCase()));
-                          const bIndex = PRIORITY_CITIES.findIndex(std => String(b.city || '').toLowerCase().includes(std.toLowerCase()));
-                          if (aIndex >= 0 && bIndex >= 0) return aIndex - bIndex;
-                          if (aIndex >= 0) return -1;
-                          if (bIndex >= 0) return 1;
-                          return a.city.localeCompare(b.city);
-                        })
-                        .slice(0, 4)
-                        .map((dep, i) => {
-                          const isCitySelected = preSelectedCity === dep.city;
-                          return (
-                            <button
-                              key={i}
-                              type="button"
-                              onClick={() => setPreSelectedCity(dep.city)}
-                              className={`px-2.5 py-1.5 text-xs font-medium rounded-lg border-2 transition-all flex items-center gap-1.5 ${
-                                isCitySelected
-                                  ? 'border-accent bg-accent text-white'
-                                  : 'border-accent/20 bg-accent/5 text-accent hover:border-accent/40'
-                              }`}
-                            >
-                              {isCitySelected && <Check className="w-3 h-3" />}
-                              {dep.city === 'Sans transport' ? 'Sans transport' : dep.city}
-                              {!isKids && !isCitySelected && (
-                                <span className="text-accent/70">
-                                  {dep.extra_eur === 0 ? '' : `+${dep.extra_eur}€`}
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      {enrichment.departures.length > 4 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {enrichment.departures
+                    .slice()
+                    .sort((a, b) => {
+                      if (a.city === 'Sans transport') return -1;
+                      if (b.city === 'Sans transport') return 1;
+                      const aIndex = PRIORITY_CITIES.findIndex(std => String(a.city || '').toLowerCase().includes(std.toLowerCase()));
+                      const bIndex = PRIORITY_CITIES.findIndex(std => String(b.city || '').toLowerCase().includes(std.toLowerCase()));
+                      if (aIndex >= 0 && bIndex >= 0) return aIndex - bIndex;
+                      if (aIndex >= 0) return -1;
+                      if (bIndex >= 0) return 1;
+                      return a.city.localeCompare(b.city);
+                    })
+                    .slice(0, 6)
+                    .map((dep, i) => {
+                      const isCitySelected = preSelectedCity === dep.city;
+                      return (
                         <button
+                          key={i}
                           type="button"
-                          onClick={() => setShowDepartures(true)}
-                          className="px-2.5 py-1.5 bg-primary-50 text-primary-500 text-xs font-medium rounded-lg hover:bg-primary-100 transition-colors"
+                          onClick={() => setPreSelectedCity(dep.city)}
+                          className={`px-3 py-1.5 text-xs font-medium rounded-lg border-2 transition-all flex items-center gap-1.5 ${
+                            isCitySelected
+                              ? 'border-primary bg-primary text-white'
+                              : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-primary/40'
+                          }`}
                         >
-                          +{enrichment.departures.length - 4}
+                          {isCitySelected && <Check className="w-3 h-3" />}
+                          {dep.city}
+                          {!isKids && !isCitySelected && dep.extra_eur > 0 && (
+                            <span className="text-gray-500">+{dep.extra_eur}€</span>
+                          )}
                         </button>
-                      )}
-                    </div>
-
-                    {/* Indication sélection */}
-                    {preSelectedCity && (
-                      <div className="flex items-center gap-2 text-xs text-accent font-medium bg-accent/5 px-3 py-2 rounded-lg">
-                        <Check className="w-3.5 h-3.5" />
-                        Ville sélectionnée : {preSelectedCity}
-                        {!isKids && (() => {
-                          const cityData = enrichment.departures.find(d => d.city === preSelectedCity);
-                          return cityData && cityData.extra_eur > 0 ? ` (+${cityData.extra_eur}€)` : ' (inclus)';
-                        })()}
-                      </div>
-                    )}
-
-                    {/* CTA voir toutes les villes */}
+                      );
+                    })}
+                  {enrichment.departures.length > 6 && (
                     <button
+                      type="button"
                       onClick={() => setShowDepartures(true)}
-                      className="w-full py-2.5 bg-primary-100 text-primary-700 rounded-xl font-semibold text-sm hover:bg-primary-200 transition-all flex items-center justify-center gap-2"
+                      className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg hover:bg-gray-200 transition-colors"
                     >
-                      Voir toutes les villes
-                      <ChevronRight className="w-4 h-4" />
+                      +{enrichment.departures.length - 6}
                     </button>
-
-                    {/* Prix min (Pro seulement) */}
-                    {!isKids && !preSelectedCity && (
-                      <p className="text-xs text-center text-primary-500">
-                        Transport inclus • Supplément à partir de{' '}
-                        <span className="font-semibold">
-                          {Math.min(...enrichment.departures.filter(d => d.extra_eur > 0).map(d => d.extra_eur))}€
-                        </span>
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-sm text-primary-600 italic">
-                    {stay?.departureCity || 'Départ : à confirmer'}
-                  </p>
-                )}
-              </div>
-              <div className="bg-white rounded-xl shadow-card p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <GraduationCap className="w-5 h-5 text-accent" />
-                    <h3 className="font-semibold text-primary">
-                      {isKids ? "Un accompagnement pour toi" : "Encadrement individualisé"}
-                    </h3>
-                  </div>
-                  {/* Pastille 1+1 sobre */}
-                  <span className="flex items-center gap-1 px-2.5 py-1 bg-accent/10 text-accent text-xs font-semibold rounded-lg border border-accent/20">
-                    <Users className="w-3 h-3" />
-                    1+1
-                  </span>
+                  )}
                 </div>
-                {isKids ? (
-                  <div className="text-sm text-primary-600 space-y-2">
-                    <p>
-                      Si tu en as besoin, on peut te proposer un accompagnement renforcé pour que le séjour se passe au mieux.
-                    </p>
-                    <p className="text-primary-500">
-                      Un animateur référent peut t'accompagner tout au long du séjour. Ton adulte référent et ta structure valident avec nous ce qui est le mieux pour toi.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="text-sm text-primary-600 space-y-3">
-                    <p className="font-medium text-primary">
-                      Partir avec Groupe & Découverte, c'est la garantie de bénéficier d'un accompagnement individualisé.
-                    </p>
-                    <ul className="space-y-2">
-                      <li className="flex items-start gap-2">
-                        <span className="text-accent mt-0.5">•</span>
-                        <span>Un accompagnement personnalisé sur la recherche du séjour de vacances</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-accent mt-0.5">•</span>
-                        <span>Faites partie de nos 0 % d'exclusions</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-accent mt-0.5">•</span>
-                        <span>Un suivi adapté sur toute la durée du séjour</span>
-                      </li>
-                    </ul>
-                    <p className="text-primary-700 font-medium border-t border-primary-100 pt-3 mt-3">
-                      Selon la situation, un animateur référent peut être mis à disposition tout au long du séjour.
-                    </p>
+
+                {preSelectedCity && (
+                  <div className="flex items-center gap-2 text-xs text-primary font-medium bg-primary/5 px-3 py-2 rounded-lg">
+                    <Check className="w-3.5 h-3.5" />
+                    Ville sélectionnée : {preSelectedCity}
+                    {!isKids && (() => {
+                      const cityData = enrichment.departures.find(d => d.city === preSelectedCity);
+                      return cityData && cityData.extra_eur > 0 ? ` (+${cityData.extra_eur}€)` : ' (inclus)';
+                    })()}
                   </div>
                 )}
-              </div>
-            </div>
+              </section>
+            )}
           </div>
 
-          {/* Sidebar */}
+          {/* === SIDEBAR: SESSIONS & CTA === */}
           <div className="lg:col-span-1">
-            <div className="sticky top-20 bg-white rounded-xl shadow-card p-6">
-              <h3 className="font-semibold text-primary mb-4">Sessions disponibles</h3>
+            <div className="sticky top-20 bg-white rounded-xl shadow-brand p-6">
+              <h3 className="font-bold text-gray-900 mb-4">Sessions disponibles</h3>
               {sessions.length === 0 ? (
-                <p className="text-sm text-primary-500">Aucune session disponible</p>
+                <p className="text-sm text-gray-500">Aucune session disponible</p>
               ) : (
-                <div className="space-y-3 mb-6">
+                <div className="space-y-2 mb-6">
                   {sessions.map(session => {
                     const isFull = (session?.seatsLeft ?? 0) === 0;
                     const isSelected = preSelectedSessionId === session?.id;
@@ -494,28 +355,23 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                         onClick={() => !isFull && setPreSelectedSessionId(session?.id ?? '')}
                         className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
                           isSelected
-                            ? 'border-accent bg-accent/5 ring-2 ring-accent/20'
+                            ? 'border-primary bg-primary/5'
                             : isFull
                             ? 'border-red-200 bg-red-50 opacity-60 cursor-not-allowed'
-                            : 'border-primary-100 bg-primary-50 hover:border-primary-200 cursor-pointer'
+                            : 'border-gray-200 hover:border-gray-300 cursor-pointer'
                         }`}
                       >
-                        <div className="flex items-start gap-3">
-                          {/* Indicateur de sélection */}
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
-                            isSelected
-                              ? 'border-accent bg-accent'
-                              : isFull
-                              ? 'border-red-300 bg-red-100'
-                              : 'border-primary-300'
+                        <div className="flex items-start gap-2">
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                            isSelected ? 'border-primary bg-primary' : 'border-gray-300'
                           }`}>
-                            {isSelected && <Check className="w-3 h-3 text-white" />}
+                            {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
                           </div>
                           <div className="flex-1">
-                            <div className="text-sm font-medium text-primary">
+                            <div className="text-sm font-medium text-gray-900">
                               {formatDateLong(session?.startDate ?? '')}
                             </div>
-                            <div className="text-xs text-primary-500">
+                            <div className="text-xs text-gray-500">
                               au {formatDateLong(session?.endDate ?? '')}
                             </div>
                             <div className={`text-xs mt-1 ${isFull ? 'text-red-500' : 'text-green-600'}`}>
@@ -529,13 +385,13 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                 </div>
               )}
 
-              {/* P1: Collapsible price estimation (Pro only) */}
+              {/* Prix (Pro uniquement) */}
               {!isKids && mounted && (
-                <div className="border-t border-primary-100 pt-4">
+                <div className="border-t border-gray-100 pt-4 mb-4">
                   {!showPriceEstimation ? (
                     <button
                       onClick={() => setShowPriceEstimation(true)}
-                      className="w-full py-2.5 bg-primary-50 text-primary-700 rounded-xl font-semibold text-sm hover:bg-primary-100 transition-all flex items-center justify-center gap-2"
+                      className="w-full py-2.5 bg-gray-50 text-gray-700 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-all flex items-center justify-center gap-2"
                     >
                       <Tag className="w-4 h-4" />
                       Voir l'estimation tarifaire
@@ -543,25 +399,25 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   ) : (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-primary">Estimation tarifaire</span>
+                        <span className="text-sm font-semibold text-gray-900">Estimation tarifaire</span>
                         <button
                           onClick={() => setShowPriceEstimation(false)}
-                          className="p-1 hover:bg-primary-50 rounded-lg transition"
+                          className="p-1 hover:bg-gray-50 rounded-lg transition"
                         >
-                          <X className="w-4 h-4 text-primary-400" />
+                          <X className="w-4 h-4 text-gray-400" />
                         </button>
                       </div>
                       {priceBreakdown.minPrice !== null ? (
                         <div className="space-y-2">
-                          <div className="bg-accent/5 border border-accent/20 rounded-lg px-3 py-2">
-                            <div className="text-xs text-primary-600 mb-1">À partir de</div>
-                            <div className="text-lg font-bold text-accent">{priceBreakdown.minPrice} €</div>
+                          <div className="bg-primary/5 border border-primary/20 rounded-lg px-3 py-2">
+                            <div className="text-xs text-gray-600 mb-1">À partir de</div>
+                            <div className="text-lg font-bold text-primary">{priceBreakdown.minPrice} €</div>
                           </div>
                           {priceBreakdown.total !== null && (
-                            <div className="bg-primary-50 border border-primary-200 rounded-lg px-3 py-2">
-                              <div className="text-xs text-primary-600 mb-1">Votre estimation</div>
-                              <div className="text-base font-bold text-primary">{priceBreakdown.total} €</div>
-                              <div className="text-xs text-primary-500 space-y-0.5 mt-1">
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                              <div className="text-xs text-gray-600 mb-1">Votre estimation</div>
+                              <div className="text-base font-bold text-gray-900">{priceBreakdown.total} €</div>
+                              <div className="text-xs text-gray-500 space-y-0.5 mt-1">
                                 {priceBreakdown.baseSession !== null && (
                                   <div>Session : {priceBreakdown.baseSession}€</div>
                                 )}
@@ -572,18 +428,14 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                             </div>
                           )}
                           {!priceBreakdown.hasSelection && (
-                            <div className="text-xs text-primary-400 text-center">
+                            <div className="text-xs text-gray-400 text-center">
                               Sélectionnez une session pour une estimation précise
                             </div>
                           )}
                         </div>
-                      ) : stay?.price_base == null ? (
-                        <div className="text-sm text-primary-500 text-center py-2">
-                          {stay?.pro_price_note || "Tarif communiqué aux professionnels"}
-                        </div>
                       ) : (
-                        <div className="text-sm font-semibold text-accent text-center py-2">
-                          À partir de {stay.price_base} €
+                        <div className="text-sm text-gray-500 text-center py-2">
+                          {stay?.pro_price_note || "Tarif communiqué aux professionnels"}
                         </div>
                       )}
                     </div>
@@ -591,27 +443,31 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                 </div>
               )}
 
+              {/* CTA */}
               {isKids ? (
-                <button
+                <Button
                   onClick={handleKidsCTA}
-                  className="w-full py-3 bg-accent text-white rounded-xl font-semibold hover:bg-accent-600 transition-all btn-hover-lift shadow-sm active:scale-95"
+                  className="w-full"
+                  size="lg"
                 >
-                  Ce séjour m&apos;intéresse
-                </button>
+                  Ce séjour m'intéresse
+                </Button>
               ) : (
-                <button
+                <Button
                   onClick={() => setShowBooking(true)}
                   disabled={sessions.filter(s => (s?.seatsLeft ?? 0) > 0).length === 0}
-                  className="w-full py-3 bg-accent text-white rounded-xl font-semibold hover:bg-accent-600 transition-all btn-hover-lift shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+                  className="w-full"
+                  size="lg"
                 >
-                  Réserver ce séjour
-                </button>
+                  Inscrire un enfant
+                </Button>
               )}
             </div>
           </div>
         </div>
       </div>
 
+      {/* Modals */}
       {showBooking && (
         <BookingModal
           stay={stay}
@@ -633,34 +489,25 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
         />
       )}
 
-      {/* Modal villes de départ */}
+      {/* Modal villes */}
       {showDepartures && enrichment?.departures && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowDepartures(false)}>
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[80vh] overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white border-b border-primary-100 p-6 pb-4 flex items-center justify-between">
+            <div className="sticky top-0 bg-white border-b border-gray-100 p-6 pb-4 flex items-center justify-between">
               <div>
-                <h2 className="font-bold text-primary text-xl">Villes de départ</h2>
-                <p className="text-sm text-primary-500 mt-1">
-                  {isPro
-                    ? `${enrichment.departures.length} villes • Transport inclus`
-                    : `${enrichment.departures.length} villes disponibles`
-                  }
+                <h2 className="font-bold text-gray-900 text-xl">Villes de départ</h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  {enrichment.departures.length} villes disponibles
                 </p>
               </div>
-              <button onClick={() => setShowDepartures(false)} className="p-2 hover:bg-primary-50 rounded-xl transition-colors">
-                <X className="w-5 h-5 text-primary" />
+              <button onClick={() => setShowDepartures(false)} className="p-2 hover:bg-gray-50 rounded-xl transition-colors">
+                <X className="w-5 h-5 text-gray-600" />
               </button>
             </div>
             <div className="p-4 space-y-1 max-h-[50vh] overflow-y-auto">
-              {isKids && (
-                <p className="text-xs text-primary-500 italic mb-3 px-2">
-                  Choix confirmé lors de l&apos;inscription
-                </p>
-              )}
               {enrichment.departures
                 .slice()
                 .sort((a, b) => {
-                  // Mettre "Sans transport" en premier, puis trier selon PRIORITY_CITIES
                   if (a.city === 'Sans transport') return -1;
                   if (b.city === 'Sans transport') return 1;
                   const aIndex = PRIORITY_CITIES.findIndex(std => String(a.city || '').toLowerCase().includes(std.toLowerCase()));
@@ -678,30 +525,26 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                       type="button"
                       onClick={() => {
                         setPreSelectedCity(dep.city);
-                        // Fermer la modal après sélection
                         setTimeout(() => setShowDepartures(false), 150);
                       }}
                       className={`w-full flex items-center justify-between py-3 px-4 rounded-xl transition-all ${
                         isCitySelected
-                          ? 'bg-accent/10 border-2 border-accent'
-                          : 'hover:bg-primary-50 border-2 border-transparent'
+                          ? 'bg-primary/10 border-2 border-primary'
+                          : 'hover:bg-gray-50 border-2 border-transparent'
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        {/* Indicateur de sélection */}
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                          isCitySelected
-                            ? 'border-accent bg-accent'
-                            : 'border-primary-300'
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                          isCitySelected ? 'border-primary bg-primary' : 'border-gray-300'
                         }`}>
                           {isCitySelected && <Check className="w-3 h-3 text-white" />}
                         </div>
-                        <span className={`text-sm font-medium capitalize ${isCitySelected ? 'text-accent' : 'text-primary-700'}`}>
+                        <span className={`text-sm font-medium ${isCitySelected ? 'text-primary' : 'text-gray-700'}`}>
                           {dep.city}
                         </span>
                       </div>
                       {!isKids && (
-                        <span className={`text-sm font-semibold ${isCitySelected ? 'text-accent' : 'text-primary-600'}`}>
+                        <span className={`text-sm font-semibold ${isCitySelected ? 'text-primary' : 'text-gray-600'}`}>
                           {dep.extra_eur === 0 ? 'Inclus' : `+${dep.extra_eur}€`}
                         </span>
                       )}

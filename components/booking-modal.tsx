@@ -29,7 +29,7 @@ interface Step1Data {
 
 interface Step2Data {
   childFirstName: string;
-  childBirthYear: string;
+  childBirthDate: string; // Format JJ/MM/AAAA ou AAAA-MM-JJ (ISO)
   consent: boolean;
 }
 
@@ -71,7 +71,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
 
   const [step2, setStep2] = useState<Step2Data>({
     childFirstName: '',
-    childBirthYear: '',
+    childBirthDate: '',
     consent: false,
   });
 
@@ -91,7 +91,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
   );
 
   const isStep1Valid = step1.organisation && step1.socialWorkerName && step1.email && step1.phone;
-  const isStep2Valid = step2.childFirstName && step2.childBirthYear && step2.consent;
+  const isStep2Valid = step2.childFirstName && step2.childBirthDate && step2.consent;
 
   // Générer les années de naissance possibles (6-17 ans)
   const currentYear = new Date().getFullYear();
@@ -104,7 +104,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
 
     try {
       // Convertir année en date (1er janvier de l'année pour compatibilité DB)
-      const birthDate = `${step2.childBirthYear}-01-01`;
+      const birthDate = step2.childBirthDate; // Format ISO attendu
 
       const res = await fetch('/api/bookings', {
         method: 'POST',
@@ -404,17 +404,16 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                   className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
                 />
                 <div>
-                  <label className="text-sm text-primary-600 mb-1 block">Année de naissance *</label>
-                  <select
-                    value={step2.childBirthYear}
-                    onChange={e => setStep2({ ...step2, childBirthYear: e.target.value })}
-                    className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent bg-white"
-                  >
-                    <option value="">Sélectionner l&apos;année</option>
-                    {birthYears.map(year => (
-                      <option key={year} value={year}>{year}</option>
-                    ))}
-                  </select>
+                  <label className="text-sm text-primary-600 mb-1 block">Date de naissance *</label>
+                  <input
+                    type="date"
+                    value={step2.childBirthDate}
+                    onChange={e => setStep2({ ...step2, childBirthDate: e.target.value })}
+                    max={new Date().toISOString().split('T')[0]}
+                    min={new Date(currentYear - 17, 0, 1).toISOString().split('T')[0]}
+                    className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
+                    required
+                  />
                 </div>
                 <label className="flex items-start gap-3 p-3 bg-primary-50 rounded-xl cursor-pointer">
                   <input
@@ -563,7 +562,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                 <p><strong>Référence :</strong> {bookingId}</p>
                 <p><strong>Session :</strong> {formatDateLong(selectedSession?.startDate ?? '')} - {formatDateLong(selectedSession?.endDate ?? '')}</p>
                 <p><strong>Ville :</strong> {selectedCity}</p>
-                <p><strong>Enfant :</strong> {step2.childFirstName} (né en {step2.childBirthYear})</p>
+                <p><strong>Enfant :</strong> {step2.childFirstName} (né le {new Date(step2.childBirthDate).toLocaleDateString('fr-FR')})</p>
                 <p><strong>Contact :</strong> {step1.email}</p>
                 {selectedOption && (
                   <p><strong>Option :</strong> {selectedOption === 'ZEN' ? 'Option Tranquillité' : 'Option Ultime'}</p>

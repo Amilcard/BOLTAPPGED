@@ -2,9 +2,9 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Calendar, MapPin, Users, Clock, ArrowRight } from 'lucide-react';
+import { MapPin, Users, Clock, Home, Shield, ArrowRight } from 'lucide-react';
 import type { Stay } from '@/lib/types';
-import { formatDate } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { useApp } from '@/components/providers';
 
 export function StayCard({ stay }: { stay: Stay }) {
@@ -15,124 +15,103 @@ export function StayCard({ stay }: { stay: Stay }) {
   const displayTitle = isKids
     ? (stay?.titleKids || stay?.title)
     : (stay?.titlePro || stay?.title);
+  
+  // Description courte (Promesse)
   const displayDesc = isKids
     ? (stay?.descriptionKids || stay?.descriptionShort)
     : (stay?.descriptionPro || stay?.descriptionShort);
 
   const themes = Array.isArray(stay?.themes) ? stay.themes : [];
-  const nextSession = stay?.nextSessionStart;
-
-  // F5: Calcul période dynamique depuis les sessions
-  const getPeriodLabel = (): string => {
-    const sessions = stay?.sessions ?? [];
-    if (sessions.length === 0) return stay?.period === 'printemps' ? 'Printemps' : 'Été';
-
-    const months = new Set<number>();
-    sessions.forEach(s => {
-      const date = new Date(s.startDate);
-      if (!isNaN(date.getTime())) months.add(date.getMonth());
-    });
-
-    const hasJuly = months.has(6);   // juillet = month 6
-    const hasAugust = months.has(7); // août = month 7
-
-    if (hasJuly && hasAugust) return 'Juillet - Août';
-    if (hasJuly) return 'Juillet';
-    if (hasAugust) return 'Août';
-    return stay?.period === 'printemps' ? 'Printemps' : 'Été';
-  };
-
-  const period = getPeriodLabel();
-  // LOT GRAPHISME 1: More subtle period badges
-  const periodColors = stay?.period === 'printemps'
-    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-    : 'bg-amber-50 text-amber-700 border border-amber-200';
+  const mainTheme = themes.length > 0 ? themes[0] : null;
 
   return (
-    <Link href={`/sejour/${stay?.id ?? ''}`}>
-      <article className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all duration-300 overflow-hidden group">
-        {/* Image container - LOT GRAPHISME 1: Cleaner, larger image focus */}
+    <Link href={`/sejour/${stay?.id ?? ''}`} className="block h-full group">
+      <article className="h-full flex flex-col bg-white rounded-2xl border border-gray-100 shadow-brand hover:shadow-brand-lg hover:border-gray-200 transition-all duration-300 overflow-hidden">
+        {/* === ZONE 1: IMAGE & BADGES === */}
         <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
           <Image
             src={stay?.imageCover ?? '/og-image.png'}
-            alt={stay?.title ?? 'Séjour'}
+            alt={displayTitle ?? 'Séjour'}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-700"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
-          {/* Period badge - LOT GRAPHISME 1: Top-left, cleaner design */}
+          
+          {/* Overlay Gradient pour lisibilité badges du bas */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
+
+          {/* Badge Age (Haut Gauche) */}
           <div className="absolute top-3 left-3">
-            <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${periodColors} backdrop-blur-sm bg-opacity-90`}>
-              {period}
+            <span className="px-2.5 py-1 bg-white/95 text-gray-800 text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-primary" />
+              {stay?.ageMin ?? 0}-{stay?.ageMax ?? 0} ans
             </span>
           </div>
-          {/* LOT UX P0: No heart/wishlist icon */}
-        </div>
 
-        {/* Content - LOT GRAPHISME 1: Better spacing and typography */}
-        <div className="p-4 sm:p-5">
-          {/* Title - LOT GRAPHISME 1: Better typography + CityCrunch Pro/Kids */}
-          <h3 className="font-semibold text-gray-900 text-base sm:text-lg mb-2 line-clamp-2 leading-snug group-hover:text-primary transition-colors">
-            {displayTitle ?? 'Sans titre'}
-          </h3>
-
-          {/* Description - LOT GRAPHISME 1: More subtle + CityCrunch Pro/Kids */}
-          <p className="text-sm text-gray-500 mb-4 line-clamp-2 leading-relaxed">
-            {displayDesc ?? ''}
-          </p>
-
-          {/* Info grid - LOT GRAPHISME 1: Cleaner layout */}
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <div className="flex flex-col items-center text-center p-2 bg-gray-50 rounded-lg">
-              <Users className="w-4 h-4 text-gray-400 mb-1" />
-              <span className="text-xs font-medium text-gray-700">{stay?.ageMin ?? 0}-{stay?.ageMax ?? 0}</span>
-              <span className="text-[10px] text-gray-400">ans</span>
-            </div>
-            <div className="flex flex-col items-center text-center p-2 bg-gray-50 rounded-lg">
-              <Clock className="w-4 h-4 text-gray-400 mb-1" />
-              <span className="text-xs font-medium text-gray-700">{stay?.durationDays ?? 0}</span>
-              <span className="text-[10px] text-gray-400">jours</span>
-            </div>
-            <div className="flex flex-col items-center text-center p-2 bg-gray-50 rounded-lg">
-              <MapPin className="w-4 h-4 text-gray-400 mb-1" />
-              <span className="text-xs font-medium text-gray-700 truncate w-full">{stay?.geography?.split(' ')[0] ?? ''}</span>
-              <span className="text-[10px] text-gray-400">lieu</span>
-            </div>
+          {/* Badge Durée (Haut Droite) */}
+          <div className="absolute top-3 right-3">
+            <span className="px-2.5 py-1 bg-white/95 text-gray-800 text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-primary" />
+              {stay?.durationDays ?? 0} jours
+            </span>
           </div>
 
-          {/* Themes - LOT GRAPHISME 1: More subtle pills */}
-          {themes.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-4">
-              {themes.slice(0, 3).map((theme) => (
-                <span
-                  key={theme}
-                  className="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] sm:text-xs rounded-md font-medium"
-                >
-                  {theme}
-                </span>
-              ))}
-              {themes.length > 3 && (
-                <span className="px-2 py-0.5 text-gray-400 text-[10px] sm:text-xs">
-                  +{themes.length - 3}
-                </span>
-              )}
+          {/* Badge Thème (Bas Gauche - 1 seul) */}
+          {mainTheme && (
+            <div className="absolute bottom-3 left-3">
+              <span className="px-2.5 py-1 bg-primary text-white text-xs font-semibold rounded-lg shadow-sm">
+                {mainTheme}
+              </span>
             </div>
           )}
+        </div>
 
-          {/* Footer - LOT GRAPHISME 1: Subtle date + cleaner CTA */}
-          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-            {nextSession && (
-              <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                <Calendar className="w-3.5 h-3.5" />
-                <span>{formatDate(nextSession)}</span>
-              </div>
-            )}
-            {/* LOT GRAPHISME 1: More subtle CTA with blue accent */}
-            <span className="inline-flex items-center gap-1 text-sm font-medium text-gray-700 group-hover:text-primary group-hover:gap-2 transition-all">
-              {stay?.period === 'printemps' ? 'Découvrir' : 'Voir le séjour'}
-              <ArrowRight className="w-4 h-4" />
-            </span>
+        {/* === ZONE 2: CONTENU STRUCTURÉ === */}
+        <div className="flex flex-col flex-1 p-4">
+          
+          {/* Ligne 1: Titre (Tronqué 1 ligne) */}
+          <h3 className="text-lg font-bold text-gray-900 leading-tight truncate mb-1.5 group-hover:text-primary transition-colors">
+            {displayTitle ?? 'Séjour sans titre'}
+          </h3>
+
+          {/* Ligne 2: Promesse (Tronqué 1 ligne) */}
+          <p className="text-sm text-gray-500 line-clamp-1 mb-4 h-5">
+            {displayDesc}
+          </p>
+
+          {/* Ligne 3: Infrastructures (3 Icônes) */}
+          <div className="flex items-center gap-4 text-xs text-gray-600 mb-5">
+            {/* Lieu */}
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              <MapPin className="w-4 h-4 text-primary shrink-0" />
+              <span className="truncate">{stay?.geography?.split(' ')[0] ?? 'Lieu'}</span>
+            </div>
+            
+            {/* Hébergement */}
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              <Home className="w-4 h-4 text-primary shrink-0" />
+              <span className="truncate">{stay?.accommodation ?? 'Centre'}</span>
+            </div>
+
+            {/* Encadrement */}
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              <Shield className="w-4 h-4 text-primary shrink-0" />
+              <span className="truncate">{stay?.supervision ?? '1/8'}</span>
+            </div>
           </div>
+
+          {/* Spacer pour pousser le CTA en bas */}
+          <div className="flex-1" />
+
+          {/* === ZONE 3: CTA === */}
+          <Button 
+            className="w-full justify-between group/btn" 
+            variant="secondary"
+            size="sm"
+          >
+            <span>Voir le séjour</span>
+            <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+          </Button>
         </div>
       </article>
     </Link>

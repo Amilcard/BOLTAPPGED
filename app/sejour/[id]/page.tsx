@@ -3,7 +3,8 @@ import {
   getSessionPrices,
   getDepartureCitiesFormatted,
   getStaySessions,
-  getSessionPricesFormatted
+  getSessionPricesFormatted,
+  getAllStayThemes
 } from '@/lib/supabaseGed';
 import { notFound } from 'next/navigation';
 import { Header } from '@/components/header';
@@ -20,12 +21,13 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
 
   if (!stay) notFound();
 
-  // Récupérer sessions, villes formatées et âges en parallèle
-  const [sessionPrices, departureCities, staySessions, sessionPricesFormatted] = await Promise.all([
+  // Récupérer sessions, villes formatées, âges et thèmes en parallèle
+  const [sessionPrices, departureCities, staySessions, sessionPricesFormatted, themesMap] = await Promise.all([
     getSessionPrices(id),
     getDepartureCitiesFormatted(id), // Nouveau: retourne {city, extra_eur}[]
     getStaySessions(id), // Nouveau: pour les âges
     getSessionPricesFormatted(id), // Nouveau: pour le matching prix
+    getAllStayThemes(), // Nouveau: pour les thèmes multi-tags depuis gd_stay_themes
   ]);
 
   // Calculer les vraies tranches d'âge depuis gd_stay_sessions
@@ -74,7 +76,7 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
     period: 'été',
     ageMin,
     ageMax,
-    themes: [stay.ged_theme || 'PLEIN_AIR'],
+    themes: themesMap[stay.slug] || [], // Multi-thèmes depuis gd_stay_themes
     imageCover: stay.images?.[0] || '',
     published: true,
     createdAt: new Date().toISOString(),

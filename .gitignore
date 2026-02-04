@@ -1,43 +1,20 @@
-node_modules
-.next
-.env
-.env.*
-*.db
-*.db-journal
+node_modules/
+.next/
 .DS_Store
 *.log
-dist
-build
-.turbo
+
+# local/build artifacts
+.metadata_never_index
 tsconfig.tsbuildinfo
 
-# UFOVAL outputs
-out/ufoval/*.json
-out/ufoval/_debug_html/
-out/ufoval/_debug_html_sessions/
+# local/build artifacts
+.metadata_never_index
+tsconfig.tsbuildinfo
 
-# Local/IA
-CLAUDE.md
-scripts/ufoval/merge-departures-and-sessions.js
+# local/build artifacts
+.metadata_never_index
+tsconfig.tsbuildinfo
 
-# Local/IA
-CLAUDE.md
-scripts/ufoval/merge-departures-and-sessions.js
-
-# Local AI/work files
-.ai-workspace/
-.tmp-check.ts
-
-# Local AI/work files
-.ai-workspace/
-.tmp-check.ts
-.claude/settings.local.json
-
-# local work notes (keep local)
-docs/
-scripts/
-
-# local backups
-*.bak
-*.backup
-.env*
+# local artifacts
+.metadata_never_index
+tsconfig.tsbuildinfo

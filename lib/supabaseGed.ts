@@ -45,7 +45,8 @@ export const getSejours = async (filters: StayFilters = {}) => {
     .eq('published', true)
     .order('title')
 
-  if (filters.theme) query = query.eq('ged_theme', filters.theme)
+  // Note: Le filtre 'theme' a été supprimé car les thèmes sont maintenant gérés
+  // via gd_stay_themes (multi-thèmes) et non plus via le champ unique ged_theme
   if (filters.region) query = query.eq('location_region', filters.region)
 
   const { data, error } = await query
@@ -188,4 +189,54 @@ export const createInscription = async (inscription: Inscription) => {
 
   if (error) throw error
   return data?.[0]
+}
+
+// ============================================
+// API THÈMES (gd_stay_themes - multi-thèmes)
+// ============================================
+
+/**
+ * Récupère les thèmes d'un séjour depuis gd_stay_themes
+ * @param staySlug - Le slug du séjour
+ * @returns Tableau des thèmes (MER, MONTAGNE, SPORT, DECOUVERTE, PLEIN_AIR)
+ */
+export const getStayThemes = async (staySlug: string): Promise<string[]> => {
+  const { data, error } = await supabaseGed
+    .from('gd_stay_themes')
+    .select('theme')
+    .eq('stay_slug', staySlug)
+
+  if (error) {
+    console.error('Error fetching stay themes:', error)
+    return []
+  }
+
+  return data?.map(d => d.theme) || []
+}
+
+/**
+ * Récupère tous les thèmes pour tous les séjours (pour le catalogue)
+ * Optimisé pour un seul appel réseau
+ * @returns Map stay_slug -> [themes]
+ */
+export const getAllStayThemes = async (): Promise<Record<string, string[]>> => {
+  const { data, error } = await supabaseGed
+    .from('gd_stay_themes')
+    .select('stay_slug, theme')
+
+  if (error) {
+    console.error('Error fetching all stay themes:', error)
+    return {}
+  }
+
+  // Regrouper par stay_slug
+  const themesMap: Record<string, string[]> = {}
+  data?.forEach(row => {
+    if (!themesMap[row.stay_slug]) {
+      themesMap[row.stay_slug] = []
+    }
+    themesMap[row.stay_slug].push(row.theme)
+  })
+
+  return themesMap
 }

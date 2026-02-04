@@ -28,22 +28,24 @@ export const PERIODE_OPTIONS = [
 
 // ==============================
 // THEMATIQUE FILTER OPTIONS
+// Aligné avec gd_stay_themes (5 thèmes)
 // ==============================
 export const THEMATIQUE_OPTIONS = [
-  { value: 'sport', label: 'Sport' },
-  { value: 'decouverte', label: 'Découverte' },
-  { value: 'plein-air', label: 'Plein air' },
-  { value: 'balneaire', label: 'Balnéaire' },
-  { value: 'montagne', label: 'Montagne' },
+  { value: 'MER', label: 'Mer & Plage' },
+  { value: 'MONTAGNE', label: 'Montagne' },
+  { value: 'SPORT', label: 'Sport' },
+  { value: 'DECOUVERTE', label: 'Découverte' },
+  { value: 'PLEIN_AIR', label: 'Plein Air' },
 ] as const;
 
-// Keyword mapping for thematique filter (since DB doesn't have exact field)
+// Keyword mapping pour filtrage par thème
+// Les valeurs correspondent exactement aux thèmes dans gd_stay_themes
 export const THEMATIQUE_KEYWORDS: Record<string, string[]> = {
-  sport: ['sport', 'foot', 'basket', 'tennis', 'natation', 'rugby', 'volley', 'gymnastique'],
-  decouverte: ['découverte', 'culture', 'histoire', 'patrimoine', 'musée', 'visite'],
-  'plein-air': ['nature', 'plein air', 'forêt', 'campagne', 'parc', 'extérieur'],
-  balneaire: ['mer', 'plage', 'balnéaire', 'nautique', 'océan', 'bord de mer'],
-  montagne: ['montagne', 'alpes', 'ski', 'randonnée', 'altitude', 'sommet'],
+  MER: ['mer', 'plage', 'balnéaire', 'nautique', 'océan', 'bord de mer', 'balneaire'],
+  MONTAGNE: ['montagne', 'alpes', 'ski', 'randonnée', 'altitude', 'sommet'],
+  SPORT: ['sport', 'foot', 'basket', 'tennis', 'natation', 'rugby', 'volley', 'gymnastique'],
+  DECOUVERTE: ['découverte', 'culture', 'histoire', 'patrimoine', 'musée', 'visite', 'decouverte'],
+  PLEIN_AIR: ['nature', 'plein air', 'forêt', 'campagne', 'parc', 'extérieur', 'plein_air'],
 };
 
 // ==============================
@@ -99,9 +101,10 @@ export function calculateBudgetRange(prices: number[]): { min: number; max: numb
  *   - Example: stay with ageMin=6, ageMax=12 matches filters '3-7' AND '8-11'
  *
  * Thématique:
- *   - DB field: stay.themes (string[])
- *   - Filter logic: Keyword matching via THEMATIQUE_KEYWORDS mapping
- *   - Fallback: No exact field in DB, so we match by keywords
+ *   - DB field: stay.themes (string[]) - populated from gd_stay_themes table
+ *   - Values: MER, MONTAGNE, SPORT, DECOUVERTE, PLEIN_AIR
+ *   - Filter logic: Direct match + keyword fallback via THEMATIQUE_KEYWORDS
+ *   - Multi-thèmes: Un séjour peut avoir plusieurs thèmes
  *
  * Budget:
  *   - DB field: stay.priceFrom (number | undefined)

@@ -35,7 +35,7 @@ export function Header({ variant = 'minimal' }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
       <div className="max-w-6xl mx-auto px-4">
-        <div className="h-16 flex items-center justify-between gap-4">
+        <div className="h-14 sm:h-16 md:h-[4.5rem] flex items-center justify-between gap-4">
           {/* Logo - links to / which redirects to /sejours */}
           <Link href="/" className="flex-shrink-0 hover:opacity-90 transition-opacity">
             <Logo variant="default" className="hidden sm:flex" />

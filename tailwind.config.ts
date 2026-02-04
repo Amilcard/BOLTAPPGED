@@ -23,37 +23,37 @@ const config: Config = {
         ring: 'hsl(var(--ring))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
-        // Primary = Orange #FF6B35 (Design System Vitrine - P0-1)
+        // Primary = Orange #FF8934 (Logo Groupe et Découverte)
         primary: {
-          DEFAULT: '#FF6B35',
-          50: '#FFF4ED',
-          100: '#FFE9DB',
-          200: '#FFD3B7',
-          300: '#FFBD93',
-          400: '#FFA76F',
-          500: '#FF6B35',
-          600: '#CC5629',
-          700: '#99411F',
-          800: '#662C14',
-          900: '#33170A',
+          DEFAULT: '#FF8934',
+          50: '#FFF6ED',
+          100: '#FFEBDB',
+          200: '#FFD7B7',
+          300: '#FFC393',
+          400: '#FFAF6F',
+          500: '#FF8934',
+          600: '#E67A2F',
+          700: '#CC6B2A',
+          800: '#B35C24',
+          900: '#994D1F',
           foreground: '#FFFFFF',
-          hover: '#FF8555', // P1-3: Hover state
+          hover: '#FFA555', // Hover state
         },
-        // Secondary = Bleu foncé #2C5F8D (Design System Vitrine - P0-1 + P0-2)
+        // Secondary = Bleu cyan #3BA3D0 (Logo Groupe et Découverte)
         secondary: {
-          DEFAULT: '#2C5F8D',
-          50: '#E8F0F7',
-          100: '#D1E1EF',
-          200: '#A3C3DF',
-          300: '#75A5CF',
-          400: '#4787BF',
-          500: '#2C5F8D',
-          600: '#234C71',
-          700: '#1A3955',
-          800: '#122639',
-          900: '#09131D',
+          DEFAULT: '#3BA3D0',
+          50: '#E8F7FC',
+          100: '#D1EFF9',
+          200: '#A3DFF3',
+          300: '#75CFED',
+          400: '#47BFE7',
+          500: '#3BA3D0',
+          600: '#3292BA',
+          700: '#2A82A4',
+          800: '#21718E',
+          900: '#186078',
           foreground: '#FFFFFF',
-          hover: '#3A75B0', // P1-3: Hover state
+          hover: '#5CB5DB', // Hover state
         },
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
@@ -64,7 +64,7 @@ const config: Config = {
           foreground: '#2D3436',
         },
         accent: {
-          DEFAULT: '#2C5F8D', // LOT GRAPHISME 1: Blue instead of orange for subtlety
+          DEFAULT: '#3BA3D0', // Bleu cyan du logo
           foreground: '#FFFFFF',
         },
         popover: {
@@ -75,10 +75,10 @@ const config: Config = {
           DEFAULT: '#FFFFFF',
           foreground: '#2D3436',
         },
-        // Brand colors (Design System Vitrine - P0-2)
+        // Brand colors (Logo Groupe et Découverte)
         brand: {
-          blue: '#2C5F8D',    // Blue foncé - P0-2
-          orange: '#FF6B35',  // Orange - Primary
+          blue: '#3BA3D0',    // Bleu cyan du logo
+          orange: '#FF8934',  // Orange du logo
           dark: '#2D3436',
           white: '#FFFFFF',
           light: '#F8F9FA',

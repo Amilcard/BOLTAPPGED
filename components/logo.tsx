@@ -10,10 +10,15 @@ interface LogoProps {
 export function Logo({ variant = 'default', className = '' }: LogoProps) {
   if (variant === 'compact') {
     return (
-      <div className={`flex items-center gap-1 ${className}`}>
-        <span className="text-lg font-extrabold italic text-accent">G</span>
-        <span className="text-sm font-normal italic text-primary">&</span>
-        <span className="text-lg font-extrabold italic text-accent">D</span>
+      <div className={`flex items-center ${className}`}>
+        <Image
+          src="/logo_app_site.png"
+          alt="G&D"
+          width={140}
+          height={24}
+          priority
+          className="h-6 w-auto object-contain"
+        />
       </div>
     );
   }
@@ -26,7 +31,7 @@ export function Logo({ variant = 'default', className = '' }: LogoProps) {
         width={280}
         height={48}
         priority
-        className="h-10 w-auto object-contain"
+        className="h-8 xs:h-9 sm:h-10 md:h-11 lg:h-12 w-auto object-contain"
       />
     </div>
   );

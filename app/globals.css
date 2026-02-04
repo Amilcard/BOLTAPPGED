@@ -10,19 +10,19 @@
     --card-foreground: 215 25% 27%;
     --popover: 0 0% 100%;
     --popover-foreground: 215 25% 27%;
-    --primary: 16 100% 61%;
+    --primary: 27 100% 60%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 208 54% 36%;
+    --secondary: 197 58% 52%;
     --secondary-foreground: 0 0% 100%;
     --muted: 210 17% 98%;
     --muted-foreground: 215 25% 27%;
-    --accent: 208 54% 36%;
+    --accent: 197 58% 52%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 210 17% 98%;
     --input: 210 17% 98%;
-    --ring: 16 100% 61%;
+    --ring: 27 100% 60%;
     --radius: 24px;
   }
 
@@ -64,15 +64,15 @@
     scroll-behavior: smooth;
   }
 
-  /* Focus styles for accessibility (P1-4: Orange primary) */
+  /* Focus styles for accessibility (Orange du logo) */
   *:focus-visible {
-    outline: 2px solid #FF6B35;
+    outline: 2px solid #FF8934;
     outline-offset: 2px;
   }
 
-  /* Selection styles (P1-4: Orange primary) */
+  /* Selection styles (Orange du logo) */
   ::selection {
-    background-color: #FF6B35;
+    background-color: #FF8934;
     color: white;
   }
 

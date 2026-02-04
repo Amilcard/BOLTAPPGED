@@ -459,7 +459,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-accent mt-0.5">•</span>
-                        <span>La connaissance du projet associatif de notre partenaire</span>
+                        <span>Faites partie de nos 0 % d'exclusions</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-accent mt-0.5">•</span>

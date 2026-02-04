@@ -19,15 +19,20 @@ function ageMatchesFilter(ageMin: number, ageMax: number, filterAges: string[]):
   });
 }
 
-// LOT 1: Helper to check thematique match (keywords matching from config)
+// LOT 1: Helper to check thematique match
+// Priorité: match direct avec gd_stay_themes, sinon fallback keywords
 function thematiqueMatchesFilter(stayThemes: string[], filterThematiques: string[]): boolean {
   if (filterThematiques.length === 0) return true;
-  const themes = stayThemes.map(t => t.toLowerCase());
 
   return filterThematiques.some((filter) => {
+    // 1. Match direct (thèmes depuis gd_stay_themes: MER, MONTAGNE, SPORT, etc.)
+    if (stayThemes.includes(filter)) return true;
+
+    // 2. Fallback: keyword matching pour compatibilité legacy
     const keywords = THEMATIQUE_KEYWORDS[filter];
     if (!keywords) return false;
-    return keywords.some(keyword => themes.some(t => t.includes(keyword)));
+    const themesLower = stayThemes.map(t => t.toLowerCase());
+    return keywords.some(keyword => themesLower.some(t => t.includes(keyword)));
   });
 }
 

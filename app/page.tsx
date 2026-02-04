@@ -1,18 +1,19 @@
-import { getSejours, supabaseGed } from '@/lib/supabaseGed';
+import { getSejours, supabaseGed, getAllStayThemes } from '@/lib/supabaseGed';
 import { Header } from '@/components/header';
 import { BottomNav } from '@/components/bottom-nav';
-import { SejoursContent } from './sejours/sejours-content';
+import { HomeCarousels } from '@/components/home-carousels';
 import type { Stay } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  // Récupérer séjours + âges depuis gd_stay_sessions
-  const [sejoursGed, agesData] = await Promise.all([
+  // Récupérer séjours + âges + thèmes depuis Supabase
+  const [sejoursGed, agesData, themesMap] = await Promise.all([
     getSejours(),
     supabaseGed.from('gd_stay_sessions')
       .select('stay_slug, age_min, age_max')
-      .then(({ data }) => data || [])
+      .then(({ data }) => data || []),
+    getAllStayThemes()
   ]);
 
   // Créer un map slug → {ageMin, ageMax}
@@ -32,6 +33,8 @@ export default async function HomePage() {
   // Mapper les données GED vers le type Stay attendu
   const staysData: Stay[] = sejoursGed.map(sejour => {
     const ages = agesMap.get(sejour.slug) || { ageMin: 6, ageMax: 17 };
+    // Récupérer les thèmes depuis gd_stay_themes (multi-thèmes)
+    const stayThemes = themesMap[sejour.slug] || [];
     return {
       id: sejour.slug,
       slug: sejour.slug,
@@ -50,7 +53,7 @@ export default async function HomePage() {
       period: 'été',
       ageMin: ages.ageMin,
       ageMax: ages.ageMax,
-      themes: [sejour.ged_theme || 'PLEIN_AIR'],
+      themes: stayThemes, // Multi-thèmes depuis gd_stay_themes
       imageCover: sejour.images?.[0] || '',
       published: true,
       createdAt: new Date().toISOString(),

@@ -22,7 +22,27 @@ export function StayCard({ stay }: { stay: Stay }) {
   const themes = Array.isArray(stay?.themes) ? stay.themes : [];
   const nextSession = stay?.nextSessionStart;
 
-  const period = stay?.period === 'printemps' ? 'Printemps' : 'Été';
+  // F5: Calcul période dynamique depuis les sessions
+  const getPeriodLabel = (): string => {
+    const sessions = stay?.sessions ?? [];
+    if (sessions.length === 0) return stay?.period === 'printemps' ? 'Printemps' : 'Été';
+
+    const months = new Set<number>();
+    sessions.forEach(s => {
+      const date = new Date(s.startDate);
+      if (!isNaN(date.getTime())) months.add(date.getMonth());
+    });
+
+    const hasJuly = months.has(6);   // juillet = month 6
+    const hasAugust = months.has(7); // août = month 7
+
+    if (hasJuly && hasAugust) return 'Juillet - Août';
+    if (hasJuly) return 'Juillet';
+    if (hasAugust) return 'Août';
+    return stay?.period === 'printemps' ? 'Printemps' : 'Été';
+  };
+
+  const period = getPeriodLabel();
   // LOT GRAPHISME 1: More subtle period badges
   const periodColors = stay?.period === 'printemps'
     ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'

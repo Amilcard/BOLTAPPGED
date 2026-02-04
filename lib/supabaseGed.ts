@@ -117,7 +117,9 @@ export const getDepartureCitiesFormatted = async (slug: string) => {
     if (row.city_departure && !cityMap.has(row.city_departure)) {
       // transport_surcharge_ged = surcoût UFOVAL + 18€ GED
       // Pour extra_eur on veut juste le surcoût transport (sans transport = 0)
-      cityMap.set(row.city_departure, row.transport_surcharge_ged || 0)
+      // F7: Fix bug "sans transport" affichait +18€ au lieu de 0€
+      const extraEur = row.city_departure === 'sans_transport' ? 0 : (row.transport_surcharge_ged || 0)
+      cityMap.set(row.city_departure, extraEur)
     }
   }
 

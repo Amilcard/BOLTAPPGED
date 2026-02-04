@@ -1,14 +1,13 @@
 'use client';
 
+import Image from 'next/image';
+
 interface LogoProps {
   variant?: 'default' | 'white' | 'compact';
   className?: string;
 }
 
 export function Logo({ variant = 'default', className = '' }: LogoProps) {
-  const textColor = variant === 'white' ? 'text-white' : 'text-accent';
-  const etColor = variant === 'white' ? 'text-white/80' : 'text-primary';
-
   if (variant === 'compact') {
     return (
       <div className={`flex items-center gap-1 ${className}`}>
@@ -20,18 +19,15 @@ export function Logo({ variant = 'default', className = '' }: LogoProps) {
   }
 
   return (
-    <div className={`flex flex-col leading-none ${className}`}>
-      <div className="flex items-baseline gap-1.5">
-        <span className={`text-sm sm:text-base font-extrabold italic tracking-tight ${textColor}`}>
-          GROUPE
-        </span>
-        <span className={`text-xs sm:text-sm font-normal italic ${etColor}`}>
-          ET
-        </span>
-      </div>
-      <span className={`text-sm sm:text-base font-extrabold italic tracking-tight ${textColor}`}>
-        DÉCOUVERTE
-      </span>
+    <div className={`flex items-center ${className}`}>
+      <Image
+        src="/logo_app_site.png"
+        alt="Groupe et Découverte - Colonies de vacances et séjours de distanciation"
+        width={280}
+        height={48}
+        priority
+        className="h-10 w-auto object-contain"
+      />
     </div>
   );
 }

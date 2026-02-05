@@ -178,7 +178,7 @@ export function HomeContent({
   const hasActiveFilters = searchQuery.trim() !== '' || activeFiltersCount > 0;
 
   return (
-    <main className="bg-gray-50 min-h-screen flex flex-col">
+    <main className="bg-gray-50 flex flex-col">
       {!hideInternalSearch && (
         <>
           <div id="sejours" className="scroll-mt-16">
@@ -243,9 +243,7 @@ export function HomeContent({
         mode={mode}
       />
 
-      <div className="flex-1" />
-
-      <footer className="bg-primary text-white py-6">
+      <footer className="bg-primary text-white py-6 mt-auto">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <p className="text-primary-200 text-sm">
             © 2026 Groupe & Découverte. Tous droits réservés.

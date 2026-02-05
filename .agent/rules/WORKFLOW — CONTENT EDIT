@@ -1,0 +1,22 @@
+WORKFLOW — CONTENT EDIT
+
+When editing a stay:
+1. Check if content is source or GED edited
+2. Modify only GED fields
+3. Protect from sync overwrite
+4. Verify front display
+
+WORKFLOW — BUG FIX
+
+1. Identify bug location
+2. Minimal fix only
+3. Verify no route broken
+4. Confirm UI + data OK
+
+WORKFLOW — DEPLOY
+
+Before deploy:
+1. Build must succeed
+2. No missing images
+3. No console errors
+4. Main pages tested

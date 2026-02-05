@@ -17,6 +17,7 @@ export interface Stay {
   period: string;
   ageMin: number;
   ageMax: number;
+  ageRangesDisplay?: string; // Formatted age ranges for display (e.g., "6-8 / 9-11 ans")
   themes: string[];
   imageCover: string;
   published: boolean;

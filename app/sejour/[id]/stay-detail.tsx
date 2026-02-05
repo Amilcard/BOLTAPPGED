@@ -173,7 +173,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
       {/* === HERO VISUEL === */}
       <section className="relative">
         {/* Gallery Grid - Desktop */}
-        <div className="hidden md:grid grid-cols-4 grid-rows-2 h-[50vh] min-h-[400px] gap-2 p-2">
+        <div className="hidden md:grid grid-cols-4 grid-rows-2 h-[45vh] max-h-[500px] gap-2 p-2">
           {stay?.images && stay.images.length > 0 ? (
             <>
               {/* Main Image */}
@@ -318,7 +318,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
         <div className="hidden md:block absolute top-6 left-6 z-20">
            <Link
             href="/"
-            className="inline-flex items-center justify-center w-10 h-10 bg-white rounded-full text-gray-700 hover:text-primary hover:scale-105 transition-all shadow-lg"
+            className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-full text-gray-700 hover:text-primary hover:scale-105 transition-all shadow-lg"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
@@ -591,7 +591,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   <div className="bg-gradient-to-br from-primary/5 to-accent/5 border-2 border-primary/20 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <Tag className="w-4 h-4 text-primary" />
-                      <span className="text-sm font-bold text-gray-900">Ce que vous allez payer</span>
+                      <span className="text-sm font-bold text-gray-900">Votre tarif estimé</span>
                     </div>
                     
                     {priceBreakdown.baseSession !== null ? (

@@ -10,6 +10,7 @@ import { notFound } from 'next/navigation';
 import { Header } from '@/components/header';
 import { BottomNav } from '@/components/bottom-nav';
 import { StayDetail } from './stay-detail';
+import { getUniqueAgeRanges, formatAgeRangesDisplay } from '@/lib/age-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,6 +38,10 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
   const ageMax = staySessions.length > 0
     ? Math.max(...staySessions.map(s => s.age_max || 17))
     : 17;
+
+  // Calculer affichage détaillé des tranches d'âge (Option A)
+  const ranges = getUniqueAgeRanges(staySessions.map(s => ({ age_min: s.age_min, age_max: s.age_max })));
+  const ageRangesDisplay = ranges.length > 0 ? formatAgeRangesDisplay(ranges) : undefined;
 
   // Calculer durée depuis la première session
   const firstSession = sessionPrices[0];
@@ -76,8 +81,10 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
     period: 'été',
     ageMin,
     ageMax,
+    ageRangesDisplay, // NEW: Detailed age ranges for display
     themes: themesMap[stay.slug] || [], // Multi-thèmes depuis gd_stay_themes
     imageCover: stay.images?.[0] || '',
+    images: stay.images || [],
     published: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

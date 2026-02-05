@@ -3,6 +3,7 @@ import { Header } from '@/components/header';
 import { BottomNav } from '@/components/bottom-nav';
 import { HomeContent } from '@/app/home-content';
 import type { Stay } from '@/lib/types';
+import { getUniqueAgeRanges, formatAgeRangesDisplay, calculateGlobalAgeRange } from '@/lib/age-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,25 +17,29 @@ export default async function HomePage() {
     getAllStayThemes()
   ]);
 
-  // Créer un map slug → {ageMin, ageMax}
-  const agesMap = new Map<string, { ageMin: number; ageMax: number }>();
+  // Créer un map slug → sessions pour calcul unifié des âges
+  const sessionsMap = new Map<string, Array<{ age_min: number; age_max: number }>>();
   for (const row of agesData) {
-    const existing = agesMap.get(row.stay_slug);
-    if (!existing) {
-      agesMap.set(row.stay_slug, { ageMin: row.age_min, ageMax: row.age_max });
-    } else {
-      agesMap.set(row.stay_slug, {
-        ageMin: Math.min(existing.ageMin, row.age_min),
-        ageMax: Math.max(existing.ageMax, row.age_max)
-      });
+    if (!sessionsMap.has(row.stay_slug)) {
+      sessionsMap.set(row.stay_slug, []);
     }
+    sessionsMap.get(row.stay_slug)!.push({ age_min: row.age_min, age_max: row.age_max });
   }
 
   // Mapper les données GED vers le type Stay attendu
   const staysData: Stay[] = sejoursGed.map(sejour => {
-    const ages = agesMap.get(sejour.slug) || { ageMin: 6, ageMax: 17 };
+    const sessions = sessionsMap.get(sejour.slug) || [];
+    
+    // Calculer range global (pour filtres/fallback)
+    const { ageMin, ageMax } = calculateGlobalAgeRange(sessions);
+    
+    // Calculer affichage détaillé (tranches uniques)
+    const ranges = getUniqueAgeRanges(sessions);
+    const ageRangesDisplay = ranges.length > 0 ? formatAgeRangesDisplay(ranges) : undefined;
+    
     // Récupérer les thèmes depuis gd_stay_themes (multi-thèmes)
     const stayThemes = themesMap[sejour.slug] || [];
+    
     return {
       id: sejour.slug,
       slug: sejour.slug,
@@ -51,8 +56,9 @@ export default async function HomePage() {
       supervision: 'Équipe Groupe & Découverte',
       durationDays: 7,
       period: 'été',
-      ageMin: ages.ageMin,
-      ageMax: ages.ageMax,
+      ageMin,
+      ageMax,
+      ageRangesDisplay, // NEW: Detailed age ranges for display
       themes: stayThemes, // Multi-thèmes depuis gd_stay_themes
       imageCover: sejour.images?.[0] || '',
       published: true,

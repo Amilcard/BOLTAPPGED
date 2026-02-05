@@ -8,11 +8,12 @@
 // ==============================
 // AGE FILTER OPTIONS
 // ==============================
+// Aligned with carousel age groups (6-8, 9-11, 12-14, 15-17)
 export const AGE_OPTIONS = [
-  { value: '3-7', label: '3-7 ans', minAge: 3, maxAge: 7 },
-  { value: '8-11', label: '8-11 ans', minAge: 8, maxAge: 11 },
+  { value: '6-8', label: '6-8 ans', minAge: 6, maxAge: 8 },
+  { value: '9-11', label: '9-11 ans', minAge: 9, maxAge: 11 },
   { value: '12-14', label: '12-14 ans', minAge: 12, maxAge: 14 },
-  { value: '15+', label: '15 ans et +', minAge: 15, maxAge: 99 },
+  { value: '15-17', label: '15-17 ans', minAge: 15, maxAge: 17 },
 ] as const;
 
 // ==============================
@@ -96,9 +97,10 @@ export function calculateBudgetRange(prices: number[]): { min: number; max: numb
  *   - Values: 'hiver' | 'printemps' | 'été' | 'automne' | 'fin-annee'
  *
  * Âge:
- *   - DB fields: stay.ageMin (number), stay.ageMax (number)
+ *   - Calculated from: gd_stay_sessions (age_min, age_max per session)
+ *   - Exposed fields: stay.ageMin (global min), stay.ageMax (global max), stay.ageRangesDisplay (detailed ranges)
  *   - Filter logic: Overlap check between stay age range and selected filters
- *   - Example: stay with ageMin=6, ageMax=12 matches filters '3-7' AND '8-11'
+ *   - Example: stay with ageMin=6, ageMax=12 matches filters '6-8' AND '9-11'
  *
  * Thématique:
  *   - DB field: stay.themes (string[]) - populated from gd_stay_themes table

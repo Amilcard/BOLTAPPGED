@@ -8,6 +8,7 @@ import { FilterSheet, type Filters, DEFAULT_FILTERS } from '@/components/filter-
 import { ActiveFilterChips } from '@/components/active-filter-chips';
 import { AGE_OPTIONS, THEMATIQUE_KEYWORDS, calculateBudgetRange, BUDGET_FALLBACK } from '@/config/filters';
 import type { Stay } from '@/lib/types';
+import { HomeCarousels } from '@/components/home-carousels';
 
 // LOT 1: Helper to check age range overlap with new age groups
 function ageMatchesFilter(ageMin: number, ageMax: number, filterAges: string[]): boolean {
@@ -43,7 +44,7 @@ function StayGrid({ title, stays, columns = 3 }: { title: string; stays: Stay[];
   return (
     <section className="pb-6">
       <div className="max-w-7xl mx-auto px-4">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">{title}</h2>
+        {title && <h2 className="text-lg font-semibold text-gray-900 mb-4">{title}</h2>}
         <div className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-${columns}`}>
           {stays.map((stay) => (
             <StayCard key={stay.id} stay={stay} />
@@ -54,32 +55,14 @@ function StayGrid({ title, stays, columns = 3 }: { title: string; stays: Stay[];
   );
 }
 
-// LOT UX P1: Mobile carousel component (keeps horizontal scroll)
-function StayCarousel({ title, stays }: { title: string; stays: Stay[] }) {
-  if (stays.length === 0) return null;
-
-  return (
-    <section className="pb-4 lg:hidden">
-      <div className="max-w-7xl mx-auto px-4">
-        <h2 className="text-base font-semibold text-gray-900 mb-3">{title}</h2>
-        <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-4 px-4">
-          {stays.map((stay) => (
-            <div key={stay.id} className="flex-shrink-0 w-[260px] snap-start">
-              <StayCard stay={stay} />
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 export function HomeContent({
   stays,
   hideInternalSearch = false,
+  viewMode = 'carousels',
 }: {
   stays: Stay[];
   hideInternalSearch?: boolean;
+  viewMode?: 'carousels' | 'grid';
 }) {
   const { mode, mounted } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
@@ -198,7 +181,6 @@ export function HomeContent({
     <main className="bg-gray-50 min-h-screen flex flex-col">
       {!hideInternalSearch && (
         <>
-          {/* Sticky Search & Filter Bar - LOT UX P1: Full width container */}
           <div id="sejours" className="scroll-mt-16">
             <div className="max-w-7xl mx-auto px-4">
               <SearchFilterBar
@@ -209,8 +191,6 @@ export function HomeContent({
               />
             </div>
           </div>
-
-          {/* Active Filter Chips - LOT UX P1: Full width container */}
           <ActiveFilterChips
             filters={filters}
             onFiltersChange={setFilters}
@@ -222,99 +202,49 @@ export function HomeContent({
         </>
       )}
 
-      {/* Content: Sections par TRANCHE D'ÂGE (axe principal) */}
-      {!hasActiveFilters ? (
-        <>
-          {/* Desktop: Grid sections par âge */}
-          <div className="hidden lg:block pb-6 space-y-8">
-            {sejoursByAge.map((group) => (
-              <StayGrid
-                key={group.label}
-                title={isKids ? group.labelKids : `Séjours ${group.label}`}
-                stays={group.stays}
-                columns={3}
-              />
-            ))}
-          </div>
-
-          {/* Mobile: Carousels par âge */}
-          <div className="lg:hidden">
-            {sejoursByAge.map((group) => (
-              <StayCarousel
-                key={group.label}
-                title={isKids ? group.labelKids : `Séjours ${group.label}`}
-                stays={group.stays}
-              />
-            ))}
-          </div>
-        </>
+      {/* Content: Carousels ou Grille selon viewMode */}
+      {filteredStays.length > 0 ? (
+        <div className="pb-6">
+          {viewMode === 'carousels' ? (
+            <HomeCarousels stays={filteredStays} />
+          ) : (
+            <StayGrid title="" stays={filteredStays} columns={filteredStays.length < 3 ? 3 : 4} />
+          )}
+        </div>
       ) : (
-        /* Filtered results grid - LOT UX P1: Full width container */
-        <section className="py-6">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-900">Résultats</h2>
-              <span className="text-sm text-gray-500">
-                {filteredStays.length} séjour{filteredStays.length !== 1 ? 's' : ''}
-              </span>
+        /* Zero Results */
+        <section className="py-12">
+          {/* ... (Zero result UI) */}
+          <div className="max-w-lg mx-auto px-4 text-center">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucun séjour trouvé</h3>
+              <p className="text-gray-500 mb-6">
+                Essayez de modifier vos critères de recherche ou de réinitialiser les filtres.
+              </p>
+              <button
+                onClick={handleResetFilters}
+                className="inline-flex items-center justify-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-xl text-white bg-primary hover:bg-primary/90 transition-colors shadow-sm"
+              >
+                Réinitialiser les filtres
+              </button>
             </div>
-
-            {filteredStays.length === 0 ? (
-              <div className="text-center py-12 bg-gray-100 rounded-xl">
-                <p className="text-gray-500 mb-4">Aucun séjour ne correspond à vos critères</p>
-                <button
-                  onClick={handleResetFilters}
-                  className="px-6 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition"
-                >
-                  Réinitialiser
-                </button>
-              </div>
-            ) : (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredStays.map(stay => (
-                  <StayCard key={stay?.id} stay={stay} />
-                ))}
-              </div>
-            )}
           </div>
         </section>
       )}
 
-      {/* Filter Bottom Sheet */}
       <FilterSheet
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
         filters={filters}
         onFiltersChange={setFilters}
-        resultCount={hasActiveFilters ? filteredStays.length : stays.length}
+        resultCount={filteredStays.length}
         budgetRange={budgetRange}
         showBudgetFilter={showBudgetFilter}
         mode={mode}
       />
 
-      {/* Spacer to push footer down */}
       <div className="flex-1" />
 
-      {!hideInternalSearch && (
-        <>
-          {/* Filter Bottom Sheet */}
-          <FilterSheet
-            isOpen={isFilterOpen}
-            onClose={() => setIsFilterOpen(false)}
-            filters={filters}
-            onFiltersChange={setFilters}
-            resultCount={hasActiveFilters ? filteredStays.length : stays.length}
-            budgetRange={budgetRange}
-            showBudgetFilter={showBudgetFilter}
-            mode={mode}
-          />
-        </>
-      )}
-
-      {/* Spacer to push footer down */}
-      <div className="flex-1" />
-
-      {/* Footer - LOT UX P1: Full width */}
       <footer className="bg-primary text-white py-6">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <p className="text-primary-200 text-sm">

@@ -6,8 +6,8 @@ import type { Stay } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
-export default async function HomePage() {
-  // Récupérer séjours + âges + thèmes depuis Supabase
+export default async function RecherchePage() {
+  // Récupérer séjours + âges + thèmes depuis Supabase (identique à HomePage)
   const [sejoursGed, agesData, themesMap] = await Promise.all([
     getSejours(),
     supabaseGed.from('gd_stay_sessions')
@@ -33,14 +33,12 @@ export default async function HomePage() {
   // Mapper les données GED vers le type Stay attendu
   const staysData: Stay[] = sejoursGed.map(sejour => {
     const ages = agesMap.get(sejour.slug) || { ageMin: 6, ageMax: 17 };
-    // Récupérer les thèmes depuis gd_stay_themes (multi-thèmes)
     const stayThemes = themesMap[sejour.slug] || [];
     return {
       id: sejour.slug,
       slug: sejour.slug,
       title: sejour.title || 'Sans titre',
       descriptionShort: sejour.accroche || '',
-      // CityCrunch: titres/descriptions Pro/Kids (optionnel, fallback côté client)
       titlePro: sejour.title_pro || undefined,
       titleKids: sejour.title_kids || undefined,
       descriptionPro: sejour.description_pro || undefined,
@@ -53,7 +51,7 @@ export default async function HomePage() {
       period: 'été',
       ageMin: ages.ageMin,
       ageMax: ages.ageMax,
-      themes: stayThemes, // Multi-thèmes depuis gd_stay_themes
+      themes: stayThemes,
       imageCover: sejour.images?.[0] || '',
       published: true,
       createdAt: new Date().toISOString(),
@@ -65,7 +63,8 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
       <Header variant="minimal" />
-      <HomeContent stays={staysData} viewMode="carousels" />
+      {/* Mode Grid pour la page Recherche */}
+      <HomeContent stays={staysData} viewMode="grid" />
       <BottomNav />
     </div>
   );

@@ -24,6 +24,22 @@ export function StayCard({ stay }: { stay: Stay }) {
   const themes = Array.isArray(stay?.themes) ? stay.themes : [];
   const mainTheme = themes.length > 0 ? themes[0] : null;
 
+  // Lot 10A (Strict): Logique 'Smart' si sessions disponibles
+  const sessions = stay?.sessions || [];
+  
+  // Durée
+  const uniqueDurations = Array.from(new Set(
+    sessions.map(s => {
+      const start = new Date(s.startDate);
+      const end = new Date(s.endDate);
+      return Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    })
+  )).sort((a, b) => a - b);
+  
+  const durationLabel = uniqueDurations.length > 1
+    ? `${uniqueDurations[0]} à ${uniqueDurations[uniqueDurations.length - 1]} jours`
+    : `${stay?.durationDays ?? 0} jours`;
+
   return (
     <Link href={`/sejour/${stay?.id ?? ''}`} className="block h-full group">
       <article className="h-full flex flex-col bg-white rounded-2xl border border-gray-100 shadow-brand hover:shadow-brand-lg hover:border-gray-200 transition-all duration-300 overflow-hidden">
@@ -52,7 +68,7 @@ export function StayCard({ stay }: { stay: Stay }) {
           <div className="absolute top-3 right-3">
             <span className="px-2.5 py-1 bg-white/95 text-gray-800 text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-primary" />
-              {stay?.durationDays ?? 0} jours
+              {durationLabel}
             </span>
           </div>
 
@@ -60,7 +76,7 @@ export function StayCard({ stay }: { stay: Stay }) {
           {mainTheme && (
             <div className="absolute bottom-3 left-3">
               <span className="px-2.5 py-1 bg-primary text-white text-xs font-semibold rounded-lg shadow-sm">
-                {mainTheme}
+                {mainTheme.replace(/_/g, ' ')}
               </span>
             </div>
           )}

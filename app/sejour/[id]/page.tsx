@@ -103,6 +103,7 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
       endDate: s.end_date,
       seatsLeft: 30,
     })),
+    rawSessions: staySessions, // Prop "NO CASCADE" pour passer les âges sans modifier les types globaux
   };
 
   return (

@@ -1,12 +1,18 @@
 import type { Metadata } from 'next';
-import { Poppins } from 'next/font/google';
+import { Roboto, Nunito } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/providers';
 
-const poppins = Poppins({
+const roboto = Roboto({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700', '800'],
-  variable: '--font-poppins',
+  weight: ['400', '500', '700'],
+  variable: '--font-roboto',
+  display: 'swap',
+});
+
+const nunito = Nunito({
+  subsets: ['latin'],
+  variable: '--font-nunito',
   display: 'swap',
 });
 
@@ -37,7 +43,7 @@ export default function RootLayout({
       <head>
         <script src="https://apps.abacus.ai/chatllm/appllm-lib.js" />
       </head>
-      <body className={poppins.className}>
+      <body className={`${roboto.variable} ${nunito.variable} font-sans`}>
         <Providers>{children}</Providers>
       </body>
     </html>

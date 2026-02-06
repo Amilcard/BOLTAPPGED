@@ -4,22 +4,27 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
-  ArrowLeft,
   MapPin,
-  Home,
-  Users,
+  Bus,
+  Check,
+  Info,
+  Shield,
+  Heart,
+  Star,
   Calendar,
-  Clock,
+  Users,
+  Ruler, // Ensure Ruler is imported if used, otherwise remove it based on usage
   ChevronRight,
   ChevronDown,
+  Home,
   Tag,
   Share2,
-  Bus,
-  Download,
+  ArrowLeft,
   X,
-  Check,
-  Shield,
+  Clock,
+  Download,   // Added based on usage in file
 } from 'lucide-react';
+import { getReassurancePoints, getThemeStyle } from '@/config/premium-themes';
 import type { Stay, StaySession } from '@/lib/types';
 import { formatDateLong, getWishlistMotivation, addToWishlist } from '@/lib/utils';
 import { getPriceBreakdown, findSessionPrice, getMinSessionPrice, type EnrichmentSessionData } from '@/lib/pricing';
@@ -68,8 +73,20 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
   const isPro = !isKids;
   const slug = stay?.slug ?? '';
 
-  const displayTitle = isKids ? ((stay as any)?.titleKids || stay?.title) : ((stay as any)?.titlePro || stay?.title);
-  const displayDesc = isKids ? ((stay as any)?.descriptionKids || stay?.descriptionShort) : ((stay as any)?.descriptionPro || stay?.descriptionShort);
+  // === HARMONISATION KIDS/PRO ===
+  // Règle: le contenu CityCrunch Kids est la RÉFÉRENCE UNIVERSELLE pour les 2 modes.
+  // Plus aucune différenciation Pro/Kids dans l'affichage texte.
+
+  // === TITRE H1: CityCrunch Kids (universel) > Legacy title > Marketing Title (déclassé car souvent technique/LMK) ===
+  const displayTitle = (stay as any)?.titleKids || stay?.title || (stay as any)?.marketingTitle;
+
+  // === SOUS-TITRE H2: Premium punchline > CityCrunch Kids (universel) > Legacy descriptionShort ===
+  const displaySubtitle = (stay as any)?.punchline
+    || (stay as any)?.descriptionKids || stay?.descriptionShort || '';
+
+  // === BODY: Premium expert_pitch > punchline > CityCrunch Kids > Legacy descriptionShort ===
+  const displayDesc = (stay as any)?.expertPitch
+    || (stay as any)?.punchline || (stay as any)?.descriptionKids || stay?.descriptionShort;
 
   // Prix minimum (session la moins chère, sans transport)
   const minSessionPrice = getMinSessionPrice(enrichment?.sessions || []);
@@ -133,7 +150,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
   // Fallback: utiliser rawSessions si ageRangesDisplay pas disponible (rétrocompatibilité)
   const ageRangesFromProps = (stay as any).ageRangesDisplay;
   const rawSessions = (stay as any).rawSessions || [];
-  
+
   // Extraire les tranches individuelles depuis ageRangesDisplay
   // Format attendu: "6-8 / 9-11 / 12-14 ans" → ["6-8", "9-11", "12-14"]
   const uniqueAgeRanges = ageRangesFromProps
@@ -159,7 +176,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
   )).sort((a, b) => a - b);
 
   const durationDisplay = uniqueDurations.length > 0
-    ? (uniqueDurations.length > 1 
+    ? (uniqueDurations.length > 1
         ? `Durées disponibles: ${uniqueDurations.join(' / ')} jours`
         : `${uniqueDurations[0]}j`)
     : `${stay?.durationDays ?? 0}j`;
@@ -172,8 +189,19 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
     <main className="pb-12">
       {/* === HERO VISUEL === */}
       <section className="relative">
+        {/* Desktop Container for proper alignment */}
+        <div className="max-w-6xl mx-auto px-4">
+        {/* Desktop Breadcrumbs (Replacements for Back Button) */}
+        <div className="hidden md:flex mb-6 items-center gap-2 text-[10px] font-heading font-bold uppercase tracking-widest text-primary/60">
+           <Link href="/" className="hover:text-primary transition-colors">ACCUEIL</Link>
+           <span className="text-secondary">•</span>
+           <Link href="/" className="hover:text-primary transition-colors">SÉJOURS</Link>
+           <span className="text-secondary">•</span>
+           <span className="text-primary truncate max-w-[300px]">{displayTitle}</span>
+        </div>
+
         {/* Gallery Grid - Desktop */}
-        <div className="hidden md:grid grid-cols-4 grid-rows-2 h-[45vh] max-h-[500px] gap-2 p-2">
+        <div className="hidden md:grid grid-cols-4 grid-rows-2 h-[32vh] max-h-[380px] gap-2 p-2">
           {stay?.images && stay.images.length > 0 ? (
             <>
               {/* Main Image */}
@@ -187,7 +215,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                 />
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
               </div>
-              
+
               {/* Secondary Images */}
               <div className="col-span-1 row-span-1 relative rounded-xl overflow-hidden shadow-sm group cursor-pointer">
                 {stay.images[1] ? (
@@ -280,8 +308,8 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
         <div className="md:hidden absolute top-3 left-3 z-10">
           <span className="px-2.5 py-1 bg-white/95 backdrop-blur text-gray-900 text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5">
             <Users className="w-3.5 h-3.5 text-primary" />
-             {uniqueAgeRanges.length > 0 
-                ? uniqueAgeRanges.join(' / ') 
+             {uniqueAgeRanges.length > 0
+                ? uniqueAgeRanges.join(' / ')
                 : `${stay?.ageMin}-${stay?.ageMax}`
              } ans
           </span>
@@ -303,146 +331,166 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
           </div>
         )}
 
-        {/* Mobile Back Button */}
-        <div className="absolute bottom-4 left-4 z-10 md:hidden">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 px-3 py-1.5 bg-black/20 backdrop-blur-md rounded-lg text-white text-sm font-medium hover:bg-black/30 transition-all border border-white/20"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Retour
-          </Link>
-        </div>
-        
-        {/* Desktop Back Button (outside image) */}
-        <div className="hidden md:block absolute top-6 left-6 z-20">
-           <Link
-            href="/"
-            className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-full text-gray-700 hover:text-primary hover:scale-105 transition-all shadow-lg"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
+
+
+
         </div>
       </section>
 
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-6xl mx-auto px-4 py-8">
         {/* === PRÉSENTATION SÉJOUR === */}
-        <section className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">{displayTitle}</h1>
-          
+        <section className="mb-12">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-primary font-heading tracking-tight mb-3">{displayTitle}</h1>
+
+          <h2 className="text-xl md:text-2xl text-gray-500 font-normal font-sans mb-8 leading-relaxed">
+            {displaySubtitle || "L'aventure commence ici."}
+          </h2>
+
           {/* META ROW (Desktop aligned) */}
-          <div className="flex flex-wrap items-center gap-4 md:gap-6 mt-4 mb-6 text-sm text-gray-600 border-b border-gray-100 pb-6">
+          <div className="flex flex-wrap items-center gap-6 mt-4 mb-8 text-sm text-gray-600 border-y border-gray-100 py-6">
             <div className="flex items-center gap-2">
-               <Users className="w-4 h-4 text-primary" />
-               <span className="font-medium text-gray-900">
-                 {uniqueAgeRanges.length > 0 
-                    ? uniqueAgeRanges.map((r: any) => `${r} ans`).join(' / ') 
+               <Users className="w-5 h-5 text-primary" />
+               <span className="font-bold text-primary font-heading">
+                 {uniqueAgeRanges.length > 0
+                    ? uniqueAgeRanges.map((r: any) => `${r} ans`).join(' / ')
                     : `${stay?.ageMin}-${stay?.ageMax} ans`
                  }
                </span>
             </div>
-            
-            <div className="hidden md:block w-1 h-1 bg-gray-300 rounded-full" />
-            
+
+            <div className="hidden md:block w-px h-6 bg-gray-200" />
+
             <div className="flex items-center gap-2">
-               <Clock className="w-4 h-4 text-primary" />
-               <span>{durationBadge}</span>
+               <Clock className="w-5 h-5 text-primary" />
+               <span className="font-medium">{durationBadge}</span>
             </div>
 
-            <div className="hidden md:block w-1 h-1 bg-gray-300 rounded-full" />
-            
+            <div className="hidden md:block w-px h-6 bg-gray-200" />
+
+            {/* Localisation */}
             <div className="flex items-center gap-2">
-               <MapPin className="w-4 h-4 text-primary" />
-               <span>{stay?.geography}</span>
+               <MapPin className="w-5 h-5 text-primary" />
+               <span className="font-medium">{(stay as any)?.spotLabel || stay?.geography}</span>
             </div>
 
-             {themes.length > 0 && (
-                <>
-                  <div className="hidden md:block w-1 h-1 bg-gray-300 rounded-full" />
-                  <div className="flex flex-wrap gap-2">
-                    {themes.slice(0, 3).map(theme => (
-                      <span key={theme} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-md">
-                        {theme.replace(/_/g, ' ')}
-                      </span>
-                    ))}
-                  </div>
-                </>
-             )}
+            <div className="ml-auto">
+               {/* Badge émotion minimaliste */}
+               {(() => {
+                 const EXCLUDED_DISPLAY_TAGS = ['MER', 'MONTAGNE', 'PLEIN_AIR', 'PLEIN AIR', 'DECOUVERTE'];
+                 const emotionTag = (stay as any)?.emotionTag;
+                 if (emotionTag) {
+                   return (
+                     <span className="px-4 py-1.5 bg-gray-100 text-primary text-xs font-bold tracking-widest uppercase rounded-full">
+                       {emotionTag.replace(/_/g, ' ')}
+                     </span>
+                   );
+                 }
+                 return null;
+               })()}
+            </div>
           </div>
 
-          <p className="text-lg text-gray-600 leading-relaxed mb-6">{displayDesc}</p>
-          
-          {/* Info Durées Multiples si pertinent */}
+          <p className="text-xl text-primary font-serif leading-8 mb-6 max-w-4xl">{displayDesc}</p>
+
           {uniqueDurations.length > 1 && (
-             <p className="text-sm text-primary font-medium mt-2">{durationDisplay}</p>
+             <p className="text-sm text-primary/70 font-medium mt-2 italic">{durationDisplay}</p>
           )}
 
         </section>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-12">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            
-            {/* === INFORMATIONS CLÉS === */}
-            <section>
-              <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                Informations clés
+          <div className="lg:col-span-2 space-y-12">
+
+            {/* === INFORMATIONS CLÉS (Réassurance) === */}
+            <section className="bg-white rounded-brand p-8 border border-gray-100 shadow-sm relative overflow-hidden">
+               <div className="absolute top-0 left-0 w-1 h-full bg-secondary" />
+              <h2 className="text-xl font-bold text-primary font-heading mb-6 flex items-center gap-3">
+                <Shield className="w-6 h-6 text-secondary" />
+                L'essentiel à savoir
               </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="flex flex-col items-center text-center p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-all group">
-                  <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                     <MapPin className="w-5 h-5" />
+              <div className="grid grid-cols-2 gap-4">
+                {/* 1. Environnement */}
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                  <MapPin className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                  <div>
+                    <span className="text-xs text-gray-500 uppercase font-bold tracking-wide block mb-1">Environnement</span>
+                    <span className="text-sm font-semibold text-gray-900 leading-tight block">{(stay as any)?.spotLabel || stay?.geography || 'Non précisé'}</span>
                   </div>
-                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Lieu</span>
-                  <span className="text-sm font-bold text-gray-900">{stay?.geography}</span>
                 </div>
-                <div className="flex flex-col items-center text-center p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-all group">
-                  <div className="w-10 h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                     <Home className="w-5 h-5" />
+                {/* 2. Hébergement — Premium standing_label > Legacy accommodationLabel */}
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                  <Home className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                  <div>
+                    <span className="text-xs text-gray-500 uppercase font-bold tracking-wide block mb-1">Confort & Standing</span>
+                    <span className="text-sm font-semibold text-gray-900 leading-tight block">{(stay as any)?.standingLabel || stay?.accommodationLabel || stay?.accommodation || 'Confort standard'}</span>
                   </div>
-                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Hébergement</span>
-                  <span className="text-sm font-bold text-gray-900">{stay?.accommodation}</span>
                 </div>
-                <div className="flex flex-col items-center text-center p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-all group">
-                  <div className="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                     {isPro ? <Tag className="w-5 h-5" /> : <Shield className="w-5 h-5" />}
+                {/* 3. Encadrement — Premium expertise_label > Legacy supervision */}
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                  <Shield className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                  <div>
+                    <span className="text-xs text-gray-500 uppercase font-bold tracking-wide block mb-1">Niveau d'encadrement</span>
+                    <span className="text-sm font-semibold text-gray-900 leading-tight block">{(stay as any)?.expertiseLabel || stay?.supervision || '1 anim / 8 jeunes'}</span>
                   </div>
-                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                    {isPro ? 'Tarif (référence)' : 'Encadrement'}
-                  </span>
-                  {isPro && minSessionPrice !== null ? (
-                    <>
-                      <span className="text-sm font-bold text-gray-900">À partir de {minSessionPrice}€</span>
-                      <span className="text-[10px] text-gray-500 mt-0.5">sans transport</span>
-                    </>
-                  ) : isPro ? (
-                    <span className="text-sm font-bold text-gray-900">Sur devis</span>
-                  ) : (
-                    <span className="text-sm font-bold text-gray-900">{stay?.supervision}</span>
-                  )}
                 </div>
-                <div className="flex flex-col items-center text-center p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-all group">
-                  <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                     <Calendar className="w-5 h-5" />
+                {/* 4. Intensité — Premium intensity_label > Placeholder */}
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="w-5 h-5 mt-0.5 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
                   </div>
-                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Période</span>
-                  <span className="text-sm font-bold text-gray-900">{stay?.period === 'printemps' ? 'Printemps' : 'Été'}</span>
+                  <div>
+                    <span className="text-xs text-gray-500 uppercase font-bold tracking-wide block mb-1">Rythme / Intensité</span>
+                    <span className="text-sm font-semibold text-gray-900 leading-tight block">{(stay as any)?.intensityLabel || 'Rythme adapté'}</span>
+                  </div>
                 </div>
               </div>
             </section>
 
+            {/* === BLOC EXPERTISE & RÉUSSITE ÉDUCATIVE (Premium - DYNAMIQUE) === */}
+            {(() => {
+              // Priorité: emotion_tag premium > themes[0] legacy
+              const primaryTheme = (stay as any)?.emotionTag || themes[0] || 'DEFAULT';
+              const themeStyle = getThemeStyle(primaryTheme);
+
+              // DYNAMIQUE: price_includes_features (DB) > fallback getReassurancePoints (config)
+              const priceFeatures = (stay as any)?.priceIncludesFeatures;
+              const dynamicPoints: string[] = Array.isArray(priceFeatures) && priceFeatures.length > 0
+                ? priceFeatures.slice(0, 5)  // Max 5 bullets
+                : getReassurancePoints(primaryTheme).points;
+
+              return (
+                <section className={`relative overflow-hidden rounded-xl bg-opacity-10 border-l-4 p-6 ${themeStyle.borderColor.replace('border-', 'bg-').replace('600', '50')} ${themeStyle.borderColor}`}>
+                  <h3 className="text-lg font-bold text-[#1A2B4B] mb-4 flex items-center gap-2">
+                    <Check className={`w-5 h-5 ${themeStyle.textColor}`} />
+                    Inclus dans votre tarif Sérénité
+                  </h3>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {dynamicPoints.map((point, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
+                          <Check className={`w-3 h-3 ${themeStyle.textColor} font-bold`} />
+                        </div>
+                        <span className="text-sm text-gray-700 font-medium">{point}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              );
+            })()}
+
             {/* === CONTENU DU SÉJOUR === */}
-            <section className="bg-white rounded-xl shadow-brand p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Contenu du séjour</h2>
-              <ul className="space-y-2 mb-4">
+            <section className="bg-white rounded-xl shadow-brand p-5">
+              <h2 className="text-lg font-bold text-gray-900 mb-3">Contenu du séjour</h2>
+              <ul className="space-y-3 mb-5">
                 {programme.slice(0, 5).map((item, i) => (
-                  <li key={i} className="flex items-start gap-2">
+                  <li key={i} className="flex items-start gap-3">
                     <ChevronRight className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-gray-700">{item}</span>
+                    <span className="text-sm text-gray-700 leading-relaxed">{item}</span>
                   </li>
                 ))}
               </ul>
-              
+
               {programme.length > 5 && (
                 <button
                   onClick={() => setShowFullProgramme(!showFullProgramme)}
@@ -454,25 +502,28 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
               )}
 
               {showFullProgramme && (
-                <ol className="space-y-3 mt-4 pt-4 border-t border-gray-100">
+                <ol className="space-y-3 mt-5 pt-5 border-t border-gray-100">
                   {programme.slice(5).map((item, i) => (
                     <li key={i + 5} className="flex items-start gap-3">
                       <span className="w-6 h-6 bg-primary/10 text-primary text-xs font-bold rounded-full flex items-center justify-center flex-shrink-0">
                         {i + 6}
                       </span>
-                      <span className="text-sm text-gray-700">{item}</span>
+                      <span className="text-sm text-gray-700 leading-relaxed">{item}</span>
                     </li>
                   ))}
                 </ol>
               )}
             </section>
 
+            {/* Divider */}
+            <div className="hidden lg:block border-t border-gray-100" />
+
             {/* === VILLES DE DÉPART === */}
             {enrichment?.departures && enrichment.departures.length > 0 && (
-              <section className="bg-white rounded-xl shadow-brand p-6">
-                <div className="flex items-center gap-2 mb-4">
+              <section className="bg-white rounded-xl shadow-brand p-5">
+                <div className="flex items-center gap-2 mb-3">
                   <Bus className="w-5 h-5 text-primary" />
-                  <h2 className="text-xl font-bold text-gray-900">Villes de départ</h2>
+                  <h2 className="text-lg font-bold text-gray-900">Villes de départ</h2>
                   <span className="text-xs text-gray-500">({enrichment.departures.length} villes)</span>
                 </div>
 
@@ -538,12 +589,12 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
           {/* === SIDEBAR: SESSIONS & CTA === */}
           <div className="lg:col-span-1">
-            <div className="sticky top-20 bg-white rounded-xl shadow-brand p-6">
-              <h3 className="font-bold text-gray-900 mb-4">Sessions disponibles</h3>
+            <div className="sticky top-6 bg-white rounded-xl shadow-brand p-5">
+              <h3 className="font-bold text-gray-900 mb-3 text-sm">Sessions disponibles</h3>
               {sessions.length === 0 ? (
                 <p className="text-sm text-gray-500">Aucune session disponible</p>
               ) : (
-                <div className="space-y-2 mb-6">
+                <div className="space-y-2 mb-4">
                   {sessions.map(session => {
                     const isFull = (session?.seatsLeft ?? 0) === 0;
                     const isSelected = preSelectedSessionId === session?.id;
@@ -553,7 +604,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                         type="button"
                         disabled={isFull}
                         onClick={() => !isFull && setPreSelectedSessionId(session?.id ?? '')}
-                        className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
+                        className={`w-full text-left p-2.5 rounded-lg border-2 transition-all ${
                           isSelected
                             ? 'border-primary bg-primary/5'
                             : isFull
@@ -587,13 +638,13 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
               {/* === TOTAL TTC DYNAMIQUE (PRO uniquement) === */}
               {isPro && (
-                <div className="border-t border-gray-100 pt-4 mb-4">
-                  <div className="bg-gradient-to-br from-primary/5 to-accent/5 border-2 border-primary/20 rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-3">
+                <div className="border-t border-gray-100 pt-3 mb-3">
+                  <div className="bg-gradient-to-br from-primary/5 to-accent/5 border-2 border-primary/20 rounded-xl p-3">
+                    <div className="flex items-center gap-2 mb-2">
                       <Tag className="w-4 h-4 text-primary" />
                       <span className="text-sm font-bold text-gray-900">Votre tarif estimé</span>
                     </div>
-                    
+
                     {priceBreakdown.baseSession !== null ? (
                       <div className="space-y-2">
                         {/* Base session */}
@@ -601,7 +652,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                           <span className="text-gray-600">Session</span>
                           <span className="font-semibold text-gray-900">{priceBreakdown.baseSession}€</span>
                         </div>
-                        
+
                         {/* Transport */}
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Transport</span>
@@ -612,14 +663,21 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                             </span>
                           </span>
                         </div>
-                        
+
                         {/* Séparateur */}
                         <div className="border-t border-gray-200 my-2" />
-                        
+
                         {/* Total TTC */}
                         <div className="flex justify-between items-center">
                           <span className="text-base font-bold text-gray-900">Total TTC</span>
-                          <span className="text-xl font-bold text-accent">{priceBreakdown.total}€</span>
+                          <div className="text-right">
+                             <span className="text-xl font-bold text-accent block tracking-tight">{priceBreakdown.total}€</span>
+                             {isPro && (
+                               <span className="text-[10px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full inline-block mt-1">
+                                 Option Suivi Individualisé Incluse
+                               </span>
+                             )}
+                          </div>
                         </div>
                       </div>
                     ) : (
@@ -765,8 +823,8 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                 Ça m'intéresse
               </Button>
             ) : (
-              <Button 
-                onClick={() => setShowBooking(true)} 
+              <Button
+                onClick={() => setShowBooking(true)}
                 disabled={sessions.filter(s => (s?.seatsLeft ?? 0) > 0).length === 0}
                 className="w-full"
                 size="default"

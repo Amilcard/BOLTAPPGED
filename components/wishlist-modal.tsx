@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Heart, Share2, X, Compass, Check, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Heart, Share2, X, Compass, Check, AlertCircle, Info } from 'lucide-react';
 import Link from 'next/link';
 import { updateWishlistMotivation, canAddRequest } from '@/lib/utils';
 
@@ -20,12 +20,32 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
   const [emailStructure, setEmailStructure] = useState('');
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
-  const [shareSuccess, setShareSuccess] = useState(false);
+  const [showMailtoWarning, setShowMailtoWarning] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const maxChars = 280;
   const minMessageChars = 20;
   const emailLocked = process.env.NEXT_PUBLIC_EMAIL_STRUCTURE_LOCKED === 'true';
   const defaultEmail = process.env.NEXT_PUBLIC_DEFAULT_STRUCTURE_EMAIL || '';
+
+  // P0: Focus management
+  const prenomInputRef = useRef<HTMLInputElement>(null);
+  const firstErrorRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Focus on first input when modal opens
+      setTimeout(() => prenomInputRef.current?.focus(), 100);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    // Focus on first error when errors appear
+    const errorKeys = Object.keys(errors);
+    if (errorKeys.length > 0) {
+      setTimeout(() => firstErrorRef.current?.focus(), 100);
+    }
+  }, [errors]);
 
   // P0: Validation stricte Email
   const validateEmail = (email: string): boolean => {
@@ -45,7 +65,9 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
 
   if (!isOpen) return null;
 
-  const handleSaveMotivation = () => {
+  const handleSaveMotivation = async () => {
+    if (isSubmitting) return; // P0: Anti-double-submit
+
     const finalEmail = emailLocked ? defaultEmail : emailStructure;
 
     // Vérifier la limite de 3 demandes
@@ -55,10 +77,14 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
       return;
     }
 
+    setIsSubmitting(true);
     updateWishlistMotivation(staySlug, motivation.trim() || null, prenom.trim(), finalEmail);
     setSaved(true);
     setError('');
-    setTimeout(() => setSaved(false), 1500);
+    setTimeout(() => {
+      setSaved(false);
+      setIsSubmitting(false);
+    }, 1500);
   };
 
   const handleShare = async () => {
@@ -73,14 +99,17 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
         // User cancelled
       }
     } else {
-      try {
-        await navigator.clipboard.writeText(text);
-        setShareSuccess(true);
-        setTimeout(() => setShareSuccess(false), 2000);
-      } catch {
-        window.location.href = `mailto:?subject=${encodeURIComponent(`Ce séjour m'intéresse : ${stayTitle}`)}&body=${encodeURIComponent(text)}`;
-      }
+      // Show mailto warning first
+      setShowMailtoWarning(true);
     }
+  };
+
+  const handleMailtoConfirm = async () => {
+    const text = motivation.trim()
+      ? `Ce séjour m'intéresse : ${stayTitle}\nPourquoi : ${motivation.trim()}\n${stayUrl}`
+      : `Ce séjour m'intéresse : ${stayTitle}\n${stayUrl}`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(`Ce séjour m'intéresse : ${stayTitle}`)}&body=${encodeURIComponent(text)}`;
+    setShowMailtoWarning(false);
   };
 
   return (
@@ -125,6 +154,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
             Ton prénom <span className="text-red-500">*</span>
           </label>
           <input
+            ref={prenomInputRef}
             type="text"
             value={prenom}
             onChange={(e) => setPrenom(e.target.value.slice(0, 30))}
@@ -142,7 +172,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
             aria-describedby={errors.prenom ? "error-prenom" : undefined}
           />
           {errors.prenom && (
-            <p id="error-prenom" className="mt-1 text-xs text-orange-600">
+            <p id="error-prenom" ref={firstErrorRef} tabIndex={-1} className="mt-1 text-xs text-orange-600">
               {errors.prenom}
             </p>
           )}
@@ -240,45 +270,90 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
         {!saved && (
           <button
             onClick={handleSaveMotivation}
-            disabled={!isFormValid()}
+            disabled={!isFormValid() || isSubmitting}
             className="w-full mb-4 py-3 bg-accent text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-accent-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {saved ? (
-              <><Check className="w-4 h-4" /> Enregistré !</>
+            {isSubmitting ? (
+              <>Enregistrement...</>
             ) : (
               'Enregistrer ma demande'
             )}
           </button>
         )}
 
-        {/* Share success */}
-        {shareSuccess && (
-          <div className="mb-4 px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm text-center">
-            Copié dans le presse-papier !
+        {/* Success state with share action */}
+        {saved && (
+          <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <button
+              onClick={handleShare}
+              className="w-full py-3 bg-accent text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-accent/90 transition"
+            >
+              <Share2 className="w-4 h-4" /> Partager à mon éducateur
+            </button>
+            <Link
+              href="/envies"
+              className="w-full py-3 bg-primary-50 text-primary rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-primary-100 transition"
+            >
+              <Heart className="w-4 h-4" /> Voir Mes souhaits
+            </Link>
+            <button
+              onClick={onClose}
+              className="w-full py-3 text-primary-500 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-primary-50 transition"
+            >
+              <Compass className="w-4 h-4" /> Continuer à explorer
+            </button>
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex flex-col gap-2">
-          <button
-            onClick={handleShare}
-            className="w-full py-3 bg-accent text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-accent/90 transition"
-          >
-            <Share2 className="w-4 h-4" /> Partager
-          </button>
-          <Link
-            href="/envies"
-            className="w-full py-3 bg-primary-50 text-primary rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-primary-100 transition"
-          >
-            <Heart className="w-4 h-4" /> Voir Mes souhaits
-          </Link>
-          <button
-            onClick={onClose}
-            className="w-full py-3 text-primary-500 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-primary-50 transition"
-          >
-            <Compass className="w-4 h-4" /> Continuer à explorer
-          </button>
-        </div>
+        {/* Actions when not saved */}
+        {!saved && (
+          <div className="flex flex-col gap-2">
+            <Link
+              href="/envies"
+              className="w-full py-3 bg-primary-50 text-primary rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-primary-100 transition"
+            >
+              <Heart className="w-4 h-4" /> Voir Mes souhaits
+            </Link>
+            <button
+              onClick={onClose}
+              className="w-full py-3 text-primary-500 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-primary-50 transition"
+            >
+              <Compass className="w-4 h-4" /> Continuer à explorer
+            </button>
+          </div>
+        )}
+
+        {/* Mailto warning modal */}
+        {showMailtoWarning && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowMailtoWarning(false)} />
+            <div className="relative bg-white rounded-2xl p-6 max-w-sm w-full animate-in fade-in zoom-in duration-200">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Info className="w-5 h-5 text-blue-600" />
+                </div>
+                <h3 className="font-semibold text-primary">Ouverture de l'app mail</h3>
+              </div>
+              <p className="text-sm text-primary-600 mb-6">
+                Ton téléphone va ouvrir ton application mail pour envoyer ce séjour à ton éducateur.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowMailtoWarning(false)}
+                  className="flex-1 py-2.5 border border-primary-200 text-primary rounded-xl font-medium hover:bg-primary-50 transition"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleMailtoConfirm}
+                  className="flex-1 py-2.5 bg-accent text-white rounded-xl font-medium hover:bg-accent-600 transition"
+                >
+                  Ouvrir
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

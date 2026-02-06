@@ -1,19 +1,19 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Map, Info, Briefcase, Heart } from 'lucide-react';
+import { Home, Search, Info, Briefcase, Heart } from 'lucide-react';
 import { useApp } from './providers';
 
 const proNavItems = [
   { key: 'home', label: 'Accueil', route: '/', icon: Home },
-  { key: 'stays', label: 'Séjours', route: '/#sejours', icon: Map },
+  { key: 'search', label: 'Recherche', route: '/sejours', icon: Search },
   { key: 'help', label: 'Infos', route: '/infos', icon: Info },
   { key: 'pro', label: 'Espace pro', route: '/espace-pro', icon: Briefcase },
 ];
 
 const kidsNavItems = [
   { key: 'home', label: 'Accueil', route: '/', icon: Home },
-  { key: 'stays', label: 'Séjours', route: '/#sejours', icon: Map },
+  { key: 'search', label: 'Recherche', route: '/recherche', icon: Search },
   { key: 'help', label: 'Infos', route: '/infos', icon: Info },
   { key: 'envies', label: 'Mes souhaits', route: '/envies', icon: Heart },
 ];
@@ -29,26 +29,12 @@ export function BottomNav() {
   const navItems = mode === 'kids' ? kidsNavItems : proNavItems;
 
   const handleClick = (item: typeof navItems[0]) => {
-    if (item.route === '/#sejours') {
-      if (pathname === '/') {
-        const section = document.getElementById('sejours');
-        section?.scrollIntoView({ behavior: 'smooth' });
-      } else {
-        router.push('/');
-        setTimeout(() => {
-          const section = document.getElementById('sejours');
-          section?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-      }
-    } else {
-      router.push(item.route);
-    }
+    router.push(item.route);
   };
 
   const isActive = (route: string) => {
     if (route === '/') return pathname === '/';
-    if (route === '/#sejours') return pathname === '/';
-    return pathname?.startsWith(route.split('#')[0]);
+    return pathname?.startsWith(route);
   };
 
   if (!mounted) return <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 md:hidden pb-safe h-16" />;

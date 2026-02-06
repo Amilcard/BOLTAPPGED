@@ -2,135 +2,106 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Calendar, MapPin, Users, Clock, ArrowRight } from 'lucide-react';
+import { MapPin, Users, Clock, Home, ArrowRight } from 'lucide-react';
 import type { Stay } from '@/lib/types';
-import { formatDate } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { useApp } from '@/components/providers';
+import { getThemeStyle } from '@/config/premium-themes';
 
 export function StayCard({ stay }: { stay: Stay }) {
   const { mode } = useApp();
   const isKids = mode === 'kids';
 
-  // CityCrunch: affichage Pro/Kids avec fallback
-  const displayTitle = isKids
-    ? (stay?.titleKids || stay?.title)
-    : (stay?.titlePro || stay?.title);
-  const displayDesc = isKids
-    ? (stay?.descriptionKids || stay?.descriptionShort)
-    : (stay?.descriptionPro || stay?.descriptionShort);
+  // === TITRE: Premium marketing_title > CityCrunch Kids (universel) > Legacy title ===
+  const displayTitle = stay?.titleKids || stay?.title || stay?.marketingTitle;
 
+  // === DESCRIPTION: Premium punchline > CityCrunch Kids (universel) > Legacy descriptionShort ===
+  const displayDesc = stay?.punchline
+    || stay?.descriptionKids || stay?.descriptionShort;
+
+  // === BADGE ÉMOTION: Premium emotion_tag > Legacy themes[0] ===
+  // Clean style: Neutral gray, text primary.
+  const EXCLUDED_DISPLAY_TAGS = ['MER', 'MONTAGNE', 'PLEIN_AIR', 'PLEIN AIR', 'DECOUVERTE'];
+  const normalize = (s: string) => s.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const emotionBadge = stay?.emotionTag || null;
+  const isEmotionExcluded = emotionBadge ? EXCLUDED_DISPLAY_TAGS.includes(normalize(emotionBadge)) : true;
   const themes = Array.isArray(stay?.themes) ? stay.themes : [];
-  const nextSession = stay?.nextSessionStart;
+  const fallbackTheme = themes.find(t => !EXCLUDED_DISPLAY_TAGS.includes(normalize(t))) || null;
+  const mainTheme = (emotionBadge && !isEmotionExcluded) ? emotionBadge : fallbackTheme;
 
-  // F5: Calcul période dynamique depuis les sessions
-  const getPeriodLabel = (): string => {
-    const sessions = stay?.sessions ?? [];
-    if (sessions.length === 0) return stay?.period === 'printemps' ? 'Printemps' : 'Été';
+  // === LOCALISATION: Premium spot_label > Legacy geography ===
+  const spotDisplay = stay?.spotLabel || stay?.geography || 'France';
 
-    const months = new Set<number>();
-    sessions.forEach(s => {
-      const date = new Date(s.startDate);
-      if (!isNaN(date.getTime())) months.add(date.getMonth());
-    });
+  // === STANDING: Premium standing_label > Legacy accommodationLabel ===
+  const standingDisplay = stay?.standingLabel || stay?.accommodationLabel || 'Centre';
 
-    const hasJuly = months.has(6);   // juillet = month 6
-    const hasAugust = months.has(7); // août = month 7
+  // Lot 10A (Strict): Logique 'Smart' si sessions disponibles
+  const sessions = stay?.sessions || [];
 
-    if (hasJuly && hasAugust) return 'Juillet - Août';
-    if (hasJuly) return 'Juillet';
-    if (hasAugust) return 'Août';
-    return stay?.period === 'printemps' ? 'Printemps' : 'Été';
-  };
+  // Durée
+  const uniqueDurations = Array.from(new Set(
+    sessions.map(s => {
+      const start = new Date(s.startDate);
+      const end = new Date(s.endDate);
+      return Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    })
+  )).sort((a, b) => a - b);
 
-  const period = getPeriodLabel();
-  // LOT GRAPHISME 1: More subtle period badges
-  const periodColors = stay?.period === 'printemps'
-    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-    : 'bg-amber-50 text-amber-700 border border-amber-200';
+  const durationLabel = uniqueDurations.length > 1
+    ? `${uniqueDurations[0]} à ${uniqueDurations[uniqueDurations.length - 1]} jours`
+    : `${stay?.durationDays ?? 0} jours`;
 
   return (
-    <Link href={`/sejour/${stay?.id ?? ''}`}>
-      <article className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all duration-300 overflow-hidden group">
-        {/* Image container - LOT GRAPHISME 1: Cleaner, larger image focus */}
-        <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
+    <Link href={`/sejour/${stay?.id ?? ''}`} className="block h-full group">
+      <article className="h-full flex flex-col bg-white rounded-brand border border-gray-200 shadow-sm hover:shadow-brand-hover transition-all duration-300 overflow-hidden">
+        {/* === ZONE 1: IMAGE === */}
+        <div className="relative aspect-[16/10] bg-gray-100 overflow-hidden">
           <Image
             src={stay?.imageCover ?? '/og-image.png'}
-            alt={stay?.title ?? 'Séjour'}
+            alt={displayTitle ?? 'Séjour'}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-700"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
-          {/* Period badge - LOT GRAPHISME 1: Top-left, cleaner design */}
-          <div className="absolute top-3 left-3">
-            <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${periodColors} backdrop-blur-sm bg-opacity-90`}>
-              {period}
-            </span>
-          </div>
-          {/* LOT UX P0: No heart/wishlist icon */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-40" />
         </div>
 
-        {/* Content - LOT GRAPHISME 1: Better spacing and typography */}
-        <div className="p-4 sm:p-5">
-          {/* Title - LOT GRAPHISME 1: Better typography + CityCrunch Pro/Kids */}
-          <h3 className="font-semibold text-gray-900 text-base sm:text-lg mb-2 line-clamp-2 leading-snug group-hover:text-primary transition-colors">
-            {displayTitle ?? 'Sans titre'}
-          </h3>
+        {/* === ZONE 2: CONTENU STRUCTURÉ === */}
+        <div className="flex flex-col flex-1 p-5">
 
-          {/* Description - LOT GRAPHISME 1: More subtle + CityCrunch Pro/Kids */}
-          <p className="text-sm text-gray-500 mb-4 line-clamp-2 leading-relaxed">
-            {displayDesc ?? ''}
-          </p>
-
-          {/* Info grid - LOT GRAPHISME 1: Cleaner layout */}
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <div className="flex flex-col items-center text-center p-2 bg-gray-50 rounded-lg">
-              <Users className="w-4 h-4 text-gray-400 mb-1" />
-              <span className="text-xs font-medium text-gray-700">{stay?.ageMin ?? 0}-{stay?.ageMax ?? 0}</span>
-              <span className="text-[10px] text-gray-400">ans</span>
-            </div>
-            <div className="flex flex-col items-center text-center p-2 bg-gray-50 rounded-lg">
-              <Clock className="w-4 h-4 text-gray-400 mb-1" />
-              <span className="text-xs font-medium text-gray-700">{stay?.durationDays ?? 0}</span>
-              <span className="text-[10px] text-gray-400">jours</span>
-            </div>
-            <div className="flex flex-col items-center text-center p-2 bg-gray-50 rounded-lg">
-              <MapPin className="w-4 h-4 text-gray-400 mb-1" />
-              <span className="text-xs font-medium text-gray-700 truncate w-full">{stay?.geography?.split(' ')[0] ?? ''}</span>
-              <span className="text-[10px] text-gray-400">lieu</span>
-            </div>
+          {/* Metadata Row (Pure Typography) */}
+          <div className="flex flex-wrap items-center gap-2 mb-3 text-[10px] font-heading font-bold uppercase tracking-widest text-primary/60">
+            <span>{stay?.ageRangesDisplay ?? `${stay?.ageMin ?? 0}-${stay?.ageMax ?? 0} ANS`}</span>
+            <span className="w-0.5 h-2.5 bg-gray-300" />
+            <span>{durationLabel.toUpperCase()}</span>
+            <span className="w-0.5 h-2.5 bg-gray-300" />
+            <span className="truncate max-w-[100px]">{spotDisplay.toUpperCase()}</span>
           </div>
 
-          {/* Themes - LOT GRAPHISME 1: More subtle pills */}
-          {themes.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-4">
-              {themes.slice(0, 3).map((theme) => (
-                <span
-                  key={theme}
-                  className="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] sm:text-xs rounded-md font-medium"
-                >
-                  {theme}
-                </span>
-              ))}
-              {themes.length > 3 && (
-                <span className="px-2 py-0.5 text-gray-400 text-[10px] sm:text-xs">
-                  +{themes.length - 3}
-                </span>
-              )}
-            </div>
-          )}
+          {/* Ligne 1: Titre (Dark Blue #2E4053) */}
+          <h3 className="text-lg font-extrabold text-primary font-heading leading-tight line-clamp-2 mb-2 group-hover:text-primary transition-colors">
+            {displayTitle ?? 'Séjour sans titre'}
+          </h3>
 
-          {/* Footer - LOT GRAPHISME 1: Subtle date + cleaner CTA */}
-          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-            {nextSession && (
-              <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                <Calendar className="w-3.5 h-3.5" />
-                <span>{formatDate(nextSession)}</span>
+          {/* Ligne 2: Punchline */}
+          <p className="text-sm text-gray-500 font-sans line-clamp-2 mb-4">
+            {displayDesc}
+          </p>
+
+          <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
+            {/* Prix */}
+            {stay?.priceFrom ? (
+              <div className="flex items-baseline gap-1">
+                <span className="text-[10px] text-gray-400 uppercase tracking-wide">Dès</span>
+                <span className="text-lg font-bold text-secondary font-heading">{stay.priceFrom}€</span>
               </div>
+            ) : (
+              <span className="text-xs text-gray-400">Tarif sur demande</span>
             )}
-            {/* LOT GRAPHISME 1: More subtle CTA with blue accent */}
-            <span className="inline-flex items-center gap-1 text-sm font-medium text-gray-700 group-hover:text-primary group-hover:gap-2 transition-all">
-              {stay?.period === 'printemps' ? 'Découvrir' : 'Voir le séjour'}
-              <ArrowRight className="w-4 h-4" />
+
+            {/* CTA Minimalist */}
+            <span className="px-3 py-1.5 border border-gray-300 rounded text-xs font-bold text-primary transition-all duration-300 group-hover:bg-secondary group-hover:text-white group-hover:border-secondary">
+              En savoir +
             </span>
           </div>
         </div>

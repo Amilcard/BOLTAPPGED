@@ -11,12 +11,14 @@ export interface Stay {
   programme: string[];
   geography: string;
   accommodation: string;
+  accommodationLabel?: string; // Ajouté pour compatibilité UI
   supervision: string;
   priceFrom?: number; // Non exposé publiquement (sécurité)
   durationDays: number;
   period: string;
   ageMin: number;
   ageMax: number;
+  ageRangesDisplay?: string; // Formatted age ranges for display (e.g., "6-8 / 9-11 ans")
   themes: string[];
   imageCover: string;
   published: boolean;
@@ -27,6 +29,19 @@ export interface Stay {
   pdfUrl?: string | null; // URL du PDF du séjour (optionnel)
   sessions?: StaySession[];
   nextSessionStart?: string | null;
+
+  // === CHAMPS PREMIUM MARKETING (Univers + Wording vendeur) ===
+  // Fallback: si null, le front utilise les champs legacy (title, geography, etc.)
+  marketingTitle?: string | null;       // Home H3 + Détail H1 (court, marque)
+  punchline?: string | null;            // Home sous-titre + Détail H2 (accroche courte, 1-2 phrases)
+  expertPitch?: string | null;          // Détail corps de texte (storytelling long, style CityCrunch)
+  emotionTag?: string | null;           // Badge unique (émotion, pas géo)
+  carouselGroup?: string | null;        // Routing carrousel Home (univers)
+  spotLabel?: string | null;            // Lieu lisible (département / spot)
+  standingLabel?: string | null;        // Confort/standing réel
+  expertiseLabel?: string | null;       // Encadrement/diplômes
+  intensityLabel?: string | null;       // Intensité/rythme (optionnel)
+  priceIncludesFeatures?: string[] | null; // Bullets dynamiques 'inclus' (max 3-5)
 }
 
 export interface StaySession {

@@ -33,3 +33,13 @@ tsconfig.tsbuildinfo
 .agent/rules/Web Performance Optimization Expert
 .agent/rules/DevOps & CI/React Performance Optimization
 .agent/rules/DevOps & CI/responsive-design
+
+# local audits
+*.xlsx
+.~lock.*
+app/debug-db/
+
+# local audits
+*.xlsx
+.~lock.*
+app/debug-db/

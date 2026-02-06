@@ -23,78 +23,77 @@ const config: Config = {
         ring: 'hsl(var(--ring))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
-        // Primary = Orange #FF6B35 (Design System Vitrine - P0-1)
+        // Primary = Dark Blue Gray #2E4053 (Textes, Titres, Identité)
         primary: {
-          DEFAULT: '#FF6B35',
-          50: '#FFF4ED',
-          100: '#FFE9DB',
-          200: '#FFD3B7',
-          300: '#FFBD93',
-          400: '#FFA76F',
-          500: '#FF6B35',
-          600: '#CC5629',
-          700: '#99411F',
-          800: '#662C14',
-          900: '#33170A',
+          DEFAULT: '#2E4053',
+          50: '#F4F6F7',
+          100: '#E1E5E8',
+          200: '#CED4D9',
+          300: '#BCC4C9',
+          400: '#5D6D7E',
+          500: '#2E4053',     // Main Text Color
+          600: '#283747',
+          700: '#212F3C',
+          800: '#1B2631',
+          900: '#154360',
           foreground: '#FFFFFF',
-          hover: '#FF8555', // P1-3: Hover state
         },
-        // Secondary = Bleu foncé #2C5F8D (Design System Vitrine - P0-1 + P0-2)
+        // Secondary = Golden Yellow #FAB231 (Action - CTA, Prix, Focus)
         secondary: {
-          DEFAULT: '#2C5F8D',
-          50: '#E8F0F7',
-          100: '#D1E1EF',
-          200: '#A3C3DF',
-          300: '#75A5CF',
-          400: '#4787BF',
-          500: '#2C5F8D',
-          600: '#234C71',
-          700: '#1A3955',
-          800: '#122639',
-          900: '#09131D',
+          DEFAULT: '#FAB231', // Gold Action
+          50: '#FEF9E7',
+          100: '#FCF3CF',
+          200: '#F9E79F',
+          300: '#F7DC6F',
+          400: '#F4D03F',
+          500: '#FAB231',     // Main Action Color
+          600: '#D4AC0D',
+          700: '#B7950B',
+          800: '#9A7D0A',
+          900: '#7D6608',
+          foreground: '#2E4053', // Contrast Text on Gold
+        },
+        // Accent = Teal Green #00D49C (Active states, Success)
+        accent: {
+          DEFAULT: '#00D49C',
           foreground: '#FFFFFF',
-          hover: '#3A75B0', // P1-3: Hover state
         },
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
         },
         muted: {
-          DEFAULT: '#F8F9FA',
-          foreground: '#2D3436',
-        },
-        accent: {
-          DEFAULT: '#2C5F8D', // LOT GRAPHISME 1: Blue instead of orange for subtlety
-          foreground: '#FFFFFF',
+          DEFAULT: '#F8F9FA', // Neutral BG
+          foreground: '#6B7280',
         },
         popover: {
           DEFAULT: '#FFFFFF',
-          foreground: '#2D3436',
+          foreground: '#2E4053',
         },
         card: {
           DEFAULT: '#FFFFFF',
-          foreground: '#2D3436',
+          foreground: '#2E4053',
         },
-        // Brand colors (Design System Vitrine - P0-2)
+        // Brand aliases
         brand: {
-          blue: '#2C5F8D',    // Blue foncé - P0-2
-          orange: '#FF6B35',  // Orange - Primary
-          dark: '#2D3436',
+          dark: '#2E4053',
+          gold: '#FAB231',
+          teal: '#00D49C',
           white: '#FFFFFF',
-          light: '#F8F9FA',
+          light: '#F8F9FA', // Neutral Light
+          border: '#D0D5D7',
         },
       },
       fontFamily: {
-        sans: ['Poppins', 'Inter', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-roboto)', 'sans-serif'],
+        sans: ['var(--font-nunito)', 'sans-serif'],
       },
       borderRadius: {
-        sm: '0.5rem',
-        md: '0.75rem',
-        lg: '1rem',
-        xl: '1.25rem',
-        '2xl': '1.5rem',
-        '3xl': '2rem',
-        brand: '24px',
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
+        brand: '16px', // Keep for cards
+        pill: '50px',  // NEW: Button Pill Shape
       },
       boxShadow: {
         sm: '0 1px 2px rgba(0, 0, 0, 0.05)',
@@ -103,10 +102,9 @@ const config: Config = {
         lg: '0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04)',
         card: '0 4px 12px rgba(0, 0, 0, 0.08)',
         'card-hover': '0 8px 24px rgba(0, 0, 0, 0.12)',
-        // Brand shadows (Design System Vitrine)
-        brand: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
-        'brand-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)',
-        'brand-xl': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        'brand': '0 4px 6px -1px rgba(46, 64, 83, 0.1), 0 2px 4px -1px rgba(46, 64, 83, 0.06)',
+        'brand-lg': '0 10px 15px -3px rgba(46, 64, 83, 0.1), 0 4px 6px -2px rgba(46, 64, 83, 0.05)',
+        'brand-xl': '0 20px 25px -5px rgba(46, 64, 83, 0.1), 0 10px 10px -5px rgba(46, 64, 83, 0.04)',
       },
       spacing: {
         section: '120px',

@@ -33,7 +33,7 @@ export function Header({ variant = 'minimal' }: HeaderProps) {
   const showAdminLink = isAuthenticated && authUser && isAdminPage;
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+    <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-brand">
       <div className="max-w-6xl mx-auto px-4">
         <div className="h-16 flex items-center justify-between gap-4">
           {/* Logo - links to / which redirects to /sejours */}

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { X, Check, ChevronRight, ChevronLeft, Loader2, Shield, Star } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Check, ChevronRight, ChevronLeft, Loader2, Shield, Star, Info } from 'lucide-react';
 import type { Stay, StaySession } from '@/lib/types';
 import { formatDate, formatDateLong } from '@/lib/utils';
 
@@ -22,6 +22,7 @@ interface BookingModalProps {
 
 interface Step1Data {
   organisation: string;
+  addresseStructure?: string; // P0: Champ adresse ajouté
   socialWorkerName: string;
   email: string;
   phone: string;
@@ -29,7 +30,8 @@ interface Step1Data {
 
 interface Step2Data {
   childFirstName: string;
-  childBirthYear: string;
+  childBirthDate: string; // Format JJ/MM/AAAA ou AAAA-MM-JJ (ISO)
+  childSex?: string; // P0: Sexe de l'enfant
   consent: boolean;
 }
 
@@ -55,6 +57,52 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
   const [error, setError] = useState('');
   const [bookingId, setBookingId] = useState('');
   const [showAllSessions, setShowAllSessions] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // P0: Focus management refs
+  const firstInputRef = useRef<HTMLInputElement>(null);
+  const firstErrorRef = useRef<HTMLParagraphElement>(null);
+
+  // P0: Focus on first input when step changes
+  useEffect(() => {
+    if (step < 5) {
+      setTimeout(() => firstInputRef.current?.focus(), 100);
+    }
+  }, [step]);
+
+  // P0: Focus on first error when errors appear
+  useEffect(() => {
+    const errorKeys = Object.keys(fieldErrors);
+    if (errorKeys.length > 0) {
+      setTimeout(() => firstErrorRef.current?.focus(), 100);
+    }
+  }, [fieldErrors]);
+
+  // Helper: Get step label
+  const getStepLabel = (currentStep: number) => {
+    const labels = [
+      'Étape 1/5 : Choisir une session',
+      'Étape 2/5 : Ville de départ',
+      'Étape 3/5 : Informations de la structure',
+      'Étape 4/5 : Informations de l\'enfant',
+      'Étape 5/5 : Validation de la réservation',
+      '' // Step 5 (success) - no label needed
+    ];
+    return labels[currentStep] || '';
+  };
+
+  // Helper: Calculate age from birthdate
+  const calculateAge = (birthDate: string): number | null => {
+    if (!birthDate) return null;
+    const birth = new Date(birthDate);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
 
   // Calcul du prix total dynamique (session + ville + option)
   const selectedCityData = departureCities.find(dc => dc.city === selectedCity);
@@ -71,7 +119,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
 
   const [step2, setStep2] = useState<Step2Data>({
     childFirstName: '',
-    childBirthYear: '',
+    childBirthDate: '',
     consent: false,
   });
 
@@ -90,8 +138,8 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
     ) || dc.city === 'Sans transport'
   );
 
-  const isStep1Valid = step1.organisation && step1.socialWorkerName && step1.email && step1.phone;
-  const isStep2Valid = step2.childFirstName && step2.childBirthYear && step2.consent;
+  const isStep1Valid = step1.addresseStructure && step1.addresseStructure.trim().length >= 10 && step1.organisation && step1.socialWorkerName && step1.email && step1.phone;
+  const isStep2Valid = step2.childSex && step2.childFirstName && step2.childBirthDate && step2.consent;
 
   // Générer les années de naissance possibles (6-17 ans)
   const currentYear = new Date().getFullYear();
@@ -104,7 +152,11 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
 
     try {
       // Convertir année en date (1er janvier de l'année pour compatibilité DB)
-      const birthDate = `${step2.childBirthYear}-01-01`;
+      const birthDate = step2.childBirthDate; // Format ISO attendu
+
+      // P0: Stratégie Pass-through pour conserver Adresse et Sexe sans toucher au backend
+      const addressNote = step1.addresseStructure ? `[ADRESSE]: ${step1.addresseStructure}` : '';
+      const sexNote = step2.childSex ? `[SEXE]: ${step2.childSex}` : '';
 
       const res = await fetch('/api/bookings', {
         method: 'POST',
@@ -114,10 +166,15 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
           sessionId: selectedSessionId,
           departureCity: selectedCity,
           educationalOption: selectedOption,
-          ...step1,
+          organisation: step1.organisation,
+          socialWorkerName: step1.socialWorkerName,
+          email: step1.email,
+          phone: step1.phone,
           childFirstName: step2.childFirstName,
           childLastName: '', // Minimisation données
           childBirthDate: birthDate,
+          notes: addressNote, // Transmis dans le champ notes existant
+          childNotes: sexNote, // Transmis dans le champ childNotes existant
           consent: step2.consent,
         }),
       });
@@ -146,22 +203,51 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
         className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-white border-b border-primary-100 p-6 pb-4">
+        <div className="sticky top-0 bg-white border-b border-primary-100 p-6 pb-4 z-10">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-primary text-lg">Réserver - {stay?.title ?? ''}</h2>
             <button onClick={onClose} className="p-1 hover:bg-primary-50 rounded">
               <X className="w-5 h-5" />
             </button>
           </div>
-          {/* Prix total dynamique (affiché dès qu'on a un prix de base) */}
-          {totalPrice !== null && step < 5 && (
-            <div className="mt-3 p-3 bg-accent/5 rounded-xl border border-accent/20 flex items-center justify-between">
-              <div className="text-sm text-primary-600">
-                <span className="font-medium">Total estimé</span>
-                {extraVille > 0 && <span className="text-xs ml-2 text-primary-500">(+{extraVille}€ transport)</span>}
-                {optionPrice > 0 && <span className="text-xs ml-2 text-primary-500">(+{optionPrice}€ option)</span>}
+          {/* Sticky recap for steps 3-4: shows session + city + price */}
+          {(step === 3 || step === 4) && selectedSession && (
+            <div className="mt-3 p-3 bg-primary-50 rounded-xl border border-primary-200">
+              <div className="flex items-center justify-between text-sm">
+                <div className="text-primary-700">
+                  <div className="font-medium">{formatDate(selectedSession?.startDate ?? '')}</div>
+                  <div className="text-xs text-primary-500">{selectedCity} • {totalPrice}€ TTC</div>
+                </div>
               </div>
-              <div className="text-lg font-bold text-accent">{totalPrice} €</div>
+            </div>
+          )}
+          {/* Prix total dynamique et Récapitulatif Sticky */}
+          {totalPrice !== null && step < 5 && (
+            <div className="mt-3 p-3 bg-accent/5 rounded-xl border border-accent/20 flex flex-col gap-1">
+              {/* Ligne 1: Récap (visible dès que sélectionné) */}
+              {(selectedSession || selectedCity) && (
+                <div className="flex flex-wrap gap-2 text-xs text-primary-600 border-b border-accent/10 pb-1 mb-1">
+                  {selectedSession && (
+                    <span className="font-medium bg-white px-1.5 py-0.5 rounded border border-accent/10">
+                      📅 {formatDateLong(selectedSession.startDate)}
+                    </span>
+                  )}
+                  {selectedCity && (
+                    <span className="font-medium bg-white px-1.5 py-0.5 rounded border border-accent/10">
+                      📍 {selectedCity}
+                    </span>
+                  )}
+                </div>
+              )}
+              {/* Ligne 2: Prix */}
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-primary-600">
+                  <span className="font-medium">Total estimé</span>
+                  {extraVille > 0 && <span className="text-xs ml-2 text-primary-500">(+{extraVille}€ transport)</span>}
+                  {optionPrice > 0 && <span className="text-xs ml-2 text-primary-500">(+{optionPrice}€ option)</span>}
+                </div>
+                <div className="text-lg font-bold text-accent">{totalPrice} €</div>
+              </div>
             </div>
           )}
         </div>
@@ -184,7 +270,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
           {/* Step 0: Session Selection */}
           {step === 0 && (
             <div className="space-y-4">
-              <h3 className="font-medium text-primary">Choisir une session</h3>
+              <h3 className="font-medium text-primary">Étape 1/5 : Choisir une session</h3>
               <div className="space-y-2">
                 {sessionsUnique.slice(0, showAllSessions ? undefined : 4).map(session => {
                   const isFull = (session?.seatsLeft ?? 0) === 0;
@@ -256,7 +342,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
           {/* Step 1: Ville de départ */}
           {step === 1 && (
             <div className="space-y-4">
-              <h3 className="font-medium text-primary">Ville de départ</h3>
+              <h3 className="font-medium text-primary">Étape 2/5 : Ville de départ</h3>
               <p className="text-sm text-primary-500">Choisissez la ville de départ pour le transport</p>
 
               {standardDepartureCities && standardDepartureCities.length > 0 ? (
@@ -341,13 +427,26 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
           {/* Step 2: Pro Info (anciennement step 1) */}
           {step === 2 && (
             <div className="space-y-4">
-              <h3 className="font-medium text-primary">Informations du travailleur social</h3>
+              <h3 className="font-medium text-primary">{getStepLabel(2)}</h3>
               <div className="space-y-3">
                 <input
+                  ref={firstInputRef}
                   type="text"
                   placeholder="Organisation *"
                   value={step1.organisation}
                   onChange={e => setStep1({ ...step1, organisation: e.target.value })}
+                  className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
+                />
+                <input
+                  type="text"
+                  placeholder="Adresse postale de la structure *"
+                  value={step1.addresseStructure || ''}
+                  onChange={e => setStep1({ ...step1, addresseStructure: e.target.value })}
+                  onBlur={() => {
+                    if ((step1.addresseStructure?.trim().length || 0) > 0 && (step1.addresseStructure?.trim().length || 0) < 10) {
+                      setError('Adresse trop courte : ajoute la rue + code postal + ville.');
+                    } else if (error.includes('Adresse')) setError('');
+                  }}
                   className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
                 />
                 <input
@@ -362,13 +461,25 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                   placeholder="Email *"
                   value={step1.email}
                   onChange={e => setStep1({ ...step1, email: e.target.value })}
+                  onBlur={() => {
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (step1.email.trim().length > 0 && !emailRegex.test(step1.email)) {
+                      setError('Email invalide : vérifie le @ et le domaine.');
+                    } else if (error.includes('Email')) setError('');
+                  }}
                   className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
                 />
                 <input
                   type="tel"
-                  placeholder="Téléphone *"
+                  placeholder="Téléphone (portable de préférence) *"
                   value={step1.phone}
                   onChange={e => setStep1({ ...step1, phone: e.target.value })}
+                  onBlur={() => {
+                    const telRegex = /^(?:(?:\+|00)33|0)\s*[1-9](?:[\s.-]*\d{2}){4}$/;
+                    if (step1.phone.trim().length > 0 && !telRegex.test(step1.phone.replace(/\s/g, ''))) {
+                      setError('Téléphone invalide : utilise 10 chiffres (ex: 06 00 00 00 00).');
+                    } else if (error.includes('Téléphone')) setError('');
+                  }}
                   className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
                 />
               </div>
@@ -393,7 +504,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
           {/* Step 3: Child Info (anciennement step 2) */}
           {step === 3 && (
             <div className="space-y-4">
-              <h3 className="font-medium text-primary">Informations de l&apos;enfant</h3>
+              <h3 className="font-medium text-primary">{getStepLabel(3)}</h3>
               <p className="text-sm text-primary-500">Collecte minimale pour la pré-inscription</p>
               <div className="space-y-3">
                 <input
@@ -404,16 +515,35 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                   className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
                 />
                 <div>
-                  <label className="text-sm text-primary-600 mb-1 block">Année de naissance *</label>
+                  <label className="text-sm text-primary-600 mb-1 block">Date de naissance *</label>
+                  <input
+                    ref={firstInputRef}
+                    type="date"
+                    value={step2.childBirthDate}
+                    onChange={e => setStep2({ ...step2, childBirthDate: e.target.value })}
+                    max={new Date().toISOString().split('T')[0]}
+                    min={new Date(currentYear - 17, 0, 1).toISOString().split('T')[0]}
+                    className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
+                    required
+                  />
+                  {step2.childBirthDate && calculateAge(step2.childBirthDate) !== null && (
+                    <p className="mt-1 text-xs text-primary-500">
+                      Âge : {calculateAge(step2.childBirthDate)} ans
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="text-sm text-primary-600 mb-1 block">Sexe *</label>
                   <select
-                    value={step2.childBirthYear}
-                    onChange={e => setStep2({ ...step2, childBirthYear: e.target.value })}
-                    className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent bg-white"
+                    value={step2.childSex || ''}
+                    onChange={e => setStep2({ ...step2, childSex: e.target.value })}
+                    className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
+                    required
                   >
-                    <option value="">Sélectionner l&apos;année</option>
-                    {birthYears.map(year => (
-                      <option key={year} value={year}>{year}</option>
-                    ))}
+                    <option value="">Sélectionner</option>
+                    <option value="F">Fille</option>
+                    <option value="M">Garçon</option>
+                    <option value="Autre">Autre / Non précisé</option>
                   </select>
                 </div>
                 <label className="flex items-start gap-3 p-3 bg-primary-50 rounded-xl cursor-pointer">
@@ -454,7 +584,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
           {/* Step 4: Validation + Options éducatives */}
           {step === 4 && (
             <div className="space-y-4">
-              <h3 className="font-medium text-primary">Validation de la réservation</h3>
+              <h3 className="font-medium text-primary">{getStepLabel(4)}</h3>
 
               {/* Récapitulatif */}
               <div className="bg-primary-50 p-4 rounded-xl space-y-1">
@@ -563,7 +693,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                 <p><strong>Référence :</strong> {bookingId}</p>
                 <p><strong>Session :</strong> {formatDateLong(selectedSession?.startDate ?? '')} - {formatDateLong(selectedSession?.endDate ?? '')}</p>
                 <p><strong>Ville :</strong> {selectedCity}</p>
-                <p><strong>Enfant :</strong> {step2.childFirstName} (né en {step2.childBirthYear})</p>
+                <p><strong>Enfant :</strong> {step2.childFirstName} (né le {new Date(step2.childBirthDate).toLocaleDateString('fr-FR')})</p>
                 <p><strong>Contact :</strong> {step1.email}</p>
                 {selectedOption && (
                   <p><strong>Option :</strong> {selectedOption === 'ZEN' ? 'Option Tranquillité' : 'Option Ultime'}</p>

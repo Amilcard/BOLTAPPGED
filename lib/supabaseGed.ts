@@ -45,7 +45,8 @@ export const getSejours = async (filters: StayFilters = {}) => {
     .eq('published', true)
     .order('title')
 
-  if (filters.theme) query = query.eq('ged_theme', filters.theme)
+  // Note: Le filtre 'theme' a été supprimé car les thèmes sont maintenant gérés
+  // via gd_stay_themes (multi-thèmes) et non plus via le champ unique ged_theme
   if (filters.region) query = query.eq('location_region', filters.region)
 
   const { data, error } = await query
@@ -188,4 +189,87 @@ export const createInscription = async (inscription: Inscription) => {
 
   if (error) throw error
   return data?.[0]
+}
+
+// ============================================
+// API THÈMES (gd_stay_themes - multi-thèmes)
+// ============================================
+
+/**
+ * Récupère les thèmes d'un séjour depuis gd_stay_themes
+ * @param staySlug - Le slug du séjour
+ * @returns Tableau des thèmes (MER, MONTAGNE, SPORT, DECOUVERTE, PLEIN_AIR)
+ */
+export const getStayThemes = async (staySlug: string): Promise<string[]> => {
+  const { data, error } = await supabaseGed
+    .from('gd_stay_themes')
+    .select('theme')
+    .eq('stay_slug', staySlug)
+
+  if (error) {
+    console.error('Error fetching stay themes:', error)
+    return []
+  }
+
+  return data?.map(d => d.theme) || []
+}
+
+/**
+ * Récupère tous les thèmes pour tous les séjours (pour le catalogue)
+ * Optimisé pour un seul appel réseau
+ * @returns Map stay_slug -> [themes]
+ */
+export const getAllStayThemes = async (): Promise<Record<string, string[]>> => {
+  const { data, error } = await supabaseGed
+    .from('gd_stay_themes')
+    .select('stay_slug, theme')
+    .order('stay_slug')
+
+  if (error) {
+    console.error('Error fetching all stay themes:', error)
+    return {}
+  }
+
+  // Regrouper par stay_slug
+  const themesMap: Record<string, string[]> = {}
+  data?.forEach(row => {
+    if (!themesMap[row.stay_slug]) {
+      themesMap[row.stay_slug] = []
+    }
+    themesMap[row.stay_slug].push(row.theme)
+  })
+
+  return themesMap
+}
+
+// ============================================
+// API PRIX MINIMUM (Sprint 2 - Action 4)
+// ============================================
+
+/**
+ * Récupère le prix minimum par séjour (sans transport) pour affichage HOME.
+ * Un seul appel réseau, regroupé par stay_slug → MIN(price_ged_total).
+ * @returns Record stay_slug -> prix minimum en euros
+ */
+export const getMinPricesBySlug = async (): Promise<Record<string, number>> => {
+  const { data, error } = await supabaseGed
+    .from('gd_session_prices')
+    .select('stay_slug, price_ged_total')
+    .eq('city_departure', 'sans_transport')
+
+  if (error) {
+    console.error('Error fetching min prices:', error)
+    return {}
+  }
+
+  const pricesMap: Record<string, number> = {}
+  for (const row of data || []) {
+    const price = row.price_ged_total
+    if (price == null || !Number.isFinite(price)) continue
+    if (!pricesMap[row.stay_slug] || price < pricesMap[row.stay_slug]) {
+      pricesMap[row.stay_slug] = price
+    }
+  }
+
+  return pricesMap
 }

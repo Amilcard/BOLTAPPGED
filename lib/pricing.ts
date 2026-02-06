@@ -249,6 +249,28 @@ export function getPriceBreakdown(params: PriceBreakdownParams): PriceBreakdown 
 }
 
 /**
+ * Calcule le prix minimum d'un séjour (session la moins chère, sans transport)
+ * 
+ * @param sessions - Sessions enrichies avec prix
+ * @returns Prix minimum ou null si aucune session
+ * 
+ * @example
+ * const minPrice = getMinSessionPrice(enrichment.sessions);
+ * // => 718 (prix de la session la moins chère)
+ */
+export function getMinSessionPrice(sessions: EnrichmentSessionData[]): number | null {
+  if (!sessions || sessions.length === 0) return null;
+  
+  const prices = sessions
+    .map(s => s.promo_price_eur ?? s.base_price_eur)
+    .filter((n): n is number => n !== null && Number.isFinite(n));
+  
+  if (prices.length === 0) return null;
+  
+  return Math.min(...prices);
+}
+
+/**
  * Formate un breakdown de prix pour l'affichage
  */
 export function formatPriceBreakdown(breakdown: PriceBreakdown): {

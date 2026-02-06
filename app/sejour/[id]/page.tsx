@@ -3,16 +3,19 @@ import {
   getSessionPrices,
   getDepartureCitiesFormatted,
   getStaySessions,
-  getSessionPricesFormatted
+  getSessionPricesFormatted,
+  getAllStayThemes
 } from '@/lib/supabaseGed';
 import { notFound } from 'next/navigation';
 import { Header } from '@/components/header';
 import { BottomNav } from '@/components/bottom-nav';
 import { StayDetail } from './stay-detail';
+import { getStayAgeData, getStayDurationDays, getStayPeriod } from '@/lib/age-utils';
 
 export const dynamic = 'force-dynamic';
 
 export default async function StayPage({ params }: { params: Promise<{ id: string }> }) {
+  // Verification Round 5 - Force Revalidation: 2026-02-06 13:20
   const { id } = await params;
 
   // id = slug dans GED
@@ -20,30 +23,20 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
 
   if (!stay) notFound();
 
-  // Récupérer sessions, villes formatées et âges en parallèle
-  const [sessionPrices, departureCities, staySessions, sessionPricesFormatted] = await Promise.all([
+  // Récupérer sessions, villes formatées, âges et thèmes en parallèle
+  const [sessionPrices, departureCities, staySessions, sessionPricesFormatted, themesMap] = await Promise.all([
     getSessionPrices(id),
     getDepartureCitiesFormatted(id), // Nouveau: retourne {city, extra_eur}[]
     getStaySessions(id), // Nouveau: pour les âges
     getSessionPricesFormatted(id), // Nouveau: pour le matching prix
+    getAllStayThemes(), // Nouveau: pour les thèmes multi-tags depuis gd_stay_themes
   ]);
 
-  // Calculer les vraies tranches d'âge depuis gd_stay_sessions
-  const ageMin = staySessions.length > 0
-    ? Math.min(...staySessions.map(s => s.age_min || 6))
-    : 6;
-  const ageMax = staySessions.length > 0
-    ? Math.max(...staySessions.map(s => s.age_max || 17))
-    : 17;
-
-  // Calculer durée depuis la première session
-  const firstSession = sessionPrices[0];
-  let durationDays = 7;
-  if (firstSession?.start_date && firstSession?.end_date) {
-    const start = new Date(firstSession.start_date);
-    const end = new Date(firstSession.end_date);
-    durationDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-  }
+  // Sprint 1: Calcul unifié âges + durée via helpers centralisés
+  const sessionAgeData = staySessions.map(s => ({ age_min: s.age_min, age_max: s.age_max }));
+  const { ageMin, ageMax, ageRangesDisplay } = getStayAgeData(sessionAgeData);
+  const sessionDateData = staySessions.map(s => ({ start_date: s.start_date, end_date: s.end_date }));
+  const durationDays = getStayDurationDays(sessionDateData, 7);
 
   // Dédupliquer sessions par dates (éviter doublons ville)
   const sessionsMap = new Map<string, typeof sessionPrices[0]>();
@@ -54,6 +47,12 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
     }
   }
   const uniqueSessions = Array.from(sessionsMap.values());
+
+  // Parse price_includes_features (jsonb → string[])
+  const priceIncludesRaw = stay.price_includes_features;
+  const priceIncludesFeatures: string[] | null = Array.isArray(priceIncludesRaw)
+    ? priceIncludesRaw
+    : null;
 
   // Mapper vers le format attendu par StayDetail
   const stayData = {
@@ -71,11 +70,13 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
     accommodation: stay.centre_name || '',
     supervision: 'Équipe Groupe & Découverte',
     durationDays,
-    period: 'été',
+    period: getStayPeriod(sessionDateData, 'été'),
     ageMin,
     ageMax,
-    themes: [stay.ged_theme || 'PLEIN_AIR'],
+    ageRangesDisplay, // NEW: Detailed age ranges for display
+    themes: themesMap[stay.slug] || [], // Multi-thèmes depuis gd_stay_themes
     imageCover: stay.images?.[0] || '',
+    images: stay.images || [],
     published: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -101,6 +102,19 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
       endDate: s.end_date,
       seatsLeft: 30,
     })),
+    rawSessions: staySessions, // Prop "NO CASCADE" pour passer les âges sans modifier les types globaux
+
+    // === CHAMPS PREMIUM (fallback null = le front utilise les champs legacy) ===
+    marketingTitle: stay.marketing_title || null,
+    punchline: stay.punchline || null,
+    expertPitch: stay.expert_pitch || null,
+    emotionTag: stay.emotion_tag || null,
+    carouselGroup: stay.carousel_group || null,
+    spotLabel: stay.spot_label || null,
+    standingLabel: stay.standing_label || null,
+    expertiseLabel: stay.expertise_label || null,
+    intensityLabel: stay.intensity_label || null,
+    priceIncludesFeatures,
   };
 
   return (

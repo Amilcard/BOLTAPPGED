@@ -22,6 +22,7 @@ interface BookingModalProps {
 
 interface Step1Data {
   organisation: string;
+  addresseStructure?: string; // P0: Champ adresse ajouté
   socialWorkerName: string;
   email: string;
   phone: string;
@@ -30,6 +31,7 @@ interface Step1Data {
 interface Step2Data {
   childFirstName: string;
   childBirthDate: string; // Format JJ/MM/AAAA ou AAAA-MM-JJ (ISO)
+  childSex?: string; // P0: Sexe de l'enfant
   consent: boolean;
 }
 
@@ -90,8 +92,8 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
     ) || dc.city === 'Sans transport'
   );
 
-  const isStep1Valid = step1.organisation && step1.socialWorkerName && step1.email && step1.phone;
-  const isStep2Valid = step2.childFirstName && step2.childBirthDate && step2.consent;
+  const isStep1Valid = step1.addresseStructure && step1.addresseStructure.trim().length >= 10 && step1.organisation && step1.socialWorkerName && step1.email && step1.phone;
+  const isStep2Valid = step2.childSex && step2.childFirstName && step2.childBirthDate && step2.consent;
 
   // Générer les années de naissance possibles (6-17 ans)
   const currentYear = new Date().getFullYear();
@@ -341,13 +343,25 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
           {/* Step 2: Pro Info (anciennement step 1) */}
           {step === 2 && (
             <div className="space-y-4">
-              <h3 className="font-medium text-primary">Informations du travailleur social</h3>
+              <h3 className="font-medium text-primary">Étape 3/5 : Informations de la structure</h3>
               <div className="space-y-3">
                 <input
                   type="text"
                   placeholder="Organisation *"
                   value={step1.organisation}
                   onChange={e => setStep1({ ...step1, organisation: e.target.value })}
+                  className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
+                />
+                <input
+                  type="text"
+                  placeholder="Adresse postale de la structure *"
+                  value={step1.addresseStructure || ''}
+                  onChange={e => setStep1({ ...step1, addresseStructure: e.target.value })}
+                  onBlur={() => {
+                    if ((step1.addresseStructure?.trim().length || 0) > 0 && (step1.addresseStructure?.trim().length || 0) < 10) {
+                      setError('Adresse trop courte : ajoute la rue + code postal + ville.');
+                    } else if (error.includes('Adresse')) setError('');
+                  }}
                   className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
                 />
                 <input
@@ -362,13 +376,25 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                   placeholder="Email *"
                   value={step1.email}
                   onChange={e => setStep1({ ...step1, email: e.target.value })}
+                  onBlur={() => {
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (step1.email.trim().length > 0 && !emailRegex.test(step1.email)) {
+                      setError('Email invalide : vérifie le @ et le domaine.');
+                    } else if (error.includes('Email')) setError('');
+                  }}
                   className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
                 />
                 <input
                   type="tel"
-                  placeholder="Téléphone *"
+                  placeholder="Téléphone (portable de préférence) *"
                   value={step1.phone}
                   onChange={e => setStep1({ ...step1, phone: e.target.value })}
+                  onBlur={() => {
+                    const telRegex = /^(?:(?:\+|00)33|0)\s*[1-9](?:[\s.-]*\d{2}){4}$/;
+                    if (step1.phone.trim().length > 0 && !telRegex.test(step1.phone.replace(/\s/g, ''))) {
+                      setError('Téléphone invalide : utilise 10 chiffres (ex: 06 00 00 00 00).');
+                    } else if (error.includes('Téléphone')) setError('');
+                  }}
                   className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
                 />
               </div>
@@ -393,7 +419,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
           {/* Step 3: Child Info (anciennement step 2) */}
           {step === 3 && (
             <div className="space-y-4">
-              <h3 className="font-medium text-primary">Informations de l&apos;enfant</h3>
+              <h3 className="font-medium text-primary">Étape 4/5 : Informations de l'enfant</h3>
               <p className="text-sm text-primary-500">Collecte minimale pour la pré-inscription</p>
               <div className="space-y-3">
                 <input
@@ -414,6 +440,20 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                     className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
                     required
                   />
+                </div>
+                <div>
+                  <label className="text-sm text-primary-600 mb-1 block">Sexe *</label>
+                  <select
+                    value={step2.childSex || ''}
+                    onChange={e => setStep2({ ...step2, childSex: e.target.value })}
+                    className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
+                    required
+                  >
+                    <option value="">Sélectionner</option>
+                    <option value="F">Fille</option>
+                    <option value="M">Garçon</option>
+                    <option value="Autre">Autre / Non précisé</option>
+                  </select>
                 </div>
                 <label className="flex items-start gap-3 p-3 bg-primary-50 rounded-xl cursor-pointer">
                   <input

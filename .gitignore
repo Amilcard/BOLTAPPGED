@@ -43,3 +43,6 @@ app/debug-db/
 *.xlsx
 .~lock.*
 app/debug-db/
+
+# local editor
+.vscode/

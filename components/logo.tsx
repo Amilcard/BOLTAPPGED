@@ -6,32 +6,35 @@ interface LogoProps {
 }
 
 export function Logo({ variant = 'default', className = '' }: LogoProps) {
-  const textColor = variant === 'white' ? 'text-white' : 'text-accent';
-  const etColor = variant === 'white' ? 'text-white/80' : 'text-primary';
+  // Common Icon: Gold Square with White G&D
+  const Icon = () => (
+    <div className="flex items-center justify-center w-10 h-10 bg-[#FAB231] rounded-lg shadow-sm shrink-0">
+      <span className="text-white font-extrabold italic text-sm tracking-tighter leading-none">
+        G&D
+      </span>
+    </div>
+  );
 
+  // Compact: Just the Icon
   if (variant === 'compact') {
     return (
-      <div className={`flex items-center gap-1 ${className}`}>
-        <span className="text-lg font-extrabold italic text-accent">G</span>
-        <span className="text-sm font-normal italic text-primary">&</span>
-        <span className="text-lg font-extrabold italic text-accent">D</span>
+      <div className={className}>
+        <Icon />
       </div>
     );
   }
 
+  // Default: Icon + Text Horizontal
+  const textColor = variant === 'white' ? 'text-white' : 'text-[#2E4053]';
+
   return (
-    <div className={`flex flex-col leading-none ${className}`}>
-      <div className="flex items-baseline gap-1.5">
-        <span className={`text-sm sm:text-base font-extrabold italic tracking-tight ${textColor}`}>
-          GROUPE
-        </span>
-        <span className={`text-xs sm:text-sm font-normal italic ${etColor}`}>
-          ET
+    <div className={`flex items-center gap-3 ${className}`}>
+      <Icon />
+      <div className="flex flex-col leading-none">
+        <span className={`text-base font-bold font-heading tracking-wide ${textColor}`}>
+          GROUPE ET DÉCOUVERTE
         </span>
       </div>
-      <span className={`text-sm sm:text-base font-extrabold italic tracking-tight ${textColor}`}>
-        DÉCOUVERTE
-      </span>
     </div>
   );
 }

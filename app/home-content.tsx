@@ -90,7 +90,7 @@ export function HomeContent({
     return stays.filter((stay) => {
       if (!stay) return false;
 
-      // Search query (title, description, themes, geography)
+      // Search query (title, description, themes, geography + champs premium)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const searchFields = [
@@ -98,7 +98,12 @@ export function HomeContent({
           stay.descriptionShort,
           stay.geography,
           ...(Array.isArray(stay.themes) ? stay.themes : []),
-        ].join(' ').toLowerCase();
+          // P1 FIX: Indexer les champs premium pour la recherche
+          stay.marketingTitle,
+          stay.punchline,
+          stay.emotionTag,
+          stay.spotLabel,
+        ].filter(Boolean).join(' ').toLowerCase();
         if (!searchFields.includes(q)) return false;
       }
 
@@ -204,7 +209,7 @@ export function HomeContent({
 
       {/* Content: Carousels ou Grille selon viewMode */}
       {filteredStays.length > 0 ? (
-        <div className="pb-6">
+        <div>
           {viewMode === 'carousels' ? (
             <HomeCarousels stays={filteredStays} />
           ) : (

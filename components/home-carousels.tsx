@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Stay } from '@/lib/types';
 import { StayCard } from './stay-card';
@@ -9,129 +9,148 @@ interface HomeCarouselsProps {
   stays: Stay[];
 }
 
+// === CONFIGURATION DES UNIVERS (3 carrousels) ===
+// Source de vérité: carousel_group (DB) → titre + sous-titre + ordre d'affichage
+// Fusionné: ALTITUDE_AVENTURE + OCEAN_FUN → AVENTURE_DECOUVERTE
+// Règle: les badges vendent une INTENSITÉ/ÉMOTION, pas une géographie
+const UNIVERSE_CONFIG = [
+  {
+    key: 'ADRENALINE_SENSATIONS',
+    title: 'Sensations & Adrénaline', // Title Case instead of Uppercase
+    subtitle: 'Pour les 12-17 ans',
+    fallbackSlugs: [
+      'moto-moto', 'dh-experience-11-13-ans', 'annecy-element',
+      'sperienza-in-corsica-1', 'surf-sur-le-bassin', 'destination-soleil',
+      'aqua-fun'
+    ]
+  },
+  {
+    key: 'AVENTURE_DECOUVERTE',
+    title: 'Aventure & Découverte',
+    subtitle: 'Pour les 8-14 ans',
+    fallbackSlugs: [
+      'les-robinson-des-glieres', 'survie-dans-le-beaufortain', 'yamakasi',
+      'e-sport-and-sport', 'explore-mountain', 'mountain-and-chill',
+      'glieraventures', 'nature-picture',
+      'aqua-mix', 'breizh-equit-kids-8-11-ans',
+      'destination-bassin-darcachon-1', 'laventure-verticale'
+    ]
+  },
+  {
+    key: 'MA_PREMIERE_COLO',
+    title: 'Ma Première Colo',
+    subtitle: 'Pour les 3-9 ans',
+    fallbackSlugs: [
+      'les-ptits-puisotins-1', 'croc-marmotte', 'aqua-gliss',
+      'natation-et-sensation', 'les-apprentis-montagnards'
+    ]
+  }
+];
+
 export function HomeCarousels({ stays }: HomeCarouselsProps) {
-  const [pleinAirScroll, setPleinAirScroll] = useState(0);
-  const [merScroll, setMerScroll] = useState(0);
+  // Déterminer si les données premium sont disponibles (au moins 1 séjour a carousel_group)
+  const hasPremiumData = useMemo(
+    () => stays.some(s => !!s.carouselGroup),
+    [stays]
+  );
 
-  // Filtrer les séjours par thématique
-  // Logique alignée avec home-content.tsx : match direct prioritaire, puis fallback keywords
-  
-  // Carrousel 1: Bords de mer
-  const merStays = stays.filter(s => {
-    const themes = s.themes || [];
-    // Match direct avec 'MER' (depuis gd_stay_themes)
-    if (themes.includes('MER')) return true;
-    // Fallback: keywords pour compatibilité
-    return themes.some(t => t.toUpperCase().includes('MER')) ||
-           s.geography?.toLowerCase().includes('mer') ||
-           s.geography?.toLowerCase().includes('côte');
-  }).slice(0, 10);
+  // Construire les sections
+  const sections = useMemo(() => {
+    return UNIVERSE_CONFIG.map(config => {
+      let sectionStays: Stay[];
 
-  // Carrousel 2: Plein Air & Découverte
-  const pleinAirThemes = ['PLEIN_AIR', 'NATURE', 'MONTAGNE', 'CAMPAGNE', 'MULTI', 'DECOUVERTE', 'SPORT'];
-  const pleinAirStays = stays.filter(s => {
-    const themes = s.themes || [];
-    // Match direct avec les thèmes exacts (depuis gd_stay_themes)
-    if (themes.some(t => pleinAirThemes.includes(t))) return true;
-    // Fallback: keywords pour compatibilité
-    return themes.some(t => pleinAirThemes.some(theme => t.toUpperCase().includes(theme)));
-  }).slice(0, 10);
+      if (hasPremiumData) {
+        // MODE PREMIUM: router par carousel_group (DB)
+        sectionStays = stays.filter(s => s.carouselGroup === config.key);
+      } else {
+        // MODE FALLBACK: garder le mapping par slugs hardcodés
+        sectionStays = config.fallbackSlugs
+          .map(slug => stays.find(s => s.slug === slug || s.id === slug))
+          .filter((s): s is Stay => !!s);
+      }
 
-  const scrollCarousel = (direction: 'left' | 'right', setScroll: (val: number) => void, currentScroll: number) => {
-    const scrollAmount = 320; // Largeur approximative d'une carte
-    const newScroll = direction === 'left' 
-      ? Math.max(0, currentScroll - scrollAmount)
-      : currentScroll + scrollAmount;
-    setScroll(newScroll);
+      return {
+        id: config.key.toLowerCase().replace(/_/g, '-'),
+        title: config.title,
+        subtitle: config.subtitle,
+        stays: sectionStays,
+      };
+    }).filter(section => section.stays.length > 0);
+  }, [stays, hasPremiumData]);
+
+  // Gestion du scroll par section
+  const [scrollPositions, setScrollPositions] = useState<Record<string, number>>({});
+
+  const scrollCarousel = (sectionId: string, direction: 'left' | 'right', maxScroll: number) => {
+    setScrollPositions(prev => {
+      const current = prev[sectionId] || 0;
+      const scrollAmount = 320; // ~largeur carte + gap
+
+      let newScroll;
+      if (direction === 'left') {
+        newScroll = Math.max(0, current - scrollAmount);
+      } else {
+        newScroll = Math.min(maxScroll, current + scrollAmount);
+      }
+      return { ...prev, [sectionId]: newScroll };
+    });
   };
 
-  if (pleinAirStays.length === 0 && merStays.length === 0) {
-    return null; // Ne rien afficher si aucun séjour
-  }
-
   return (
-    <section className="max-w-7xl mx-auto px-4 py-8 space-y-12">
-      {/* Carrousel 1: Bords de mer */}
-      {merStays.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-              Bords de mer
-            </h2>
-            <div className="flex gap-2">
-              <button
-                onClick={() => scrollCarousel('left', setMerScroll, merScroll)}
-                className="p-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50"
-                aria-label="Précédent"
-                disabled={merScroll === 0}
-              >
-                <ChevronLeft className="w-5 h-5 text-gray-600" />
-              </button>
-              <button
-                onClick={() => scrollCarousel('right', setMerScroll, merScroll)}
-                className="p-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
-                aria-label="Suivant"
-              >
-                <ChevronRight className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-          </div>
-          
-          <div className="relative overflow-hidden">
-            <div 
-              className="flex gap-4 transition-transform duration-300 ease-out"
-              style={{ transform: `translateX(-${merScroll}px)` }}
-            >
-              {merStays.map(stay => (
-                <div key={stay.id} className="flex-shrink-0 w-[300px]">
-                  <StayCard stay={stay} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+    <section className="max-w-7xl mx-auto px-4 py-8 space-y-16">
+      {sections.map(section => {
+        const currentScroll = scrollPositions[section.id] || 0;
+        const cardWidth = 300;
+        const gap = 16;
+        const cardsTotalWidth = (section.stays.length * cardWidth) + ((section.stays.length - 1) * gap);
+        const viewportWidth = 1200;
+        const maxScroll = Math.max(0, cardsTotalWidth - viewportWidth);
 
-      {/* Carrousel 2: Plein Air (Strictement en dessous) */}
-      {pleinAirStays.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-              Plein Air & Découverte
-            </h2>
-            <div className="flex gap-2">
-              <button
-                onClick={() => scrollCarousel('left', setPleinAirScroll, pleinAirScroll)}
-                className="p-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50"
-                disabled={pleinAirScroll === 0}
-                aria-label="Précédent"
+        return (
+          <div key={section.id}>
+            <div className="flex items-end justify-between mb-8 border-b border-gray-100 pb-4">
+              <div>
+                <h2 className="text-3xl font-bold text-primary font-heading tracking-tight">
+                  {section.title}
+                </h2>
+                <p className="text-gray-400 text-sm mt-1 font-sans">{section.subtitle}</p>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => scrollCarousel(section.id, 'left', maxScroll)}
+                  className="p-2 rounded-full border border-gray-200 hover:border-secondary hover:text-secondary transition-colors disabled:opacity-20"
+                  aria-label="Précédent"
+                  disabled={currentScroll <= 0}
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => scrollCarousel(section.id, 'right', maxScroll)}
+                  className="p-2 rounded-full border border-gray-200 hover:border-secondary hover:text-secondary transition-colors disabled:opacity-20"
+                  aria-label="Suivant"
+                  disabled={currentScroll >= maxScroll}
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="relative overflow-hidden">
+              <div
+                className="flex gap-4 transition-transform duration-300 ease-out"
+                style={{ transform: `translateX(-${currentScroll}px)` }}
               >
-                <ChevronLeft className="w-5 h-5 text-gray-600" />
-              </button>
-              <button
-                onClick={() => scrollCarousel('right', setPleinAirScroll, pleinAirScroll)}
-                className="p-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
-                aria-label="Suivant"
-              >
-                <ChevronRight className="w-5 h-5 text-gray-600" />
-              </button>
+                {section.stays.map(stay => (
+                  <div key={stay.id} className="flex-shrink-0 w-[300px]">
+                    <StayCard stay={stay} />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-          
-          <div className="relative overflow-hidden">
-            <div 
-              className="flex gap-4 transition-transform duration-300 ease-out"
-              style={{ transform: `translateX(-${pleinAirScroll}px)` }}
-            >
-              {pleinAirStays.map(stay => (
-                <div key={stay.id} className="flex-shrink-0 w-[300px]">
-                  <StayCard stay={stay} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+        );
+      })}
     </section>
   );
 }

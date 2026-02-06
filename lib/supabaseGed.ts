@@ -223,6 +223,7 @@ export const getAllStayThemes = async (): Promise<Record<string, string[]>> => {
   const { data, error } = await supabaseGed
     .from('gd_stay_themes')
     .select('stay_slug, theme')
+    .order('stay_slug')
 
   if (error) {
     console.error('Error fetching all stay themes:', error)
@@ -239,4 +240,36 @@ export const getAllStayThemes = async (): Promise<Record<string, string[]>> => {
   })
 
   return themesMap
+}
+
+// ============================================
+// API PRIX MINIMUM (Sprint 2 - Action 4)
+// ============================================
+
+/**
+ * Récupère le prix minimum par séjour (sans transport) pour affichage HOME.
+ * Un seul appel réseau, regroupé par stay_slug → MIN(price_ged_total).
+ * @returns Record stay_slug -> prix minimum en euros
+ */
+export const getMinPricesBySlug = async (): Promise<Record<string, number>> => {
+  const { data, error } = await supabaseGed
+    .from('gd_session_prices')
+    .select('stay_slug, price_ged_total')
+    .eq('city_departure', 'sans_transport')
+
+  if (error) {
+    console.error('Error fetching min prices:', error)
+    return {}
+  }
+
+  const pricesMap: Record<string, number> = {}
+  for (const row of data || []) {
+    const price = row.price_ged_total
+    if (price == null || !Number.isFinite(price)) continue
+    if (!pricesMap[row.stay_slug] || price < pricesMap[row.stay_slug]) {
+      pricesMap[row.stay_slug] = price
+    }
+  }
+
+  return pricesMap
 }

@@ -1,0 +1,429 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "generated": "2026-02-07",
+    "description": "Règles métier Flooow : Smart Form, Visual Mapping, Product Display",
+    "purpose": "Bridge entre données Excel et expérience utilisateur B2B"
+  },
+
+  "smart_form_routing_rules": [
+    {
+      "input_selection": "NIVEAU_1_INCLUSION",
+      "user_intent": "Placement classique / Socialisation",
+      "target_profile": "Enfant/ado sans besoin spécifique majeur, objectif découverte et lien social",
+      "display_logic": {
+        "show_catalog": true,
+        "filter_tags": ["Touche-à-tout", "Première Colo", "Découverte", "DOUCEUR", "DÉCOUVERTE", "NATURE"],
+        "suggested_stays": ["ALPOO KIDS", "AQUA MIX", "MY LITTLE FOREST", "DESTINATION BASSIN"],
+        "carousel_priority": ["MA_PREMIERE_COLO", "OCEAN_FUN"],
+        "alert_sales_team": "STANDARD"
+      },
+      "form_behavior": {
+        "hide_fields": ["specific_needs_detailed", "crisis_protocol"],
+        "show_fields": ["age", "interests", "duration_preference"],
+        "cta_text": "Voir les séjours adaptés"
+      }
+    },
+    {
+      "input_selection": "NIVEAU_2_RENFORCE",
+      "user_intent": "Besoin de cadre / Canalisation énergie",
+      "target_profile": "Enfant/ado avec énergie débordante, besoin de structure forte, médiation par l'activité",
+      "display_logic": {
+        "show_catalog": true,
+        "filter_tags": ["Mécanique", "Sport Intensif", "Cadre Serré", "SPORT", "ACTION", "PASSION", "DYNAMIQUE"],
+        "suggested_stays": ["MX RIDER ACADEMY", "SURVIVOR CAMP 74", "BRETAGNE OCEAN RIDE", "DH EXPERIENCE", "PARKOUR ACADEMY"],
+        "carousel_priority": ["ADRENALINE_SENSATIONS", "ALTITUDE_AVENTURE"],
+        "alert_sales_team": "MEDIUM_PRIORITY",
+        "highlight_features": ["Encadrement renforcé", "Médiation animale", "Activité canalisante"]
+      },
+      "form_behavior": {
+        "show_fields": ["age", "interests", "duration_preference", "behavioral_notes"],
+        "cta_text": "Trouver le séjour à fort cadre",
+        "show_info_bubble": "Ces séjours utilisent l'activité comme médiateur éducatif. Taux d'encadrement élevé."
+      }
+    },
+    {
+      "input_selection": "NIVEAU_3_RUPTURE",
+      "user_intent": "Crise / Distanciation / ASE Complexe",
+      "target_profile": "Situation de rupture familiale, ASE avec parcours complexe, besoin d'accompagnement 1 pour 1",
+      "display_logic": {
+        "show_catalog": false,
+        "trigger_modal": "contact_expert_urgent",
+        "message": "Pour ce profil, un protocole sur-mesure (accompagnement 1 pour 1) est requis. Un directeur vous rappelle immédiatement.",
+        "alert_sales_team": "HIGH_PRIORITY_CALL_NOW",
+        "crm_action": "CREATE_OPPORTUNITY_HOT_LEAD"
+      },
+      "form_behavior": {
+        "force_phone_field": true,
+        "show_fields": ["age", "phone", "email", "urgency_level", "referent_organization"],
+        "cta_text": "Demander un protocole sur-mesure",
+        "show_info_bubble": "Nos directeurs sont formés aux situations ASE complexes. Réponse sous 2h en journée."
+      }
+    },
+    {
+      "input_condition": "URGENCE_DEPART_IMMEDIAT",
+      "trigger_on": "user_checks_urgence_48h",
+      "action": {
+        "force_phone_field": true,
+        "email_subject_prefix": "[URGENT 48H]",
+        "crm_tag": "HOT_LEAD",
+        "auto_notify": "sales_team_sms",
+        "display_only_available_dates": "within_7_days"
+      }
+    },
+    {
+      "input_condition": "HANDICAP_MOTEUR_OU_MENTAL",
+      "trigger_on": "user_checks_handicap_field",
+      "action": {
+        "show_accessibility_filters": true,
+        "filter_stays_by": "accessibility_features",
+        "show_info_bubble": "Tous nos séjours sont labellisés Tourisme & Handicap. Possibilité AVS si besoin.",
+        "suggest_contact": "Besoin d'un échange préalable ? Nos directeurs sont à votre écoute."
+      }
+    },
+    {
+      "input_condition": "QPV_OU_QF_TRES_BAS",
+      "trigger_on": "user_enters_qf_below_400",
+      "action": {
+        "show_financial_aid_calculator": true,
+        "highlight_message": "Aide financière disponible : séjour à partir de 0€ selon votre situation.",
+        "show_payment_simulation": true,
+        "hide_full_price": true
+      }
+    }
+  ],
+
+  "visual_mapping_rules": {
+    "global_constraints": {
+      "orientation": "landscape",
+      "min_width": 1200,
+      "min_height": 800,
+      "content_filter": "high",
+      "avoid_tags": [
+        "smiling group posing",
+        "classroom",
+        "indoor cafeteria",
+        "stock photo staged",
+        "recognizable faces close up",
+        "corporate team building"
+      ],
+      "prefer_tags": [
+        "back view",
+        "silhouette",
+        "hands detail",
+        "gear close up",
+        "atmospheric",
+        "candid",
+        "action"
+      ],
+      "vibe": "Cinematic, Action-focused, moody or golden hour",
+      "style": "Low saturation, High contrast, Candid shots (No posing)",
+      "gdpr_compliance": "Avoid recognizable faces - Favor 'Back of head' or 'Hands/Gear' shots"
+    },
+
+    "category_queries": [
+      {
+        "stay_theme": "MÉCANIQUE (Moto, Quad)",
+        "target_stays": ["MX RIDER ACADEMY", "ATOUT QUAD", "CORSICA WILD TRIP (moto)"],
+        "slugs": ["moto-moto", "quad-aventures", "atout-quad"],
+        "unsplash_primary_query": "motocross mud action helmet detail",
+        "unsplash_secondary_queries": [
+          "quad biking dust",
+          "mechanic hands tools",
+          "dirt bike circuit aerial",
+          "motorcycle gear detail",
+          "motocross jump silhouette"
+        ],
+        "mood": "Gritty & Dynamic",
+        "color_palette": "Earth tones, orange dust, dark metals",
+        "composition": "Low angle, close-ups on gear, motion blur"
+      },
+      {
+        "stay_theme": "EAU & GLISSE (Surf, Plongée, Voile)",
+        "target_stays": ["SURF SUR LE BASSIN", "BRETAGNE OCEAN RIDE", "AZUR DIVE & JET", "DESTINATION SOLEIL"],
+        "slugs": ["surf-sur-le-bassin", "breizh-equit-kids-8-11-ans", "aqua-fun", "destination-soleil"],
+        "unsplash_primary_query": "surfer silhouette sunset",
+        "unsplash_secondary_queries": [
+          "underwater scuba bubbles",
+          "ocean waves aerial",
+          "catamaran sailing mediterranean",
+          "surf board wax close up",
+          "diving mask underwater view",
+          "sailboat deck golden hour"
+        ],
+        "mood": "Blue & Orange (Teal & Orange cinematic grade)",
+        "color_palette": "Deep blues, golden hour orange, turquoise water",
+        "composition": "Wide shots, silhouettes against sky, underwater POV"
+      },
+      {
+        "stay_theme": "MONTAGNE & SURVIE",
+        "target_stays": ["SURVIVOR CAMP 74", "ALPINE SKY CAMP", "ROBINSON DES GLIERES", "SURVIE BEAUFORTAIN"],
+        "slugs": ["les-robinson-des-glieres", "survie-dans-le-beaufortain", "annecy-element", "explore-mountain"],
+        "unsplash_primary_query": "bonfire night camping stars",
+        "unsplash_secondary_queries": [
+          "compass map hiking",
+          "mountain foggy forest",
+          "climbing rope detail hands",
+          "tent camping mountain sunrise",
+          "bushcraft knife wood",
+          "backpack trail forest"
+        ],
+        "mood": "Adventure & Isolation, Atmospheric",
+        "color_palette": "Forest greens, campfire orange, misty blues",
+        "composition": "Atmospheric depth, fog layers, warm campfire glow"
+      },
+      {
+        "stay_theme": "TECH & GAMING",
+        "target_stays": ["E-SPORT & SPORT"],
+        "slugs": ["e-sport-and-sport"],
+        "unsplash_primary_query": "esports arena neon lights",
+        "unsplash_secondary_queries": [
+          "gaming headset close up rgb",
+          "keyboard mechanical neon dark",
+          "gaming setup dual monitor",
+          "esports tournament atmosphere"
+        ],
+        "mood": "Dark Mode & Neon, Cyberpunk vibes",
+        "color_palette": "Neon purple, cyan, black backgrounds",
+        "composition": "Low key lighting, RGB accent lights, screen glow"
+      },
+      {
+        "stay_theme": "URBAIN (Parkour, Street)",
+        "target_stays": ["URBAN MOVE ACADEMY"],
+        "slugs": ["yamakasi"],
+        "unsplash_primary_query": "parkour jump urban rooftop",
+        "unsplash_secondary_queries": [
+          "freerunning wall run",
+          "urban architecture perspective",
+          "concrete texture detail",
+          "city parkour silhouette"
+        ],
+        "mood": "Urban & Raw, Concrete jungle",
+        "color_palette": "Concrete grays, street art colors, urban sunset",
+        "composition": "Diagonal lines, height perspective, motion freeze"
+      },
+      {
+        "stay_theme": "PREMIERS PAS (3-9 ans)",
+        "target_stays": ["ALPOO KIDS", "MY LITTLE FOREST", "LES P'TITS PUISOTINS", "BABY RIDERS"],
+        "slugs": ["croc-marmotte", "les-ptits-puisotins-1", "aqua-gliss"],
+        "unsplash_primary_query": "child hiking boots nature back view",
+        "unsplash_secondary_queries": [
+          "pony grazing green field",
+          "marmot wildlife nature",
+          "forest sunlight soft",
+          "child hand holding flower",
+          "ladybug on leaf macro",
+          "kids rain boots puddle"
+        ],
+        "mood": "Soft Light & Safe, Nurturing",
+        "color_palette": "Pastel greens, warm sunlight, soft focus",
+        "composition": "Soft focus, warm natural light, safe distances, back views"
+      },
+      {
+        "stay_theme": "ÉQUITATION",
+        "target_stays": ["BRETAGNE OCEAN RIDE"],
+        "slugs": ["breizh-equit-kids-8-11-ans"],
+        "unsplash_primary_query": "horse riding beach sunset silhouette",
+        "unsplash_secondary_queries": [
+          "horse mane close up",
+          "equestrian ocean coast",
+          "pony child bonding",
+          "horse stable golden hour",
+          "riding boots stirrup detail"
+        ],
+        "mood": "Passion & Connection, Oceanic",
+        "color_palette": "Golden hour amber, ocean blues, horse browns",
+        "composition": "Silhouettes, connection moments, coastal landscapes"
+      },
+      {
+        "stay_theme": "PREMIUM CORSICA",
+        "target_stays": ["SPERIENZA CORSICA"],
+        "slugs": ["sperienza-in-corsica-1"],
+        "unsplash_primary_query": "mediterranean coast drone aerial turquoise",
+        "unsplash_secondary_queries": [
+          "scuba diving bubbles underwater coral",
+          "catamaran sail corsica",
+          "mediterranean cove crystal water",
+          "yacht deck sunset corsica"
+        ],
+        "mood": "Exclusive & Turquoise, Premium adventure",
+        "color_palette": "Turquoise water, white boats, mediterranean blues",
+        "composition": "Aerial shots, crystal water clarity, luxury adventure vibe"
+      },
+      {
+        "stay_theme": "MULTI-ACTIVITÉS MONTAGNE",
+        "target_stays": ["GLIÈRAVENTURES", "MOUNTAIN & CHILL", "EXPLORE"],
+        "slugs": ["glieraventures", "mountain-and-chill", "explore-mountain"],
+        "unsplash_primary_query": "alpine activities summer mountain",
+        "unsplash_secondary_queries": [
+          "mountain hiking trail aerial",
+          "alpine lake reflection",
+          "climbing wall outdoor mountain",
+          "mountain bike trail forest",
+          "alpine wildflowers meadow"
+        ],
+        "mood": "Alpine Fresh & Varied",
+        "color_palette": "Alpine blues, fresh greens, peak whites",
+        "composition": "Wide mountain vistas, activity in context, alpine environment"
+      },
+      {
+        "stay_theme": "NATURE & ART",
+        "target_stays": ["NATURE PICTURE"],
+        "slugs": ["nature-picture"],
+        "unsplash_primary_query": "nature photography close up artistic",
+        "unsplash_secondary_queries": [
+          "wildlife detail macro",
+          "forest patterns texture",
+          "mountain landscape golden hour",
+          "nature art creative composition"
+        ],
+        "mood": "Artistic & Contemplative",
+        "color_palette": "Natural earth tones, artistic compositions",
+        "composition": "Macro details, creative angles, artistic perspective"
+      },
+      {
+        "stay_theme": "OCÉAN & AVENTURE",
+        "target_stays": ["DESTINATION BASSIN", "AQUA MIX", "L'AVENTURE VERTICALE"],
+        "slugs": ["destination-bassin-darcachon-1", "aqua-mix", "laventure-verticale"],
+        "unsplash_primary_query": "ocean adventure atlantic coast",
+        "unsplash_secondary_queries": [
+          "beach activities coast",
+          "ocean discovery nature",
+          "coastal exploration adventure",
+          "sea kayak aerial view",
+          "rock climbing coastal cliff"
+        ],
+        "mood": "Atlantic Adventure & Discovery",
+        "color_palette": "Atlantic blues, sand tones, coastal greens",
+        "composition": "Coastal landscapes, action in environment, atlantic mood"
+      }
+    ],
+
+    "exclusion_filters": {
+      "must_exclude": [
+        "identifiable child face close up",
+        "adult supervision visible staged",
+        "branded equipment prominent",
+        "indoor classroom setting",
+        "cafeteria meal time",
+        "group photo posed smiling camera"
+      ],
+      "prefer_instead": [
+        "environmental context shot",
+        "equipment and gear detail",
+        "action from behind or side",
+        "atmospheric landscape with activity",
+        "hands doing activity close up",
+        "silhouette or back view"
+      ]
+    }
+  },
+
+  "product_display_rules": {
+    "naming_convention": "ALWAYS use 'premium_title' for frontend display",
+    "fallback_rule": "If premium_title missing, use marketing_title from gd_stays",
+
+    "mappings": [
+      { "db_id": "moto-moto", "slug": "moto-moto", "premium_title": "MX RIDER ACADEMY", "tagline": "Pilotage & Maîtrise", "carousel_group": "ADRENALINE_SENSATIONS" },
+      { "db_id": "croc-marmotte", "slug": "croc-marmotte", "premium_title": "ALPOO KIDS", "tagline": "Ma première grande aventure", "carousel_group": "MA_PREMIERE_COLO" },
+      { "db_id": "survie-beaufortain", "slug": "survie-dans-le-beaufortain", "premium_title": "SURVIVOR CAMP", "tagline": "Autonomie en milieu sauvage", "carousel_group": "ALTITUDE_AVENTURE" },
+      { "db_id": "aqua-mix", "slug": "aqua-mix", "premium_title": "BLUE EXPERIENCE", "tagline": "L'appel du large", "carousel_group": "OCEAN_FUN" },
+      { "db_id": "breizh-equit-kids", "slug": "breizh-equit-kids-8-11-ans", "premium_title": "BRETAGNE OCEAN RIDE", "tagline": "Équitation bord de mer", "carousel_group": "OCEAN_FUN" },
+      { "db_id": "annecy-element", "slug": "annecy-element", "premium_title": "ALPINE SKY CAMP", "tagline": "Sensations Verticales", "carousel_group": "ADRENALINE_SENSATIONS" },
+      { "db_id": "yamakasi", "slug": "yamakasi", "premium_title": "PARKOUR ACADEMY", "tagline": "L'art du déplacement urbain", "carousel_group": "ALTITUDE_AVENTURE" },
+      { "db_id": "les-ptits-puisotins", "slug": "les-ptits-puisotins-1", "premium_title": "MY LITTLE FOREST", "tagline": "La forêt magique", "carousel_group": "MA_PREMIERE_COLO" },
+      { "db_id": "robinson-glieres", "slug": "les-robinson-des-glieres", "premium_title": "SURVIVOR CAMP 74", "tagline": "Apprendre à survivre", "carousel_group": "ALTITUDE_AVENTURE" },
+      { "db_id": "surf-bassin", "slug": "surf-sur-le-bassin", "premium_title": "SURF SUR LE BASSIN", "tagline": "Glisse & Océan", "carousel_group": "ADRENALINE_SENSATIONS" },
+      { "db_id": "destination-soleil", "slug": "destination-soleil", "premium_title": "DESTINATION SOLEIL", "tagline": "Vitesse & Méditerranée", "carousel_group": "ADRENALINE_SENSATIONS" },
+      { "db_id": "sperienza-corsica", "slug": "sperienza-in-corsica-1", "premium_title": "SPERIENZA CORSICA", "tagline": "Aventure VIP Corse", "carousel_group": "ADRENALINE_SENSATIONS" },
+      { "db_id": "dh-experience", "slug": "dh-experience-11-13-ans", "premium_title": "DH EXPERIENCE", "tagline": "VTT Descente", "carousel_group": "ADRENALINE_SENSATIONS" },
+      { "db_id": "aqua-fun", "slug": "aqua-fun", "premium_title": "AZUR DIVE & JET", "tagline": "Plongée & Jet Premium", "carousel_group": "ADRENALINE_SENSATIONS" },
+      { "db_id": "e-sport-sport", "slug": "e-sport-and-sport", "premium_title": "E-SPORT & SPORT", "tagline": "Gaming & Physique", "carousel_group": "ALTITUDE_AVENTURE" },
+      { "db_id": "explore-mountain", "slug": "explore-mountain", "premium_title": "EXPLORE", "tagline": "Exploration montagne", "carousel_group": "ALTITUDE_AVENTURE" },
+      { "db_id": "mountain-chill", "slug": "mountain-and-chill", "premium_title": "MOUNTAIN & CHILL", "tagline": "Montagne détente", "carousel_group": "ALTITUDE_AVENTURE" },
+      { "db_id": "glieraventures", "slug": "glieraventures", "premium_title": "GLIÈRAVENTURES", "tagline": "Multi-activités dynamique", "carousel_group": "ALTITUDE_AVENTURE" },
+      { "db_id": "nature-picture", "slug": "nature-picture", "premium_title": "NATURE PICTURE", "tagline": "Art & Nature", "carousel_group": "ALTITUDE_AVENTURE" },
+      { "db_id": "destination-bassin", "slug": "destination-bassin-darcachon-1", "premium_title": "DESTINATION BASSIN", "tagline": "Nature & Océan", "carousel_group": "OCEAN_FUN" },
+      { "db_id": "aventure-verticale", "slug": "laventure-verticale", "premium_title": "L'AVENTURE VERTICALE", "tagline": "Escalade & Action", "carousel_group": "OCEAN_FUN" },
+      { "db_id": "aqua-gliss", "slug": "aqua-gliss", "premium_title": "BABY RIDERS", "tagline": "Premières vagues", "carousel_group": "MA_PREMIERE_COLO" }
+    ],
+
+    "pricing_display_b2b": {
+      "rule": "HIDE exact price on public listing",
+      "replacement_text": "Tarif Conventionné / Devis Immédiat",
+      "reason": "Avoid sticker shock for B2B, encourage contact",
+      "show_price_range": false,
+      "show_from_price": false,
+      "cta_instead": "Calculer mon aide financière"
+    },
+
+    "pricing_display_families": {
+      "rule": "SHOW price_from with financial aid calculator",
+      "format": "À partir de {price_from}€ (aide possible selon QF)",
+      "show_calculator_link": true,
+      "highlight_financial_aid": true
+    }
+  },
+
+  "form_field_mappings": {
+    "typeform_to_crm": {
+      "niveau_inclusion": "inclusion_level",
+      "age_enfant": "child_age",
+      "interets": "interests_tags",
+      "urgence_48h": "urgent_departure",
+      "handicap": "accessibility_needs",
+      "qf": "family_quotient",
+      "qpv": "priority_neighborhood",
+      "organization": "referent_organization",
+      "nom": "contact_lastname",
+      "prenom": "contact_firstname",
+      "email": "contact_email",
+      "telephone": "contact_phone"
+    },
+    "validation_rules": {
+      "phone_required_if": ["NIVEAU_3_RUPTURE", "URGENCE_DEPART_IMMEDIAT"],
+      "qf_required_if": ["show_financial_calculator"],
+      "organization_required_if": ["B2B_MODE"]
+    }
+  },
+
+  "notification_rules": {
+    "email_templates": {
+      "STANDARD": {
+        "subject": "Nouvelle demande Flooow - {nom} ({organization})",
+        "priority": "normal",
+        "assignee": "sales_team_rotation"
+      },
+      "MEDIUM_PRIORITY": {
+        "subject": "[CADRE RENFORCÉ] Demande {nom} - Besoin encadrement adapté",
+        "priority": "high",
+        "assignee": "senior_sales",
+        "cc": "directeur_pedagogique"
+      },
+      "HIGH_PRIORITY_CALL_NOW": {
+        "subject": "[URGENT RUPTURE] {nom} - Protocole sur-mesure requis",
+        "priority": "urgent",
+        "assignee": "directeur_general",
+        "sms_notify": true,
+        "auto_call_within": "30_minutes"
+      },
+      "HOT_LEAD": {
+        "subject": "[URGENT 48H] Départ immédiat - {nom}",
+        "priority": "urgent",
+        "assignee": "available_director_oncall",
+        "sms_notify": true
+      }
+    }
+  },
+
+  "technical_notes": {
+    "usage": "Ce fichier JSON ne contient pas de données clients, mais des règles métier.",
+    "integration_points": {
+      "frontend": "Utiliser smart_form_routing_rules pour gérer la logique conditionnelle du formulaire",
+      "image_api": "Utiliser visual_mapping_rules pour les appels API Unsplash/Pexels",
+      "display": "Utiliser product_display_rules pour transformer données brutes en données affichables",
+      "crm": "Utiliser notification_rules pour router les leads correctement"
+    },
+    "version_control": "Versionner ce fichier dans git, c'est le référentiel métier unique"
+  }
+}

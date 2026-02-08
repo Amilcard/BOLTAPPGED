@@ -10,18 +10,20 @@ interface HomeCarouselsProps {
 }
 
 // === CONFIGURATION DES UNIVERS (3 carrousels) ===
+// ⚠️ WARNING: ORDRE VERROUILLÉ - Ne pas modifier sans validation UX
+// Documentation complète: docs/CAROUSEL_RULES.md
 // Source de vérité: carousel_group (DB) → titre + sous-titre + ordre d'affichage
 // Fusionné: ALTITUDE_AVENTURE + OCEAN_FUN → AVENTURE_DECOUVERTE
 // Règle: les badges vendent une INTENSITÉ/ÉMOTION, pas une géographie
+// ORDRE UX: Ma Première Colo (3-9 ans) → Aventure & Découverte (8-14 ans) → Sensations & Adrénaline (12-17 ans)
 const UNIVERSE_CONFIG = [
   {
-    key: 'ADRENALINE_SENSATIONS',
-    title: 'Sensations & Adrénaline', // Title Case instead of Uppercase
-    subtitle: 'Pour les 12-17 ans',
+    key: 'MA_PREMIERE_COLO',
+    title: 'Ma Première Colo',
+    subtitle: 'Pour les 3-9 ans',
     fallbackSlugs: [
-      'moto-moto', 'dh-experience-11-13-ans', 'annecy-element',
-      'sperienza-in-corsica-1', 'surf-sur-le-bassin', 'destination-soleil',
-      'aqua-fun'
+      'les-ptits-puisotins-1', 'croc-marmotte', 'aqua-gliss',
+      'natation-et-sensation', 'les-apprentis-montagnards'
     ]
   },
   {
@@ -37,12 +39,13 @@ const UNIVERSE_CONFIG = [
     ]
   },
   {
-    key: 'MA_PREMIERE_COLO',
-    title: 'Ma Première Colo',
-    subtitle: 'Pour les 3-9 ans',
+    key: 'ADRENALINE_SENSATIONS',
+    title: 'Sensations & Adrénaline', // Title Case instead of Uppercase
+    subtitle: 'Pour les 12-17 ans',
     fallbackSlugs: [
-      'les-ptits-puisotins-1', 'croc-marmotte', 'aqua-gliss',
-      'natation-et-sensation', 'les-apprentis-montagnards'
+      'moto-moto', 'dh-experience-11-13-ans', 'annecy-element',
+      'sperienza-in-corsica-1', 'surf-sur-le-bassin', 'destination-soleil',
+      'aqua-fun'
     ]
   }
 ];

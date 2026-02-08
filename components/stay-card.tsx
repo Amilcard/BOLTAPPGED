@@ -12,8 +12,8 @@ export function StayCard({ stay }: { stay: Stay }) {
   const { mode } = useApp();
   const isKids = mode === 'kids';
 
-  // === TITRE: Premium marketing_title > CityCrunch Kids (universel) > Legacy title ===
-  const displayTitle = stay?.titleKids || stay?.title || stay?.marketingTitle;
+  // === TITRE: Premium marketing_title > CityCrunch Kids > Legacy title ===
+  const displayTitle = stay?.marketingTitle || stay?.titleKids || stay?.title;
 
   // === DESCRIPTION: Premium punchline > CityCrunch Kids (universel) > Legacy descriptionShort ===
   const displayDesc = stay?.punchline
@@ -35,21 +35,22 @@ export function StayCard({ stay }: { stay: Stay }) {
   // === STANDING: Premium standing_label > Legacy accommodationLabel ===
   const standingDisplay = stay?.standingLabel || stay?.accommodationLabel || 'Centre';
 
-  // Lot 10A (Strict): Logique 'Smart' si sessions disponibles
+  // Durée: utiliser durationDays (serveur, Math.ceil) comme source de vérité
+  // Recalcul client uniquement si sessions avec durées multiples
   const sessions = stay?.sessions || [];
-
-  // Durée
-  const uniqueDurations = Array.from(new Set(
-    sessions.map(s => {
-      const start = new Date(s.startDate);
-      const end = new Date(s.endDate);
-      return Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-    })
-  )).sort((a, b) => a - b);
+  const uniqueDurations = sessions.length > 0
+    ? Array.from(new Set(
+        sessions.map(s => {
+          const start = new Date(s.startDate);
+          const end = new Date(s.endDate);
+          return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        }).filter(d => d > 0)
+      )).sort((a, b) => a - b)
+    : [];
 
   const durationLabel = uniqueDurations.length > 1
     ? `${uniqueDurations[0]} à ${uniqueDurations[uniqueDurations.length - 1]} jours`
-    : `${stay?.durationDays ?? 0} jours`;
+    : `${stay?.durationDays || uniqueDurations[0] || 0} jours`;
 
   return (
     <Link href={`/sejour/${stay?.id ?? ''}`} className="block h-full group">
@@ -71,7 +72,7 @@ export function StayCard({ stay }: { stay: Stay }) {
 
           {/* Metadata Row (Pure Typography) */}
           <div className="flex flex-wrap items-center gap-2 mb-3 text-[10px] font-heading font-bold uppercase tracking-widest text-primary/60">
-            <span>{stay?.ageRangesDisplay ?? `${stay?.ageMin ?? 0}-${stay?.ageMax ?? 0} ANS`}</span>
+            <span>{stay?.ageRangesDisplay || (stay?.ageMin && stay?.ageMax ? `${stay.ageMin}-${stay.ageMax} ANS` : 'ENFANTS')}</span>
             <span className="w-0.5 h-2.5 bg-gray-300" />
             <span>{durationLabel.toUpperCase()}</span>
             <span className="w-0.5 h-2.5 bg-gray-300" />

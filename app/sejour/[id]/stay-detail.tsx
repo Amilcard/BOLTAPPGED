@@ -361,7 +361,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
       <div className="max-w-6xl mx-auto px-4 pt-6 pb-8 md:pt-12">
         {/* === PRÉSENTATION SÉJOUR === */}
         <section className="mb-12">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-primary font-heading tracking-tight mb-3">{displayTitle}</h1>
+          <h1 className="text-4xl md:text-5xl font-extrabold text-primary tracking-tight mb-3">{displayTitle}</h1>
 
           <h2 className="text-xl md:text-2xl text-gray-500 font-normal font-sans mb-8 leading-relaxed">
             {displaySubtitle || "L'aventure commence ici."}
@@ -411,7 +411,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
             </div>
           </div>
 
-          <p className="text-xl text-primary font-serif leading-8 mb-6 max-w-4xl">{displayDesc}</p>
+          <p className="text-xl text-primary leading-8 mb-6 max-w-4xl">{displayDesc}</p>
 
           {uniqueDurations.length > 1 && (
              <p className="text-sm text-primary/70 font-medium mt-2 italic">{durationDisplay}</p>
@@ -426,7 +426,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
             {/* === INFORMATIONS CLÉS (Réassurance) === */}
             <section className="bg-white rounded-brand p-8 border border-gray-100 shadow-sm relative overflow-hidden">
                <div className="absolute top-0 left-0 w-1 h-full bg-secondary" />
-              <h2 className="text-xl font-bold text-primary font-heading mb-6 flex items-center gap-3">
+              <h2 className="text-xl font-bold text-primary mb-6 flex items-center gap-3">
                 <Shield className="w-6 h-6 text-secondary" />
                 L'essentiel à savoir
               </h2>
@@ -502,12 +502,12 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
             {/* === CONTENU DU SÉJOUR === */}
             <section className="bg-white rounded-xl shadow-brand p-5">
-              <h2 className="text-lg font-bold text-gray-900 mb-3">Contenu du séjour</h2>
+              <h2 className="text-lg font-bold text-primary mb-3">Contenu du séjour</h2>
               <ul className="space-y-3 mb-5">
                 {programme.slice(0, 5).map((item, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <ChevronRight className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span className="text-base text-gray-700 font-serif leading-7">{item}</span>
+                    <span className="text-base text-gray-700 leading-7">{item}</span>
                   </li>
                 ))}
               </ul>
@@ -569,7 +569,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                           key={i}
                           type="button"
                           onClick={() => setPreSelectedCity(dep.city)}
-                          className={`px-3 py-1.5 text-xs font-medium rounded-lg border-2 transition-all flex items-center gap-1.5 ${
+                          className={`px-3 py-1.5 text-xs font-medium rounded-full border-2 transition-all flex items-center gap-1.5 ${
                             isCitySelected
                               ? 'border-primary bg-primary text-white'
                               : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-primary/40'
@@ -587,7 +587,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                     <button
                       type="button"
                       onClick={() => setShowDepartures(true)}
-                      className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                      className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-full hover:bg-gray-200 transition-colors"
                     >
                       +{enrichment.departures.length - 6}
                     </button>

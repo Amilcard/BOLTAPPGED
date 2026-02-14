@@ -223,17 +223,17 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
           )}
           {/* Prix total dynamique et Récapitulatif Sticky */}
           {totalPrice !== null && step < 5 && (
-            <div className="mt-3 p-3 bg-accent/5 rounded-xl border border-accent/20 flex flex-col gap-1">
+            <div className="mt-3 p-3 bg-secondary/5 rounded-xl border border-secondary/20 flex flex-col gap-1">
               {/* Ligne 1: Récap (visible dès que sélectionné) */}
               {(selectedSession || selectedCity) && (
-                <div className="flex flex-wrap gap-2 text-xs text-primary-600 border-b border-accent/10 pb-1 mb-1">
+                <div className="flex flex-wrap gap-2 text-xs text-primary-600 border-b border-secondary/10 pb-1 mb-1">
                   {selectedSession && (
-                    <span className="font-medium bg-white px-1.5 py-0.5 rounded border border-accent/10">
+                    <span className="font-medium bg-white px-1.5 py-0.5 rounded border border-secondary/10">
                       📅 {formatDateLong(selectedSession.startDate)}
                     </span>
                   )}
                   {selectedCity && (
-                    <span className="font-medium bg-white px-1.5 py-0.5 rounded border border-accent/10">
+                    <span className="font-medium bg-white px-1.5 py-0.5 rounded border border-secondary/10">
                       📍 {selectedCity}
                     </span>
                   )}
@@ -246,7 +246,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                   {extraVille > 0 && <span className="text-xs ml-2 text-primary-500">(+{extraVille}€ transport)</span>}
                   {optionPrice > 0 && <span className="text-xs ml-2 text-primary-500">(+{optionPrice}€ option)</span>}
                 </div>
-                <div className="text-lg font-bold text-accent">{totalPrice} €</div>
+                <div className="text-lg font-bold text-secondary">{totalPrice} €</div>
               </div>
             </div>
           )}
@@ -260,7 +260,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                 <div
                   key={i}
                   className={`h-1 flex-1 rounded-full transition-colors ${
-                    i <= step ? 'bg-accent' : 'bg-primary-100'
+                    i <= step ? 'bg-secondary' : 'bg-primary-100'
                   }`}
                 />
               ))}
@@ -280,7 +280,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                       key={session?.id}
                       className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
                         isSelected
-                          ? 'border-accent bg-accent/5 ring-2 ring-accent/20'
+                          ? 'border-secondary bg-secondary/5 ring-2 ring-secondary/20'
                           : isFull
                           ? 'border-primary-100 bg-primary-50 opacity-50 cursor-not-allowed'
                           : 'border-primary-100 hover:border-primary-200'
@@ -289,7 +289,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                       {/* Indicateur checkbox/radio visible */}
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
                         isSelected
-                          ? 'border-accent bg-accent'
+                          ? 'border-secondary bg-secondary'
                           : isFull
                           ? 'border-primary-200 bg-primary-100'
                           : 'border-primary-300'
@@ -320,7 +320,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
               {sessionsUnique.length > 4 && !showAllSessions && (
                 <button
                   onClick={() => setShowAllSessions(true)}
-                  className="w-full py-2 text-sm text-accent hover:underline"
+                  className="w-full py-2 text-sm text-secondary hover:underline"
                 >
                   Voir toutes les dates ({sessionsUnique.length - 4} autres)
                 </button>
@@ -332,7 +332,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
               <button
                 onClick={() => setStep(1)}
                 disabled={!selectedSessionId}
-                className="w-full py-3 bg-accent text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-accent-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Continuer <ChevronRight className="w-4 h-4" />
               </button>
@@ -367,14 +367,14 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                           key={idx}
                           className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
                             isCitySelected
-                              ? 'border-accent bg-accent/5 ring-2 ring-accent/20'
+                              ? 'border-secondary bg-secondary/5 ring-2 ring-secondary/20'
                               : 'border-primary-200 hover:border-primary-300'
                           }`}
                         >
                           {/* Indicateur checkbox/radio visible */}
                           <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
                             isCitySelected
-                              ? 'border-accent bg-accent'
+                              ? 'border-secondary bg-secondary'
                               : 'border-primary-300'
                           }`}>
                             {isCitySelected && <Check className="w-3 h-3 text-white" />}
@@ -390,7 +390,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                           <span className="flex-1 text-sm font-medium text-primary-700 capitalize">
                             {city.city === 'Sans transport' ? 'Sans transport' : city.city}
                           </span>
-                          <span className={`text-sm font-semibold ${isCitySelected ? 'text-accent' : 'text-primary-600'}`}>
+                          <span className={`text-sm font-semibold ${isCitySelected ? 'text-secondary' : 'text-primary-600'}`}>
                             {city.extra_eur === 0 ? 'Inclus' : `+${city.extra_eur}€`}
                           </span>
                         </label>
@@ -409,14 +409,14 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep(0)}
-                  className="flex-1 py-3 border border-primary-200 text-primary rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-primary-50 transition-colors"
+                  className="flex-1 py-3 border border-primary-200 text-primary rounded-full font-medium flex items-center justify-center gap-2 hover:bg-primary-50 transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" /> Retour
                 </button>
                 <button
                   onClick={() => setStep(2)}
                   disabled={!selectedCity}
-                  className="flex-1 py-3 bg-accent text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-accent-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Continuer <ChevronRight className="w-4 h-4" />
                 </button>
@@ -435,7 +435,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                   placeholder="Organisation *"
                   value={step1.organisation}
                   onChange={e => setStep1({ ...step1, organisation: e.target.value })}
-                  className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
+                  className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
                 />
                 <input
                   type="text"
@@ -447,14 +447,14 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                       setError('Adresse trop courte : ajoute la rue + code postal + ville.');
                     } else if (error.includes('Adresse')) setError('');
                   }}
-                  className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
+                  className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
                 />
                 <input
                   type="text"
                   placeholder="Nom complet *"
                   value={step1.socialWorkerName}
                   onChange={e => setStep1({ ...step1, socialWorkerName: e.target.value })}
-                  className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
+                  className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
                 />
                 <input
                   type="email"
@@ -467,7 +467,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                       setError('Email invalide : vérifie le @ et le domaine.');
                     } else if (error.includes('Email')) setError('');
                   }}
-                  className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
+                  className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
                 />
                 <input
                   type="tel"
@@ -480,20 +480,20 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                       setError('Téléphone invalide : utilise 10 chiffres (ex: 06 00 00 00 00).');
                     } else if (error.includes('Téléphone')) setError('');
                   }}
-                  className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
+                  className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
                 />
               </div>
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep(1)}
-                  className="flex-1 py-3 border border-primary-200 text-primary rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-primary-50 transition-colors"
+                  className="flex-1 py-3 border border-primary-200 text-primary rounded-full font-medium flex items-center justify-center gap-2 hover:bg-primary-50 transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" /> Retour
                 </button>
                 <button
                   onClick={() => setStep(3)}
                   disabled={!isStep1Valid}
-                  className="flex-1 py-3 bg-accent text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-accent-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Continuer <ChevronRight className="w-4 h-4" />
                 </button>
@@ -512,7 +512,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                   placeholder="Prénom de l'enfant *"
                   value={step2.childFirstName}
                   onChange={e => setStep2({ ...step2, childFirstName: e.target.value })}
-                  className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
+                  className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
                 />
                 <div>
                   <label className="text-sm text-primary-600 mb-1 block">Date de naissance *</label>
@@ -523,7 +523,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                     onChange={e => setStep2({ ...step2, childBirthDate: e.target.value })}
                     max={new Date().toISOString().split('T')[0]}
                     min={new Date(currentYear - 17, 0, 1).toISOString().split('T')[0]}
-                    className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
+                    className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
                     required
                   />
                   {step2.childBirthDate && calculateAge(step2.childBirthDate) !== null && (
@@ -537,7 +537,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                   <select
                     value={step2.childSex || ''}
                     onChange={e => setStep2({ ...step2, childSex: e.target.value })}
-                    className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
+                    className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
                     required
                   >
                     <option value="">Sélectionner</option>
@@ -551,7 +551,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                     type="checkbox"
                     checked={step2.consent}
                     onChange={e => setStep2({ ...step2, consent: e.target.checked })}
-                    className="w-5 h-5 mt-0.5 text-accent rounded"
+                    className="w-5 h-5 mt-0.5 text-secondary rounded"
                   />
                   <span className="text-sm text-primary-600">
                     J&apos;accepte les conditions générales et autorise le traitement des données *
@@ -566,14 +566,14 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep(2)}
-                  className="flex-1 py-3 border border-primary-200 text-primary rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-primary-50 transition-colors"
+                  className="flex-1 py-3 border border-primary-200 text-primary rounded-full font-medium flex items-center justify-center gap-2 hover:bg-primary-50 transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" /> Retour
                 </button>
                 <button
                   onClick={() => setStep(4)}
                   disabled={!isStep2Valid}
-                  className="flex-1 py-3 bg-accent text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-accent-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Continuer <ChevronRight className="w-4 h-4" />
                 </button>
@@ -608,7 +608,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                       key={option.code}
                       className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all ${
                         selectedOption === option.code
-                          ? 'border-accent bg-accent/5'
+                          ? 'border-secondary bg-secondary/5'
                           : 'border-primary-200 hover:border-primary-300'
                       }`}
                     >
@@ -634,13 +634,13 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                           <p className="font-bold text-primary text-sm">{option.label}</p>
                           <p className="text-xs text-primary-600">{option.description}</p>
                         </div>
-                        <span className="text-sm font-semibold text-accent">+{option.price}€</span>
+                        <span className="text-sm font-semibold text-secondary">+{option.price}€</span>
                       </div>
                     </label>
                   ))}
                   <label
                     className={`flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer ${
-                      !selectedOption ? 'border-accent bg-accent/5' : 'border-primary-200'
+                      !selectedOption ? 'border-secondary bg-secondary/5' : 'border-primary-200'
                     }`}
                   >
                     <input
@@ -663,14 +663,14 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep(3)}
-                  className="flex-1 py-3 border border-primary-200 text-primary rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-primary-50 transition-colors"
+                  className="flex-1 py-3 border border-primary-200 text-primary rounded-full font-medium flex items-center justify-center gap-2 hover:bg-primary-50 transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" /> Retour
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={loading}
-                  className="flex-1 py-3 bg-accent text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-accent-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                   {loading ? 'Envoi...' : 'Confirmer'}
@@ -701,7 +701,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
               </div>
               <button
                 onClick={onClose}
-                className="mt-6 px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary-600 transition-colors"
+                className="mt-6 px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary-600 transition-colors"
               >
                 Fermer
               </button>

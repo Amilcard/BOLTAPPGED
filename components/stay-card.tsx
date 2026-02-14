@@ -54,7 +54,7 @@ export function StayCard({ stay }: { stay: Stay }) {
 
   return (
     <Link href={`/sejour/${stay?.id ?? ''}`} className="block h-full group">
-      <article className="h-full flex flex-col bg-white rounded-brand border border-gray-200 shadow-sm hover:shadow-brand-hover transition-all duration-300 overflow-hidden">
+      <article className="h-full flex flex-col bg-white rounded-brand border border-gray-200 shadow-sm hover:shadow-brand-hover hover:-translate-y-2 transition-all duration-300 overflow-hidden">
         {/* === ZONE 1: IMAGE === */}
         <div className="relative aspect-[16/10] bg-gray-100 overflow-hidden">
           <Image
@@ -70,17 +70,22 @@ export function StayCard({ stay }: { stay: Stay }) {
         {/* === ZONE 2: CONTENU STRUCTURÉ === */}
         <div className="flex flex-col flex-1 p-5">
 
-          {/* Metadata Row (Pure Typography) */}
-          <div className="flex flex-wrap items-center gap-2 mb-3 text-[10px] font-heading font-bold uppercase tracking-widest text-primary/60">
-            <span>{stay?.ageRangesDisplay || (stay?.ageMin && stay?.ageMax ? `${stay.ageMin}-${stay.ageMax} ANS` : 'ENFANTS')}</span>
-            <span className="w-0.5 h-2.5 bg-gray-300" />
-            <span>{durationLabel.toUpperCase()}</span>
-            <span className="w-0.5 h-2.5 bg-gray-300" />
-            <span className="truncate max-w-[100px]">{spotDisplay.toUpperCase()}</span>
+          {/* Metadata Row (Structure forcée 2 lignes pour alignement Titre) */}
+          <div className="mb-3 text-[10px] font-heading font-bold uppercase tracking-widest text-dark/60 flex flex-col gap-1">
+            {/* Ligne 1: Age + Durée */}
+            <div className="flex items-center gap-2">
+              <span>{stay?.ageRangesDisplay || (stay?.ageMin && stay?.ageMax ? `${stay.ageMin}-${stay.ageMax} ANS` : 'ENFANTS')}</span>
+              <span className="w-0.5 h-2.5 bg-gray-300" />
+              <span>{durationLabel.toUpperCase()}</span>
+            </div>
+            {/* Ligne 2: Lieu */}
+            <div className="truncate max-w-full text-gray-500">
+              {spotDisplay.toUpperCase()}
+            </div>
           </div>
 
           {/* Ligne 1: Titre (Dark Blue #2E4053) */}
-          <h3 className="text-lg font-extrabold text-primary font-heading leading-tight line-clamp-2 mb-2 group-hover:text-primary transition-colors">
+          <h3 className="text-lg font-extrabold text-dark font-heading leading-tight line-clamp-2 mb-2 group-hover:text-primary transition-colors min-h-[3rem]">
             {displayTitle ?? 'Séjour sans titre'}
           </h3>
 
@@ -101,7 +106,7 @@ export function StayCard({ stay }: { stay: Stay }) {
             )}
 
             {/* CTA Minimalist */}
-            <span className="px-3 py-1.5 border border-gray-300 rounded text-xs font-bold text-primary transition-all duration-300 group-hover:bg-secondary group-hover:text-white group-hover:border-secondary">
+            <span className="px-3 py-1.5 border border-gray-300 rounded-full text-xs font-bold text-dark transition-all duration-300 group-hover:bg-secondary group-hover:text-white group-hover:border-secondary">
               En savoir +
             </span>
           </div>

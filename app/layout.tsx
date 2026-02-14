@@ -1,18 +1,12 @@
 import type { Metadata } from 'next';
-import { Roboto, Nunito } from 'next/font/google';
+import { Rubik } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/providers';
 
-const roboto = Roboto({
+const rubik = Rubik({
   subsets: ['latin'],
-  weight: ['400', '500', '700'],
-  variable: '--font-roboto',
-  display: 'swap',
-});
-
-const nunito = Nunito({
-  subsets: ['latin'],
-  variable: '--font-nunito',
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-rubik',
   display: 'swap',
 });
 
@@ -43,7 +37,7 @@ export default function RootLayout({
       <head>
         <script src="https://apps.abacus.ai/chatllm/appllm-lib.js" />
       </head>
-      <body className={`${roboto.variable} ${nunito.variable} font-sans`}>
+      <body className={`${rubik.variable} font-sans`}>
         <Providers>{children}</Providers>
       </body>
     </html>

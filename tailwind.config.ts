@@ -23,39 +23,39 @@ const config: Config = {
         ring: 'hsl(var(--ring))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
-        // Primary = Dark Blue Gray #2E4053 (Textes, Titres, Identité)
+        // Primary = TITRES (#1d1e20 - Noir Charbon)
         primary: {
-          DEFAULT: '#2E4053',
-          50: '#F4F6F7',
-          100: '#E1E5E8',
-          200: '#CED4D9',
-          300: '#BCC4C9',
-          400: '#5D6D7E',
-          500: '#2E4053',     // Main Text Color
-          600: '#283747',
-          700: '#212F3C',
-          800: '#1B2631',
-          900: '#154360',
+          DEFAULT: '#1d1e20',
+          50: '#f4f4f5',
+          100: '#e4e4e7',
+          200: '#d1d5db',
+          300: '#9ca3af',
+          400: '#6b7280',
+          500: '#1d1e20',     // Main Title Color
+          600: '#1f2937',
+          700: '#111827',
+          800: '#0f172a',
+          900: '#020617',
           foreground: '#FFFFFF',
         },
-        // Secondary = Golden Yellow #FAB231 (Action - CTA, Prix, Focus)
+        // Secondary = CTA / ACTIONS (#de7356 - Terracotta)
         secondary: {
-          DEFAULT: '#FAB231', // Gold Action
-          50: '#FEF9E7',
-          100: '#FCF3CF',
-          200: '#F9E79F',
-          300: '#F7DC6F',
-          400: '#F4D03F',
-          500: '#FAB231',     // Main Action Color
-          600: '#D4AC0D',
-          700: '#B7950B',
-          800: '#9A7D0A',
-          900: '#7D6608',
-          foreground: '#2E4053', // Contrast Text on Gold
+          DEFAULT: '#de7356', // Terracotta Action
+          50: '#fdf8f6',
+          100: '#fbeee9',
+          200: '#f6dcd3',
+          300: '#f0c2b4',
+          400: '#e9a08d',
+          500: '#de7356',     // Main Button Color
+          600: '#c5583b',
+          700: '#a34831',
+          800: '#843d2d',
+          900: '#6d3529',
+          foreground: '#FFFFFF', // White text on Terracotta
         },
-        // Accent = Teal Green #00D49C (Active states, Success)
+        // Accent = VIOLET / SECONDAIRE (#7C5295 - Estimé Hostinger, harmonisé)
         accent: {
-          DEFAULT: '#00D49C',
+          DEFAULT: '#7C5295',
           foreground: '#FFFFFF',
         },
         destructive: {
@@ -63,30 +63,30 @@ const config: Config = {
           foreground: 'hsl(var(--destructive-foreground))',
         },
         muted: {
-          DEFAULT: '#F8F9FA', // Neutral BG
-          foreground: '#6B7280',
+          DEFAULT: '#f1f1f1', // SECTION GRIS (#f1f1f1)
+          foreground: '#64748b',
         },
         popover: {
           DEFAULT: '#FFFFFF',
-          foreground: '#2E4053',
+          foreground: '#1a1a1a',
         },
         card: {
           DEFAULT: '#FFFFFF',
-          foreground: '#2E4053',
+          foreground: '#1a1a1a',
         },
-        // Brand aliases
+        // Brand aliases (Legacy support mapped to new chart)
         brand: {
-          dark: '#2E4053',
-          gold: '#FAB231',
-          teal: '#00D49C',
+          dark: '#1d1e20',   // Titles
+          gold: '#de7356',   // Mapped to Terracotta
+          teal: '#7C5295',   // Mapped to Accent
           white: '#FFFFFF',
-          light: '#F8F9FA', // Neutral Light
-          border: '#D0D5D7',
+          light: '#f1f1f1',  // Sections
+          border: '#e5e7eb',
         },
       },
       fontFamily: {
-        heading: ['var(--font-roboto)', 'sans-serif'],
-        sans: ['var(--font-nunito)', 'sans-serif'],
+        heading: ['var(--font-rubik)', 'sans-serif'],
+        sans: ['var(--font-rubik)', 'sans-serif'],
       },
       borderRadius: {
         lg: 'var(--radius)',

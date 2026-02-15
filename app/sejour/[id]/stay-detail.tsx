@@ -77,16 +77,39 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
   // Règle: le contenu CityCrunch Kids est la RÉFÉRENCE UNIVERSELLE pour les 2 modes.
   // Plus aucune différenciation Pro/Kids dans l'affichage texte.
 
-  // === TITRE H1: CityCrunch Kids (universel) > Legacy title > Marketing Title (déclassé car souvent technique/LMK) ===
-  const displayTitle = (stay as any)?.titleKids || stay?.title || (stay as any)?.marketingTitle;
+  // === INIT DATA ===
+  const programme = Array.isArray(stay?.programme) ? stay.programme : [];
+  const themes = Array.isArray(stay?.themes) ? stay.themes : [];
+
+
+
+  // === TITRE H1: Premium marketing_title > CityCrunch Kids > Legacy title ===
+  const displayTitle = (stay as any)?.marketingTitle || (stay as any)?.titleKids || stay?.title;
 
   // === SOUS-TITRE H2: Premium punchline > CityCrunch Kids (universel) > Legacy descriptionShort ===
   const displaySubtitle = (stay as any)?.punchline
     || (stay as any)?.descriptionKids || stay?.descriptionShort || '';
 
   // === BODY: Premium expert_pitch > punchline > CityCrunch Kids > Legacy descriptionShort ===
-  const displayDesc = (stay as any)?.expertPitch
-    || (stay as any)?.punchline || (stay as any)?.descriptionKids || stay?.descriptionShort;
+  // === BODY: Premium expert_pitch > punchline > CityCrunch Kids > Legacy descriptionShort ===
+  let displayDesc = (stay as any)?.expertPitch
+    || (stay as any)?.descriptionMarketing // Ajout fallback intermédiaire
+    || (stay as any)?.punchline
+    || (stay as any)?.descriptionKids
+    || stay?.descriptionShort;
+
+  // PROTECTION ANTI-DUPLICATION
+  // Si le Body est identique au H2 (à cause des fallbacks), on force un autre contenu
+  if (displayDesc === displaySubtitle) {
+    if ((stay as any)?.descriptionMarketing && (stay as any)?.descriptionMarketing !== displaySubtitle) {
+       displayDesc = (stay as any)?.descriptionMarketing;
+    } else if (programme.length > 0) {
+       // Si vraiment pas de description unique, on prend les 2 premiers points du programme comme résumé
+       displayDesc = programme.slice(0, 2).join(' ') + '...';
+    } else {
+       displayDesc = null; // Mieux vaut rien que doublon
+    }
+  }
 
   // Prix minimum (session la moins chère, sans transport)
   const minSessionPrice = getMinSessionPrice(enrichment?.sessions || []);
@@ -143,8 +166,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
     }
   };
 
-  const programme = Array.isArray(stay?.programme) ? stay.programme : [];
-  const themes = Array.isArray(stay?.themes) ? stay.themes : [];
+
 
   // Lot 10B: Extraire les tranches d'âges depuis ageRangesDisplay (calculé côté serveur)
   // Fallback: utiliser rawSessions si ageRangesDisplay pas disponible (rétrocompatibilité)
@@ -165,25 +187,24 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
         return minA - minB;
       });
 
-  // Lot 10B: Calcul des durées réelles depuis stay.sessions
-  // 'sessions' est déjà défini plus haut
+  // Durée: Math.ceil cohérent avec le serveur (Sprint 1)
   const uniqueDurations = Array.from(new Set(
     sessions.map((s: any) => {
       const start = new Date(s.startDate);
       const end = new Date(s.endDate);
-      return Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-    })
+      return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    }).filter((d: number) => d > 0)
   )).sort((a, b) => a - b);
 
   const durationDisplay = uniqueDurations.length > 0
     ? (uniqueDurations.length > 1
         ? `Durées disponibles: ${uniqueDurations.join(' / ')} jours`
         : `${uniqueDurations[0]}j`)
-    : `${stay?.durationDays ?? 0}j`;
+    : (stay?.durationDays ? `${stay.durationDays}j` : 'Durée variable');
 
   const durationBadge = uniqueDurations.length > 1
      ? `${Math.min(...uniqueDurations)} à ${Math.max(...uniqueDurations)} jours`
-     : (uniqueDurations.length === 1 ? `${uniqueDurations[0]}j` : `${stay?.durationDays ?? 0}j`);
+     : (uniqueDurations.length === 1 ? `${uniqueDurations[0]}j` : (stay?.durationDays ? `${stay.durationDays}j` : 'Variable'));
 
   return (
     <main className="pb-12">
@@ -310,7 +331,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
             <Users className="w-3.5 h-3.5 text-primary" />
              {uniqueAgeRanges.length > 0
                 ? uniqueAgeRanges.join(' / ')
-                : `${stay?.ageMin}-${stay?.ageMax}`
+                : (stay?.ageMin && stay?.ageMax ? `${stay.ageMin}-${stay.ageMax}` : 'Enfants')
              } ans
           </span>
         </div>
@@ -337,10 +358,10 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
         </div>
       </section>
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 pt-6 pb-8 md:pt-12">
         {/* === PRÉSENTATION SÉJOUR === */}
         <section className="mb-12">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-primary font-heading tracking-tight mb-3">{displayTitle}</h1>
+          <h1 className="text-4xl md:text-5xl font-extrabold text-primary tracking-tight mb-3">{displayTitle}</h1>
 
           <h2 className="text-xl md:text-2xl text-gray-500 font-normal font-sans mb-8 leading-relaxed">
             {displaySubtitle || "L'aventure commence ici."}
@@ -353,7 +374,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                <span className="font-bold text-primary font-heading">
                  {uniqueAgeRanges.length > 0
                     ? uniqueAgeRanges.map((r: any) => `${r} ans`).join(' / ')
-                    : `${stay?.ageMin}-${stay?.ageMax} ans`
+                    : (stay?.ageMin && stay?.ageMax ? `${stay.ageMin}-${stay.ageMax} ans` : 'Enfants')
                  }
                </span>
             </div>
@@ -390,7 +411,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
             </div>
           </div>
 
-          <p className="text-xl text-primary font-serif leading-8 mb-6 max-w-4xl">{displayDesc}</p>
+          <p className="text-xl text-primary leading-8 mb-6 max-w-4xl">{displayDesc}</p>
 
           {uniqueDurations.length > 1 && (
              <p className="text-sm text-primary/70 font-medium mt-2 italic">{durationDisplay}</p>
@@ -405,7 +426,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
             {/* === INFORMATIONS CLÉS (Réassurance) === */}
             <section className="bg-white rounded-brand p-8 border border-gray-100 shadow-sm relative overflow-hidden">
                <div className="absolute top-0 left-0 w-1 h-full bg-secondary" />
-              <h2 className="text-xl font-bold text-primary font-heading mb-6 flex items-center gap-3">
+              <h2 className="text-xl font-bold text-primary mb-6 flex items-center gap-3">
                 <Shield className="w-6 h-6 text-secondary" />
                 L'essentiel à savoir
               </h2>
@@ -481,12 +502,12 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
             {/* === CONTENU DU SÉJOUR === */}
             <section className="bg-white rounded-xl shadow-brand p-5">
-              <h2 className="text-lg font-bold text-gray-900 mb-3">Contenu du séjour</h2>
+              <h2 className="text-lg font-bold text-primary mb-3">Contenu du séjour</h2>
               <ul className="space-y-3 mb-5">
                 {programme.slice(0, 5).map((item, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <ChevronRight className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-gray-700 leading-relaxed">{item}</span>
+                    <span className="text-base text-gray-700 leading-7">{item}</span>
                   </li>
                 ))}
               </ul>
@@ -520,7 +541,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
             {/* === VILLES DE DÉPART === */}
             {enrichment?.departures && enrichment.departures.length > 0 && (
-              <section className="bg-white rounded-xl shadow-brand p-5">
+              <section className="bg-white rounded-xl shadow-brand p-6">
                 <div className="flex items-center gap-2 mb-3">
                   <Bus className="w-5 h-5 text-primary" />
                   <h2 className="text-lg font-bold text-gray-900">Villes de départ</h2>
@@ -548,7 +569,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                           key={i}
                           type="button"
                           onClick={() => setPreSelectedCity(dep.city)}
-                          className={`px-3 py-1.5 text-xs font-medium rounded-lg border-2 transition-all flex items-center gap-1.5 ${
+                          className={`px-3 py-1.5 text-xs font-medium rounded-full border-2 transition-all flex items-center gap-1.5 ${
                             isCitySelected
                               ? 'border-primary bg-primary text-white'
                               : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-primary/40'
@@ -566,7 +587,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                     <button
                       type="button"
                       onClick={() => setShowDepartures(true)}
-                      className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                      className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-full hover:bg-gray-200 transition-colors"
                     >
                       +{enrichment.departures.length - 6}
                     </button>
@@ -719,6 +740,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
           stay={stay}
           sessions={sessions}
           departureCities={enrichment?.departures}
+          enrichmentSessions={enrichment?.sessions}
           initialSessionId={preSelectedSessionId}
           initialCity={preSelectedCity}
           onClose={() => setShowBooking(false)}
@@ -729,7 +751,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
         <WishlistModal
           isOpen={showWishlistModal}
           onClose={() => setShowWishlistModal(false)}
-          stayTitle={stay?.title ?? ''}
+          stayTitle={displayTitle ?? ''}
           staySlug={slug}
           stayUrl={typeof window !== 'undefined' ? window.location.href : ''}
         />

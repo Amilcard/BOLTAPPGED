@@ -1,0 +1,624 @@
+{
+  "metadata": {
+    "version": "2.0",
+    "generated": "2026-02-07",
+    "description": "Mapping précis séjours Flooow → mots-clés images avec guidelines cinématographiques",
+    "total_sejours": 24,
+    "univers": ["ADRENALINE_SENSATIONS", "ALTITUDE_AVENTURE", "OCEAN_FUN", "MA_PREMIERE_COLO"],
+    "visual_philosophy": "Cinematic, Low saturation, High contrast, Candid shots, GDPR-safe (no recognizable faces)"
+  },
+
+  "global_visual_constraints": {
+    "orientation": "landscape",
+    "min_width": 1200,
+    "min_height": 800,
+    "content_filter": "high",
+    "vibe": "Cinematic, Action-focused, moody or golden hour",
+    "style": "Low saturation, High contrast, Candid shots (No posing)",
+    "gdpr_compliance": "Avoid recognizable faces - Favor 'Back of head' or 'Hands/Gear' shots",
+
+    "must_avoid": [
+      "smiling group posing",
+      "classroom",
+      "indoor cafeteria",
+      "stock photo staged",
+      "recognizable faces close up",
+      "corporate team building",
+      "adult supervision visible staged",
+      "branded equipment prominent"
+    ],
+
+    "prefer": [
+      "back view",
+      "silhouette",
+      "hands detail",
+      "gear close up",
+      "atmospheric",
+      "candid",
+      "action from behind or side",
+      "environmental context shot",
+      "equipment and gear detail"
+    ]
+  },
+
+  "sejours": [
+    {
+      "slug": "moto-moto",
+      "marketing_title": "MX RIDER ACADEMY",
+      "emotion_tag": "MÉCANIQUE",
+      "carousel_group": "ADRENALINE_SENSATIONS",
+      "age_range": "12-17",
+
+      "visual_strategy": {
+        "primary_query": "motocross mud action helmet detail",
+        "secondary_queries": [
+          "quad biking dust",
+          "mechanic hands tools",
+          "dirt bike circuit aerial",
+          "motorcycle gear detail",
+          "motocross jump silhouette"
+        ],
+        "mood": "Gritty & Dynamic",
+        "color_palette": "Earth tones, orange dust, dark metals",
+        "composition": "Low angle, close-ups on gear, motion blur",
+        "avoid_specific": ["staged bike photos", "visible logos", "clean showroom bikes"]
+      },
+
+      "keywords_en": ["motocross mud action", "helmet visor detail", "dirt bike circuit", "mechanic hands motorcycle", "mx rider silhouette", "dusty motocross track"],
+      "keywords_fr": ["moto cross boue", "circuit moto poussière", "pilote moto silhouette"],
+      "age_visible": "teens"
+    },
+
+    {
+      "slug": "dh-experience-11-13-ans",
+      "marketing_title": "DH EXPERIENCE",
+      "emotion_tag": "SPORT",
+      "carousel_group": "ADRENALINE_SENSATIONS",
+      "age_range": "11-13",
+
+      "visual_strategy": {
+        "primary_query": "downhill mountain biking action forest",
+        "secondary_queries": [
+          "mountain bike trail aerial",
+          "mtb mud splash detail",
+          "bike park jump",
+          "mountain biking helmet pov",
+          "downhill bike gear close up"
+        ],
+        "mood": "Speed & Forest adventure",
+        "color_palette": "Forest greens, mud browns, bike metallics",
+        "composition": "Motion blur, forest depth, action angles"
+      },
+
+      "keywords_en": ["downhill mountain biking forest", "mtb trail action", "bike park jump", "mountain biking mud", "dh trails forest"],
+      "keywords_fr": ["vtt descente forêt", "bike park action", "trail vtt montagne"],
+      "age_visible": "pre-teens"
+    },
+
+    {
+      "slug": "annecy-element",
+      "marketing_title": "ALPINE SKY CAMP",
+      "emotion_tag": "AÉRIEN",
+      "carousel_group": "ADRENALINE_SENSATIONS",
+      "age_range": "12-17",
+
+      "visual_strategy": {
+        "primary_query": "paragliding over lake silhouette",
+        "secondary_queries": [
+          "tandem paragliding aerial view",
+          "annecy lake from above",
+          "canyoning waterfall action",
+          "via ferrata mountain cliff",
+          "paraglider harness detail"
+        ],
+        "mood": "Aerial & Vertical thrills",
+        "color_palette": "Sky blues, mountain greens, alpine clarity",
+        "composition": "Aerial perspectives, vertiginous angles, vast landscapes"
+      },
+
+      "keywords_en": ["paragliding lake aerial", "tandem paragliding silhouette", "canyoning waterfall", "via ferrata cliff", "alpine adventure vertical"],
+      "keywords_fr": ["parapente lac vue aérienne", "canyoning cascade", "via ferrata falaise"],
+      "age_visible": "teens"
+    },
+
+    {
+      "slug": "sperienza-in-corsica-1",
+      "marketing_title": "SPERIENZA CORSICA",
+      "emotion_tag": "AVENTURE",
+      "carousel_group": "ADRENALINE_SENSATIONS",
+      "age_range": "12-17",
+
+      "visual_strategy": {
+        "primary_query": "mediterranean coast drone aerial turquoise",
+        "secondary_queries": [
+          "scuba diving bubbles underwater coral",
+          "catamaran sail corsica",
+          "mediterranean cove crystal water",
+          "yacht deck sunset",
+          "corsica coastline aerial"
+        ],
+        "mood": "Exclusive & Turquoise, Premium adventure",
+        "color_palette": "Turquoise water, white boats, mediterranean blues, sunset orange",
+        "composition": "Aerial shots, crystal water clarity, luxury adventure vibe"
+      },
+
+      "keywords_en": ["mediterranean coast aerial", "scuba diving underwater", "catamaran sailing turquoise", "corsica cove crystal", "yacht adventure mediterranean"],
+      "keywords_fr": ["côte méditerranée drone", "plongée corse sous-marine", "catamaran voile"],
+      "age_visible": "teens"
+    },
+
+    {
+      "slug": "surf-sur-le-bassin",
+      "marketing_title": "SURF SUR LE BASSIN",
+      "emotion_tag": "GLISSE",
+      "carousel_group": "ADRENALINE_SENSATIONS",
+      "age_range": "12-17",
+
+      "visual_strategy": {
+        "primary_query": "surfer silhouette sunset golden",
+        "secondary_queries": [
+          "surf board wax close up",
+          "ocean waves texture",
+          "surfing barrel inside",
+          "surf beach atmospheric",
+          "wetsuit detail ocean"
+        ],
+        "mood": "Golden surf vibes, Atlantic soul",
+        "color_palette": "Golden hour orange, deep blues, sand tones",
+        "composition": "Silhouettes against sun, wave textures, surf culture details"
+      },
+
+      "keywords_en": ["surfer silhouette sunset", "surf board detail ocean", "ocean waves atlantic", "surfing golden hour", "surf beach atmospheric"],
+      "keywords_fr": ["surfeur silhouette coucher soleil", "planche surf océan", "vagues atlantique"],
+      "age_visible": "teens"
+    },
+
+    {
+      "slug": "destination-soleil",
+      "marketing_title": "DESTINATION SOLEIL",
+      "emotion_tag": "VITESSE",
+      "carousel_group": "ADRENALINE_SENSATIONS",
+      "age_range": "12-17",
+
+      "visual_strategy": {
+        "primary_query": "kitesurf action mediterranean speed",
+        "secondary_queries": [
+          "wakeboard water splash",
+          "jet ski mediterranean",
+          "water sports action aerial",
+          "kitesurfing mediterranean coast"
+        ],
+        "mood": "Speed & Mediterranean energy",
+        "color_palette": "Mediterranean blues, white spray, sunny yellows",
+        "composition": "Action freeze, water dynamics, speed emphasis"
+      },
+
+      "keywords_en": ["kitesurf mediterranean action", "wakeboard splash", "water sports speed", "jet ski action", "mediterranean water sports"],
+      "keywords_fr": ["kitesurf méditerranée", "wakeboard action", "sports nautiques vitesse"],
+      "age_visible": "teens"
+    },
+
+    {
+      "slug": "les-robinson-des-glieres",
+      "marketing_title": "SURVIVOR CAMP 74",
+      "emotion_tag": "SURVIE",
+      "carousel_group": "ALTITUDE_AVENTURE",
+      "age_range": "8-15",
+
+      "visual_strategy": {
+        "primary_query": "bonfire night camping stars",
+        "secondary_queries": [
+          "compass map hiking detail",
+          "bushcraft knife wood",
+          "tent camping mountain sunrise",
+          "forest survival atmospheric",
+          "backpack trail forest depth"
+        ],
+        "mood": "Survival & Atmospheric, Wilderness isolation",
+        "color_palette": "Forest greens, campfire orange, night blues, morning mist",
+        "composition": "Atmospheric depth, warm firelight, wilderness context"
+      },
+
+      "keywords_en": ["bonfire camping night", "compass map survival", "bushcraft forest", "tent mountain sunrise", "survival gear detail", "forest atmospheric hiking"],
+      "keywords_fr": ["feu de camp nuit étoiles", "bushcraft forêt", "bivouac montagne"],
+      "age_visible": "children"
+    },
+
+    {
+      "slug": "survie-dans-le-beaufortain",
+      "marketing_title": "SURVIE BEAUFORTAIN",
+      "emotion_tag": "SURVIE",
+      "carousel_group": "ALTITUDE_AVENTURE",
+      "age_range": "8-15",
+
+      "visual_strategy": {
+        "primary_query": "mountain survival alpine fog",
+        "secondary_queries": [
+          "alpine camping gear",
+          "mountain fog forest",
+          "survival knife wood carving",
+          "alpine bivouac",
+          "mountain trail backpack"
+        ],
+        "mood": "Alpine survival, Misty mountains",
+        "color_palette": "Alpine grays, forest greens, misty blues",
+        "composition": "Fog layers, mountain vastness, survival details"
+      },
+
+      "keywords_en": ["mountain survival alpine", "alpine fog camping", "survival alpine gear", "mountain bivouac", "alpine forest fog"],
+      "keywords_fr": ["survie montagne alpes", "bivouac alpin", "brouillard forêt montagne"],
+      "age_visible": "children"
+    },
+
+    {
+      "slug": "yamakasi",
+      "marketing_title": "URBAN MOVE ACADEMY",
+      "emotion_tag": "URBAIN",
+      "carousel_group": "ALTITUDE_AVENTURE",
+      "age_range": "10-15",
+
+      "visual_strategy": {
+        "primary_query": "parkour jump urban rooftop",
+        "secondary_queries": [
+          "freerunning wall run",
+          "urban architecture perspective",
+          "parkour silhouette city",
+          "concrete texture urban",
+          "city parkour action"
+        ],
+        "mood": "Urban & Raw, Concrete jungle",
+        "color_palette": "Concrete grays, urban sunset, street art colors",
+        "composition": "Diagonal lines, height perspective, urban geometry"
+      },
+
+      "keywords_en": ["parkour urban rooftop", "freerunning city", "urban architecture parkour", "city jump silhouette", "concrete urban movement"],
+      "keywords_fr": ["parkour urbain toits", "freerunning ville", "architecture urbaine mouvement"],
+      "age_visible": "children"
+    },
+
+    {
+      "slug": "e-sport-and-sport",
+      "marketing_title": "E-SPORT & SPORT",
+      "emotion_tag": "GAMING",
+      "carousel_group": "ALTITUDE_AVENTURE",
+      "age_range": "10-17",
+
+      "visual_strategy": {
+        "primary_query": "esports arena neon lights",
+        "secondary_queries": [
+          "gaming headset rgb close up",
+          "keyboard mechanical neon",
+          "gaming setup dual monitor",
+          "esports tournament atmosphere",
+          "rgb gaming gear dark"
+        ],
+        "mood": "Dark Mode & Neon, Cyberpunk vibes",
+        "color_palette": "Neon purple, cyan, black backgrounds, RGB accents",
+        "composition": "Low key lighting, screen glow, neon accents, dark atmosphere"
+      },
+
+      "keywords_en": ["esports arena neon", "gaming headset rgb", "keyboard neon dark", "gaming setup", "esports atmosphere"],
+      "keywords_fr": ["esport arène néon", "casque gaming rgb", "clavier mécanique"],
+      "age_visible": "teens"
+    },
+
+    {
+      "slug": "explore-mountain",
+      "marketing_title": "EXPLORE",
+      "emotion_tag": "EXPLORATION",
+      "carousel_group": "ALTITUDE_AVENTURE",
+      "age_range": "8-15",
+
+      "visual_strategy": {
+        "primary_query": "mountain hiking trail aerial",
+        "secondary_queries": [
+          "alpine lake reflection",
+          "mountain exploration",
+          "hiking backpack mountain",
+          "alpine wildflowers meadow",
+          "mountain vista panoramic"
+        ],
+        "mood": "Alpine exploration & Discovery",
+        "color_palette": "Alpine blues, meadow greens, peak whites",
+        "composition": "Wide mountain vistas, exploration context, alpine beauty"
+      },
+
+      "keywords_en": ["mountain hiking aerial", "alpine lake reflection", "mountain exploration", "alpine meadow flowers", "mountain vista"],
+      "keywords_fr": ["randonnée montagne aérienne", "lac alpin reflet", "exploration montagne"],
+      "age_visible": "children"
+    },
+
+    {
+      "slug": "mountain-and-chill",
+      "marketing_title": "MOUNTAIN & CHILL",
+      "emotion_tag": "MIXTE",
+      "carousel_group": "ALTITUDE_AVENTURE",
+      "age_range": "10-15",
+
+      "visual_strategy": {
+        "primary_query": "relaxed mountain activities summer",
+        "secondary_queries": [
+          "mountain meadow peaceful",
+          "alpine summer chill",
+          "mountain games outdoor",
+          "alpine relaxation",
+          "summer mountain leisure"
+        ],
+        "mood": "Relaxed alpine, Summer ease",
+        "color_palette": "Summer greens, soft blues, warm sunlight",
+        "composition": "Peaceful mountain scenes, leisure activities, soft focus"
+      },
+
+      "keywords_en": ["mountain activities relaxed", "alpine summer peaceful", "mountain leisure", "summer mountain games"],
+      "keywords_fr": ["montagne détente été", "activités calmes alpes", "loisirs montagne"],
+      "age_visible": "children"
+    },
+
+    {
+      "slug": "glieraventures",
+      "marketing_title": "GLIÈRAVENTURES",
+      "emotion_tag": "DYNAMIQUE",
+      "carousel_group": "ALTITUDE_AVENTURE",
+      "age_range": "8-15",
+
+      "visual_strategy": {
+        "primary_query": "alpine multi activities dynamic",
+        "secondary_queries": [
+          "mountain bike trail",
+          "climbing wall outdoor",
+          "alpine activities varied",
+          "outdoor adventure park",
+          "mountain sports dynamic"
+        ],
+        "mood": "Dynamic alpine, Varied activities",
+        "color_palette": "Vibrant mountain colors, action energy",
+        "composition": "Activity diversity, mountain context, dynamic action"
+      },
+
+      "keywords_en": ["alpine activities dynamic", "mountain bike trail", "climbing outdoor mountain", "adventure park alpine"],
+      "keywords_fr": ["multi-activités montagne", "vélo trail alpin", "escalade montagne"],
+      "age_visible": "children"
+    },
+
+    {
+      "slug": "nature-picture",
+      "marketing_title": "NATURE PICTURE",
+      "emotion_tag": "ART & NATURE",
+      "carousel_group": "ALTITUDE_AVENTURE",
+      "age_range": "8-14",
+
+      "visual_strategy": {
+        "primary_query": "nature photography artistic macro",
+        "secondary_queries": [
+          "wildlife detail close up",
+          "forest patterns texture",
+          "mountain landscape artistic",
+          "nature macro photography",
+          "creative nature composition"
+        ],
+        "mood": "Artistic & Contemplative, Nature beauty",
+        "color_palette": "Natural earth tones, artistic compositions, soft light",
+        "composition": "Macro details, creative angles, artistic perspective, nature art"
+      },
+
+      "keywords_en": ["nature photography artistic", "wildlife macro detail", "forest patterns", "mountain artistic landscape", "creative nature"],
+      "keywords_fr": ["photographie nature artistique", "macro faune", "paysage montagne art"],
+      "age_visible": "children"
+    },
+
+    {
+      "slug": "aqua-fun",
+      "marketing_title": "AZUR DIVE & JET",
+      "emotion_tag": "NAUTIQUE",
+      "carousel_group": "ADRENALINE_SENSATIONS",
+      "age_range": "12-17",
+
+      "visual_strategy": {
+        "primary_query": "scuba diving underwater turquoise",
+        "secondary_queries": [
+          "diving mask underwater bubbles",
+          "jet ski action mediterranean",
+          "underwater coral reef",
+          "diving equipment detail",
+          "mediterranean water sports"
+        ],
+        "mood": "Underwater premium & Jet action",
+        "color_palette": "Turquoise underwater, Mediterranean blues, jet spray white",
+        "composition": "Underwater clarity, action dynamics, premium water sports"
+      },
+
+      "keywords_en": ["scuba diving underwater", "diving bubbles coral", "jet ski mediterranean", "underwater turquoise", "diving gear detail"],
+      "keywords_fr": ["plongée sous-marine turquoise", "jet ski méditerranée", "corail sous-marin"],
+      "age_visible": "teens"
+    },
+
+    {
+      "slug": "aqua-mix",
+      "marketing_title": "AQUA MIX",
+      "emotion_tag": "DÉCOUVERTE",
+      "carousel_group": "OCEAN_FUN",
+      "age_range": "8-14",
+
+      "visual_strategy": {
+        "primary_query": "beach activities ocean discovery",
+        "secondary_queries": [
+          "coastal exploration kids",
+          "ocean discovery nature",
+          "beach games atmospheric",
+          "sea activities varied",
+          "coastal nature discovery"
+        ],
+        "mood": "Ocean discovery & Beach fun",
+        "color_palette": "Ocean blues, sand tones, coastal light",
+        "composition": "Beach context, discovery moments, varied activities"
+      },
+
+      "keywords_en": ["beach activities ocean", "coastal exploration", "ocean discovery", "beach games", "sea activities"],
+      "keywords_fr": ["activités plage océan", "découverte côtière", "jeux plage"],
+      "age_visible": "children"
+    },
+
+    {
+      "slug": "breizh-equit-kids-8-11-ans",
+      "marketing_title": "BRETAGNE OCEAN RIDE",
+      "emotion_tag": "PASSION",
+      "carousel_group": "OCEAN_FUN",
+      "age_range": "8-11",
+
+      "visual_strategy": {
+        "primary_query": "horse riding beach sunset silhouette",
+        "secondary_queries": [
+          "horse mane close up",
+          "equestrian ocean coast",
+          "pony beach riding",
+          "horse stable golden hour",
+          "riding boots stirrup detail"
+        ],
+        "mood": "Passion & Connection, Oceanic equestrian",
+        "color_palette": "Golden hour amber, ocean blues, horse browns",
+        "composition": "Silhouettes, connection moments, coastal landscapes, equestrian detail"
+      },
+
+      "keywords_en": ["horse riding beach sunset", "equestrian coast", "pony ocean", "horse mane detail", "beach riding silhouette"],
+      "keywords_fr": ["équitation plage coucher soleil", "cheval océan", "poney côte"],
+      "age_visible": "children"
+    },
+
+    {
+      "slug": "destination-bassin-darcachon-1",
+      "marketing_title": "DESTINATION BASSIN",
+      "emotion_tag": "NATURE",
+      "carousel_group": "OCEAN_FUN",
+      "age_range": "8-14",
+
+      "visual_strategy": {
+        "primary_query": "arcachon basin nature coastal",
+        "secondary_queries": [
+          "oyster discovery coast",
+          "dune du pilat",
+          "basin coastal nature",
+          "atlantic coast exploration",
+          "coastal ecosystem"
+        ],
+        "mood": "Coastal nature & Discovery",
+        "color_palette": "Basin blues, sand dunes, coastal greens",
+        "composition": "Coastal landscapes, nature discovery, basin atmosphere"
+      },
+
+      "keywords_en": ["arcachon basin coastal", "oyster coast discovery", "coastal nature", "atlantic basin", "dune pilat"],
+      "keywords_fr": ["bassin arcachon nature", "ostréiculture côte", "dune pilat"],
+      "age_visible": "children"
+    },
+
+    {
+      "slug": "laventure-verticale",
+      "marketing_title": "L'AVENTURE VERTICALE",
+      "emotion_tag": "ACTION",
+      "carousel_group": "OCEAN_FUN",
+      "age_range": "10-15",
+
+      "visual_strategy": {
+        "primary_query": "rock climbing coastal cliff",
+        "secondary_queries": [
+          "climbing rope detail hands",
+          "tree climbing adventure",
+          "vertical challenge",
+          "climbing coastal setting",
+          "rope adventure park"
+        ],
+        "mood": "Vertical action & Coastal adventure",
+        "color_palette": "Rock grays, rope colors, coastal blues",
+        "composition": "Vertical perspectives, action angles, coastal cliff context"
+      },
+
+      "keywords_en": ["rock climbing coastal", "climbing rope detail", "tree climbing", "vertical adventure", "coastal cliff climbing"],
+      "keywords_fr": ["escalade côte", "accrobranche aventure", "défi vertical"],
+      "age_visible": "children"
+    },
+
+    {
+      "slug": "les-ptits-puisotins-1",
+      "marketing_title": "MY LITTLE FOREST",
+      "emotion_tag": "DOUCEUR",
+      "carousel_group": "MA_PREMIERE_COLO",
+      "age_range": "3-9",
+
+      "visual_strategy": {
+        "primary_query": "child forest nature back view soft",
+        "secondary_queries": [
+          "forest sunlight gentle",
+          "child hand holding flower",
+          "pony grazing peaceful",
+          "ladybug leaf macro",
+          "kids nature discovery soft"
+        ],
+        "mood": "Soft & Safe, Forest magic, Nurturing",
+        "color_palette": "Soft greens, warm sunlight, pastel tones, gentle colors",
+        "composition": "Back views, soft focus, warm natural light, safe distances, gentle atmosphere"
+      },
+
+      "keywords_en": ["child forest back view", "forest sunlight gentle", "pony peaceful meadow", "nature discovery soft", "forest magic soft light"],
+      "keywords_fr": ["enfant forêt vue dos", "lumière forêt douce", "poney prairie paisible"],
+      "age_visible": "young_children"
+    },
+
+    {
+      "slug": "croc-marmotte",
+      "marketing_title": "ALPOO KIDS",
+      "emotion_tag": "COCOONING",
+      "carousel_group": "MA_PREMIERE_COLO",
+      "age_range": "5-9",
+
+      "visual_strategy": {
+        "primary_query": "marmot wildlife nature alpine",
+        "secondary_queries": [
+          "child hiking boots nature",
+          "alpine meadow peaceful",
+          "mountain nature gentle",
+          "wildlife discovery kids",
+          "alpine flowers close up"
+        ],
+        "mood": "Cozy alpine, First mountain adventure",
+        "color_palette": "Alpine greens, warm earth tones, soft mountain light",
+        "composition": "Gentle mountain context, wildlife charm, cozy atmosphere"
+      },
+
+      "keywords_en": ["marmot alpine nature", "child hiking nature", "alpine meadow peaceful", "mountain gentle discovery", "alpine wildlife"],
+      "keywords_fr": ["marmotte alpes nature", "enfant randonnée montagne", "prairie alpine paisible"],
+      "age_visible": "young_children"
+    },
+
+    {
+      "slug": "aqua-gliss",
+      "marketing_title": "BABY RIDERS",
+      "emotion_tag": "EAU CALME",
+      "carousel_group": "MA_PREMIERE_COLO",
+      "age_range": "7-8",
+
+      "visual_strategy": {
+        "primary_query": "gentle water activities safe beach",
+        "secondary_queries": [
+          "calm ocean kids safe",
+          "beach toys gentle waves",
+          "safe water play",
+          "peaceful beach activities",
+          "gentle sea discovery"
+        ],
+        "mood": "Gentle water fun, Safe beach",
+        "color_palette": "Calm blues, gentle waves, safe beach tones",
+        "composition": "Safe water context, gentle activities, peaceful beach"
+      },
+
+      "keywords_en": ["gentle water beach", "calm ocean safe", "safe beach play", "peaceful water activities", "gentle waves"],
+      "keywords_fr": ["eau calme plage", "océan paisible sécurisé", "activités eau douces"],
+      "age_visible": "young_children"
+    }
+  ],
+
+  "supabase_config": {
+    "bucket": "flooow-sejours-images",
+    "folder_structure": "/{carousel_group}/{slug}/",
+    "naming_convention": "{source}_{emotion_tag}_{id}.jpg",
+    "metadata_fields": ["slug", "marketing_title", "emotion_tag", "age_range", "keywords", "photographer", "source", "visual_mood", "color_palette"]
+  }
+}

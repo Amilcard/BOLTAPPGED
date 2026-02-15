@@ -46,3 +46,4 @@ app/debug-db/
 
 # local editor
 .vscode/
+.env

@@ -166,7 +166,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
               }
             }}
             placeholder="Ex: Alex"
-            className="w-full border border-primary-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent"
+            className="w-full border border-primary-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50 focus:border-secondary"
             required
             aria-invalid={!!errors.prenom}
             aria-describedby={errors.prenom ? "error-prenom" : undefined}
@@ -188,7 +188,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
             value={prenomReferent}
             onChange={(e) => setPrenomReferent(e.target.value.slice(0, 30))}
             placeholder="Ex: Marie"
-            className="w-full border border-primary-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent"
+            className="w-full border border-primary-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50 focus:border-secondary"
           />
           <p className="mt-1 text-xs text-primary-400">Si tu le connais, ça aide à personnaliser le message.</p>
         </div>
@@ -212,7 +212,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
                 }
               }}
               placeholder="Ex: referent@structure.fr"
-              className="w-full border border-primary-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent"
+              className="w-full border border-primary-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50 focus:border-secondary"
               required
               aria-invalid={!!errors.email}
               aria-describedby={errors.email ? "error-email" : undefined}
@@ -241,7 +241,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
               }
             }}
             placeholder="Ex: avec qui tu veux partir, ce que tu veux découvrir, ce que tu veux apprendre, ce qui te fait envie…"
-            className="w-full border border-primary-200 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent"
+            className="w-full border border-primary-200 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-secondary/50 focus:border-secondary"
             rows={3}
             required
             aria-invalid={!!errors.motivation}
@@ -271,7 +271,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
           <button
             onClick={handleSaveMotivation}
             disabled={!isFormValid() || isSubmitting}
-            className="w-full mb-4 py-3 bg-accent text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-accent-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full mb-4 py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <>Enregistrement...</>
@@ -286,19 +286,19 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
           <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <button
               onClick={handleShare}
-              className="w-full py-3 bg-accent text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-accent/90 transition"
+              className="w-full py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary/90 transition"
             >
               <Share2 className="w-4 h-4" /> Partager à mon éducateur
             </button>
             <Link
               href="/envies"
-              className="w-full py-3 bg-primary-50 text-primary rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-primary-100 transition"
+              className="w-full py-3 bg-primary-50 text-primary rounded-full font-medium flex items-center justify-center gap-2 hover:bg-primary-100 transition"
             >
               <Heart className="w-4 h-4" /> Voir Mes souhaits
             </Link>
             <button
               onClick={onClose}
-              className="w-full py-3 text-primary-500 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-primary-50 transition"
+              className="w-full py-3 text-primary-500 rounded-full font-medium flex items-center justify-center gap-2 hover:bg-primary-50 transition"
             >
               <Compass className="w-4 h-4" /> Continuer à explorer
             </button>
@@ -310,13 +310,13 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
           <div className="flex flex-col gap-2">
             <Link
               href="/envies"
-              className="w-full py-3 bg-primary-50 text-primary rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-primary-100 transition"
+              className="w-full py-3 bg-primary-50 text-primary rounded-full font-medium flex items-center justify-center gap-2 hover:bg-primary-100 transition"
             >
               <Heart className="w-4 h-4" /> Voir Mes souhaits
             </Link>
             <button
               onClick={onClose}
-              className="w-full py-3 text-primary-500 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-primary-50 transition"
+              className="w-full py-3 text-primary-500 rounded-full font-medium flex items-center justify-center gap-2 hover:bg-primary-50 transition"
             >
               <Compass className="w-4 h-4" /> Continuer à explorer
             </button>
@@ -340,13 +340,13 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowMailtoWarning(false)}
-                  className="flex-1 py-2.5 border border-primary-200 text-primary rounded-xl font-medium hover:bg-primary-50 transition"
+                  className="flex-1 py-2.5 border border-primary-200 text-primary rounded-full font-medium hover:bg-primary-50 transition"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleMailtoConfirm}
-                  className="flex-1 py-2.5 bg-accent text-white rounded-xl font-medium hover:bg-accent-600 transition"
+                  className="flex-1 py-2.5 bg-secondary text-white rounded-full font-medium hover:bg-secondary-600 transition"
                 >
                   Ouvrir
                 </button>

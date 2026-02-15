@@ -248,12 +248,12 @@ export function BookingModal({ stay, sessions, departureCities = [], enrichmentS
                 <div className="flex flex-wrap gap-2 text-xs text-primary-600 border-b border-secondary/10 pb-1 mb-1">
                   {selectedSession && (
                     <span className="font-medium bg-white px-1.5 py-0.5 rounded border border-secondary/10">
-                      📅 {formatDateLong(selectedSession.startDate)}
+                      {formatDateLong(selectedSession.startDate)}
                     </span>
                   )}
                   {selectedCity && (
                     <span className="font-medium bg-white px-1.5 py-0.5 rounded border border-secondary/10">
-                      📍 {selectedCity}
+                      {selectedCity}
                     </span>
                   )}
                 </div>

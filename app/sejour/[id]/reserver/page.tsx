@@ -22,7 +22,7 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
     ...s,
     startDate: s.start_date,
     endDate: s.end_date,
-    seatsLeft: s.seats_left,
+    seatsLeft: 30, // Hardcodé (DB seats_left est null - voir page.tsx:103)
   }));
 
   return (

@@ -95,14 +95,16 @@ export function StayCard({ stay }: { stay: Stay }) {
           </p>
 
           <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
-            {/* Prix */}
-            {stay?.priceFrom ? (
+            {/* Prix (PRO uniquement) */}
+            {!isKids && stay?.priceFrom ? (
               <div className="flex items-baseline gap-1">
                 <span className="text-[10px] text-gray-400 uppercase tracking-wide">Dès</span>
                 <span className="text-lg font-bold text-secondary font-heading">{stay.priceFrom}€</span>
               </div>
-            ) : (
+            ) : !isKids ? (
               <span className="text-xs text-gray-400">Tarif sur demande</span>
+            ) : (
+              <div />
             )}
 
             {/* CTA Minimalist */}

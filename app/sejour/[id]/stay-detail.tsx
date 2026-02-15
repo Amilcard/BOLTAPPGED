@@ -740,6 +740,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
           stay={stay}
           sessions={sessions}
           departureCities={enrichment?.departures}
+          enrichmentSessions={enrichment?.sessions}
           initialSessionId={preSelectedSessionId}
           initialCity={preSelectedCity}
           onClose={() => setShowBooking(false)}
@@ -750,7 +751,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
         <WishlistModal
           isOpen={showWishlistModal}
           onClose={() => setShowWishlistModal(false)}
-          stayTitle={stay?.title ?? ''}
+          stayTitle={displayTitle ?? ''}
           staySlug={slug}
           stayUrl={typeof window !== 'undefined' ? window.location.href : ''}
         />

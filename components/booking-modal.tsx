@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Check, ChevronRight, ChevronLeft, Loader2, Shield, Star, Info } from 'lucide-react';
+import { X, Check, ChevronRight, ChevronLeft, Loader2, Shield, Star, Info, AlertCircle } from 'lucide-react';
 import type { Stay, StaySession } from '@/lib/types';
 import { formatDate, formatDateLong } from '@/lib/utils';
 
@@ -10,13 +10,20 @@ interface DepartureCity {
   extra_eur: number;
 }
 
+interface SessionPriceData {
+  date_text: string;
+  base_price_eur: number | null;
+  promo_price_eur: number | null;
+}
+
 interface BookingModalProps {
   stay: Stay;
   sessions: StaySession[];
   departureCities?: DepartureCity[];
-  sessionBasePrice?: number | null; // Prix de base de la session (pour calcul total)
-  initialSessionId?: string; // Pré-sélection session depuis la page détail
-  initialCity?: string; // Pré-sélection ville depuis la page détail
+  enrichmentSessions?: SessionPriceData[]; // Nouveau: Tous les prix disponibles
+  sessionBasePrice?: number | null; // Back-compat
+  initialSessionId?: string;
+  initialCity?: string;
   onClose: () => void;
 }
 
@@ -35,14 +42,12 @@ interface Step2Data {
   consent: boolean;
 }
 
-type EducationalOption = 'ZEN' | 'ULTIME' | null;
-
 // Villes de départ standard (même liste pour tous les séjours)
 const STANDARD_CITIES = [
   'Paris', 'Lyon', 'Lille', 'Marseille', 'Bordeaux', 'Rennes'
 ];
 
-export function BookingModal({ stay, sessions, departureCities = [], sessionBasePrice = null, initialSessionId = '', initialCity = '', onClose }: BookingModalProps) {
+export function BookingModal({ stay, sessions, departureCities = [], enrichmentSessions = [], sessionBasePrice: legacyBasePrice = null, initialSessionId = '', initialCity = '', onClose }: BookingModalProps) {
   // Déterminer le step initial (si pré-sélections, on peut sauter des étapes)
   const getInitialStep = () => {
     if (initialSessionId && initialCity) return 2; // Session + Ville déjà choisis → step Pro
@@ -52,7 +57,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
   const [step, setStep] = useState(getInitialStep); // 0 = session, 1 = ville, 2 = pro info, 3 = child info, 4 = validation, 5 = success
   const [selectedSessionId, setSelectedSessionId] = useState<string>(initialSessionId);
   const [selectedCity, setSelectedCity] = useState<string>(initialCity);
-  const [selectedOption, setSelectedOption] = useState<EducationalOption>(null);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [bookingId, setBookingId] = useState('');
@@ -104,11 +109,30 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
     return age;
   };
 
-  // Calcul du prix total dynamique (session + ville + option)
+  // Calcul du prix total dynamique (session + ville)
+  const selectedSession = sessions?.find(s => s?.id === selectedSessionId);
+
+  // Logique de matching de prix
+  let sessionBasePrice: number | null = legacyBasePrice; // Valeur par défaut
+
+  if (selectedSession && enrichmentSessions && enrichmentSessions.length > 0) {
+     const start = new Date(selectedSession.startDate);
+     const day = String(start.getDate()).padStart(2, '0');
+     const month = String(start.getMonth() + 1).padStart(2, '0');
+     const dateStr = `${day}/${month}`;
+
+     const found = enrichmentSessions.find(s => s.date_text?.includes(dateStr));
+     if (found) {
+       sessionBasePrice = found.promo_price_eur || found.base_price_eur;
+     } else if (sessionBasePrice === null) {
+       // Fallback
+       sessionBasePrice = enrichmentSessions[0]?.promo_price_eur || enrichmentSessions[0]?.base_price_eur || null;
+     }
+  }
+
   const selectedCityData = departureCities.find(dc => dc.city === selectedCity);
   const extraVille = selectedCityData?.extra_eur ?? 0;
-  const optionPrice = selectedOption === 'ZEN' ? 49 : selectedOption === 'ULTIME' ? 79 : 0;
-  const totalPrice = sessionBasePrice !== null ? sessionBasePrice + extraVille + optionPrice : null;
+  const totalPrice = sessionBasePrice !== null ? sessionBasePrice + extraVille : null;
 
   const [step1, setStep1] = useState<Step1Data>({
     organisation: '',
@@ -129,7 +153,6 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
     const key = `${s.startDate}-${s.endDate}`;
     return idx === arr.findIndex(x => `${x.startDate}-${x.endDate}` === key);
   });
-  const selectedSession = sessions?.find(s => s?.id === selectedSessionId);
 
   // Filtrer les villes de départ : uniquement la liste standard + "Sans transport"
   const standardDepartureCities = departureCities.filter(dc =>
@@ -154,8 +177,11 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
       // Convertir année en date (1er janvier de l'année pour compatibilité DB)
       const birthDate = step2.childBirthDate; // Format ISO attendu
 
-      // P0: Stratégie Pass-through pour conserver Adresse et Sexe sans toucher au backend
+      // P0: Stratégie Pass-through pour conserver Adresse, Ville et Sexe sans toucher au backend
       const addressNote = step1.addresseStructure ? `[ADRESSE]: ${step1.addresseStructure}` : '';
+      const cityNote = selectedCity ? `[VILLE DEPART]: ${selectedCity}` : '';
+      const finalNotes = [addressNote, cityNote].filter(Boolean).join('\n');
+
       const sexNote = step2.childSex ? `[SEXE]: ${step2.childSex}` : '';
 
       const res = await fetch('/api/bookings', {
@@ -164,8 +190,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
         body: JSON.stringify({
           stayId: stay?.id,
           sessionId: selectedSessionId,
-          departureCity: selectedCity,
-          educationalOption: selectedOption,
+          // departureCity supprimé car non géré par le backend
           organisation: step1.organisation,
           socialWorkerName: step1.socialWorkerName,
           email: step1.email,
@@ -173,7 +198,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
           childFirstName: step2.childFirstName,
           childLastName: '', // Minimisation données
           childBirthDate: birthDate,
-          notes: addressNote, // Transmis dans le champ notes existant
+          notes: finalNotes, // Adresse + Ville concaténées
           childNotes: sexNote, // Transmis dans le champ childNotes existant
           consent: step2.consent,
         }),
@@ -191,12 +216,6 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
     }
   };
 
-  // Options éducatives
-  const educationalOptions = [
-    { code: 'ZEN' as const, label: 'Option Tranquillité', description: 'Renfort léger pour sécuriser le séjour', price: 49, color: 'green' },
-    { code: 'ULTIME' as const, label: 'Option Ultime', description: 'Encadrement individualisé renforcé (1+1)', price: 79, color: 'purple' },
-  ];
-
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div
@@ -205,7 +224,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
       >
         <div className="sticky top-0 bg-white border-b border-primary-100 p-6 pb-4 z-10">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-primary text-lg">Réserver - {stay?.title ?? ''}</h2>
+            <h2 className="font-semibold text-primary text-lg">Réserver - {stay?.marketingTitle || stay?.title}</h2>
             <button onClick={onClose} className="p-1 hover:bg-primary-50 rounded">
               <X className="w-5 h-5" />
             </button>
@@ -244,7 +263,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                 <div className="text-sm text-primary-600">
                   <span className="font-medium">Total estimé</span>
                   {extraVille > 0 && <span className="text-xs ml-2 text-primary-500">(+{extraVille}€ transport)</span>}
-                  {optionPrice > 0 && <span className="text-xs ml-2 text-primary-500">(+{optionPrice}€ option)</span>}
+
                 </div>
                 <div className="text-lg font-bold text-secondary">{totalPrice} €</div>
               </div>
@@ -275,6 +294,19 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                 {sessionsUnique.slice(0, showAllSessions ? undefined : 4).map(session => {
                   const isFull = (session?.seatsLeft ?? 0) === 0;
                   const isSelected = selectedSessionId === session?.id;
+                  // Chercher prix pour display dans la liste
+                  let displayPrice = '';
+                  if (enrichmentSessions && enrichmentSessions.length > 0) {
+                      const start = new Date(session.startDate);
+                      const day = String(start.getDate()).padStart(2, '0');
+                      const month = String(start.getMonth() + 1).padStart(2, '0');
+                      const dateStr = `${day}/${month}`;
+                      const found = enrichmentSessions.find(s => s.date_text?.includes(dateStr));
+                      if (found && (found.base_price_eur || found.promo_price_eur)) {
+                          displayPrice = `${found.promo_price_eur || found.base_price_eur}€`;
+                      }
+                  }
+
                   return (
                     <label
                       key={session?.id}
@@ -305,13 +337,20 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                         disabled={isFull}
                         className="sr-only"
                       />
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">
-                          {formatDateLong(session?.startDate ?? '')} - {formatDateLong(session?.endDate ?? '')}
+                      <div className="flex-1 flex justify-between items-center">
+                        <div>
+                            <div className="font-medium text-sm">
+                            {formatDateLong(session?.startDate ?? '')} - {formatDateLong(session?.endDate ?? '')}
+                            </div>
+                            <div className={`text-xs ${isFull ? 'text-red-500' : 'text-primary-500'}`}>
+                            {isFull ? 'Complet' : `${session?.seatsLeft ?? 0} places restantes`}
+                            </div>
                         </div>
-                        <div className={`text-xs ${isFull ? 'text-red-500' : 'text-primary-500'}`}>
-                          {isFull ? 'Complet' : `${session?.seatsLeft ?? 0} places restantes`}
-                        </div>
+                        {displayPrice && !isFull && (
+                            <div className="text-secondary font-bold text-sm">
+                                {displayPrice}
+                            </div>
+                        )}
                       </div>
                     </label>
                   );
@@ -586,78 +625,31 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
             <div className="space-y-4">
               <h3 className="font-medium text-primary">{getStepLabel(4)}</h3>
 
-              {/* Récapitulatif */}
-              <div className="bg-primary-50 p-4 rounded-xl space-y-1">
-                <p className="text-sm"><strong>Séjour :</strong> {stay?.title}</p>
-                <p className="text-sm"><strong>Session :</strong> {formatDateLong(selectedSession?.startDate ?? '')}</p>
-                <p className="text-sm"><strong>Ville :</strong> {selectedCity}</p>
-                <p className="text-sm"><strong>Enfant :</strong> {step2.childFirstName}</p>
-              </div>
-
-              {/* Options éducatives */}
-              <div>
-                <h4 className="text-sm font-medium text-primary mb-2">
-                  Options d'accompagnement (optionnel)
+              {/* Récapitulatif Final pour Validation */}
+              <div className="bg-primary-50 p-4 rounded-xl space-y-2 border border-primary-100">
+                <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
+                  <Check className="w-4 h-4 text-green-600" /> Récapitulatif de la demande
                 </h4>
-                <p className="text-xs text-primary-500 mb-3">
-                  Renfort d'encadrement selon le profil du jeune
-                </p>
-                <div className="space-y-2">
-                  {educationalOptions.map(option => (
-                    <label
-                      key={option.code}
-                      className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                        selectedOption === option.code
-                          ? 'border-secondary bg-secondary/5'
-                          : 'border-primary-200 hover:border-primary-300'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="educationalOption"
-                        value={option.code}
-                        checked={selectedOption === option.code}
-                        onChange={() => setSelectedOption(option.code)}
-                        className="sr-only"
-                      />
-                      <div className="flex items-start gap-3">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          option.color === 'green' ? 'bg-green-100' : 'bg-purple-100'
-                        }`}>
-                          {option.code === 'ZEN' ? (
-                            <Shield className="w-5 h-5 text-green-600" />
-                          ) : (
-                            <Star className="w-5 h-5 text-purple-600" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-bold text-primary text-sm">{option.label}</p>
-                          <p className="text-xs text-primary-600">{option.description}</p>
-                        </div>
-                        <span className="text-sm font-semibold text-secondary">+{option.price}€</span>
-                      </div>
-                    </label>
-                  ))}
-                  <label
-                    className={`flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer ${
-                      !selectedOption ? 'border-secondary bg-secondary/5' : 'border-primary-200'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="educationalOption"
-                      value=""
-                      checked={!selectedOption}
-                      onChange={() => setSelectedOption(null)}
-                      className="sr-only"
-                    />
-                    <span className="text-sm text-primary-600">Aucune option</span>
-                  </label>
+                <div className="space-y-1 text-sm text-primary-700">
+                  <p><span className="font-medium text-primary-500">Séjour :</span> {stay?.marketingTitle || stay?.title}</p>
+                  <p><span className="font-medium text-primary-500">Session :</span> {formatDateLong(selectedSession?.startDate ?? '')} - {formatDateLong(selectedSession?.endDate ?? '')}</p>
+                  <p><span className="font-medium text-primary-500">Ville de départ :</span> {selectedCity} {extraVille > 0 ? `(+${extraVille}€)` : '(Inclus)'}</p>
+                  <div className="border-t border-primary-200 my-2 pt-2">
+                    <p><span className="font-medium text-primary-500">Enfant :</span> {step2.childFirstName} ({calculateAge(step2.childBirthDate)} ans)</p>
+                    <p><span className="font-medium text-primary-500">Structure :</span> {step1.organisation} ({step1.socialWorkerName})</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-primary-200 flex items-center justify-between">
+                  <span className="font-bold text-primary">Total estimé</span>
+                  <span className="text-xl font-bold text-secondary">{totalPrice} €</span>
                 </div>
               </div>
 
               {error && (
-                <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm">{error}</div>
+                <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" /> {error}
+                </div>
               )}
 
               <div className="flex gap-3">
@@ -687,7 +679,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
               </div>
               <h3 className="text-xl font-semibold text-primary mb-2">Réservation confirmée !</h3>
               <p className="text-primary-600 mb-4">
-                Votre demande pour <strong>{stay?.title}</strong> a été enregistrée.
+                Votre demande pour <strong>{stay?.marketingTitle || stay?.title}</strong> a été enregistrée.
               </p>
               <div className="bg-primary-50 p-4 rounded-xl text-left text-sm space-y-1">
                 <p><strong>Référence :</strong> {bookingId}</p>
@@ -695,9 +687,7 @@ export function BookingModal({ stay, sessions, departureCities = [], sessionBase
                 <p><strong>Ville :</strong> {selectedCity}</p>
                 <p><strong>Enfant :</strong> {step2.childFirstName} (né le {new Date(step2.childBirthDate).toLocaleDateString('fr-FR')})</p>
                 <p><strong>Contact :</strong> {step1.email}</p>
-                {selectedOption && (
-                  <p><strong>Option :</strong> {selectedOption === 'ZEN' ? 'Option Tranquillité' : 'Option Ultime'}</p>
-                )}
+
               </div>
               <button
                 onClick={onClose}

@@ -721,7 +721,12 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                 </Button>
               ) : (
                 <Button
-                  onClick={() => setShowBooking(true)}
+                  onClick={() => {
+                    const params = new URLSearchParams();
+                    if (preSelectedSessionId) params.set('session', preSelectedSessionId);
+                    if (preSelectedCity) params.set('ville', preSelectedCity);
+                    window.location.href = `/sejour/${slug}/reserver?${params.toString()}`;
+                  }}
                   disabled={sessions.filter(s => (s?.seatsLeft ?? 0) > 0).length === 0}
                   className="w-full"
                   size="lg"
@@ -846,7 +851,12 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
               </Button>
             ) : (
               <Button
-                onClick={() => setShowBooking(true)}
+                onClick={() => {
+                  const params = new URLSearchParams();
+                  if (preSelectedSessionId) params.set('session', preSelectedSessionId);
+                  if (preSelectedCity) params.set('ville', preSelectedCity);
+                  window.location.href = `/sejour/${slug}/reserver?${params.toString()}`;
+                }}
                 disabled={sessions.filter(s => (s?.seatsLeft ?? 0) > 0).length === 0}
                 className="w-full"
                 size="default"

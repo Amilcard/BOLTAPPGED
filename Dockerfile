@@ -18,6 +18,10 @@ COPY . .
 
 # Build arguments
 ENV NEXT_TELEMETRY_DISABLED=1
+# Skip data fetching during build (pages will be rendered at runtime)
+ENV SKIP_BUILD_STATIC_GENERATION=1
+# Generate Prisma client before build
+RUN npx prisma generate
 RUN npm run build
 
 # Production image

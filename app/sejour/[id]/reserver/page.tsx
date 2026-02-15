@@ -15,7 +15,15 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
   const stay = await getSejourBySlug(params.id);
   if (!stay) notFound();
 
-  const sessions = await getStaySessions(params.id);
+  const sessionsRaw = await getStaySessions(params.id);
+
+  // Map snake_case DB → camelCase frontend
+  const sessions = sessionsRaw.map((s: any) => ({
+    ...s,
+    startDate: s.start_date,
+    endDate: s.end_date,
+    seatsLeft: s.seats_left,
+  }));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50/30">

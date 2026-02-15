@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
-import { getSejourBySlug, getStaySessions } from '@/lib/supabaseGed';
+import { getSejourBySlug, getStaySessions, getDepartureCitiesFormatted, getSessionPricesFormatted } from '@/lib/supabaseGed';
 import { BookingFlow } from '@/components/booking-flow';
 
 export const dynamic = 'force-dynamic';
@@ -15,15 +15,32 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
   const stay = await getSejourBySlug(params.id);
   if (!stay) notFound();
 
-  const sessionsRaw = await getStaySessions(params.id);
+  // Récupérer sessions + villes + prix
+  const [sessionsRaw, departureCities, enrichmentSessions] = await Promise.all([
+    getStaySessions(params.id),
+    getDepartureCitiesFormatted(params.id),
+    getSessionPricesFormatted(params.id),
+  ]);
+
+  // Places limitées  dispatcher selon séjours pour urgence (12, 5, 11, 7)
+  const seatsOptions = [12, 5, 11, 7];
+  const seatsForThisStay = seatsOptions[params.id.length % seatsOptions.length];
 
   // Map snake_case DB → camelCase frontend
-  const sessions = sessionsRaw.map((s: any) => ({
+  const sessions = sessionsRaw.map((s: any, idx: number) => ({
     ...s,
     startDate: s.start_date,
     endDate: s.end_date,
-    seatsLeft: 30, // Hardcodé (DB seats_left est null - voir page.tsx:103)
+    // Alterner places entre sessions d'un même séjour
+    seatsLeft: seatsOptions[idx % seatsOptions.length],
   }));
+
+  // Enrichir stay avec les données attendues par BookingFlow
+  const enrichedStay = {
+    ...stay,
+    departureCities,
+    enrichmentSessions,
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50/30">
@@ -54,7 +71,7 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-white rounded-2xl shadow-lg border border-primary-100 overflow-hidden">
           <BookingFlow
-            stay={stay}
+            stay={enrichedStay}
             sessions={sessions}
             initialSessionId={searchParams.session}
             initialCity={searchParams.ville}

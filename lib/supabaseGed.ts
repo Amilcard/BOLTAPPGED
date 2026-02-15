@@ -41,7 +41,7 @@ export interface Inscription {
 export const getSejours = async (filters: StayFilters = {}) => {
   let query = supabaseGed
     .from('gd_stays')
-    .select('*')
+    .select('*, marketing_title, punchline, expert_pitch, programme, title_kids, title_pro, description_kids, description_pro, emotion_tag, carousel_group, spot_label, standing_label, expertise_label, intensity_label, price_includes_features')
     .eq('published', true)
     .order('title')
 
@@ -51,18 +51,56 @@ export const getSejours = async (filters: StayFilters = {}) => {
 
   const { data, error } = await query
   if (error) throw error
-  return data
+
+  // Mapping manuel snake_case → camelCase pour les champs premium
+  return data?.map((stay: any) => ({
+    ...stay,
+    marketingTitle: stay.marketing_title,
+    punchline: stay.punchline,
+    expertPitch: stay.expert_pitch,
+    programme: stay.programme,
+    titleKids: stay.title_kids,
+    titlePro: stay.title_pro,
+    descriptionKids: stay.description_kids,
+    descriptionPro: stay.description_pro,
+    emotionTag: stay.emotion_tag,
+    carouselGroup: stay.carousel_group,
+    spotLabel: stay.spot_label,
+    standingLabel: stay.standing_label,
+    expertiseLabel: stay.expertise_label,
+    intensityLabel: stay.intensity_label,
+    priceIncludesFeatures: stay.price_includes_features
+  })) || []
 }
 
 export const getSejourBySlug = async (slug: string) => {
   const { data, error } = await supabaseGed
     .from('gd_stays')
-    .select('*')
+    .select('*, marketing_title, punchline, expert_pitch, programme, title_kids, title_pro, description_kids, description_pro, emotion_tag, carousel_group, spot_label, standing_label, expertise_label, intensity_label, price_includes_features')
     .eq('slug', slug)
     .single()
 
   if (error) throw error
-  return data
+
+  // Mapping manuel snake_case → camelCase
+  return {
+    ...data,
+    marketingTitle: data.marketing_title,
+    punchline: data.punchline,
+    expertPitch: data.expert_pitch,
+    programme: data.programme,
+    titleKids: data.title_kids,
+    titlePro: data.title_pro,
+    descriptionKids: data.description_kids,
+    descriptionPro: data.description_pro,
+    emotionTag: data.emotion_tag,
+    carouselGroup: data.carousel_group,
+    spotLabel: data.spot_label,
+    standingLabel: data.standing_label,
+    expertiseLabel: data.expertise_label,
+    intensityLabel: data.intensity_label,
+    priceIncludesFeatures: data.price_includes_features
+  }
 }
 
 // API PRIX

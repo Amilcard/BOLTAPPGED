@@ -1,0 +1,379 @@
+{
+  "name": "Flooow Images v7 - Bypass FirstRun",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "cronExpression", "expression": "0 3 * * 0"}]
+        }
+      },
+      "id": "trigger",
+      "name": "Schedule Hebdo",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 400],
+      "notes": "Chaque dimanche à 3h du matin"
+    },
+
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "GET",
+        "url": "https://iirfvndgzutbxwfdwawu.supabase.co/rest/v1/gd_stays",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {"name": "select", "value": "slug,marketing_title,emotion_tag,carousel_group,age_min,age_max,location_region,location_city"},
+            {"name": "published", "value": "eq.true"},
+            {"name": "limit", "value": "30"}
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "apikey", "value": "={{ $credentials.httpHeaderAuth.value }}"},
+            {"name": "Prefer", "value": "return=representation"}
+          ]
+        },
+        "options": {"timeout": 15000}
+      },
+      "id": "get-sejours",
+      "name": "GET Séjours (HTTP REST)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "DMAMpZycj9mgH5fu",
+          "name": "Header Auth account"
+        }
+      },
+      "notes": "HTTP Request direct vers API REST Supabase — pas de node Supabase buggé. Credential = Header Auth avec Authorization: Bearer <service_role_key>"
+    },
+
+    {
+      "parameters": {
+        "jsCode": "// MAPPING VISUEL STRICT PAR SÉJOUR\nconst slugQueryMap = {\n  'moto-moto': ['motocross rider jump mud helmet action','teenager riding dirt bike forest','authentic mechanic hands grease'],\n  'destination-soleil': ['teenager kitesurfing jump silhouette sunset','group of teens beach laughing candid','wakeboard splash action'],\n  'dh-experience-11-13-ans': ['boy mountain bike downhill jump forest','young mountain biker mud action helmet','mtb trail riding back view'],\n  'aqua-gliss': ['little boy life jacket kayak lake gentle','child playing water edge sand summer','happy kid splash lake safety'],\n  'survie-dans-le-beaufortain': ['teenager camping tent mountain sunrise','group hiking alps backpacks back view','bushcraft wood carving hands'],\n  'e-sport-and-sport': ['teen gamer headset focused profile dark room','esports tournament concentration','group teens hiking mountain sunny'],\n  'annecy-element': ['paragliding pilot POV alps feet','teenager canyoning jump waterfall wetsuit','group friends lake annecy paddle'],\n  'breizh-equit-kids-8-11-ans': ['child riding pony beach back view','girl hugging horse neck candid','horse riding lesson outdoor summer'],\n  'destination-bassin-darcachon-1': ['group children running dune sand dune pilat','oyster boat bassin arcachon','kids playing beach sunset silhouette'],\n  'surf-sur-le-bassin': ['teen surfer carrying board beach sunset','surfing action wave atlantic spray','group teens beach campfire night'],\n  'laventure-verticale': ['boy rock climbing cliff helmet safety','young climber reaching hold detail','via ferrata alps action shot'],\n  'les-ptits-puisotins-1': ['little girl forest sunlight gentle','child building wooden cabin forest','authentic outdoor kindergarten nature'],\n  'aqua-fun': ['teenager scuba diving underwater turquoise','teen jet ski action sea spray','group teens snorkeling mediterranean clear water'],\n  'aqua-mix': ['kids paddleboard lake calm summer','child snorkeling shallow water mask','group children beach activities water fun'],\n  'croc-marmotte': ['little child forest path gentle sunlight','toddler watching marmot mountain cute','small kids nature walk alpine meadow'],\n  'explore-mountain': ['boy hiking mountain trail backpack alps','children group trekking alps summer','young explorer binoculars mountain view'],\n  'glieraventures': ['children kayak lake mountain backdrop','kids climbing tree adventure park ropes','group children swimming alpine lake summer'],\n  'les-apprentis-montagnards': ['child hugging husky dog snow mountain','kids dog sledding winter alps candid','boy petting sled dog gentle outdoor'],\n  'les-robinson-des-glieres': ['children building wooden shelter forest','kids campfire marshmallow nature night','child exploring forest adventure back view'],\n  'mountain-and-chill': ['teenagers relaxing mountain meadow summer','teen group hiking relaxed laughing candid','teenager hammock mountain view peaceful'],\n  'natation-et-sensation': ['child swimming lesson pool outdoor summer','kid learning to swim goggles water','children diving pool summer fun candid'],\n  'nature-picture': ['teenager camera wildlife photography forest','young photographer macro flower detail nature','kid binoculars birdwatching nature outdoor'],\n  'sperienza-in-corsica-1': ['teenager cliff jumping turquoise sea corsica','group teens catamaran sailing mediterranean','teen snorkeling rocky coast clear water'],\n  'yamakasi': ['teenager parkour wall flip urban','boy freerunning jump rooftop silhouette','young traceur climbing wall outdoor city']\n};\nconst BLACKLIST_TERMS = ['group posing','team building','corporate','stock photo','staged','classroom','cafeteria','indoor office','smiling camera','thumbs up','business meeting','presentation slide','woman laptop','man suit','handshake'];\nconst results = [];\nfor (const sejour of $input.all()) {\n  const s = sejour.json;\n  const slug = s.slug || '';\n  const queries = slugQueryMap[slug];\n  if (!queries) {\n    results.push({ json: { slug, marketing_title: s.marketing_title || slug, emotion_tag: s.emotion_tag || '', carousel_group: s.carousel_group || 'AUTRES', age_range: (s.age_min||'?')+'-'+(s.age_max||'?'), geography: [s.location_region,s.location_city].filter(Boolean).join(', ')||'', search_query: (s.marketing_title||slug)+' france outdoor candid', blacklist_terms: BLACKLIST_TERMS } });\n    continue;\n  }\n  const ageRange = (s.age_min||'?')+'-'+(s.age_max||'?');\n  for (const query of queries) {\n    results.push({ json: { slug, marketing_title: s.marketing_title || slug, emotion_tag: s.emotion_tag || '', carousel_group: s.carousel_group || 'AUTRES', age_range: ageRange, geography: [s.location_region,s.location_city].filter(Boolean).join(', ')||'', search_query: query, blacklist_terms: BLACKLIST_TERMS } });\n  }\n}\nreturn results;"
+      },
+      "id": "prepare-keywords",
+      "name": "Mots-clés France Durcis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 400],
+      "notes": "Mapping STRICT par slug séjour (24 séjours × 3 queries visuelles). Fallback pour slugs non mappés."
+    },
+
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "method": "GET",
+        "url": "https://api.unsplash.com/search/photos",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {"name": "query", "value": "={{ $json.search_query }}"},
+            {"name": "per_page", "value": "1"},
+            {"name": "orientation", "value": "landscape"},
+            {"name": "content_filter", "value": "high"},
+            {"name": "order_by", "value": "relevant"}
+          ]
+        },
+        "options": {"timeout": 15000}
+      },
+      "id": "unsplash",
+      "name": "Unsplash Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 400],
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "4cc7g6tRKgv3rCpp",
+          "name": "Query Auth account"
+        }
+      },
+      "notes": "Credential HTTP Query Auth : Name=client_id, Value=<votre Access Key Unsplash>"
+    },
+
+    {
+      "parameters": {
+        "jsCode": "// ========================================\n// NORMALISATION + FILTRES DURCIS\n// ========================================\nconst results = [];\n\nfor (const item of $input.all()) {\n  const sejour = item.json;\n  const photos = sejour.results || [];\n  const blacklist = sejour.blacklist_terms || [];\n\n  for (const photo of photos) {\n    // === FILTRE 1 : Dimensions minimales ===\n    if (photo.width < 1200 || photo.height < 800) continue;\n\n    // === FILTRE 2 : Ratio paysage (1.3 à 2.0) ===\n    const ratio = photo.width / photo.height;\n    if (ratio < 1.3 || ratio > 2.1) continue;\n\n    // === FILTRE 3 : Anti-stock / Anti-catalogue ===\n    const desc = (\n      (photo.description || '') + ' ' +\n      (photo.alt_description || '') + ' ' +\n      (photo.tags_preview || []).map(t => t.title || '').join(' ')\n    ).toLowerCase();\n\n    let isBlacklisted = false;\n    for (const term of blacklist) {\n      if (desc.includes(term.toLowerCase())) {\n        isBlacklisted = true;\n        break;\n      }\n    }\n    if (isBlacklisted) continue;\n\n    // === FILTRE 4 : Anti-superficiel (trop générique) ===\n    const genericPatterns = [\n      'beautiful woman', 'handsome man', 'happy people',\n      'business', 'office', 'laptop', 'desk',\n      'abstract', 'background texture plain'\n    ];\n    let isGeneric = false;\n    for (const pattern of genericPatterns) {\n      if (desc.includes(pattern)) {\n        isGeneric = true;\n        break;\n      }\n    }\n    if (isGeneric) continue;\n\n    // === FILTRE 5 : Score qualité ===\n    let qualityScore = 5; // Base\n    if (photo.likes > 50) qualityScore += 1;\n    if (photo.likes > 200) qualityScore += 1;\n    if (photo.likes > 500) qualityScore += 1;\n    if (ratio >= 1.5 && ratio <= 1.85) qualityScore += 1; // Proche 16:9 cinéma\n    if (desc.includes('france') || desc.includes('alps') || desc.includes('french') ||\n        desc.includes('bretagne') || desc.includes('corsica') || desc.includes('provence') ||\n        desc.includes('atlantic') || desc.includes('mediterranean')) {\n      qualityScore += 2; // Bonus géolocalisation France\n    }\n    // Pénalité stock\n    if (desc.includes('group of people')) qualityScore -= 2;\n    if (desc.includes('smiling')) qualityScore -= 1;\n    qualityScore = Math.max(1, Math.min(10, qualityScore));\n\n    // === FILTRE 6 : Score minimum 4/10 ===\n    if (qualityScore < 4) continue;\n\n    // === Construction URL publique Supabase Storage ===\n    const storagePath = `${sejour.carousel_group}/${sejour.slug}/${sejour.emotion_tag}_unsplash_${photo.id}.jpg`;\n    const publicUrl = `https://iirfvndgzutbxwfdwawu.supabase.co/storage/v1/object/public/ged-sejours-images/${storagePath}`;\n\n    results.push({\n      json: {\n        // Métadonnées séjour\n        slug: sejour.slug,\n        marketing_title: sejour.marketing_title,\n        emotion_tag: sejour.emotion_tag,\n        carousel_group: sejour.carousel_group,\n        age_range: sejour.age_range,\n        // Image Unsplash\n        source: 'unsplash',\n        source_id: photo.id,\n        url_regular: photo.urls.regular,\n        url_thumb: photo.urls.thumb,\n        download_url: photo.links.download_location,\n        // Attribution\n        photographer: (photo.user.name || '').replace(/'/g, \"''\"),\n        photographer_url: (photo.user.links.html || '').replace(/'/g, \"''\"),\n        // Métadonnées image\n        alt_description: (photo.alt_description || sejour.marketing_title).replace(/'/g, \"''\"),\n        keyword_used: (sejour.search_query || '').replace(/'/g, \"''\"),\n        width: photo.width,\n        height: photo.height,\n        color: photo.color || '#000000',\n        likes: photo.likes || 0,\n        quality_score: qualityScore,\n        // Stockage\n        storage_path: storagePath,\n        public_url: publicUrl,\n        thumbnail_url: photo.urls.thumb\n      }\n    });\n  }\n}\n\n// Trier par quality_score décroissant\nresults.sort((a, b) => b.json.quality_score - a.json.quality_score);\n\nreturn results;"
+      },
+      "id": "normalize-filter",
+      "name": "Normaliser + Filtres Durcis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 400],
+      "notes": "6 filtres : dimensions, ratio, anti-stock, anti-superficiel, score qualité, score minimum. Échappement SQL intégré."
+    },
+
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "GET",
+        "url": "https://iirfvndgzutbxwfdwawu.supabase.co/rest/v1/sejours_images",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {"name": "source", "value": "eq.{{ $json.source }}"},
+            {"name": "source_id", "value": "eq.{{ $json.source_id }}"},
+            {"name": "select", "value": "source_id"},
+            {"name": "limit", "value": "1"}
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "apikey", "value": "={{ $credentials.httpHeaderAuth.value }}"}
+          ]
+        },
+        "options": {"timeout": 10000}
+      },
+      "id": "check-exists",
+      "name": "Vérifier Doublon (REST)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1250, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "DMAMpZycj9mgH5fu",
+          "name": "Header Auth account"
+        }
+      },
+      "notes": "Vérifie via REST API si l'image existe déjà dans sejours_images. Pas de SQL brut."
+    },
+
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"combineOperation": "all"},
+          "conditions": [
+            {
+              "leftValue": "={{ JSON.stringify($json) }}",
+              "rightValue": "[]",
+              "operation": "equal"
+            }
+          ]
+        }
+      },
+      "id": "filter-new",
+      "name": "Garder Nouveaux",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1450, 400],
+      "notes": "Si la réponse REST est un tableau vide [], l'image est nouvelle"
+    },
+
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url_regular }}",
+        "authentication": "none",
+        "sendQuery": false,
+        "sendHeaders": false,
+        "sendBody": false,
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "image_data"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "download",
+      "name": "Télécharger Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1650, 400],
+      "notes": "Download direct via URL CDN Unsplash (url_regular). Pas d'auth nécessaire. Binary output = image_data."
+    },
+
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "POST",
+        "url": "=https://iirfvndgzutbxwfdwawu.supabase.co/storage/v1/object/ged-sejours-images/{{ $json.storage_path }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "apikey", "value": "={{ $credentials.httpHeaderAuth.value }}"},
+            {"name": "Authorization", "value": "Bearer {{ $credentials.httpHeaderAuth.value }}"},
+            {"name": "Content-Type", "value": "image/jpeg"},
+            {"name": "Cache-Control", "value": "public, max-age=31536000, immutable"},
+            {"name": "x-upsert", "value": "false"}
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "image_data",
+        "options": {"timeout": 30000}
+      },
+      "id": "upload-storage",
+      "name": "Upload Storage (REST)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1850, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "DMAMpZycj9mgH5fu",
+          "name": "Header Auth account"
+        }
+      },
+      "notes": "Upload direct via REST API Storage Supabase. Bucket = ged-sejours-images (le vrai bucket créé)."
+    },
+
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "POST",
+        "url": "https://iirfvndgzutbxwfdwawu.supabase.co/rest/v1/sejours_images",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "apikey", "value": "={{ $credentials.httpHeaderAuth.value }}"},
+            {"name": "Authorization", "value": "Bearer {{ $credentials.httpHeaderAuth.value }}"},
+            {"name": "Content-Type", "value": "application/json"},
+            {"name": "Prefer", "value": "resolution=ignore-duplicates,return=minimal"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"slug\": \"{{ $json.slug }}\",\n  \"marketing_title\": \"{{ $json.marketing_title }}\",\n  \"emotion_tag\": \"{{ $json.emotion_tag }}\",\n  \"carousel_group\": \"{{ $json.carousel_group }}\",\n  \"age_range\": \"{{ $json.age_range }}\",\n  \"source\": \"{{ $json.source }}\",\n  \"source_id\": \"{{ $json.source_id }}\",\n  \"storage_path\": \"{{ $json.storage_path }}\",\n  \"public_url\": \"{{ $json.public_url }}\",\n  \"thumbnail_url\": \"{{ $json.thumbnail_url }}\",\n  \"photographer_name\": \"{{ $json.photographer }}\",\n  \"photographer_url\": \"{{ $json.photographer_url }}\",\n  \"alt_description\": \"{{ $json.alt_description }}\",\n  \"keyword_used\": \"{{ $json.keyword_used }}\",\n  \"width\": {{ $json.width }},\n  \"height\": {{ $json.height }},\n  \"color\": \"{{ $json.color }}\",\n  \"likes\": {{ $json.likes }},\n  \"quality_score\": {{ $json.quality_score }},\n  \"status\": \"active\"\n}",
+        "options": {"timeout": 10000}
+      },
+      "id": "insert-metadata",
+      "name": "INSERT Métadonnées (REST)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2050, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "DMAMpZycj9mgH5fu",
+          "name": "Header Auth account"
+        }
+      },
+      "notes": "INSERT via REST API POST avec Prefer: resolution=ignore-duplicates. Pas de SQL brut = pas d'injection SQL. Colonnes alignées avec le schéma 006."
+    },
+
+    {
+      "parameters": {
+        "jsCode": "// ========================================\n// SYNC : sejours_images → gd_stays.images\n// ========================================\n// Le front lit gd_stays.images (JSON array).\n// On construit la mise à jour pour chaque séjour.\n\nconst allItems = $input.all();\nconst sejourMap = {};\n\nfor (const item of allItems) {\n  const d = item.json;\n  if (!d.slug) continue;\n  if (!sejourMap[d.slug]) {\n    sejourMap[d.slug] = [];\n  }\n  sejourMap[d.slug].push({\n    public_url: d.public_url,\n    quality_score: d.quality_score || 5\n  });\n}\n\n// Pour chaque séjour, garder les 6 meilleures images triées par qualité\nconst results = [];\nfor (const [slug, images] of Object.entries(sejourMap)) {\n  const sorted = images\n    .sort((a, b) => b.quality_score - a.quality_score)\n    .slice(0, 6);\n  \n  results.push({\n    json: {\n      slug: slug,\n      images_array: sorted.map(img => img.public_url)\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "prepare-sync",
+      "name": "Préparer Sync gd_stays",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2250, 400],
+      "notes": "Regroupe les images par séjour, garde les 6 meilleures par quality_score. Construit le tableau JSON pour gd_stays.images."
+    },
+
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "PATCH",
+        "url": "=https://iirfvndgzutbxwfdwawu.supabase.co/rest/v1/gd_stays?slug=eq.{{ $json.slug }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "apikey", "value": "={{ $credentials.httpHeaderAuth.value }}"},
+            {"name": "Authorization", "value": "Bearer {{ $credentials.httpHeaderAuth.value }}"},
+            {"name": "Content-Type", "value": "application/json"},
+            {"name": "Prefer", "value": "return=minimal"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"images\": {{ JSON.stringify($json.images_array) }} }",
+        "options": {"timeout": 10000}
+      },
+      "id": "sync-gd-stays",
+      "name": "SYNC → gd_stays.images",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2450, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "DMAMpZycj9mgH5fu",
+          "name": "Header Auth account"
+        }
+      },
+      "notes": "PATCH gd_stays.images = tableau JSON des URLs publiques. Le front affiche immédiatement les nouvelles images."
+    },
+
+    {
+      "parameters": {
+        "jsCode": "// ========================================\n// STATISTIQUES D'IMPORT\n// ========================================\nconst allItems = $input.all();\nconst stats = {\n  timestamp: new Date().toISOString(),\n  total_sejours_updated: allItems.length,\n  total_images: 0,\n  by_sejour: {}\n};\n\nfor (const item of allItems) {\n  const d = item.json;\n  const count = (d.images_array || []).length;\n  stats.total_images += count;\n  stats.by_sejour[d.slug] = count;\n}\n\nreturn [{ json: stats }];"
+      },
+      "id": "stats",
+      "name": "Statistiques",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2650, 400]
+    },
+
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "POST",
+        "url": "https://iirfvndgzutbxwfdwawu.supabase.co/rest/v1/import_logs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "apikey", "value": "={{ $credentials.httpHeaderAuth.value }}"},
+            {"name": "Authorization", "value": "Bearer {{ $credentials.httpHeaderAuth.value }}"},
+            {"name": "Content-Type", "value": "application/json"},
+            {"name": "Prefer", "value": "return=minimal"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"type\": \"images_sejours_v5\",\n  \"total_items\": {{ $json.total_images }},\n  \"details\": {{ JSON.stringify($json) }}\n}",
+        "options": {"timeout": 10000}
+      },
+      "id": "log-import",
+      "name": "Logger Import",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2850, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "DMAMpZycj9mgH5fu",
+          "name": "Header Auth account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Hebdo": {"main": [[{"node": "GET Séjours (HTTP REST)", "type": "main", "index": 0}]]},
+    "GET Séjours (HTTP REST)": {"main": [[{"node": "Mots-clés France Durcis", "type": "main", "index": 0}]]},
+    "Mots-clés France Durcis": {"main": [[{"node": "Unsplash Search", "type": "main", "index": 0}]]},
+    "Unsplash Search": {"main": [[{"node": "Normaliser + Filtres Durcis", "type": "main", "index": 0}]]},
+    "Normaliser + Filtres Durcis": {"main": [[{"node": "Télécharger Image", "type": "main", "index": 0}]]},
+    "Vérifier Doublon (REST)": {"main": [[{"node": "Garder Nouveaux", "type": "main", "index": 0}]]},
+    "Garder Nouveaux": {"main": [[{"node": "Télécharger Image", "type": "main", "index": 0}], []]},
+    "Télécharger Image": {"main": [[{"node": "Upload Storage (REST)", "type": "main", "index": 0}]]},
+    "Upload Storage (REST)": {"main": [[{"node": "INSERT Métadonnées (REST)", "type": "main", "index": 0}]]},
+    "INSERT Métadonnées (REST)": {"main": [[{"node": "Préparer Sync gd_stays", "type": "main", "index": 0}]]},
+    "Préparer Sync gd_stays": {"main": [[{"node": "SYNC → gd_stays.images", "type": "main", "index": 0}]]},
+    "SYNC → gd_stays.images": {"main": [[{"node": "Statistiques", "type": "main", "index": 0}]]},
+    "Statistiques": {"main": [[{"node": "Logger Import", "type": "main", "index": 0}]]}
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "errorWorkflow": "",
+    "timezone": "Europe/Paris"
+  },
+  "tags": ["flooow", "ged", "images", "v5", "france", "durci"],
+  "triggerCount": 1,
+  "versionId": "v7-bypass-firstrun"
+}

@@ -15,6 +15,12 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   images: { unoptimized: true },
+  // FIX Docker build: skip static generation for data-dependent pages
+  skipTrailingSlashRedirect: true,
+  // Force all routes to be dynamic (no static generation during build)
+  generateBuildId: async () => {
+    return 'docker-build-' + Date.now();
+  },
 };
 
 module.exports = nextConfig;

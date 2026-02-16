@@ -1,3 +1,6 @@
+// DEPRECATED: Ce route utilise Prisma (ancien circuit).
+// Le parcours officiel passe par /api/inscriptions (Supabase gd_inscriptions).
+// Ce route reste actif pour rétrocompatibilité mais sera supprimé.
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
@@ -5,7 +8,7 @@ import { z } from 'zod';
 export const dynamic = 'force-dynamic';
 
 const bookingSchema = z.object({
-  stayId: z.string().min(1),
+  stayId: z.string().optional().default(''), // FIX: rendu optionnel — dérivé de la session si absent
   sessionId: z.string().min(1),
   organisation: z.string().min(1),
   socialWorkerName: z.string().min(1),
@@ -50,6 +53,9 @@ export async function POST(request: NextRequest) {
         throw new Error('SESSION_FULL');
       }
 
+      // FIX: Dériver stayId de la session si absent du payload
+      const resolvedStayId = data.stayId || session.stayId;
+
       // Decrement seats
       await tx.staySession.update({
         where: { id: data.sessionId },
@@ -59,7 +65,7 @@ export async function POST(request: NextRequest) {
       // Create booking
       const booking = await tx.booking.create({
         data: {
-          stayId: data.stayId,
+          stayId: resolvedStayId,
           sessionId: data.sessionId,
           organisation: data.organisation,
           socialWorkerName: data.socialWorkerName,

@@ -4,25 +4,26 @@
 
 @layer base {
   :root {
+    /* Aligned with new logo: #2a383f (dark) + #de7356 (terracotta) */
     --background: 0 0% 100%;
-    --foreground: 215 25% 27%;
+    --foreground: 200 20% 20%;
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 27%;
+    --card-foreground: 200 20% 20%;
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 27%;
-    --primary: 16 100% 61%;
+    --popover-foreground: 200 20% 20%;
+    --primary: 200 20% 20%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 208 54% 36%;
+    --secondary: 13 65% 60%;
     --secondary-foreground: 0 0% 100%;
     --muted: 210 17% 98%;
-    --muted-foreground: 215 25% 27%;
-    --accent: 208 54% 36%;
+    --muted-foreground: 200 15% 35%;
+    --accent: 200 22% 30%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 210 17% 98%;
-    --input: 210 17% 98%;
-    --ring: 16 100% 61%;
+    --border: 210 17% 93%;
+    --input: 210 17% 93%;
+    --ring: 13 65% 60%;
     --radius: 24px;
   }
 
@@ -66,13 +67,13 @@
 
   /* Focus styles for accessibility (P1-4: Orange primary) */
   *:focus-visible {
-    outline: 2px solid #FF6B35;
+    outline: 2px solid #de7356;
     outline-offset: 2px;
   }
 
   /* Selection styles (P1-4: Orange primary) */
   ::selection {
-    background-color: #FF6B35;
+    background-color: #de7356;
     color: white;
   }
 

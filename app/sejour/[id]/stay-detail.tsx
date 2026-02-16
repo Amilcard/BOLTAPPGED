@@ -29,7 +29,7 @@ import type { Stay, StaySession } from '@/lib/types';
 import { formatDateLong, getWishlistMotivation, addToWishlist } from '@/lib/utils';
 import { getPriceBreakdown, findSessionPrice, getMinSessionPrice, type EnrichmentSessionData } from '@/lib/pricing';
 import { useApp } from '@/components/providers';
-import { BookingModal } from '@/components/booking-modal';
+// BookingModal retiré — parcours officiel = /reserver (BookingFlow via Supabase gd_inscriptions)
 import { WishlistModal } from '@/components/wishlist-modal';
 import { Button } from '@/components/ui/button';
 
@@ -53,7 +53,13 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
   // Enrichment data
   const stayUrl = String((stay as any)?.sourceUrl ?? "").trim();
-  const contentKidsParsed = typeof stay?.contentKids === 'string' ? JSON.parse(stay.contentKids) : stay?.contentKids;
+  let contentKidsParsed: any = null;
+  try {
+    contentKidsParsed = typeof stay?.contentKids === 'string' ? JSON.parse(stay.contentKids) : stay?.contentKids;
+  } catch {
+    console.error('[stay-detail] JSON.parse contentKids failed for stay:', stay?.slug);
+    contentKidsParsed = {};
+  }
   const allDepartureCities: DepartureData[] = contentKidsParsed?.departureCities ?? [];
   const sessionsFormatted = contentKidsParsed?.sessionsFormatted ?? [];
 
@@ -617,7 +623,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
               ) : (
                 <div className="space-y-2 mb-4">
                   {sessions.map(session => {
-                    const isFull = (session?.seatsLeft ?? 0) === 0;
+                    const isFull = session?.seatsLeft != null && session.seatsLeft >= 0 && session.seatsLeft === 0;
                     const isSelected = preSelectedSessionId === session?.id;
                     return (
                       <button
@@ -647,7 +653,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                               au {formatDateLong(session?.endDate ?? '')}
                             </div>
                             <div className={`text-xs mt-1 ${isFull ? 'text-red-500' : 'text-green-600'}`}>
-                              {isFull ? 'Complet' : `${session?.seatsLeft ?? 0} places`}
+                              {isFull ? 'Complet' : (session?.seatsLeft != null && session.seatsLeft >= 0) ? `${session.seatsLeft} places` : 'Places disponibles'}
                             </div>
                           </div>
                         </div>
@@ -721,8 +727,13 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                 </Button>
               ) : (
                 <Button
-                  onClick={() => setShowBooking(true)}
-                  disabled={sessions.filter(s => (s?.seatsLeft ?? 0) > 0).length === 0}
+                  onClick={() => {
+                    const params = new URLSearchParams();
+                    if (preSelectedSessionId) params.set('session', preSelectedSessionId);
+                    if (preSelectedCity) params.set('ville', preSelectedCity);
+                    window.location.href = `/sejour/${slug}/reserver?${params.toString()}`;
+                  }}
+                  disabled={sessions.filter(s => s?.seatsLeft == null || s.seatsLeft < 0 || s.seatsLeft > 0).length === 0}
                   className="w-full"
                   size="lg"
                 >
@@ -735,17 +746,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
       </div>
 
       {/* Modals */}
-      {showBooking && (
-        <BookingModal
-          stay={stay}
-          sessions={sessions}
-          departureCities={enrichment?.departures}
-          enrichmentSessions={enrichment?.sessions}
-          initialSessionId={preSelectedSessionId}
-          initialCity={preSelectedCity}
-          onClose={() => setShowBooking(false)}
-        />
-      )}
+      {/* BookingModal retiré — le parcours officiel est /reserver (BookingFlow) */}
 
       {showWishlistModal && (
         <WishlistModal
@@ -846,8 +847,13 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
               </Button>
             ) : (
               <Button
-                onClick={() => setShowBooking(true)}
-                disabled={sessions.filter(s => (s?.seatsLeft ?? 0) > 0).length === 0}
+                onClick={() => {
+                  const params = new URLSearchParams();
+                  if (preSelectedSessionId) params.set('session', preSelectedSessionId);
+                  if (preSelectedCity) params.set('ville', preSelectedCity);
+                  window.location.href = `/sejour/${slug}/reserver?${params.toString()}`;
+                }}
+                disabled={sessions.filter(s => s?.seatsLeft == null || s.seatsLeft < 0 || s.seatsLeft > 0).length === 0}
                 className="w-full"
                 size="default"
               >

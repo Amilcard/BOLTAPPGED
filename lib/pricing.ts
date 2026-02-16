@@ -21,7 +21,17 @@ export type GedDepartureCity =
   | 'marseille'
   | 'strasbourg'
   | 'lille'
-  | 'bordeaux';
+  | 'bordeaux'
+  | 'albertville'
+  | 'annecy'
+  | 'annemasse'
+  | 'chambery'
+  | 'clermont ferrand'
+  | 'cluses'
+  | 'nancy'
+  | 'nantes'
+  | 'st etienne'
+  | 'toulon';
 
 interface GedPricingConfig {
   DURATION_SURCHARGE: Record<number, number>;
@@ -37,11 +47,11 @@ interface GedPricingConfig {
  */
 export class GedPricing {
   private static readonly CONFIG: GedPricingConfig = {
-    // Surcoûts fixes selon durée
+    // Surcoûts fixes selon durée (source: DB gd_session_prices)
     DURATION_SURCHARGE: {
       7: 180,   // euros
-      14: 310,
-      21: 450
+      14: 240,  // 13-14j sessions (observé en DB)
+      21: 410   // 20-21j sessions (observé en DB)
     },
 
     // Durées à proratiser
@@ -53,14 +63,19 @@ export class GedPricing {
       14: 14  // durée 14j réf = durée 14j
     },
 
-    // 10 villes de départ GED
+    // 20 villes de départ GED (source: DB gd_session_prices)
     DEPARTURE_CITIES: [
       'paris', 'lyon', 'rennes', 'toulouse', 'valence',
-      'grenoble', 'marseille', 'strasbourg', 'lille', 'bordeaux'
+      'grenoble', 'marseille', 'strasbourg', 'lille', 'bordeaux',
+      'albertville', 'annecy', 'annemasse', 'chambery',
+      'clermont ferrand', 'cluses', 'nancy', 'nantes',
+      'st etienne', 'toulon'
+      // Note: 'sans_transport' n'est PAS une ville (absence de transport)
     ],
 
-    // Supplément fixe par ville
-    DEPARTURE_SUPPLEMENT: 12, // euros
+    // Supplément transport GED (markup sur surcoût partenaire)
+    // Formule DB: transport_surcharge_ged = transport_surcharge_ufoval + 18
+    DEPARTURE_SUPPLEMENT: 18, // euros (source: colonne generated DB)
 
     // Promo actuelle : 5%
     PROMO_RATE: 0.05
@@ -112,17 +127,38 @@ export class GedPricing {
   }
 
   /**
-   * Calcule le surcoût durée seulement
+   * Calculer le surcoût durée selon la règle GED "arrondi favorable"
+   * Règle officielle DB : durées proches de référence → forfait de référence
+   * Source de vérité : gd_session_prices (93% sessions appliquent cette règle)
    */
-  static getDurationSurcharge(duration: GedDuration): number {
-    if (duration === 7) return this.CONFIG.DURATION_SURCHARGE[7];
-    if (duration === 14) return this.CONFIG.DURATION_SURCHARGE[14];
-    if (duration === 21) return this.CONFIG.DURATION_SURCHARGE[21];
-    if (this.CONFIG.PRORATA_DURATIONS.includes(duration)) {
-      const refDuration = 14;
-      const refSurcharge = this.CONFIG.DURATION_SURCHARGE[refDuration];
-      return Math.round((refSurcharge / refDuration) * duration);
+  private static getDurationSurcharge(durationDays: number): number {
+    const { DURATION_SURCHARGE } = this.CONFIG;
+
+    // Durées exactes de référence
+    if (durationDays === 7) return DURATION_SURCHARGE[7];   // 180€
+    if (durationDays === 14) return DURATION_SURCHARGE[14]; // 240€
+    if (durationDays === 21) return DURATION_SURCHARGE[21]; // 410€
+
+    // Règle "arrondi favorable" : durées proches → forfait de référence
+    // Observé en DB : 6j (93% à 180€), 11-13j (94% à 240€), 18-20j (93% à 410€)
+
+    // Groupe 7j : 5-8j → forfait 180€
+    if (durationDays >= 5 && durationDays <= 8) {
+      return DURATION_SURCHARGE[7]; // 180€
     }
+
+    // Groupe 14j : 11-15j → forfait 240€
+    if (durationDays >= 11 && durationDays <= 15) {
+      return DURATION_SURCHARGE[14]; // 240€
+    }
+
+    // Groupe 21j : 18-22j → forfait 410€
+    if (durationDays >= 18 && durationDays <= 22) {
+      return DURATION_SURCHARGE[21]; // 410€
+    }
+
+    // Durées hors forfait : pas de markup (rare, ex: 3-4j, 9-10j, 16-17j, 23j+)
+    // Note: En DB, ces durées ont markup = 0€
     return 0;
   }
 
@@ -246,6 +282,28 @@ export function getPriceBreakdown(params: PriceBreakdownParams): PriceBreakdown 
     minPrice: minSessionPrice,
     hasSelection,
   };
+}
+
+/**
+ * Calcule le prix minimum d'un séjour (session la moins chère, sans transport)
+ *
+ * @param sessions - Sessions enrichies avec prix
+ * @returns Prix minimum ou null si aucune session
+ *
+ * @example
+ * const minPrice = getMinSessionPrice(enrichment.sessions);
+ * // => 718 (prix de la session la moins chère)
+ */
+export function getMinSessionPrice(sessions: EnrichmentSessionData[]): number | null {
+  if (!sessions || sessions.length === 0) return null;
+
+  const prices = sessions
+    .map(s => s.promo_price_eur ?? s.base_price_eur)
+    .filter((n): n is number => n !== null && Number.isFinite(n));
+
+  if (prices.length === 0) return null;
+
+  return Math.min(...prices);
 }
 
 /**

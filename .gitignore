@@ -1,34 +1,49 @@
-node_modules
-.next
-.env
-.env.*
-*.db
-*.db-journal
+node_modules/
+.next/
 .DS_Store
 *.log
-dist
-build
-.turbo
+
+# local/build artifacts
+.metadata_never_index
 tsconfig.tsbuildinfo
 
-# UFOVAL outputs
-out/ufoval/*.json
-out/ufoval/_debug_html/
-out/ufoval/_debug_html_sessions/
+# local/build artifacts
+.metadata_never_index
+tsconfig.tsbuildinfo
 
-# Local/IA
-CLAUDE.md
-scripts/ufoval/merge-departures-and-sessions.js
+# local/build artifacts
+.metadata_never_index
+tsconfig.tsbuildinfo
 
-# Local/IA
-CLAUDE.md
-scripts/ufoval/merge-departures-and-sessions.js
+# local artifacts
+.metadata_never_index
+tsconfig.tsbuildinfo
 
-# Local AI/work files
-.ai-workspace/
-.tmp-check.ts
+# antigravity rules
+.agent/rules/GED PROJECT RULES
+.agent/rules/PROJECT CONTEXT — GED
+.agent/rules/CORE RULES
+.agent/rules/WORKFLOW — SAFE EDIT
+.agent/rules/AI Prompt Engineer Agent - LLM Expert
+.agent/rules/Code Review Agent - Thorough & Constructive Reviewer
+.agent/rules/DevOps & CI/Debugging Agent - Systematic Bug Hunter
+.agent/rules/DevOps & CI/Performance Optimization Agent - Speed Expert
+.agent/rules/Next.js Database Integration Expert
+.agent/rules/Next.js Real-time Features Expert
+.agent/rules/Web Performance Optimization Expert
+.agent/rules/DevOps & CI/React Performance Optimization
+.agent/rules/DevOps & CI/responsive-design
 
-# Local AI/work files
-.ai-workspace/
-.tmp-check.ts
-.claude/settings.local.json
+# local audits
+*.xlsx
+.~lock.*
+app/debug-db/
+
+# local audits
+*.xlsx
+.~lock.*
+app/debug-db/
+
+# local editor
+.vscode/
+.env

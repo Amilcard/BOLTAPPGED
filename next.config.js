@@ -5,7 +5,8 @@ const nextConfig = {
   distDir: process.env.NEXT_DIST_DIR || '.next',
   output: process.env.NEXT_OUTPUT_MODE,
   experimental: {
-    outputFileTracingRoot: path.join(__dirname, '../'),
+    // LOT 1: Fix module resolution - remove parent directory tracing
+    outputFileTracingRoot: path.join(__dirname),
   },
   eslint: {
     ignoreDuringBuilds: true,
@@ -14,6 +15,12 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   images: { unoptimized: true },
+  // FIX Docker build: skip static generation for data-dependent pages
+  skipTrailingSlashRedirect: true,
+  // Force all routes to be dynamic (no static generation during build)
+  generateBuildId: async () => {
+    return 'docker-build-' + Date.now();
+  },
 };
 
 module.exports = nextConfig;

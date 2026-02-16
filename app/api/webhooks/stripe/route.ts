@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { headers } from 'next/headers';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-01-28.clover',
+  apiVersion: '2024-12-18.acacia',
 });
 
 const supabase = createClient(
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ✅ CRITIQUE : Vérifier la signature Stripe
+    // Vérifier la signature Stripe
     let event: Stripe.Event;
     try {
       event = stripe.webhooks.constructEvent(
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── IDEMPOTENCY : vérifier si cet event a déjà été traité ──
+    // IDEMPOTENCY : vérifier si cet event a déjà été traité
     const { data: existingEvent } = await supabase
       .from('gd_processed_events')
       .select('id')
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (existingEvent) {
-      console.log(`⏭️ Event ${event.id} already processed, skipping`);
+      console.log(`Event ${event.id} already processed, skipping`);
       return NextResponse.json({ received: true, skipped: true });
     }
 
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
           break;
         }
 
-        // ── VÉRIFICATION MONTANT : comparer Stripe vs DB ──
+        // VÉRIFICATION MONTANT : comparer Stripe vs DB
         const { data: inscription } = await supabase
           .from('gd_inscriptions')
           .select('price_total')
@@ -81,7 +81,6 @@ export async function POST(req: NextRequest) {
               inscriptionId,
               eventId: event.id,
             });
-            // On marque quand même comme reçu mais on NE met PAS paid
             await supabase
               .from('gd_inscriptions')
               .update({ payment_status: 'amount_mismatch' })
@@ -90,7 +89,7 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // ✅ Montant vérifié → marquer comme payé
+        // Montant vérifié, marquer comme payé
         const { error } = await supabase
           .from('gd_inscriptions')
           .update({
@@ -102,7 +101,7 @@ export async function POST(req: NextRequest) {
         if (error) {
           console.error('Error updating payment status:', error);
         } else {
-          console.log(`✅ Payment succeeded for inscription ${inscriptionId}`);
+          console.log(`Payment succeeded for inscription ${inscriptionId}`);
         }
         break;
       }
@@ -123,7 +122,7 @@ export async function POST(req: NextRequest) {
         if (error) {
           console.error('Error updating failed payment status:', error);
         } else {
-          console.log(`❌ Payment failed for inscription ${inscriptionId}`);
+          console.log(`Payment failed for inscription ${inscriptionId}`);
         }
         break;
       }
@@ -132,7 +131,7 @@ export async function POST(req: NextRequest) {
         console.log(`Unhandled event type: ${event.type}`);
     }
 
-    // ── IDEMPOTENCY : enregistrer l'event comme traité ──
+    // IDEMPOTENCY : enregistrer l'event comme traité
     await supabase
       .from('gd_processed_events')
       .insert({

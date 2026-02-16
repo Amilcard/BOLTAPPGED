@@ -1,6 +1,4 @@
 'use client';
-export const dynamic = 'force-dynamic';
-
 
 import { useEffect, useState } from 'react';
 import { STORAGE_KEYS, formatDate } from '@/lib/utils';
@@ -98,7 +96,7 @@ export default function AdminSessions() {
                 <td className="px-6 py-4">{session.seatsTotal}</td>
                 <td className="px-6 py-4">
                   <span className={session.seatsLeft === 0 ? 'text-red-600 font-semibold' : ''}>
-                    {session.seatsLeft < 0 ? 'N/A' : session.seatsLeft}
+                    {session.seatsLeft}
                   </span>
                 </td>
                 <td className="px-6 py-4">

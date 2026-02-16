@@ -1,50 +1,36 @@
 'use client';
 
-import Image from 'next/image';
-
 interface LogoProps {
   variant?: 'default' | 'white' | 'compact';
   className?: string;
 }
 
 export function Logo({ variant = 'default', className = '' }: LogoProps) {
-  // Compact variant: Terracotta "gd" on dark background (matches favicon)
+  // Pour le variant compact, on garde une version simplifiée ou on pourrait utiliser une icône si disponible
   if (variant === 'compact') {
     return (
-      <div className={`flex items-center justify-center w-10 h-10 bg-[#2a383f] rounded-lg shadow-sm shrink-0 ${className}`}>
-        <span className="text-[#de7356] font-extrabold text-sm tracking-tighter leading-none">
-          gd
-        </span>
+      <div className={`flex items-center gap-1 ${className}`}>
+        <span className="text-lg font-extrabold italic text-accent">G</span>
+        <span className="text-sm font-normal italic text-primary">&</span>
+        <span className="text-lg font-extrabold italic text-accent">D</span>
       </div>
     );
   }
 
-  // White variant: Use the full SVG logo with brightness filter for light version
-  if (variant === 'white') {
-    return (
-      <div className={`relative ${className}`}>
-        <Image
-          src="/logo-ged.svg"
-          alt="Groupe et Découverte"
-          width={220}
-          height={73}
-          className="h-10 w-auto brightness-0 invert"
-          priority
-        />
-      </div>
-    );
-  }
-
-  // Default variant: Use the actual new SVG logo
+  // Logo horizontal pour le header
   return (
-    <div className={`relative ${className}`}>
-      <Image
-        src="/logo-ged.svg"
-        alt="Groupe et Découverte"
-        width={220}
-        height={73}
-        className="h-10 w-auto"
-        priority
+    <div className={`flex items-center ${className}`}>
+      <img 
+        src="/GLOGO GED NEW.svg" 
+        alt="Groupe et Découverte" 
+        className={`h-10 sm:h-12 w-auto object-contain ${variant === 'white' ? 'brightness-0 invert' : ''}`}
+        onError={(e) => {
+          // Fallback au PNG si le SVG échoue (ou vice-versa)
+          const target = e.target as HTMLImageElement;
+          if (target.src.endsWith('.svg')) {
+            target.src = '/GLOGO GED NEW.png';
+          }
+        }}
       />
     </div>
   );

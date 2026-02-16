@@ -2,8 +2,8 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  distDir: process.env.NEXT_DIST_DIR || '.next',
-  output: process.env.NEXT_OUTPUT_MODE || 'standalone',
+  // Mode standalone uniquement pour build production Docker
+  output: process.env.NODE_ENV === 'production' ? 'standalone' : undefined,
   experimental: {
     // LOT 1: Fix module resolution - remove parent directory tracing
     outputFileTracingRoot: path.join(__dirname),

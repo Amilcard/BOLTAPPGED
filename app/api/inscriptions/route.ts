@@ -3,9 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { sendInscriptionConfirmation, sendAdminNewInscriptionNotification } from '@/lib/email';
 
+// Utiliser service_role si disponible, sinon fallback sur anon key
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
 const inscriptionSchema = z.object({
@@ -40,6 +41,8 @@ export async function POST(request: NextRequest) {
 
     const data = parsed.data;
 
+    console.log("DEBUG FULL PAYLOAD:", JSON.stringify(data, null, 2));
+
     // Validation âge (garde-fou serveur : 3-17 ans global GED)
     const birthDate = new Date(data.childBirthDate);
     if (isNaN(birthDate.getTime())) {
@@ -62,24 +65,68 @@ export async function POST(request: NextRequest) {
     }
 
     // ── PATCH SÉCURITÉ FINANCIÈRE : vérification prix côté serveur ──
-    // Requête gd_session_prices pour le prix réel (sans transport + surcharge ville)
-    const { data: priceRow, error: priceError } = await supabase
+    // Normaliser la date envoyée par le front (peut être ISO ou date pure)
+    const normalizedDate = data.sessionDate.split('T')[0]; // "2026-07-05T00:00:00Z" → "2026-07-05"
+    console.log("DEBUG PRICE FILTER:", {
+      staySlug: data.staySlug,
+      sessionDate: normalizedDate,
+      cityDeparture: data.cityDeparture,
+    });
+    // Stratégie: chercher par date pure d'abord, fallback par plage si timestamptz
+    let priceRow: any = null;
+    let priceError: any = null;
+
+    // Tentative 1: match exact date pure
+    const { data: priceRows1, error: priceErr1 } = await supabase
       .from('gd_session_prices')
       .select('price_ged_total, transport_surcharge_ged, city_departure')
       .eq('stay_slug', data.staySlug)
-      .eq('start_date', data.sessionDate)
+      .eq('start_date', normalizedDate)
       .eq('city_departure', data.cityDeparture)
-      .single();
+      .limit(1);
+
+    if (priceRows1 && priceRows1.length > 0) {
+      priceRow = priceRows1[0];
+    } else {
+      // Tentative 2: plage timestamps
+      const { data: priceRows2, error: priceErr2 } = await supabase
+        .from('gd_session_prices')
+        .select('price_ged_total, transport_surcharge_ged, city_departure')
+        .eq('stay_slug', data.staySlug)
+        .gte('start_date', `${normalizedDate}T00:00:00`)
+        .lte('start_date', `${normalizedDate}T23:59:59`)
+        .eq('city_departure', data.cityDeparture)
+        .limit(1);
+      priceRow = priceRows2?.[0] ?? null;
+      priceError = priceErr2;
+    }
+
+    console.log("DEBUG PRICE RESULT:", { priceRow, priceError: priceError?.message });
 
     if (priceError || !priceRow) {
       // Fallback : prix sans transport si ville non trouvée
-      const { data: basePriceRow } = await supabase
+      const { data: baseRows1 } = await supabase
         .from('gd_session_prices')
         .select('price_ged_total')
         .eq('stay_slug', data.staySlug)
-        .eq('start_date', data.sessionDate)
+        .eq('start_date', normalizedDate)
         .eq('city_departure', 'sans_transport')
-        .single();
+        .limit(1);
+
+      let basePriceRow = baseRows1?.[0] ?? null;
+
+      if (!basePriceRow) {
+        // Tentative 2: plage timestamps
+        const { data: baseRows2 } = await supabase
+          .from('gd_session_prices')
+          .select('price_ged_total')
+          .eq('stay_slug', data.staySlug)
+          .gte('start_date', `${normalizedDate}T00:00:00`)
+          .lte('start_date', `${normalizedDate}T23:59:59`)
+          .eq('city_departure', 'sans_transport')
+          .limit(1);
+        basePriceRow = baseRows2?.[0] ?? null;
+      }
 
       if (!basePriceRow) {
         console.error('PRICE_NOT_FOUND:', { slug: data.staySlug, date: data.sessionDate, city: data.cityDeparture });
@@ -114,26 +161,54 @@ export async function POST(request: NextRequest) {
       data.priceTotal = serverPrice;
     }
 
-    // Créer l'inscription dans gd_inscriptions
+    // ── CAPACITY CHECK (read-only, pas de décrement) ──
+    const { data: sessionRow } = await supabase
+      .from('gd_stay_sessions')
+      .select('seats_left, age_min, age_max')
+      .eq('stay_slug', data.staySlug)
+      .eq('start_date', data.sessionDate)
+      .limit(1)
+      .single();
+
+    // Validation âge spécifique au séjour
+    if (sessionRow && sessionRow.age_min !== null && sessionRow.age_max !== null) {
+      const sessionAgeMin = sessionRow.age_min;
+      const sessionAgeMax = sessionRow.age_max;
+      if (age < sessionAgeMin || age > sessionAgeMax) {
+        return NextResponse.json(
+          { error: { code: 'AGE_INCOMPATIBLE', message: `Âge incompatible (${age} ans). Ce séjour requiert ${sessionAgeMin}-${sessionAgeMax} ans.` } },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (sessionRow && sessionRow.seats_left !== null && sessionRow.seats_left <= 0) {
+      return NextResponse.json(
+        { error: { code: 'SESSION_FULL', message: 'Cette session est complète. Plus de places disponibles.' } },
+        { status: 400 }
+      );
+    }
+
+    // Créer l'inscription dans gd_inscriptions (adapté au schéma DB existant)
+    // Pas de colonne 'organisation' en DB → on l'inclut dans remarques
+    const remarquesWithOrga = `[ORGANISATION]: ${data.organisation}\n${data.remarques || ''}`.trim();
     const { data: inscription, error } = await supabase
       .from('gd_inscriptions')
       .insert({
         sejour_slug: data.staySlug,
-        session_date: data.sessionDate,
+        session_date: normalizedDate,
         city_departure: data.cityDeparture,
         jeune_prenom: data.childFirstName,
-        jeune_nom: data.childLastName,
+        jeune_nom: data.childLastName || '',
         jeune_date_naissance: data.childBirthDate,
-        organisation: data.organisation,
         referent_nom: data.socialWorkerName,
         referent_email: data.email,
         referent_tel: data.phone,
-        options_educatives: data.optionsEducatives,
-        remarques: data.remarques,
-        price_total: data.priceTotal,
+        options_educatives: data.optionsEducatives || null,
+        remarques: remarquesWithOrga,
+        price_total: Math.round(data.priceTotal),
         status: 'en_attente',
-        // Les champs payment_* sont auto-générés via trigger (payment_reference)
-        // payment_status est DEFAULT 'pending_payment'
+        payment_status: 'pending_payment',
       })
       .select()
       .single();
@@ -143,16 +218,25 @@ export async function POST(request: NextRequest) {
       throw error;
     }
 
+    // Récupérer le nom marketing du séjour pour l'email
+    const { data: stayInfo } = await supabase
+      .from('gd_stays')
+      .select('marketing_title')
+      .eq('slug', data.staySlug)
+      .limit(1);
+    const sejourDisplayName = stayInfo?.[0]?.marketing_title || data.staySlug.replace(/-/g, ' ');
+
     // Emails non-bloquants (fire-and-forget)
     const emailData = {
       referentNom: data.socialWorkerName,
       referentEmail: data.email,
       jeunePrenom: data.childFirstName,
       jeuneNom: data.childLastName || '',
-      sejourSlug: data.staySlug,
-      sessionDate: data.sessionDate,
-      cityDeparture: data.cityDeparture,
+      sejourSlug: sejourDisplayName,
+      sessionDate: normalizedDate,
+      cityDeparture: data.cityDeparture === 'sans_transport' ? 'Sans transport' : data.cityDeparture,
       priceTotal: data.priceTotal,
+      paymentReference: inscription.payment_reference || inscription.id,
     };
     sendInscriptionConfirmation(emailData).catch(() => {});
     sendAdminNewInscriptionNotification(emailData).catch(() => {});

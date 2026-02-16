@@ -48,27 +48,34 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   const departureCities = (stay as any).departureCities || [];
   const enrichmentSessions = (stay as any).enrichmentSessions || [];
 
+  // Normaliser la ville depuis l'URL vers le format DB
+  // "Sans transport" ou "Sans+transport" → "sans_transport"
+  const normalizedInitialCity = initialCity.toLowerCase().replace(/\s+/g, '_') === 'sans_transport'
+    ? 'sans_transport'
+    : initialCity;
+
   const getInitialStep = () => {
-    if (initialSessionId && initialCity) return 2;
+    if (initialSessionId && normalizedInitialCity) return 2;
     if (initialSessionId) return 1;
     return 0;
   };
 
-  const [step, setStep] = useState(getInitialStep);
+  const [stepRaw, setStepRaw] = useState(getInitialStep);
   const [selectedSessionId, setSelectedSessionId] = useState<string>(initialSessionId);
-  const [selectedCity, setSelectedCity] = useState<string>(initialCity);
+  const [selectedCity, setSelectedCity] = useState<string>(normalizedInitialCity);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Wrapper setStep qui reset l'erreur à chaque changement d'étape
+  const setStep = (s: number | ((prev: number) => number)) => {
+    setError('');
+    setStepRaw(s);
+  };
+  const step = stepRaw;
   const [bookingId, setBookingId] = useState('');
   const [showAllSessions, setShowAllSessions] = useState(false);
 
   const firstInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (step < 5) {
-      setTimeout(() => firstInputRef.current?.focus(), 100);
-    }
-  }, [step]);
 
   const calculateAge = (birthDate: string): number | null => {
     if (!birthDate) return null;
@@ -100,7 +107,8 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
 
   const selectedCityData = departureCities.find((dc: any) => dc.city === selectedCity);
   const extraVille = selectedCityData?.extra_eur ?? 0;
-  const totalPrice = sessionBasePrice !== null ? sessionBasePrice + extraVille : null;
+  // Fallback: utiliser stay.priceFrom si enrichmentSessions vide (données manquantes)
+  const totalPrice = sessionBasePrice !== null ? sessionBasePrice + extraVille : (stay.priceFrom ? stay.priceFrom + extraVille : null);
 
   const [step1, setStep1] = useState<Step1Data>({
     organisation: '',
@@ -115,6 +123,33 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     consent: false,
   });
 
+  const [ageError, setAgeError] = useState('');
+
+  // useEffect hooks APRÈS déclaration des states
+  useEffect(() => {
+    if (step < 5) {
+      setTimeout(() => firstInputRef.current?.focus(), 100);
+    }
+  }, [step]);
+
+  // Validation âge enfant vs tranche séjour
+  useEffect(() => {
+    if (!step2.childBirthDate || !stay.ageMin || !stay.ageMax) {
+      setAgeError('');
+      return;
+    }
+    const age = calculateAge(step2.childBirthDate);
+    if (age === null) {
+      setAgeError('');
+      return;
+    }
+    if (age < stay.ageMin || age > stay.ageMax) {
+      setAgeError(`Âge requis pour ce séjour : ${stay.ageMin}-${stay.ageMax} ans`);
+    } else {
+      setAgeError('');
+    }
+  }, [step2.childBirthDate, stay.ageMin, stay.ageMax]);
+
   const validSessions = sessions?.filter(s => (s?.seatsLeft ?? 0) > 0) ?? [];
   const sessionsUnique = (sessions || []).filter((s, idx, arr) => {
     const key = `${s.startDate}-${s.endDate}`;
@@ -124,41 +159,67 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   const standardDepartureCities = departureCities.filter((dc: any) =>
     STANDARD_CITIES.some((std: string) =>
       dc.city.toLowerCase().includes(std.toLowerCase())
-    ) || dc.city === 'Sans transport'
+    ) || dc.city === 'sans_transport'
   );
 
-  const isStep1Valid = step1.addresseStructure && step1.addresseStructure.trim().length >= 10 && step1.organisation && step1.socialWorkerName && step1.email && step1.phone;
-  const isStep2Valid = step2.childSex && step2.childFirstName && step2.childBirthDate && step2.consent;
+  // Validations renforcées
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRegex = /^[\d\s\+\-\.()]{10,}$/; // Min 10 chiffres/espaces
+  const isEmailValid = emailRegex.test(step1.email);
+  const isPhoneValid = phoneRegex.test(step1.phone);
+  const isCodePostalValid = ((step1 as any).codePostal || '').length === 5;
+  const isVilleValid = ((step1 as any).ville || '').trim().length >= 2;
+  const isStep1Valid = step1.organisation?.trim().length >= 2
+    && step1.addresseStructure && step1.addresseStructure.trim().length >= 5
+    && isCodePostalValid
+    && isVilleValid
+    && step1.socialWorkerName?.trim().length >= 2
+    && isEmailValid
+    && isPhoneValid;
+  const isStep2Valid = step2.childSex && step2.childFirstName?.trim().length >= 2 && step2.childBirthDate && step2.consent && ageError === '';
 
   const currentYear = new Date().getFullYear();
 
   const handleSubmit = async () => {
-    if (!selectedSessionId) return;
+    if (!selectedSessionId || !selectedSession) return;
+
+    // SÉCURITÉ: Bloquer si prix non calculé
+    if (totalPrice === null) {
+      setError('Impossible de finaliser : tarif indisponible.');
+      return;
+    }
+
+    // SÉCURITÉ: Double validation âge avant envoi
+    if (ageError) {
+      setError(ageError);
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
-      const birthDate = step2.childBirthDate;
-      const addressNote = step1.addresseStructure ? `[ADRESSE]: ${step1.addresseStructure}` : '';
-      const cityNote = selectedCity ? `[VILLE DEPART]: ${selectedCity}` : '';
-      const finalNotes = [addressNote, cityNote].filter(Boolean).join('\n');
+      const fullAddress = [step1.addresseStructure, (step1 as any).codePostal, (step1 as any).ville].filter(Boolean).join(', ');
+      const addressNote = fullAddress ? `[ADRESSE]: ${fullAddress}` : '';
       const sexNote = step2.childSex ? `[SEXE]: ${step2.childSex}` : '';
+      const remarques = [addressNote, sexNote].filter(Boolean).join('\n');
 
-      const res = await fetch('/api/bookings', {
+      const res = await fetch('/api/inscriptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          stayId: stay?.id,
-          sessionId: selectedSessionId,
+          staySlug: stay?.slug,
+          sessionDate: selectedSession.startDate,
+          cityDeparture: selectedCity || 'sans_transport',
           organisation: step1.organisation,
           socialWorkerName: step1.socialWorkerName,
           email: step1.email,
           phone: step1.phone,
           childFirstName: step2.childFirstName,
           childLastName: '',
-          childBirthDate: birthDate,
-          notes: finalNotes,
-          childNotes: sexNote,
+          childBirthDate: step2.childBirthDate,
+          remarques,
+          priceTotal: totalPrice ?? 0,
           consent: step2.consent,
         }),
       });
@@ -192,7 +253,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
       )}
 
       {/* Sticky recap */}
-      {(step === 2 || step === 3 || step === 4) && selectedSession && totalPrice !== null && (
+      {(step >= 2 && step <= 4) && selectedSession && totalPrice !== null && (
         <div className="mb-6 p-4 bg-primary-50 rounded-xl border border-primary-200">
           <div className="flex items-center justify-between">
             <div className="flex-1">
@@ -202,7 +263,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               </div>
               <div className="flex items-center gap-2 text-xs text-primary-500">
                 <MapPin className="w-3 h-3" />
-                <span>{selectedCity}</span>
+                <span>{selectedCity === 'sans_transport' ? 'Sans transport' : selectedCity}</span>
                 {extraVille > 0 && <span className="text-primary-400">+{extraVille}€ transport</span>}
               </div>
             </div>
@@ -310,8 +371,8 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               {standardDepartureCities
                 .slice()
                 .sort((a: any, b: any) => {
-                  if (a.city === 'Sans transport') return -1;
-                  if (b.city === 'Sans transport') return 1;
+                  if (a.city === 'sans_transport') return -1;
+                  if (b.city === 'sans_transport') return 1;
                   const aIndex = STANDARD_CITIES.findIndex(std => a.city.toLowerCase().includes(std.toLowerCase()));
                   const bIndex = STANDARD_CITIES.findIndex(std => b.city.toLowerCase().includes(std.toLowerCase()));
                   if (aIndex >= 0 && bIndex >= 0) return aIndex - bIndex;
@@ -346,7 +407,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                         className="sr-only"
                       />
                       <span className="flex-1 text-sm font-medium text-primary-700 capitalize">
-                        {city.city === 'Sans transport' ? 'Sans transport' : city.city}
+                        {city.city === 'sans_transport' ? 'Sans transport (inclus)' : city.city}
                       </span>
                       <span className={`text-sm font-semibold ${isCitySelected ? 'text-secondary' : 'text-primary-600'}`}>
                         {city.extra_eur === 0 ? 'Inclus' : `+${city.extra_eur}€`}
@@ -391,11 +452,28 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             />
             <input
               type="text"
-              placeholder="Adresse postale de la structure *"
+              placeholder="Adresse (n° et rue) *"
               value={step1.addresseStructure || ''}
               onChange={e => setStep1({ ...step1, addresseStructure: e.target.value })}
               className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
             />
+            <div className="grid grid-cols-3 gap-2">
+              <input
+                type="text"
+                placeholder="Code postal *"
+                value={(step1 as any).codePostal || ''}
+                onChange={e => setStep1({ ...step1, codePostal: e.target.value.replace(/\D/g, '').slice(0, 5) } as any)}
+                maxLength={5}
+                className={`px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${(step1 as any).codePostal && (step1 as any).codePostal.length !== 5 ? 'border-red-400' : 'border-primary-200'}`}
+              />
+              <input
+                type="text"
+                placeholder="Ville *"
+                value={(step1 as any).ville || ''}
+                onChange={e => setStep1({ ...step1, ville: e.target.value } as any)}
+                className={`col-span-2 px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${(step1 as any).ville && (step1 as any).ville.trim().length < 2 ? 'border-red-400' : 'border-primary-200'}`}
+              />
+            </div>
             <input
               type="text"
               placeholder="Nom complet *"
@@ -403,20 +481,30 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               onChange={e => setStep1({ ...step1, socialWorkerName: e.target.value })}
               className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
             />
-            <input
-              type="email"
-              placeholder="Email *"
-              value={step1.email}
-              onChange={e => setStep1({ ...step1, email: e.target.value })}
-              className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
-            />
-            <input
-              type="tel"
-              placeholder="Téléphone (portable de préférence) *"
-              value={step1.phone}
-              onChange={e => setStep1({ ...step1, phone: e.target.value })}
-              className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
-            />
+            <div>
+              <input
+                type="email"
+                placeholder="Email *"
+                value={step1.email}
+                onChange={e => setStep1({ ...step1, email: e.target.value })}
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.email && !isEmailValid ? 'border-red-400' : 'border-primary-200'}`}
+              />
+              {step1.email && !isEmailValid && (
+                <p className="mt-1 text-xs text-red-500">Adresse email invalide (ex: nom@domaine.fr)</p>
+              )}
+            </div>
+            <div>
+              <input
+                type="tel"
+                placeholder="Téléphone (portable de préférence) *"
+                value={step1.phone}
+                onChange={e => setStep1({ ...step1, phone: e.target.value })}
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.phone && !isPhoneValid ? 'border-red-400' : 'border-primary-200'}`}
+              />
+              {step1.phone && !isPhoneValid && (
+                <p className="mt-1 text-xs text-red-500">Numéro invalide (minimum 10 chiffres)</p>
+              )}
+            </div>
           </div>
           <div className="flex gap-3">
             <button
@@ -461,8 +549,9 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                 required
               />
               {step2.childBirthDate && calculateAge(step2.childBirthDate) !== null && (
-                <p className="mt-1 text-xs text-primary-500">
+                <p className={`mt-1 text-xs ${ageError ? 'text-red-500 font-medium' : 'text-primary-500'}`}>
                   Âge : {calculateAge(step2.childBirthDate)} ans
+                  {ageError && ` • ${ageError}`}
                 </p>
               )}
             </div>
@@ -522,9 +611,9 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               <Check className="w-4 h-4 text-green-600" /> Récapitulatif de la demande
             </h4>
             <div className="space-y-1 text-sm text-primary-700">
-              <p><span className="font-medium text-primary-500">Séjour :</span> {stay?.marketingTitle || stay?.title}</p>
+              <p><span className="font-medium text-primary-500">Séjour :</span> {stay?.marketingTitle || 'Séjour'}</p>
               <p><span className="font-medium text-primary-500">Session :</span> {formatDateLong(selectedSession?.startDate ?? '')} - {formatDateLong(selectedSession?.endDate ?? '')}</p>
-              <p><span className="font-medium text-primary-500">Ville de départ :</span> {selectedCity} {extraVille > 0 ? `(+${extraVille}€)` : '(Inclus)'}</p>
+              <p><span className="font-medium text-primary-500">Ville de départ :</span> {selectedCity === 'sans_transport' ? 'Sans transport' : selectedCity} {extraVille > 0 ? `(+${extraVille}€)` : '(Inclus)'}</p>
               <div className="border-t border-primary-200 my-2 pt-2">
                 <p><span className="font-medium text-primary-500">Enfant :</span> {step2.childFirstName} ({calculateAge(step2.childBirthDate)} ans)</p>
                 <p><span className="font-medium text-primary-500">Structure :</span> {step1.organisation} ({step1.socialWorkerName})</p>
@@ -532,10 +621,24 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             </div>
             <div className="mt-4 pt-3 border-t border-primary-200 flex items-center justify-between">
               <span className="font-bold text-primary">Total estimé</span>
-              <span className="text-xl font-bold text-secondary">{totalPrice} €</span>
+              {totalPrice !== null ? (
+                <span className="text-xl font-bold text-secondary">{totalPrice} €</span>
+              ) : (
+                <span className="text-sm text-red-500 font-medium">Prix indisponible</span>
+              )}
             </div>
           </div>
-          {error && (
+          {totalPrice === null && (
+            <div className="p-3 bg-amber-50 text-amber-700 rounded-xl text-sm border border-amber-200 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" /> Le tarif n'a pas pu être calculé. Veuillez réessayer ou contacter l'équipe.
+            </div>
+          )}
+          {ageError && (
+            <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" /> {ageError}
+            </div>
+          )}
+          {error && !ageError && (
             <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100 flex items-center gap-2">
               <AlertCircle className="w-4 h-4" /> {error}
             </div>
@@ -549,7 +652,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             </button>
             <button
               onClick={handleSubmit}
-              disabled={loading}
+              disabled={loading || totalPrice === null || ageError !== ''}
               className="flex-1 py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
@@ -567,12 +670,12 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
           </div>
           <h3 className="text-xl font-semibold text-primary mb-2">Réservation confirmée !</h3>
           <p className="text-primary-600 mb-4">
-            Votre demande pour <strong>{stay?.marketingTitle || stay?.title}</strong> a été enregistrée.
+            Votre demande pour <strong>{stay?.marketingTitle || 'Séjour'}</strong> a été enregistrée.
           </p>
           <div className="bg-primary-50 p-4 rounded-xl text-left text-sm space-y-1">
-            <p><strong>Référence :</strong> {bookingId}</p>
+            <p><strong>Référence :</strong> {bookingId?.slice(0, 8)?.toUpperCase() || bookingId}</p>
             <p><strong>Session :</strong> {formatDateLong(selectedSession?.startDate ?? '')} - {formatDateLong(selectedSession?.endDate ?? '')}</p>
-            <p><strong>Ville :</strong> {selectedCity}</p>
+            <p><strong>Ville :</strong> {selectedCity === 'sans_transport' ? 'Sans transport (par vos soins)' : selectedCity}</p>
             <p><strong>Enfant :</strong> {step2.childFirstName} (né le {new Date(step2.childBirthDate).toLocaleDateString('fr-FR')})</p>
             <p><strong>Contact :</strong> {step1.email}</p>
           </div>

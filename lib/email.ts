@@ -2,6 +2,7 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.EMAIL_SERVICE_API_KEY);
 
+// Domaine groupeetdecouverte.fr vérifié sur Resend
 const FROM_EMAIL = 'Groupe & Découverte <noreply@groupeetdecouverte.fr>';
 const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'admin@groupeetdecouverte.fr';
 
@@ -28,6 +29,7 @@ export async function sendInscriptionConfirmation(data: InscriptionEmailData) {
   }
 
   try {
+    console.log('[EMAIL] Envoi confirmation vers:', data.referentEmail, 'depuis:', FROM_EMAIL);
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to: data.referentEmail,
@@ -56,6 +58,7 @@ export async function sendInscriptionConfirmation(data: InscriptionEmailData) {
         </div>
       `,
     });
+    console.log('[EMAIL] Résultat envoi confirmation:', JSON.stringify(result));
     return result;
   } catch (error) {
     console.error('[EMAIL] Erreur envoi confirmation:', error);

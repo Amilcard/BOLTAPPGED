@@ -20,10 +20,10 @@ export function Logo({ variant = 'default', className = '' }: LogoProps) {
   // Logo horizontal pour le header
   return (
     <div className={`flex items-center ${className}`}>
-      <img 
-        src="/GLOGO GED NEW.svg" 
-        alt="Groupe et Découverte" 
-        className={`h-10 sm:h-12 w-auto object-contain ${variant === 'white' ? 'brightness-0 invert' : ''}`}
+      <img
+        src="/GLOGO GED NEW.svg"
+        alt="Groupe et Découverte"
+        className={`h-8 sm:h-9 w-auto object-contain ${variant === 'white' ? 'brightness-0 invert' : ''}`}
         onError={(e) => {
           // Fallback au PNG si le SVG échoue (ou vice-versa)
           const target = e.target as HTMLImageElement;

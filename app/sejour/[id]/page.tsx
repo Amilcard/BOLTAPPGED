@@ -58,13 +58,13 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
   const stayData = {
     id: stay.slug,
     slug: stay.slug,
-    title: stay.title || 'Sans titre',
-    descriptionShort: stay.accroche || '',
-    // CityCrunch: titres/descriptions Pro/Kids (optionnel, fallback côté client)
-    titlePro: stay.title_pro || undefined,
-    titleKids: stay.title_kids || undefined,
-    descriptionPro: stay.description_pro || undefined,
-    descriptionKids: stay.description_kids || undefined,
+    // NEUTRALISÉ: Les champs legacy UFOVAL ne sont plus transmis au front
+    title: stay.marketing_title || 'Séjour', // CityCrunch uniquement, jamais l'ancien UFOVAL
+    descriptionShort: stay.punchline || stay.expert_pitch || '',
+    titlePro: undefined, // ARCHIVE ONLY — neutralisé
+    titleKids: undefined, // ARCHIVE ONLY — neutralisé
+    descriptionPro: undefined, // ARCHIVE ONLY — neutralisé
+    descriptionKids: undefined, // ARCHIVE ONLY — neutralisé
     programme: stay.programme ? stay.programme.split('\n').filter(Boolean) : [],
     geography: stay.location_region || stay.location_city || '',
     accommodation: stay.centre_name || '',
@@ -95,8 +95,8 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
     price_base: uniqueSessions[0]?.price_ged_total || null,
     price_unit: '€',
     pro_price_note: 'Tarif communiqué aux professionnels',
-    sessions: uniqueSessions.map((s, idx) => ({
-      id: `${stay.slug}-${idx}`,
+    sessions: uniqueSessions.map((s) => ({
+      id: `${stay.slug}__${s.start_date}__${s.end_date}`,
       stayId: stay.slug,
       startDate: s.start_date,
       endDate: s.end_date,

@@ -12,12 +12,11 @@ export function StayCard({ stay }: { stay: Stay }) {
   const { mode } = useApp();
   const isKids = mode === 'kids';
 
-  // === TITRE: Premium marketing_title > CityCrunch Kids > Legacy title ===
-  const displayTitle = stay?.marketingTitle || stay?.titleKids || stay?.title;
+  // === TITRE: CityCrunch marketing_title UNIQUEMENT — plus aucun fallback legacy UFOVAL ===
+  const displayTitle = stay?.marketingTitle || 'Séjour';
 
-  // === DESCRIPTION: Premium punchline > CityCrunch Kids (universel) > Legacy descriptionShort ===
-  const displayDesc = stay?.punchline
-    || stay?.descriptionKids || stay?.descriptionShort;
+  // === DESCRIPTION: CityCrunch punchline UNIQUEMENT — plus aucun fallback legacy UFOVAL ===
+  const displayDesc = stay?.punchline || '';
 
   // === BADGE ÉMOTION: Premium emotion_tag > Legacy themes[0] ===
   // Clean style: Neutral gray, text primary.

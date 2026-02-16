@@ -192,8 +192,8 @@ export function BookingModal({ stay, sessions, departureCities = [], enrichmentS
           childFirstName: step2.childFirstName,
           childLastName: '', // Minimisation données
           childBirthDate: birthDate,
-          notes: finalNotes, // Adresse + Ville concaténées
-          childNotes: sexNote, // Transmis dans le champ childNotes existant
+          notes: '',
+          childNotes: '',
           consent: step2.consent,
         }),
       });

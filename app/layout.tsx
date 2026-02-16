@@ -1,9 +1,14 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Rubik } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/providers';
 
-const inter = Inter({ subsets: ['latin'] });
+const rubik = Rubik({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-rubik',
+  display: 'swap',
+});
 
 export const dynamic = 'force-dynamic';
 
@@ -32,7 +37,7 @@ export default function RootLayout({
       <head>
         <script src="https://apps.abacus.ai/chatllm/appllm-lib.js" />
       </head>
-      <body className={inter.className}>
+      <body className={`${rubik.variable} font-sans`}>
         <Providers>{children}</Providers>
       </body>
     </html>

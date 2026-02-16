@@ -22,11 +22,14 @@ const bookingSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    console.log('📥 Booking payload received:', JSON.stringify(body, null, 2));
+
     const parsed = bookingSchema.safeParse(body);
 
     if (!parsed.success) {
+      console.error('❌ Validation error:', JSON.stringify(parsed.error.issues, null, 2));
       return NextResponse.json(
-        { error: { code: 'VALIDATION_ERROR', message: parsed.error.errors[0]?.message ?? 'Données invalides' } },
+        { error: { code: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message ?? 'Données invalides' } },
         { status: 400 }
       );
     }
@@ -83,7 +86,7 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     console.error('POST /api/bookings error:', error);
     const message = error instanceof Error ? error.message : 'Erreur';
-    
+
     if (message === 'SESSION_NOT_FOUND') {
       return NextResponse.json(
         { error: { code: 'SESSION_NOT_FOUND', message: 'Session non trouvée' } },

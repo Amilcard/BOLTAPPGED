@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { STORAGE_KEYS } from '@/lib/utils';
 import { Map, Calendar, FileText, Users } from 'lucide-react';
+import { VITRINE_LINKS } from '@/config/vitrineLinks';
 
 interface Stats {
   stays: number;
@@ -12,18 +14,50 @@ interface Stats {
 }
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [stats, setStats] = useState<Stats | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      const token = localStorage.getItem(STORAGE_KEYS.AUTH);
-      const res = await fetch('/api/admin/stats', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) setStats(await res.json());
-    };
-    fetchStats();
+    const token = localStorage.getItem(STORAGE_KEYS.AUTH);
+
+    if (!token) {
+      // LOT 1: Redirect to vitrine if not authenticated (no public admin access)
+      window.location.href = VITRINE_LINKS.HOME;
+      return;
+    }
+
+    // Verify token is valid
+    fetch('/api/admin/stats', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (res.ok) {
+          setIsAuthenticated(true);
+          return res.json();
+        }
+        throw new Error('Unauthorized');
+      })
+      .then((data) => setStats(data))
+      .catch(() => {
+        // Invalid token - redirect to vitrine
+        window.location.href = VITRINE_LINKS.HOME;
+      })
+      .finally(() => setIsLoading(false));
   }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-primary-500">Chargement...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null; // Will redirect in useEffect
+  }
 
   const cards = [
     { label: 'Séjours', value: stats?.stays ?? '-', icon: Map, color: 'bg-blue-500' },

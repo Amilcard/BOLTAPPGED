@@ -1,0 +1,145 @@
+diff --git a/app/page.tsx b/app/page.tsx
+index dd401de..8c9ed5c 100644
+--- a/app/page.tsx
++++ b/app/page.tsx
+@@ -37,12 +37,17 @@ export default async function HomePage() {
+       slug: sejour.slug,
+       title: sejour.title || 'Sans titre',
+       descriptionShort: sejour.accroche || '',
++      // CityCrunch: titres/descriptions Pro/Kids (optionnel, fallback côté client)
++      titlePro: sejour.title_pro || undefined,
++      titleKids: sejour.title_kids || undefined,
++      descriptionPro: sejour.description_pro || undefined,
++      descriptionKids: sejour.description_kids || undefined,
+       programme: sejour.programme ? sejour.programme.split('\n').filter(Boolean) : [],
+       geography: sejour.location_region || sejour.location_city || '',
+       accommodation: sejour.centre_name || '',
+-      supervision: 'Équipe UFOVAL',
++      supervision: 'Équipe Groupe & Découverte',
+       durationDays: 7,
+-      period: 'Été 2026',
++      period: 'été',
+       ageMin: ages.ageMin,
+       ageMax: ages.ageMax,
+       themes: [sejour.ged_theme || 'PLEIN_AIR'],
+diff --git a/app/sejour/[id]/page.tsx b/app/sejour/[id]/page.tsx
+index bd0d942..fafa304 100644
+--- a/app/sejour/[id]/page.tsx
++++ b/app/sejour/[id]/page.tsx
+@@ -61,12 +61,17 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
+     slug: stay.slug,
+     title: stay.title || 'Sans titre',
+     descriptionShort: stay.accroche || '',
++    // CityCrunch: titres/descriptions Pro/Kids (optionnel, fallback côté client)
++    titlePro: stay.title_pro || undefined,
++    titleKids: stay.title_kids || undefined,
++    descriptionPro: stay.description_pro || undefined,
++    descriptionKids: stay.description_kids || undefined,
+     programme: stay.programme ? stay.programme.split('\n').filter(Boolean) : [],
+     geography: stay.location_region || stay.location_city || '',
+     accommodation: stay.centre_name || '',
+-    supervision: 'Équipe UFOVAL',
++    supervision: 'Équipe Groupe & Découverte',
+     durationDays,
+-    period: 'Été 2026',
++    period: 'été',
+     ageMin,
+     ageMax,
+     themes: [stay.ged_theme || 'PLEIN_AIR'],
+diff --git a/app/sejour/[id]/stay-detail.tsx b/app/sejour/[id]/stay-detail.tsx
+index d775be8..39119f6 100644
+--- a/app/sejour/[id]/stay-detail.tsx
++++ b/app/sejour/[id]/stay-detail.tsx
+@@ -72,6 +72,14 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
+   const isPro = !isKids;
+   const slug = stay?.slug ?? '';
+
++  // CityCrunch: affichage Pro/Kids avec fallback
++  const displayTitle = isKids
++    ? ((stay as any)?.titleKids || stay?.title)
++    : ((stay as any)?.titlePro || stay?.title);
++  const displayDesc = isKids
++    ? ((stay as any)?.descriptionKids || stay?.descriptionShort)
++    : ((stay as any)?.descriptionPro || stay?.descriptionShort);
++
+   // Plus besoin de fetch /api/ufoval-enrichment - données déjà passées depuis page.tsx
+
+   // Calcul prix minimum (promo prioritaire, sinon base)
+@@ -199,7 +207,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
+             <ArrowLeft className="w-4 h-4" />
+             Retour aux séjours
+           </Link>
+-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white">{stay?.title ?? ''}</h1>
++          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white">{displayTitle ?? ''}</h1>
+         </div>
+       </section>
+
+@@ -234,7 +242,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
+               <h2 className="text-2xl md:text-3xl font-bold text-primary mb-4">
+                 {isKids ? 'C\'est quoi ce séjour ?' : 'Présentation'}
+               </h2>
+-              <p className="text-primary-600 leading-relaxed">{stay?.descriptionShort ?? ''}</p>
++              <p className="text-primary-600 leading-relaxed">{displayDesc ?? ''}</p>
+               <div className="flex flex-wrap gap-2 mt-4">
+                 {themes.map(theme => (
+                   <span key={theme} className="flex items-center gap-1 px-3 py-1.5 bg-primary-50 text-primary-600 rounded-full text-sm font-medium border border-primary-100">
+diff --git a/components/stay-card.tsx b/components/stay-card.tsx
+index 0afe745..e9fc9a0 100644
+--- a/components/stay-card.tsx
++++ b/components/stay-card.tsx
+@@ -5,8 +5,20 @@ import Link from 'next/link';
+ import { Calendar, MapPin, Users, Clock, ArrowRight } from 'lucide-react';
+ import type { Stay } from '@/lib/types';
+ import { formatDate } from '@/lib/utils';
++import { useApp } from '@/components/providers';
+
+ export function StayCard({ stay }: { stay: Stay }) {
++  const { mode } = useApp();
++  const isKids = mode === 'kids';
++
++  // CityCrunch: affichage Pro/Kids avec fallback
++  const displayTitle = isKids
++    ? (stay?.titleKids || stay?.title)
++    : (stay?.titlePro || stay?.title);
++  const displayDesc = isKids
++    ? (stay?.descriptionKids || stay?.descriptionShort)
++    : (stay?.descriptionPro || stay?.descriptionShort);
++
+   const themes = Array.isArray(stay?.themes) ? stay.themes : [];
+   const nextSession = stay?.nextSessionStart;
+
+@@ -39,14 +51,14 @@ export function StayCard({ stay }: { stay: Stay }) {
+
+         {/* Content - LOT GRAPHISME 1: Better spacing and typography */}
+         <div className="p-4 sm:p-5">
+-          {/* Title - LOT GRAPHISME 1: Better typography */}
++          {/* Title - LOT GRAPHISME 1: Better typography + CityCrunch Pro/Kids */}
+           <h3 className="font-semibold text-gray-900 text-base sm:text-lg mb-2 line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+-            {stay?.title ?? 'Sans titre'}
++            {displayTitle ?? 'Sans titre'}
+           </h3>
+
+-          {/* Description - LOT GRAPHISME 1: More subtle, optional */}
++          {/* Description - LOT GRAPHISME 1: More subtle + CityCrunch Pro/Kids */}
+           <p className="text-sm text-gray-500 mb-4 line-clamp-2 leading-relaxed">
+-            {stay?.descriptionShort ?? ''}
++            {displayDesc ?? ''}
+           </p>
+
+           {/* Info grid - LOT GRAPHISME 1: Cleaner layout */}
+diff --git a/lib/types.ts b/lib/types.ts
+index 7239f1d..5f2b6ca 100644
+--- a/lib/types.ts
++++ b/lib/types.ts
+@@ -3,6 +3,11 @@ export interface Stay {
+   slug: string;
+   title: string;
+   descriptionShort: string;
++  // CityCrunch: titres/descriptions Pro/Kids (fallback: title/descriptionShort)
++  titlePro?: string;
++  titleKids?: string;
++  descriptionPro?: string;
++  descriptionKids?: string;
+   programme: string[];
+   geography: string;
+   accommodation: string;

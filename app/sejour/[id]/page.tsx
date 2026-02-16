@@ -100,7 +100,7 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
       stayId: stay.slug,
       startDate: s.start_date,
       endDate: s.end_date,
-      seatsLeft: -1, // gd_session_prices n'a pas seats_left — jamais bloquer
+      seatsLeft: 30,
     })),
     rawSessions: staySessions, // Prop "NO CASCADE" pour passer les âges sans modifier les types globaux
 

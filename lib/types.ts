@@ -78,30 +78,6 @@ export interface User {
   role: 'ADMIN' | 'EDITOR' | 'VIEWER';
 }
 
-// === INSCRIPTION SUPABASE (source de vérité) ===
-export interface InscriptionSupabase {
-  id: string;
-  sejour_slug: string;
-  session_date: string;
-  city_departure: string;
-  jeune_prenom: string;
-  jeune_nom: string;
-  jeune_date_naissance: string;
-  organisation?: string;
-  referent_nom: string;
-  referent_email: string;
-  referent_tel: string;
-  options_educatives?: string;
-  remarques?: string;
-  price_total: number;
-  status: string; // en_attente, validee, refusee, annulee
-  payment_reference?: string;
-  payment_status?: string; // pending_payment, paid, failed
-  payment_method?: string;
-  created_at: string;
-  updated_at?: string;
-}
-
 export type ViewMode = 'pro' | 'kids';
 // LOT 1: Updated period filter with all seasons
 // Period filter values for LOT 1 (multi-choice)

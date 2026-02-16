@@ -1,13 +1,10 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getStoredAuth, clearStoredAuth } from '@/lib/utils';
 import { LayoutDashboard, Map, Calendar, FileText, Users, LogOut } from 'lucide-react';
-import { Logo } from '@/components/logo';
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -63,13 +60,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen bg-gray-100 flex">
       <aside className="w-64 bg-primary text-white flex flex-col">
         <div className="p-6 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <Logo variant="compact" />
-            <div>
-              <h1 className="text-lg font-bold">Admin</h1>
-              <p className="text-xs text-white/70">{userRole}</p>
-            </div>
-          </div>
+          <h1 className="text-xl font-bold">G&D Admin</h1>
+          <p className="text-sm text-white/70 mt-1">{userRole}</p>
         </div>
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => {

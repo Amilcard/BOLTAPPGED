@@ -1,17 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
 import { requireEditor } from '@/lib/auth-middleware';
-import { createClient } from '@supabase/supabase-js';
+import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 
-function getSupabaseAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-}
+const updateStaySchema = z.object({
+  title: z.string().min(1).optional(),
+  descriptionShort: z.string().min(1).optional(),
+  programme: z.array(z.string()).optional(),
+  geography: z.string().min(1).optional(),
+  accommodation: z.string().min(1).optional(),
+  supervision: z.string().min(1).optional(),
+  priceFrom: z.number().positive().optional(),
+  durationDays: z.number().positive().optional(),
+  period: z.enum(['printemps', 'été']).optional(),
+  ageMin: z.number().min(0).optional(),
+  ageMax: z.number().min(0).optional(),
+  themes: z.array(z.string()).optional(),
+  imageCover: z.string().url().optional(),
+  published: z.boolean().optional(),
+});
 
-// PUT toggle published (seul champ modifiable depuis admin pour l'instant)
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -25,29 +35,23 @@ export async function PUT(
   }
 
   try {
-    const { id } = await params; // id = slug dans Supabase
+    const { id } = await params;
     const body = await request.json();
+    const parsed = updateStaySchema.safeParse(body);
 
-    const supabase = getSupabaseAdmin();
-    const updateData: Record<string, unknown> = {};
-    if (body.published !== undefined) updateData.published = body.published;
-
-    if (Object.keys(updateData).length === 0) {
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: { code: 'VALIDATION_ERROR', message: 'Aucun champ à mettre à jour' } },
+        { error: { code: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message } },
         { status: 400 }
       );
     }
 
-    const { data, error } = await supabase
-      .from('gd_stays')
-      .update(updateData)
-      .eq('slug', id)
-      .select()
-      .single();
+    const stay = await prisma.stay.update({
+      where: { id },
+      data: parsed.data,
+    });
 
-    if (error) throw error;
-    return NextResponse.json(data);
+    return NextResponse.json(stay);
   } catch (error) {
     console.error('PUT /api/admin/stays/[id] error:', error);
     return NextResponse.json(
@@ -57,7 +61,6 @@ export async function PUT(
   }
 }
 
-// DELETE stay
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -72,13 +75,7 @@ export async function DELETE(
 
   try {
     const { id } = await params;
-    const supabase = getSupabaseAdmin();
-    const { error } = await supabase
-      .from('gd_stays')
-      .delete()
-      .eq('slug', id);
-
-    if (error) throw error;
+    await prisma.stay.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('DELETE /api/admin/stays/[id] error:', error);

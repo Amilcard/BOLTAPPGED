@@ -1,47 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth-middleware';
-import { createClient } from '@supabase/supabase-js';
+import { prisma } from '@/lib/db';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-/**
- * GET /api/admin/stats
- * Statistiques depuis Supabase (source de vérité).
- * - Séjours publiés depuis gd_stays
- * - Sessions depuis gd_stay_sessions
- * - Inscriptions depuis gd_inscriptions
- */
 export async function GET(req: NextRequest) {
-  try {
-    const auth = await verifyAuth(req);
-    if (!auth) return NextResponse.json({ error: { code: 'unauthorized', message: 'Non autorisé' } }, { status: 401 });
+  const auth = await verifyAuth(req);
+  if (!auth) return NextResponse.json({ error: { code: 'unauthorized', message: 'Non autorisé' } }, { status: 401 });
 
-    const [staysRes, sessionsRes, inscriptionsRes, inscriptionsNewRes] = await Promise.all([
-      supabase.from('gd_stays').select('id', { count: 'exact', head: true }).eq('published', true),
-      supabase.from('gd_stay_sessions').select('id', { count: 'exact', head: true }),
-      supabase.from('gd_inscriptions').select('id', { count: 'exact', head: true }),
-      supabase.from('gd_inscriptions').select('id', { count: 'exact', head: true }).eq('status', 'en_attente'),
-    ]);
+  const [stays, sessions, bookings, bookingsNew] = await Promise.all([
+    prisma.stay.count(),
+    prisma.staySession.count(),
+    prisma.booking.count(),
+    prisma.booking.count({ where: { status: 'new' } }),
+  ]);
 
-    // Vérifier les erreurs
-    for (const res of [staysRes, sessionsRes, inscriptionsRes, inscriptionsNewRes]) {
-      if (res.error) {
-        console.error('GET /api/admin/stats Supabase error:', res.error);
-        throw res.error;
-      }
-    }
-
-    return NextResponse.json({
-      stays: staysRes.count ?? 0,
-      sessions: sessionsRes.count ?? 0,
-      bookings: inscriptionsRes.count ?? 0,       // Total inscriptions
-      bookingsNew: inscriptionsNewRes.count ?? 0,  // En attente
-    });
-  } catch (error) {
-    console.error('GET /api/admin/stats error:', error);
-    return NextResponse.json({ error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur' } }, { status: 500 });
-  }
+  return NextResponse.json({ stays, sessions, bookings, bookingsNew });
 }

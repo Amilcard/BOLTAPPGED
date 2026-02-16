@@ -1,14 +1,17 @@
-<svg width="200" height="40" viewBox="0 0 200 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="280" height="50" viewBox="0 0 280 50" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <style>
-      .logo-text { font-family: 'Inter', system-ui, sans-serif; font-weight: 800; font-style: italic; }
-      .logo-et { font-family: 'Inter', system-ui, sans-serif; font-weight: 400; font-style: italic; }
+      .logo-main { font-family: 'Rubik', system-ui, sans-serif; font-weight: 800; }
+      .logo-et { font-family: 'Rubik', system-ui, sans-serif; font-weight: 400; }
+      .logo-baseline { font-family: 'Rubik', system-ui, sans-serif; font-weight: 400; letter-spacing: 2px; }
     </style>
   </defs>
-  <!-- GROUPE -->
-  <text x="0" y="18" class="logo-text" fill="#F59E0B" font-size="16">GROUPE</text>
-  <!-- ET -->
-  <text x="68" y="18" class="logo-et" fill="#1F3B57" font-size="14">ET</text>
-  <!-- DÉCOUVERTE -->
-  <text x="0" y="36" class="logo-text" fill="#F59E0B" font-size="16">DÉCOUVERTE</text>
+  <!-- groupe -->
+  <text x="0" y="24" class="logo-main" fill="#de7356" font-size="22">groupe</text>
+  <!-- et -->
+  <text x="82" y="24" class="logo-et" fill="#2a383f" font-size="22">et</text>
+  <!-- découverte -->
+  <text x="102" y="24" class="logo-main" fill="#de7356" font-size="22">découverte</text>
+  <!-- baseline -->
+  <text x="82" y="44" class="logo-baseline" fill="#2a383f" font-size="8" opacity="0.7">PARCEQUE CE SONT PLUS QUE DES LOISIRS</text>
 </svg>

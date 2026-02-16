@@ -23,22 +23,22 @@ const config: Config = {
         ring: 'hsl(var(--ring))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
-        // Primary = TITRES (#1d1e20 - Noir Charbon)
+        // Primary = TITRES (#2a383f - Gris-Bleu Foncé du logo)
         primary: {
-          DEFAULT: '#1d1e20',
-          50: '#f4f4f5',
-          100: '#e4e4e7',
-          200: '#d1d5db',
-          300: '#9ca3af',
-          400: '#6b7280',
-          500: '#1d1e20',     // Main Title Color
-          600: '#1f2937',
-          700: '#111827',
-          800: '#0f172a',
-          900: '#020617',
+          DEFAULT: '#2a383f',
+          50: '#f4f7f8',
+          100: '#e0e7ea',
+          200: '#c4d1d7',
+          300: '#9bb0ba',
+          400: '#6b8a97',
+          500: '#2a383f',     // Main Title Color (logo dark)
+          600: '#233038',
+          700: '#1c272e',
+          800: '#151e24',
+          900: '#0e151a',
           foreground: '#FFFFFF',
         },
-        // Secondary = CTA / ACTIONS (#de7356 - Terracotta)
+        // Secondary = CTA / ACTIONS (#de7356 - Terracotta du logo)
         secondary: {
           DEFAULT: '#de7356', // Terracotta Action
           50: '#fdf8f6',
@@ -53,9 +53,9 @@ const config: Config = {
           900: '#6d3529',
           foreground: '#FFFFFF', // White text on Terracotta
         },
-        // Accent = VIOLET / SECONDAIRE (#7C5295 - Estimé Hostinger, harmonisé)
+        // Accent = Gris-Bleu Clair (dérivé du logo, remplace le violet)
         accent: {
-          DEFAULT: '#7C5295',
+          DEFAULT: '#3d5260',
           foreground: '#FFFFFF',
         },
         destructive: {
@@ -74,11 +74,11 @@ const config: Config = {
           DEFAULT: '#FFFFFF',
           foreground: '#1a1a1a',
         },
-        // Brand aliases (Legacy support mapped to new chart)
+        // Brand aliases (Legacy support - aligned with new logo)
         brand: {
-          dark: '#1d1e20',   // Titles
-          gold: '#de7356',   // Mapped to Terracotta
-          teal: '#7C5295',   // Mapped to Accent
+          dark: '#2a383f',   // Titles (logo dark color)
+          gold: '#de7356',   // Terracotta (logo main color)
+          teal: '#3d5260',   // Accent (derived from logo)
           white: '#FFFFFF',
           light: '#f1f1f1',  // Sections
           border: '#e5e7eb',

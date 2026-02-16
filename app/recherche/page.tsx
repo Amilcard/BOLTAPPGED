@@ -76,7 +76,7 @@ export default async function RecherchePage() {
           stayId: sejour.slug,
           startDate: s.start_date,
           endDate: s.end_date,
-          seatsLeft: 30,
+          seatsLeft: -1, // gd_stay_sessions n'a pas seats_left — jamais bloquer
         })),
       // === CHAMPS PREMIUM MARKETING ===
       marketingTitle: sejour.marketing_title || undefined,

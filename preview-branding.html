@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preview Branding GED — Avant Commit</title>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Rubik', sans-serif; background: #f8f9fa; color: #2a383f; }
+
+  /* Colors from new logo */
+  :root {
+    --primary: #2a383f;
+    --secondary: #de7356;
+    --accent: #3d5260;
+    --muted: #f1f1f1;
+    --white: #ffffff;
+    --border: #e5e7eb;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+
+  h1 { font-size: 28px; font-weight: 800; color: var(--primary); margin-bottom: 8px; }
+  h2 { font-size: 20px; font-weight: 700; color: var(--primary); margin: 32px 0 16px; border-bottom: 2px solid var(--secondary); padding-bottom: 8px; }
+  h3 { font-size: 15px; font-weight: 600; color: var(--accent); margin: 16px 0 8px; }
+  .subtitle { font-size: 14px; color: #6b7280; margin-bottom: 32px; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 16px 0; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin: 16px 0; }
+
+  .card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid var(--border); }
+  .card-dark { background: var(--primary); border-radius: 16px; padding: 24px; color: white; }
+
+  .color-swatch { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+  .swatch { width: 48px; height: 48px; border-radius: 12px; border: 2px solid var(--border); flex-shrink: 0; }
+  .swatch-label { font-size: 13px; }
+  .swatch-label strong { display: block; font-size: 14px; }
+
+  /* SIMULATED COMPONENTS */
+
+  /* Header */
+  .sim-header { background: white; border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; border-radius: 12px; }
+  .sim-header-left { display: flex; align-items: center; gap: 16px; }
+  .sim-nav { display: flex; gap: 16px; font-size: 14px; font-weight: 500; }
+  .sim-nav a { color: var(--primary); text-decoration: none; opacity: 0.7; }
+  .sim-nav a:hover { opacity: 1; }
+  .sim-btn { background: var(--secondary); color: white; border: none; padding: 8px 20px; border-radius: 50px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .sim-btn:hover { filter: brightness(1.1); }
+  .sim-btn-outline { background: transparent; color: var(--primary); border: 2px solid var(--primary); padding: 6px 18px; border-radius: 50px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+  /* Compact logo */
+  .logo-compact { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: var(--primary); border-radius: 10px; flex-shrink: 0; }
+  .logo-compact span { color: var(--secondary); font-weight: 800; font-size: 14px; letter-spacing: -1px; }
+
+  /* Footer */
+  .sim-footer { background: white; border-top: 1px solid var(--border); padding: 24px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .sim-footer-links { display: flex; gap: 24px; font-size: 13px; }
+  .sim-footer-links a { color: #6b7280; text-decoration: none; }
+
+  /* Admin sidebar */
+  .sim-admin { display: flex; border-radius: 12px; overflow: hidden; height: 280px; }
+  .sim-sidebar { width: 220px; background: var(--primary); color: white; padding: 0; flex-shrink: 0; }
+  .sim-sidebar-header { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 12px; }
+  .sim-sidebar-nav { padding: 12px; }
+  .sim-sidebar-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 13px; color: rgba(255,255,255,0.7); cursor: pointer; margin-bottom: 2px; }
+  .sim-sidebar-item:hover, .sim-sidebar-item.active { background: rgba(255,255,255,0.1); color: white; }
+  .sim-sidebar-item.active { background: rgba(222,115,86,0.2); color: var(--secondary); }
+  .sim-admin-content { flex: 1; background: #f3f4f6; padding: 20px; }
+  .sim-admin-content h2 { font-size: 16px; margin: 0 0 12px; border: none; padding: 0; }
+  .sim-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .sim-stat { background: white; padding: 12px; border-radius: 8px; text-align: center; }
+  .sim-stat .num { font-size: 24px; font-weight: 800; color: var(--secondary); }
+  .sim-stat .label { font-size: 11px; color: #6b7280; }
+
+  /* Favicon preview */
+  .favicon-row { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .favicon-preview { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .favicon-preview img { border-radius: 6px; }
+  .favicon-preview span { font-size: 11px; color: #6b7280; }
+
+  /* Email preview */
+  .sim-email { max-width: 500px; margin: 0 auto; font-family: Arial, sans-serif; font-size: 14px; }
+  .sim-email-header { background: var(--primary); color: white; padding: 16px 20px; border-radius: 8px 8px 0 0; }
+  .sim-email-body { border: 1px solid var(--border); border-top: none; padding: 20px; border-radius: 0 0 8px 8px; }
+  .sim-email-body h3 { color: var(--primary); font-size: 16px; margin: 0 0 12px; border: none; padding: 0; }
+  .sim-email-btn { display: inline-block; background: var(--primary); color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 13px; margin-top: 8px; }
+
+  .tag { display: inline-block; background: var(--secondary); color: white; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; margin-left: 8px; vertical-align: middle; }
+  .tag-old { background: #dc2626; }
+  .tag-new { background: #16a34a; }
+
+  .compare-arrow { text-align: center; font-size: 24px; color: var(--secondary); padding: 0 8px; align-self: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Preview Branding — Groupe & Découverte <span class="tag tag-new">NEW</span></h1>
+<p class="subtitle">Aperçu de tous les rendus avant commit. Couleurs extraites du nouveau logo SVG.</p>
+
+<!-- PALETTE -->
+<h2>1. Palette de couleurs</h2>
+<div class="grid-3">
+  <div class="color-swatch">
+    <div class="swatch" style="background: #2a383f;"></div>
+    <div class="swatch-label"><strong>Primary</strong>#2a383f — Titres, texte</div>
+  </div>
+  <div class="color-swatch">
+    <div class="swatch" style="background: #de7356;"></div>
+    <div class="swatch-label"><strong>Secondary</strong>#de7356 — CTA, boutons</div>
+  </div>
+  <div class="color-swatch">
+    <div class="swatch" style="background: #3d5260;"></div>
+    <div class="swatch-label"><strong>Accent</strong>#3d5260 — Hover, focus</div>
+  </div>
+  <div class="color-swatch">
+    <div class="swatch" style="background: #f1f1f1;"></div>
+    <div class="swatch-label"><strong>Muted</strong>#f1f1f1 — Sections fond</div>
+  </div>
+  <div class="color-swatch">
+    <div class="swatch" style="background: #ffffff; border-color: #ddd;"></div>
+    <div class="swatch-label"><strong>White</strong>#ffffff — Cards, fond</div>
+  </div>
+  <div class="color-swatch">
+    <div class="swatch" style="background: #e5e7eb;"></div>
+    <div class="swatch-label"><strong>Border</strong>#e5e7eb — Séparateurs</div>
+  </div>
+</div>
+
+<!-- LOGOS -->
+<h2>2. Logo principal (logo-ged.svg)</h2>
+<div class="grid">
+  <div class="card">
+    <h3>Sur fond blanc</h3>
+    <div style="padding: 20px; text-align: center;">
+      <img src="logo-ged.svg" alt="Logo GED" style="height: 60px; width: auto;">
+    </div>
+  </div>
+  <div class="card-dark">
+    <h3 style="color: rgba(255,255,255,0.6);">Sur fond sombre</h3>
+    <div style="padding: 20px; text-align: center;">
+      <img src="logo-ged.svg" alt="Logo GED" style="height: 60px; width: auto;">
+    </div>
+  </div>
+</div>
+
+<!-- FAVICON + COMPACT -->
+<h2>3. Favicon & Logo compact</h2>
+<div class="card">
+  <div class="favicon-row">
+    <div class="favicon-preview">
+      <img src="favicon.svg" width="64" height="64" alt="Favicon 64px">
+      <span>64×64</span>
+    </div>
+    <div class="favicon-preview">
+      <img src="favicon.svg" width="32" height="32" alt="Favicon 32px">
+      <span>32×32</span>
+    </div>
+    <div class="favicon-preview">
+      <img src="favicon.svg" width="16" height="16" alt="Favicon 16px">
+      <span>16×16</span>
+    </div>
+    <div style="width: 1px; height: 48px; background: var(--border); margin: 0 8px;"></div>
+    <div class="favicon-preview">
+      <div class="logo-compact"><span>gd</span></div>
+      <span>Compact (mobile)</span>
+    </div>
+    <div style="width: 1px; height: 48px; background: var(--border); margin: 0 8px;"></div>
+    <div class="favicon-preview">
+      <img src="logo.svg" width="200" height="36" alt="Logo simple SVG">
+      <span>logo.svg (fallback)</span>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<h2>4. Header (Desktop)</h2>
+<div class="sim-header">
+  <div class="sim-header-left">
+    <img src="logo-ged.svg" alt="Logo" style="height: 36px; width: auto;">
+    <div class="sim-nav">
+      <a href="#">Séjours</a>
+      <a href="#">Comment ça marche</a>
+      <a href="#">Contact</a>
+    </div>
+  </div>
+  <div style="display: flex; gap: 8px; align-items: center;">
+    <button class="sim-btn-outline">Mode Kids ✨</button>
+    <button class="sim-btn">Mon compte</button>
+  </div>
+</div>
+
+<h3>Header (Mobile)</h3>
+<div style="max-width: 375px;">
+  <div class="sim-header" style="padding: 10px 16px;">
+    <div class="logo-compact"><span>gd</span></div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <button class="sim-btn" style="padding: 6px 14px; font-size: 12px;">☰</button>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<h2>5. Footer</h2>
+<div class="sim-footer">
+  <div>
+    <img src="logo-ged.svg" alt="Logo" style="height: 28px; width: auto; margin-bottom: 6px; display: block;">
+    <span style="font-size: 12px; color: #6b7280;">© 2026 Tous droits réservés.</span>
+  </div>
+  <div class="sim-footer-links">
+    <a href="#">Mentions légales</a>
+    <a href="#">Contact</a>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<h2>6. Admin Panel</h2>
+<div class="sim-admin">
+  <div class="sim-sidebar">
+    <div class="sim-sidebar-header">
+      <div class="logo-compact" style="width: 36px; height: 36px;"><span style="font-size: 13px;">gd</span></div>
+      <div>
+        <div style="font-size: 15px; font-weight: 700;">Admin</div>
+        <div style="font-size: 11px; opacity: 0.6;">super_admin</div>
+      </div>
+    </div>
+    <div class="sim-sidebar-nav">
+      <div class="sim-sidebar-item active">📊 Dashboard</div>
+      <div class="sim-sidebar-item">🏔 Séjours</div>
+      <div class="sim-sidebar-item">📋 Demandes</div>
+      <div class="sim-sidebar-item">👥 Utilisateurs</div>
+      <div class="sim-sidebar-item">🚪 Déconnexion</div>
+    </div>
+  </div>
+  <div class="sim-admin-content">
+    <h2 style="color: var(--primary);">Dashboard</h2>
+    <div class="sim-stat-grid">
+      <div class="sim-stat"><div class="num">12</div><div class="label">Séjours actifs</div></div>
+      <div class="sim-stat"><div class="num">47</div><div class="label">Inscriptions</div></div>
+      <div class="sim-stat"><div class="num">8</div><div class="label">En attente</div></div>
+      <div class="sim-stat"><div class="num">3</div><div class="label">Sessions à venir</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- EMAIL -->
+<h2>7. Email Template</h2>
+<div class="card" style="max-width: 560px; margin: 0 auto;">
+  <div class="sim-email">
+    <div class="sim-email-header">
+      <h1 style="margin: 0; font-size: 20px; font-weight: 700;">Groupe & Découverte</h1>
+    </div>
+    <div class="sim-email-body">
+      <h3>Inscription enregistrée</h3>
+      <p style="margin: 8px 0;">Bonjour M. Dupont,</p>
+      <p style="margin: 8px 0;">L'inscription de <strong>Lucas Dupont</strong> a bien été enregistrée.</p>
+      <table style="width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px;">
+        <tr><td style="padding: 6px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Séjour</td><td style="padding: 6px; border-bottom: 1px solid #e5e7eb; font-weight: bold;">Aventure Montagne</td></tr>
+        <tr><td style="padding: 6px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Session</td><td style="padding: 6px; border-bottom: 1px solid #e5e7eb;">12-19 juillet 2026</td></tr>
+        <tr><td style="padding: 6px; color: #6b7280;">Montant</td><td style="padding: 6px; font-weight: bold;">485.00 €</td></tr>
+      </table>
+      <p style="font-size: 12px; color: #6b7280;">Votre inscription est en attente de validation.</p>
+      <a class="sim-email-btn" href="#">Voir dans l'admin</a>
+    </div>
+  </div>
+</div>
+
+<!-- BUTTONS -->
+<h2>8. Boutons & Interactions</h2>
+<div class="card">
+  <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+    <button class="sim-btn">Réserver maintenant</button>
+    <button class="sim-btn" style="background: var(--accent);">Voir les séjours</button>
+    <button class="sim-btn-outline">Mode Kids ✨</button>
+    <button class="sim-btn" style="background: transparent; color: var(--secondary); border: 2px solid var(--secondary);">Annuler</button>
+    <span style="display: inline-block; padding: 4px 12px; background: var(--muted); border-radius: 50px; font-size: 12px; color: var(--primary); font-weight: 600;">Tag info</span>
+  </div>
+  <div style="margin-top: 16px; display: flex; gap: 12px; align-items: center;">
+    <div style="padding: 12px 20px; background: var(--muted); border-radius: 12px; font-size: 13px;">
+      Focus ring → <input type="text" placeholder="Cliquez ici" style="border: 1px solid var(--border); padding: 6px 10px; border-radius: 8px; font-family: inherit; outline-color: var(--secondary);">
+    </div>
+    <div style="padding: 6px 14px; background: var(--secondary); color: white; border-radius: 8px; font-size: 12px;">
+      ::selection en <span style="background: rgba(255,255,255,0.3); padding: 1px 4px; border-radius: 3px;">terracotta</span>
+    </div>
+  </div>
+</div>
+
+<p style="text-align: center; margin: 40px 0 20px; font-size: 12px; color: #9ca3af;">
+  Preview généré le 16/02/2026 — Prêt à commit après validation visuelle
+</p>
+
+</div>
+</body>
+</html>

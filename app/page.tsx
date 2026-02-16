@@ -83,7 +83,7 @@ export default async function HomePage() {
           stayId: sejour.slug,
           startDate: s.start_date,
           endDate: s.end_date,
-          seatsLeft: 30,
+          seatsLeft: -1, // gd_stay_sessions n'a pas seats_left — jamais bloquer
         })),
 
       // === CHAMPS PREMIUM (fallback null = le front utilise les champs legacy) ===

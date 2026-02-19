@@ -15,38 +15,36 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const stays = await prisma.stay.findMany({
+    const stays = await prisma.gd_stays.findMany({
       where: { published: true },
       include: {
-        sessions: {
-          where: { startDate: { gte: new Date() } },
-          orderBy: { startDate: 'asc' },
+        gd_stay_sessions: {
+          where: { start_date: { gte: new Date() } },
+          orderBy: { start_date: 'asc' },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { created_at: 'desc' },
     });
 
     const result = stays.map(stay => ({
-      id: stay.id,
       slug: stay.slug,
       title: stay.title,
-      descriptionShort: stay.descriptionShort,
+      descriptionShort: stay.description_kids ?? stay.description_pro,
       programme: stay.programme,
-      geography: stay.geography,
-      accommodation: stay.accommodation,
-      supervision: stay.supervision,
-      priceFrom: stay.priceFrom, // Prix inclus pour PRO
-      durationDays: stay.durationDays,
-      period: stay.period,
-      ageMin: stay.ageMin,
-      ageMax: stay.ageMax,
-      themes: stay.themes,
-      imageCover: stay.imageCover,
-      sessions: stay.sessions.map(s => ({
-        id: s.id,
-        startDate: s.startDate.toISOString(),
-        endDate: s.endDate.toISOString(),
-        seatsLeft: s.seatsLeft,
+      geography: stay.location_region,
+      accommodation: stay.logistics_json,
+      supervision: null,
+      durationDays: stay.duration_days,
+      period: stay.season,
+      ageMin: stay.age_min,
+      ageMax: stay.age_max,
+      themes: stay.tags,
+      imageCover: stay.images,
+      sessions: stay.gd_stay_sessions.map(s => ({
+        staySlug: s.stay_slug,
+        startDate: s.start_date.toISOString(),
+        endDate: s.end_date.toISOString(),
+        seatsLeft: s.seats_left,
       })),
     }));
 

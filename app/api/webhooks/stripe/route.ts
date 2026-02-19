@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { headers } from 'next/headers';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2026-01-28.clover',
 });
 
 const supabase = createClient(
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ✅ CRITIQUE : Vérifier la signature Stripe
+    // Vérifier la signature Stripe
     let event: Stripe.Event;
     try {
       event = stripe.webhooks.constructEvent(
@@ -41,6 +41,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // IDEMPOTENCY : vérifier si cet event a déjà été traité
+    const { data: existingEvent } = await supabase
+      .from('gd_processed_events')
+      .select('id')
+      .eq('event_id', event.id)
+      .single();
+
+    if (existingEvent) {
+      console.log(`Event ${event.id} already processed, skipping`);
+      return NextResponse.json({ received: true, skipped: true });
+    }
+
     // Traiter les événements
     switch (event.type) {
       case 'payment_intent.succeeded': {
@@ -52,7 +64,32 @@ export async function POST(req: NextRequest) {
           break;
         }
 
-        // ✅ SEUL endroit où payment_status devient 'paid'
+        // VÉRIFICATION MONTANT : comparer Stripe vs DB
+        const { data: inscription } = await supabase
+          .from('gd_inscriptions')
+          .select('price_total')
+          .eq('id', inscriptionId)
+          .single();
+
+        if (inscription) {
+          const stripeAmountEur = paymentIntent.amount / 100;
+          const dbAmount = inscription.price_total ?? 0;
+          if (Math.abs(stripeAmountEur - dbAmount) > 1) {
+            console.error('AMOUNT_MISMATCH in webhook:', {
+              stripe: stripeAmountEur,
+              db: dbAmount,
+              inscriptionId,
+              eventId: event.id,
+            });
+            await supabase
+              .from('gd_inscriptions')
+              .update({ payment_status: 'amount_mismatch' })
+              .eq('id', inscriptionId);
+            break;
+          }
+        }
+
+        // Montant vérifié, marquer comme payé
         const { error } = await supabase
           .from('gd_inscriptions')
           .update({
@@ -64,10 +101,7 @@ export async function POST(req: NextRequest) {
         if (error) {
           console.error('Error updating payment status:', error);
         } else {
-          console.log(`✅ Payment succeeded for inscription ${inscriptionId}`);
-
-          // TODO: Trigger email confirmation
-          // await sendPaymentSuccessEmail(inscriptionId);
+          console.log(`Payment succeeded for inscription ${inscriptionId}`);
         }
         break;
       }
@@ -88,7 +122,7 @@ export async function POST(req: NextRequest) {
         if (error) {
           console.error('Error updating failed payment status:', error);
         } else {
-          console.log(`❌ Payment failed for inscription ${inscriptionId}`);
+          console.log(`Payment failed for inscription ${inscriptionId}`);
         }
         break;
       }
@@ -96,6 +130,16 @@ export async function POST(req: NextRequest) {
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
+
+    // IDEMPOTENCY : enregistrer l'event comme traité
+    await supabase
+      .from('gd_processed_events')
+      .insert({
+        event_id: event.id,
+        event_type: event.type,
+        processed_at: new Date().toISOString(),
+      })
+      .single();
 
     return NextResponse.json({ received: true });
   } catch (error: any) {

@@ -26,9 +26,15 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
   const seatsOptions = [12, 5, 11, 7];
   const seatsForThisStay = seatsOptions[params.id.length % seatsOptions.length];
 
+  // Filtrer sessions sans dates valides (guard null DB)
+  const validSessions = sessionsRaw.filter((s: any) => s.start_date && s.end_date);
+
   // Map snake_case DB → camelCase frontend
-  const sessions = sessionsRaw.map((s: any, idx: number) => ({
+  // IMPORTANT: l'ID = slug__start__end — identique au format de sejour/[id]/page.tsx
+  const sessions = validSessions.map((s: any, idx: number) => ({
     ...s,
+    id: `${params.id}__${s.start_date}__${s.end_date}`,
+    stayId: params.id,
     startDate: s.start_date,
     endDate: s.end_date,
     // Alterner places entre sessions d'un même séjour
@@ -56,13 +62,13 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
               href={`/sejour/${params.id}`}
               className="hover:text-primary-700 transition-colors"
             >
-              {stay.marketingTitle || stay.title}
+              {stay.marketingTitle || 'Séjour'}
             </Link>
             <ChevronRight className="w-3 h-3" />
             <span className="text-primary font-medium">Réserver</span>
           </nav>
           <h1 className="text-2xl font-bold text-primary">
-            Réserver {stay.marketingTitle || stay.title}
+            Réserver {stay.marketingTitle || 'Séjour'}
           </h1>
         </div>
       </div>

@@ -5,32 +5,30 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const stays = await prisma.stay.findMany({
+    const stays = await prisma.gd_stays.findMany({
       where: { published: true },
       include: {
-        sessions: {
-          where: { startDate: { gte: new Date() } },
-          orderBy: { startDate: 'asc' },
+        gd_stay_sessions: {
+          where: { start_date: { gte: new Date() } },
+          orderBy: { start_date: 'asc' },
           take: 1,
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { created_at: 'desc' },
     });
 
-    // Prix exclus pour endpoint public (sécurité)
     const result = stays.map(stay => ({
-      id: stay.id,
       slug: stay.slug,
       title: stay.title,
-      descriptionShort: stay.descriptionShort,
-      durationDays: stay.durationDays,
-      period: stay.period,
-      ageMin: stay.ageMin,
-      ageMax: stay.ageMax,
-      themes: stay.themes,
-      imageCover: stay.imageCover,
-      geography: stay.geography,
-      nextSessionStart: stay.sessions[0]?.startDate?.toISOString() ?? null,
+      descriptionShort: stay.description_kids ?? stay.description_pro,
+      durationDays: stay.duration_days,
+      period: stay.season,
+      ageMin: stay.age_min,
+      ageMax: stay.age_max,
+      themes: stay.tags,
+      imageCover: stay.images,
+      geography: stay.location_region,
+      nextSessionStart: stay.gd_stay_sessions[0]?.start_date?.toISOString() ?? null,
     }));
 
     return NextResponse.json(result);

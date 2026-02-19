@@ -170,30 +170,29 @@ export function BookingModal({ stay, sessions, departureCities = [], enrichmentS
   const isStep2Valid = step2.childFirstName && step2.childBirthDate && ageValidation.valid && step2.consent;
 
   const handleSubmit = async () => {
-    if (!selectedSessionId) return;
+    if (!selectedSessionId || !selectedSession) return;
     setLoading(true);
     setError('');
 
     try {
-      // Date de naissance au format YYYY-MM-DD (déjà fournie par input type="date")
-      const birthDate = step2.childBirthDate;
+      const addressNote = step1.addresseStructure ? `[ADRESSE]: ${step1.addresseStructure}` : '';
 
-      const res = await fetch('/api/bookings', {
+      const res = await fetch('/api/inscriptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          stayId: stay?.id,
-          sessionId: selectedSessionId,
-          // departureCity supprimé car non géré par le backend
+          staySlug: stay?.slug,
+          sessionDate: selectedSession.startDate,
+          cityDeparture: selectedCity || 'sans_transport',
           organisation: step1.organisation,
           socialWorkerName: step1.socialWorkerName,
           email: step1.email,
           phone: step1.phone,
           childFirstName: step2.childFirstName,
-          childLastName: '', // Minimisation données
-          childBirthDate: birthDate,
-          notes: finalNotes, // Adresse + Ville concaténées
-          childNotes: sexNote, // Transmis dans le champ childNotes existant
+          childLastName: '',
+          childBirthDate: step2.childBirthDate,
+          remarques: addressNote,
+          priceTotal: totalPrice ?? 0,
           consent: step2.consent,
         }),
       });
@@ -218,7 +217,7 @@ export function BookingModal({ stay, sessions, departureCities = [], enrichmentS
       >
         <div className="sticky top-0 bg-white border-b border-primary-100 p-6 pb-4 z-10">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-primary text-lg">Réserver - {stay?.marketingTitle || stay?.title}</h2>
+            <h2 className="font-semibold text-primary text-lg">Réserver - {stay?.marketingTitle || 'Séjour'}</h2>
             <button onClick={onClose} className="p-1 hover:bg-primary-50 rounded">
               <X className="w-5 h-5" />
             </button>
@@ -623,7 +622,7 @@ export function BookingModal({ stay, sessions, departureCities = [], enrichmentS
 
               {/* Récapitulatif */}
               <div className="bg-primary-50 p-4 rounded-xl space-y-1">
-                <p className="text-sm"><strong>Séjour :</strong> {stay?.title}</p>
+                <p className="text-sm"><strong>Séjour :</strong> {stay?.marketingTitle || 'Séjour'}</p>
                 <p className="text-sm"><strong>Session :</strong> {formatDateLong(selectedSession?.startDate ?? '')}</p>
                 <p className="text-sm"><strong>Ville :</strong> {selectedCity}</p>
                 <p className="text-sm"><strong>Enfant :</strong> {step2.childFirstName} ({ageValidation.age} ans au départ)</p>
@@ -635,7 +634,7 @@ export function BookingModal({ stay, sessions, departureCities = [], enrichmentS
                   <Check className="w-4 h-4 text-green-600" /> Récapitulatif de la demande
                 </h4>
                 <div className="space-y-1 text-sm text-primary-700">
-                  <p><span className="font-medium text-primary-500">Séjour :</span> {stay?.marketingTitle || stay?.title}</p>
+                  <p><span className="font-medium text-primary-500">Séjour :</span> {stay?.marketingTitle || 'Séjour'}</p>
                   <p><span className="font-medium text-primary-500">Session :</span> {formatDateLong(selectedSession?.startDate ?? '')} - {formatDateLong(selectedSession?.endDate ?? '')}</p>
                   <p><span className="font-medium text-primary-500">Ville de départ :</span> {selectedCity} {extraVille > 0 ? `(+${extraVille}€)` : '(Inclus)'}</p>
                   <div className="border-t border-primary-200 my-2 pt-2">
@@ -683,7 +682,7 @@ export function BookingModal({ stay, sessions, departureCities = [], enrichmentS
               </div>
               <h3 className="text-xl font-semibold text-primary mb-2">Réservation confirmée !</h3>
               <p className="text-primary-600 mb-4">
-                Votre demande pour <strong>{stay?.marketingTitle || stay?.title}</strong> a été enregistrée.
+                Votre demande pour <strong>{stay?.marketingTitle || 'Séjour'}</strong> a été enregistrée.
               </p>
               <div className="bg-primary-50 p-4 rounded-xl text-left text-sm space-y-1">
                 <p><strong>Référence :</strong> {bookingId}</p>

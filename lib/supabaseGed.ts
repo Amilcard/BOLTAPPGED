@@ -99,7 +99,11 @@ export const getSejourBySlug = async (slug: string) => {
     standingLabel: data.standing_label,
     expertiseLabel: data.expertise_label,
     intensityLabel: data.intensity_label,
-    priceIncludesFeatures: data.price_includes_features
+    priceIncludesFeatures: data.price_includes_features,
+    // FIX CRITIQUE: ces champs manquaient → validation âge et fallback prix KO
+    ageMin: data.age_min,
+    ageMax: data.age_max,
+    priceFrom: data.price_from,
   }
 }
 

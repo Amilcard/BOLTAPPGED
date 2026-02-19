@@ -53,12 +53,14 @@ export default async function HomePage() {
     return {
       id: sejour.slug,
       slug: sejour.slug,
-      title: sejour.title || 'Sans titre',
-      descriptionShort: sejour.accroche || '',
-      titlePro: sejour.title_pro || undefined,
-      titleKids: sejour.title_kids || undefined,
-      descriptionPro: sejour.description_pro || undefined,
-      descriptionKids: sejour.description_kids || undefined,
+      // NEUTRALISÉ: Les champs legacy UFOVAL ne sont plus transmis au front
+      // On garde la structure Stay mais avec valeurs CityCrunch uniquement
+      title: sejour.marketing_title || 'Séjour', // CityCrunch title, jamais l'ancien nom UFOVAL
+      descriptionShort: sejour.punchline || sejour.expert_pitch || '',
+      titlePro: undefined, // ARCHIVE ONLY — neutralisé
+      titleKids: undefined, // ARCHIVE ONLY — neutralisé
+      descriptionPro: undefined, // ARCHIVE ONLY — neutralisé
+      descriptionKids: undefined, // ARCHIVE ONLY — neutralisé
       programme: sejour.programme ? sejour.programme.split('\n').filter(Boolean) : [],
       geography: sejour.location_region || sejour.location_city || '',
       accommodation: sejour.centre_name || '',
@@ -78,12 +80,12 @@ export default async function HomePage() {
       // P1 FIX: Sessions réelles pour calcul durée dans StayCard
       sessions: sessions
         .filter(s => s.start_date && s.end_date)
-        .map((s, idx) => ({
-          id: `${sejour.slug}-${idx}`,
+        .map((s) => ({
+          id: `${sejour.slug}__${s.start_date}__${s.end_date}`,
           stayId: sejour.slug,
           startDate: s.start_date,
           endDate: s.end_date,
-          seatsLeft: 30,
+          seatsLeft: -1, // gd_stay_sessions n'a pas seats_left — jamais bloquer
         })),
 
       // === CHAMPS PREMIUM (fallback null = le front utilise les champs legacy) ===

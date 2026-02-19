@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -33,6 +34,9 @@ import { BookingModal } from '@/components/booking-modal';
 import { WishlistModal } from '@/components/wishlist-modal';
 import { Button } from '@/components/ui/button';
 
+// Test Mode
+const IS_TEST_MODE = process.env.NEXT_PUBLIC_TEST_MODE === 'true';
+
 // Types
 type DepartureData = { city: string; extra_eur: number };
 type SessionData = { date_text: string; base_price_eur: number | null; promo_price_eur: number | null };
@@ -42,6 +46,7 @@ const PRIORITY_CITIES = ['paris', 'lyon', 'marseille', 'lille', 'bordeaux', 'ren
 
 export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], price_base?: number | null, price_unit?: string, pro_price_note?: string, sourceUrl?: string | null, geoLabel?: string | null, geoPrecision?: string | null, accommodationLabel?: string | null, contentKids?: any, rawSessions?: any[], images?: string[] } }) {
   const { mode, mounted, refreshWishlist } = useApp();
+  const router = useRouter();
   const [showBooking, setShowBooking] = useState(false);
   const [showWishlistModal, setShowWishlistModal] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
@@ -83,20 +88,16 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
 
 
-  // === TITRE H1: Premium marketing_title > CityCrunch Kids > Legacy title ===
-  const displayTitle = (stay as any)?.marketingTitle || (stay as any)?.titleKids || stay?.title;
+  // === TITRE H1: CityCrunch marketing_title UNIQUEMENT — plus aucun fallback legacy UFOVAL ===
+  const displayTitle = (stay as any)?.marketingTitle || 'Séjour';
 
-  // === SOUS-TITRE H2: Premium punchline > CityCrunch Kids (universel) > Legacy descriptionShort ===
-  const displaySubtitle = (stay as any)?.punchline
-    || (stay as any)?.descriptionKids || stay?.descriptionShort || '';
+  // === SOUS-TITRE H2: CityCrunch punchline UNIQUEMENT ===
+  const displaySubtitle = (stay as any)?.punchline || '';
 
-  // === BODY: Premium expert_pitch > punchline > CityCrunch Kids > Legacy descriptionShort ===
-  // === BODY: Premium expert_pitch > punchline > CityCrunch Kids > Legacy descriptionShort ===
+  // === BODY: CityCrunch expert_pitch > punchline (jamais de legacy) ===
   let displayDesc = (stay as any)?.expertPitch
-    || (stay as any)?.descriptionMarketing // Ajout fallback intermédiaire
     || (stay as any)?.punchline
-    || (stay as any)?.descriptionKids
-    || stay?.descriptionShort;
+    || null;
 
   // PROTECTION ANTI-DUPLICATION
   // Si le Body est identique au H2 (à cause des fallbacks), on force un autre contenu
@@ -143,7 +144,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
   const handleShare = async () => {
     const url = typeof window !== 'undefined' ? window.location.href : '';
-    const title = stay?.title ?? 'Séjour';
+    const title = (stay as any)?.marketingTitle || stay?.title || 'Séjour';
     const motivation = getWishlistMotivation(slug);
     const text = motivation
       ? `Ce séjour m'intéresse : ${title}\nPourquoi : ${motivation}`
@@ -617,7 +618,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
               ) : (
                 <div className="space-y-2 mb-4">
                   {sessions.map(session => {
-                    const isFull = (session?.seatsLeft ?? 0) === 0;
+                    const isFull = IS_TEST_MODE ? false : (session?.seatsLeft ?? 0) <= 0;
                     const isSelected = preSelectedSessionId === session?.id;
                     return (
                       <button
@@ -647,7 +648,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                               au {formatDateLong(session?.endDate ?? '')}
                             </div>
                             <div className={`text-xs mt-1 ${isFull ? 'text-red-500' : 'text-green-600'}`}>
-                              {isFull ? 'Complet' : `${session?.seatsLeft ?? 0} places`}
+                              {isFull ? 'Complet' : IS_TEST_MODE ? 'Test - illimité' : (session?.seatsLeft === 1 ? '1 place' : `${session?.seatsLeft ?? 0} places`)}
                             </div>
                           </div>
                         </div>
@@ -725,9 +726,9 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                     const params = new URLSearchParams();
                     if (preSelectedSessionId) params.set('session', preSelectedSessionId);
                     if (preSelectedCity) params.set('ville', preSelectedCity);
-                    window.location.href = `/sejour/${slug}/reserver?${params.toString()}`;
+                    router.push(`/sejour/${slug}/reserver?${params.toString()}`);
                   }}
-                  disabled={sessions.filter(s => (s?.seatsLeft ?? 0) > 0).length === 0}
+                  disabled={!preSelectedSessionId || !preSelectedCity || (!IS_TEST_MODE && sessions.filter(s => (s?.seatsLeft ?? 0) > 0).length === 0)}
                   className="w-full"
                   size="lg"
                 >
@@ -855,7 +856,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   const params = new URLSearchParams();
                   if (preSelectedSessionId) params.set('session', preSelectedSessionId);
                   if (preSelectedCity) params.set('ville', preSelectedCity);
-                  window.location.href = `/sejour/${slug}/reserver?${params.toString()}`;
+                  router.push(`/sejour/${slug}/reserver?${params.toString()}`);
                 }}
                 disabled={sessions.filter(s => (s?.seatsLeft ?? 0) > 0).length === 0}
                 className="w-full"

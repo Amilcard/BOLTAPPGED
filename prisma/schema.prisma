@@ -4,105 +4,397 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  role         Role     @default(VIEWER)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+model SmartFormSubmission {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  inclusionLevel       String?   @map("inclusion_level") @db.VarChar(50)
+  childAge             Int?      @map("child_age")
+  interests            String[]
+  urgence48h           Boolean?  @default(false) @map("urgence_48h")
+  handicap             Boolean?  @default(false)
+  qf                   Int?
+  qpv                  Boolean?  @default(false)
+  referentOrganization String?   @map("referent_organization") @db.VarChar(255)
+  contactEmail         String?   @map("contact_email") @db.VarChar(255)
+  contactPhone         String?   @map("contact_phone") @db.VarChar(50)
+  suggestedStays       Json?     @map("suggested_stays")
+  alertPriority        String?   @map("alert_priority") @db.VarChar(50)
+  submittedAt          DateTime? @default(now()) @map("submitted_at") @db.Timestamptz(6)
+  crmSyncedAt          DateTime? @map("crm_synced_at") @db.Timestamptz(6)
+  crmLeadId            String?   @map("crm_lead_id") @db.VarChar(100)
 
-  @@map("users")
+  @@index([inclusionLevel], map: "idx_smart_form_level")
+  @@index([submittedAt(sort: Desc)], map: "idx_smart_form_submitted")
+  @@map("smart_form_submissions")
 }
 
-model Stay {
-  id                 String        @id @default(cuid())
-  slug               String        @unique
-  title              String
-  descriptionShort   String        @map("description_short")
-  programme          Json
-  geography          String
-  accommodation      String
-  supervision        String
-  priceFrom          Int           @map("price_from")
-  durationDays       Int           @map("duration_days")
-  period             String
-  ageMin             Int           @map("age_min")
-  ageMax             Int           @map("age_max")
-  themes             Json
-  imageCover         String        @map("image_cover")
-  published          Boolean       @default(false)
-  createdAt          DateTime      @default(now()) @map("created_at")
-  updatedAt          DateTime      @updatedAt @map("updated_at")
-  departureCity      String?       @map("departure_city")
-  educationalOption  String?       @map("educational_option")
-  sourceUrl          String?       @map("source_url")
-  sourcePdfPath      String?       @map("source_pdf_path")
-  importedAt         DateTime?     @map("imported_at")
-  lastSyncAt         DateTime?     @map("last_sync_at")
-  sourceManual       Boolean       @default(false) @map("source_manual")
-  contentKids        Json?
-  accommodationFacts Json?         @map("accommodation_facts")
-  accommodationLabel String?       @map("accommodation_label")
-  accommodationType  String?       @map("accommodation_type")
-  factsSyncedAt      DateTime?     @map("facts_synced_at")
-  geoLabel           String?       @map("geo_label")
-  geoPrecision       String?       @map("geo_precision")
-  meetingPoint       String?       @map("meeting_point")
-  sourceFacts        Json?         @map("source_facts")
-  bookings           Booking[]
-  sessions           StaySession[]
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model activities {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title             String
+  category          String              @default("colonies")
+  tags              String[]            @default([])
+  age_min           Int
+  age_max           Int
+  location_name     String?
+  location_region   String?
+  period_type       String              @default("vacances")
+  vacation_periods  String[]            @default([])
+  short_description String?
+  description       String?
+  program_brief     Json                @default("[]")
+  program_detailed  Json                @default("[]")
+  accommodation     String?
+  supervision       String?
+  pro_price_note    String?
+  status            String              @default("draft")
+  source_url        String?
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime            @default(now()) @db.Timestamptz(6)
+  source            String?
+  import_run_id     String?
+  activity_sessions activity_sessions[]
 
-  @@index([slug])
-  @@index([published])
-  @@index([period])
-  @@index([sourceUrl, sourcePdfPath])
-  @@index([importedAt])
-  @@map("stays")
+  @@index([age_min, age_max], map: "idx_activities_age")
+  @@index([category], map: "idx_activities_category")
+  @@index([status], map: "idx_activities_status")
 }
 
-model StaySession {
-  id         String    @id @default(cuid())
-  stayId     String    @map("stay_id")
-  startDate  DateTime  @map("start_date")
-  endDate    DateTime  @map("end_date")
-  seatsTotal Int       @map("seats_total")
-  seatsLeft  Int       @map("seats_left")
-  createdAt  DateTime  @default(now()) @map("created_at")
-  bookings   Booking[]
-  stay       Stay      @relation(fields: [stayId], references: [id], onDelete: Cascade)
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model activity_sessions {
+  id                 String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  activity_id        String     @db.Uuid
+  start_date         DateTime   @db.Date
+  end_date           DateTime   @db.Date
+  capacity_total     Int?
+  capacity_remaining Int?
+  price_base         Decimal?   @db.Decimal(12, 2)
+  price_unit         String     @default("€")
+  status             String     @default("open")
+  created_at         DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime   @default(now()) @db.Timestamptz(6)
+  activities         activities @relation(fields: [activity_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([stayId, startDate, endDate])
-  @@map("stay_sessions")
-}
-
-model Booking {
-  id               String      @id @default(cuid())
-  stayId           String      @map("stay_id")
-  sessionId        String      @map("session_id")
-  organisation     String
-  socialWorkerName String      @map("social_worker_name")
-  email            String
-  phone            String
-  childFirstName   String      @map("child_first_name")
-  childLastName    String      @map("child_last_name")
-  childBirthDate   DateTime    @map("child_birth_date")
-  notes            String?
-  childNotes       String?     @map("child_notes")
-  status           String      @default("new")
-  createdAt        DateTime    @default(now()) @map("created_at")
-  session          StaySession @relation(fields: [sessionId], references: [id])
-  stay             Stay        @relation(fields: [stayId], references: [id])
-
-  @@map("bookings")
+  @@index([activity_id], map: "idx_sessions_activity")
+  @@index([start_date, end_date], map: "idx_sessions_dates")
 }
 
 enum Role {
   ADMIN
   EDITOR
   VIEWER
+}
+
+model User {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role     @default(VIEWER)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("users")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model gd_educ_options {
+  code      String  @id
+  label     String
+  extra_eur Int
+  is_active Boolean @default(true)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model gd_inscriptions {
+  id                       String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jeune_prenom             String
+  jeune_nom                String
+  jeune_date_naissance     DateTime              @db.Date
+  jeune_besoins            String?
+  referent_nom             String?
+  referent_email           String?
+  referent_tel             String?
+  sejour_slug              String?
+  session_date             DateTime?             @db.Date
+  city_departure           String?
+  options_educatives       String?
+  remarques                String?
+  price_total              Int?
+  status                   String?               @default("en_attente")
+  created_at               DateTime?             @default(now()) @db.Timestamptz(6)
+  payment_method           String?
+  payment_status           String?               @default("pending_payment")
+  payment_reference        String?               @unique
+  stripe_payment_intent_id String?
+  payment_validated_at     DateTime?             @db.Timestamptz(6)
+  gd_stays                 gd_stays?             @relation(fields: [sejour_slug], references: [slug], onDelete: NoAction, onUpdate: NoAction, map: "fk_inscriptions_stay")
+  payment_status_logs      payment_status_logs[]
+
+  @@index([payment_reference], map: "idx_inscriptions_payment_reference")
+  @@index([payment_status], map: "idx_inscriptions_payment_status")
+  @@index([stripe_payment_intent_id], map: "idx_inscriptions_stripe_intent")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model gd_processed_events {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  event_id     String    @unique
+  event_type   String
+  processed_at DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([event_id], map: "idx_processed_events_event_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model gd_session_prices {
+  stay_slug                  String
+  start_date                 DateTime @db.Date
+  end_date                   DateTime @db.Date
+  base_price_eur             Int
+  currency                   String   @default("EUR")
+  city_departure             String   @default("sans_transport")
+  transport_surcharge_ufoval Int      @default(0)
+  price_ged_total            Int?
+  transport_surcharge_ged    Int?     @default(dbgenerated("\nCASE\n    WHEN (transport_surcharge_ufoval = 0) THEN 0\n    ELSE (transport_surcharge_ufoval + 18)\nEND"))
+  is_full                    Boolean? @default(false)
+  gd_stays                   gd_stays @relation(fields: [stay_slug], references: [slug], onDelete: NoAction, onUpdate: NoAction, map: "fk_session_prices_stay")
+
+  @@id([stay_slug, start_date, end_date, city_departure])
+  @@index([stay_slug])
+  @@index([city_departure], map: "idx_gd_session_prices_city")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model gd_stay_sessions {
+  stay_slug       String
+  start_date      DateTime  @db.Date
+  end_date        DateTime  @db.Date
+  seats_left      Int?
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @default(now()) @db.Timestamptz(6)
+  city_departure  String?
+  price           Decimal?  @db.Decimal(10, 2)
+  age_min         Int?
+  age_max         Int?
+  import_batch_ts DateTime? @default(now()) @db.Timestamptz(6)
+  price_ged       Decimal?  @db.Decimal
+  is_full         Boolean?  @default(false)
+  gd_stays        gd_stays  @relation(fields: [stay_slug], references: [slug], onDelete: NoAction, onUpdate: NoAction, map: "fk_stay_sessions_stay")
+
+  @@id([stay_slug, start_date, end_date], map: "gd_stay_sessions_pk")
+  @@unique([stay_slug, start_date, end_date], map: "uniq_gd_stay_sessions_slug_dates")
+  @@index([stay_slug])
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model gd_stay_sessions_backup_6jours_ptits_puisotins {
+  stay_slug       String?
+  start_date      DateTime? @db.Date
+  end_date        DateTime? @db.Date
+  seats_left      Int?
+  created_at      DateTime? @db.Timestamptz(6)
+  updated_at      DateTime? @db.Timestamptz(6)
+  city_departure  String?
+  price           Decimal?  @db.Decimal(10, 2)
+  age_min         Int?
+  age_max         Int?
+  import_batch_ts DateTime? @db.Timestamptz(6)
+  price_ged       Decimal?  @db.Decimal
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model gd_stay_sessions_backup_8jours_20260217 {
+  stay_slug       String?
+  start_date      DateTime? @db.Date
+  end_date        DateTime? @db.Date
+  seats_left      Int?
+  created_at      DateTime? @db.Timestamptz(6)
+  updated_at      DateTime? @db.Timestamptz(6)
+  city_departure  String?
+  price           Decimal?  @db.Decimal(10, 2)
+  age_min         Int?
+  age_max         Int?
+  import_batch_ts DateTime? @db.Timestamptz(6)
+  price_ged       Decimal?  @db.Decimal
+
+  @@ignore
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model gd_stay_themes {
+  stay_slug String
+  theme     String
+  gd_stays  gd_stays @relation(fields: [stay_slug], references: [slug], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([stay_slug, theme])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model gd_stays {
+  slug                    String              @id @unique(map: "gd_stays_slug_unique")
+  title                   String?
+  source_url              String?
+  published               Boolean             @default(false)
+  created_at              DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime            @default(now()) @db.Timestamptz(6)
+  title_pro               String?
+  title_kids              String?
+  description_pro         String?
+  description_kids        String?
+  sessions_json           Json?
+  import_batch_ts         DateTime?           @default(now()) @db.Timestamptz(6)
+  season                  String?
+  location_region         String?
+  location_city           String?
+  duration_days           Int?
+  programme_json          Json?
+  inclusions_json         Json?
+  logistics_json          Json?
+  accroche                String?
+  programme               String?
+  pdf_url                 String?
+  centre_name             String?
+  centre_url              String?
+  tags                    Json?
+  ged_theme               String?
+  villes_depart           Json?
+  images                  Json?
+  age_min                 Int?                @default(6)
+  age_max                 Int?                @default(17)
+  marketing_title         String?
+  punchline               String?
+  expert_pitch            String?
+  emotion_tag             String?
+  carousel_group          String?
+  spot_label              String?
+  standing_label          String?
+  expertise_label         String?
+  intensity_label         String?
+  price_includes_features Json?
+  is_full                 Boolean?            @default(false)
+  gd_inscriptions         gd_inscriptions[]
+  gd_session_prices       gd_session_prices[]
+  gd_stay_sessions        gd_stay_sessions[]
+  gd_stay_themes          gd_stay_themes[]
+  gd_wishes               gd_wishes[]
+
+  @@index([published])
+  @@index([carousel_group], map: "idx_gd_stays_carousel_group")
+  @@index([is_full], map: "idx_gd_stays_is_full")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model gd_wishes {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  prenom         String
+  date_naissance DateTime  @db.Date
+  sejour_slug    String?
+  session_date   DateTime? @db.Date
+  city_departure String?
+  motivation     String?
+  status         String?   @default("nouveau")
+  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+  gd_stays       gd_stays? @relation(fields: [sejour_slug], references: [slug], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model import_logs {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type        String    @db.VarChar(50)
+  total_items Int       @default(0)
+  details     Json?
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([created_at(sort: Desc)], map: "idx_import_logs_created")
+  @@index([type], map: "idx_import_logs_type")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model notification_queue {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type          String    @db.VarChar(50)
+  priority      String    @db.VarChar(50)
+  recipient     String    @db.VarChar(255)
+  subject       String?
+  payload       Json?
+  status        String?   @default("pending") @db.VarChar(20)
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  sent_at       DateTime? @db.Timestamptz(6)
+  error_message String?
+
+  @@index([priority, created_at], map: "idx_notification_queue_priority")
+  @@index([status, created_at], map: "idx_notification_queue_status")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model payment_status_logs {
+  id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  inscription_id  String?          @db.Uuid
+  old_status      String?
+  new_status      String
+  changed_at      DateTime?        @default(now()) @db.Timestamptz(6)
+  note            String?
+  gd_inscriptions gd_inscriptions? @relation(fields: [inscription_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([inscription_id], map: "idx_payment_logs_inscription")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model sejours_images {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug                   String    @db.VarChar(255)
+  marketing_title        String    @db.VarChar(255)
+  emotion_tag            String    @db.VarChar(50)
+  carousel_group         String    @db.VarChar(50)
+  age_range              String    @db.VarChar(20)
+  source                 String    @db.VarChar(20)
+  source_id              String    @db.VarChar(100)
+  storage_path           String
+  public_url             String
+  thumbnail_url          String?
+  photographer_name      String    @db.VarChar(255)
+  photographer_url       String?
+  photographer_portfolio String?
+  alt_description        String?
+  keyword_used           String?   @db.VarChar(255)
+  width                  Int
+  height                 Int
+  color                  String?   @db.VarChar(10)
+  likes                  Int?      @default(0)
+  status                 String?   @default("active") @db.VarChar(20)
+  quality_score          Int?      @default(5)
+  manual_selection       Boolean?  @default(false)
+  imported_at            DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime? @default(now()) @db.Timestamptz(6)
+  last_used_at           DateTime? @db.Timestamptz(6)
+  usage_count            Int?      @default(0)
+
+  @@unique([source, source_id])
+  @@index([age_range], map: "idx_sejours_images_age_range")
+  @@index([carousel_group], map: "idx_sejours_images_carousel")
+  @@index([emotion_tag], map: "idx_sejours_images_emotion")
+  @@index([imported_at(sort: Desc)], map: "idx_sejours_images_imported")
+  @@index([quality_score(sort: Desc)], map: "idx_sejours_images_quality")
+  @@index([slug], map: "idx_sejours_images_slug")
+  @@index([source, source_id], map: "idx_sejours_images_source")
+  @@index([status], map: "idx_sejours_images_status")
 }

@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth-middleware';
+import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
+
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
 
 export async function GET(
   request: NextRequest,
@@ -18,12 +25,15 @@ export async function GET(
 
   try {
     const { slug } = await params;
-    const stay = await prisma.stay.findUnique({
-      where: { slug },
-      include: { sessions: { orderBy: { startDate: 'asc' } } },
-    });
+    const supabase = getSupabaseAdmin();
 
-    if (!stay) {
+    const { data: stay, error } = await supabase
+      .from('gd_stays')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    if (error || !stay) {
       return NextResponse.json(
         { error: { code: 'NOT_FOUND', message: 'Séjour non trouvé' } },
         { status: 404 }

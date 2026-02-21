@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Document Maître — Synchronisation GED APP / UFOVAL — 2026-02-18</title>
+<style>
+  :root {
+    --ged-blue: #1a3c5e;
+    --ged-green: #2ecc71;
+    --ged-orange: #e67e22;
+    --ged-red: #e74c3c;
+    --ged-gray: #f4f6f8;
+    --ged-border: #dde3ea;
+    --text: #2c3e50;
+    --text-light: #7f8c8d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; color: var(--text); background: #fff; }
+
+  /* HEADER */
+  .header {
+    background: var(--ged-blue);
+    color: white;
+    padding: 32px 40px;
+    border-bottom: 4px solid var(--ged-green);
+  }
+  .header h1 { font-size: 22px; font-weight: 700; letter-spacing: 0.3px; }
+  .header p { font-size: 13px; opacity: 0.75; margin-top: 6px; }
+  .status-bar {
+    display: flex; gap: 20px; margin-top: 18px; flex-wrap: wrap;
+  }
+  .status-pill {
+    padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .pill-ok { background: var(--ged-green); color: white; }
+  .pill-warn { background: var(--ged-orange); color: white; }
+  .pill-err { background: var(--ged-red); color: white; }
+  .pill-info { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); }
+
+  /* LAYOUT */
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  .section { margin-bottom: 40px; }
+  .section-title {
+    font-size: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--ged-blue); border-bottom: 2px solid var(--ged-border);
+    padding-bottom: 8px; margin-bottom: 18px;
+  }
+
+  /* ALERT BOXES */
+  .alert { padding: 14px 18px; border-radius: 6px; margin-bottom: 14px; font-size: 13px; line-height: 1.5; }
+  .alert-red { background: #fdf0ef; border-left: 4px solid var(--ged-red); }
+  .alert-orange { background: #fef9f0; border-left: 4px solid var(--ged-orange); }
+  .alert-green { background: #eafaf1; border-left: 4px solid var(--ged-green); }
+  .alert-blue { background: #eaf2fb; border-left: 4px solid #2980b9; }
+  .alert strong { display: block; margin-bottom: 4px; }
+
+  /* TABLES */
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th {
+    background: var(--ged-blue); color: white; padding: 9px 12px;
+    text-align: left; font-weight: 600; letter-spacing: 0.3px;
+  }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--ged-border); vertical-align: top; }
+  tr:hover td { background: var(--ged-gray); }
+  .mono { font-family: 'Consolas', monospace; font-size: 11px; }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 10px; font-weight: 700;
+  }
+  .badge-ok { background: #d5f5e3; color: #1e8449; }
+  .badge-err { background: #fadbd8; color: #922b21; }
+  .badge-warn { background: #fef9e7; color: #9a7d0a; border: 1px solid #f9e79f; }
+  .badge-new { background: #d6eaf8; color: #1a5276; }
+
+  /* CODE BLOCKS */
+  .code-block {
+    background: #1e2d3d; color: #e8eaf0; padding: 16px 20px;
+    border-radius: 6px; font-family: 'Consolas', monospace; font-size: 11px;
+    line-height: 1.7; overflow-x: auto; margin: 10px 0;
+  }
+  .code-block .comment { color: #6c9c6c; }
+  .code-block .keyword { color: #569cd6; }
+  .code-block .string { color: #ce9178; }
+  .code-block .fn { color: #dcdcaa; }
+
+  /* PHASES */
+  .phase-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .phase-card {
+    border: 1px solid var(--ged-border); border-radius: 8px; padding: 14px;
+    text-align: center;
+  }
+  .phase-card .phase-num {
+    font-size: 22px; font-weight: 800; color: var(--ged-blue); margin-bottom: 6px;
+  }
+  .phase-card .phase-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .phase-card .phase-status { font-size: 12px; margin-top: 8px; }
+  .phase-active { border-color: var(--ged-orange); background: #fef9f0; }
+  .phase-done { border-color: var(--ged-green); background: #eafaf1; }
+  .phase-next { border-color: var(--ged-border); opacity: 0.7; }
+
+  /* CHECKLIST */
+  .checklist { list-style: none; }
+  .checklist li { padding: 6px 0; font-size: 13px; display: flex; align-items: flex-start; gap: 8px; }
+  .checklist .icon { flex-shrink: 0; font-size: 14px; }
+
+  /* TWO COLUMNS */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  /* FOOTER */
+  .footer {
+    background: var(--ged-gray); border-top: 1px solid var(--ged-border);
+    padding: 20px 40px; font-size: 11px; color: var(--text-light);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📋 Document Maître — Synchronisation GED APP / UFOVAL</h1>
+  <p>Audit croisé complet · GED APP (Groupe &amp; Découverte) · app.groupeetdecouverte.fr · 2026-02-18</p>
+  <div class="status-bar">
+    <span class="status-pill pill-info">24 séjours · 213 sessions · 2914 prix · 20 villes</span>
+    <span class="status-pill pill-ok">Code prod : 0 erreur TS ✅</span>
+    <span class="status-pill pill-warn">Phase 2 SQL : EN COURS</span>
+    <span class="status-pill pill-err">VPS .env : BLOQUANT go-live</span>
+    <span class="status-pill pill-warn">n8n refonte : Phase 3 à venir</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- PHASES -->
+  <div class="section">
+    <div class="section-title">Pipeline de synchronisation — 4 phases séquentielles bloquantes</div>
+    <div class="phase-grid">
+      <div class="phase-card phase-done">
+        <div class="phase-num">1</div>
+        <div class="phase-label">Audit</div>
+        <div class="phase-status">✅ Terminé<br><small>Croisement UFOVAL vs BDD</small></div>
+      </div>
+      <div class="phase-card phase-active">
+        <div class="phase-num">2</div>
+        <div class="phase-label">SQL Fix</div>
+        <div class="phase-status">⏳ En cours<br><small>Nettoyage orphelins 8j</small></div>
+      </div>
+      <div class="phase-card phase-next">
+        <div class="phase-num">3</div>
+        <div class="phase-label">n8n Refonte</div>
+        <div class="phase-status">⏸ Bloqué<br><small>Après Phase 2 validée</small></div>
+      </div>
+      <div class="phase-card phase-next">
+        <div class="phase-num">4</div>
+        <div class="phase-label">Go-Live VPS</div>
+        <div class="phase-status">⏸ Bloqué<br><small>.env production</small></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROOT CAUSE -->
+  <div class="section">
+    <div class="section-title">Cause racine identifiée — DATA_CORRUPTION_IDENTIFIED</div>
+
+    <div class="alert alert-red">
+      <strong>🔴 Ghost sessions Dim→Dim (8j) — Erreur d'import scraper</strong>
+      Le scraper calcule <code>end_date = start_date + 7</code> (Dim→Dim = 8 jours inclusifs)
+      au lieu de <code>end_date = start_date + 6</code> (Dim→Sam = 7j, cycle UFOVAL).
+      <br><br>
+      <strong>Règle absolue confirmée :</strong> TOUS les séjours UFOVAL ont exactement 19 villes de départ.
+      Toute session avec 1 seule ville = ghost session à supprimer sans exception.
+      <br><br>
+      <strong>Stratégie :</strong> DELETE les ghost sessions (nb_villes &lt; 19) → les vraies sessions 7j avec 19 villes
+      sont déjà présentes en base → <em>aucun re-import de prix nécessaire.</em>
+    </div>
+
+    <div class="alert alert-orange">
+      <strong>⚠️ Impact circuit /api/inscriptions</strong>
+      La jointure <code>gd_stay_sessions JOIN gd_session_prices ON (slug, start_date, end_date)</code>
+      retournait PRICE_NOT_FOUND car les ghost sessions (end_date=start_date+7) masquaient les vraies sessions (end_date=start_date+6).
+      Après DELETE des ghosts, le JOIN retrouve les vraies sessions 7j → inscription rétablie.
+    </div>
+
+    <div class="alert alert-blue">
+      <strong>ℹ️ Exception confirmée : sperienza-in-corsica-1 → 18 villes (pas 19)</strong>
+      La Corse a structurellement 18 villes de départ sur toutes ses sessions valides (14j).
+      Ce n'est pas un import partiel — c'est une contrainte logistique (1 ville non desservie).
+      Vérifier via Étape 5C quelle ville est absente. Aucune correction à apporter si cohérent avec UFOVAL.
+      <br><br>
+      <strong>ℹ️ les-ptits-puisotins-1 : 5 villes seulement (à vérifier)</strong>
+      Ce séjour n'a que 5 villes de départ. Hypothèse : centre local à accès limité.
+      Vérifier via Étape 5D quelle ville est absente.
+    </div>
+  </div>
+
+  <!-- ANOMALIES TABLE -->
+  <div class="section">
+    <div class="section-title">Inventaire complet des anomalies détectées</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Séjour</th>
+          <th>Session</th>
+          <th>Anomalie</th>
+          <th>Impact famille</th>
+          <th>Fichier SQL</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>aqua-fun / aqua-gliss / aqua-mix<br>laventure-verticale / natation-et-sensation</td>
+          <td class="mono">07-05→07-12 (8j, 1v)<br>07-19→07-26 (8j, 1v)<br>08-02→08-09 (8j, 1v)</td>
+          <td>Ghost sessions (1 ville, 850€) → erreur import Dim→Dim<br>Les vraies sessions 7j / 19 villes existent déjà en base</td>
+          <td>PRICE_NOT_FOUND → inscription bloquée<br><em>Réparé par DELETE seul</em></td>
+          <td class="mono">P0_DELETE_GHOST_8J_FINAL.sql<br>Étape 2</td>
+          <td><span class="badge badge-warn">DELETE à exécuter</span></td>
+        </tr>
+        <tr>
+          <td>destination-bassin-darcachon-1</td>
+          <td class="mono">07-19→07-26 (8j, 1v)</td>
+          <td>Ghost session (1 ville) → même cause</td>
+          <td>PRICE_NOT_FOUND sur session 19/07<br><em>Réparé par DELETE seul</em></td>
+          <td class="mono">P0_DELETE_GHOST_8J_FINAL.sql<br>Étape 2</td>
+          <td><span class="badge badge-warn">DELETE à exécuter</span></td>
+        </tr>
+        <tr>
+          <td>dh-experience-11-13-ans<br>(GRAVITY BIKE PARK)</td>
+          <td class="mono">08-23→08-28 (6j)</td>
+          <td>Off-by-one 6j → doit être 7j (fin 29/08)<br>Dans stay_sessions ET session_prices</td>
+          <td>Durée erronée affichée aux familles</td>
+          <td class="mono">PHASE2_DATA_CLEANUP_SAFE.sql<br>Étape 2</td>
+          <td><span class="badge badge-warn">UPDATE à exécuter</span></td>
+        </tr>
+        <tr>
+          <td>dh-experience-11-13-ans</td>
+          <td class="mono">07-12→07-18 (7j)</td>
+          <td>Session absente de gd_stay_sessions ET gd_session_prices<br>is_full=true sur UFOVAL non importé</td>
+          <td>Session invisible pour les familles</td>
+          <td class="mono">PHASE2_DATA_CLEANUP_SAFE.sql<br>Étape 3</td>
+          <td><span class="badge badge-warn">INSERT à exécuter</span></td>
+        </tr>
+        <tr>
+          <td>dh-experience-11-13-ans</td>
+          <td class="mono">07-26→08-01 (7j)</td>
+          <td>Session absente de gd_stay_sessions ET gd_session_prices</td>
+          <td>Trou dans la séquence hebdomadaire</td>
+          <td class="mono">PHASE2_DATA_CLEANUP_SAFE.sql<br>Étape 3</td>
+          <td><span class="badge badge-warn">INSERT à exécuter</span></td>
+        </tr>
+        <tr>
+          <td>les-ptits-puisotins-1<br>(MY LITTLE FOREST)</td>
+          <td class="mono">08-23→08-28 (6j)</td>
+          <td>Off-by-one 6j → doit être 7j (fin 29/08)</td>
+          <td>Durée erronée affichée</td>
+          <td class="mono">PHASE2_DATA_CLEANUP_SAFE.sql<br>Étape 2</td>
+          <td><span class="badge badge-warn">UPDATE à exécuter</span></td>
+        </tr>
+        <tr>
+          <td>les-ptits-puisotins-1</td>
+          <td>Toutes sessions</td>
+          <td>5 villes au lieu de 19 — import partiel OU centre local ?</td>
+          <td>Familles hors zone sans offre visible</td>
+          <td>—</td>
+          <td><span class="badge badge-err">À vérifier UFOVAL</span></td>
+        </tr>
+        <tr>
+          <td>breizh-equit-kids-8-11-ans<br>destination-soleil<br>surf-sur-le-bassin</td>
+          <td class="mono">07-05→07-12 (8j, 1v)<br>07-19→07-26 (8j, 1v)<br>02/08 (8j, 1v selon séjour)</td>
+          <td>Ghost sessions — même pattern que les autres séjours<br>Les vraies sessions 14j/19 villes existent déjà</td>
+          <td>PRICE_NOT_FOUND → inscription bloquée<br><em>Réparé par DELETE seul</em></td>
+          <td class="mono">P0_DELETE_GHOST_8J_FINAL.sql<br>Étape 2</td>
+          <td><span class="badge badge-warn">DELETE à exécuter</span></td>
+        </tr>
+        <tr>
+          <td>sperienza-in-corsica-1<br>(Corse)</td>
+          <td>Ghosts : 07-05, 07-19, 08-02<br>Valides : 07-04, 07-18, 08-03, 08-17</td>
+          <td>Ghost sessions 8j (1 ville) + sessions valides 14j (18 villes)<br><strong>Exception : 18 villes = norme pour ce séjour</strong></td>
+          <td>DELETE ghosts uniquement<br>Sessions 14j/18 villes conservées</td>
+          <td class="mono">P0_DELETE_GHOST_8J_FINAL.sql<br>Étape 2 (triplet ciblé)</td>
+          <td><span class="badge badge-warn">DELETE ghosts — sessions valides conservées</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- RÈGLES GELÉES -->
+  <div class="section">
+    <div class="section-title">Règles techniques gelées — Ne jamais déroger</div>
+    <div class="two-col">
+      <div>
+        <table>
+          <thead><tr><th colspan="2">Règle BDD</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Formule durée</strong></td>
+              <td class="mono">(end_date - start_date) + 1 = jours inclusifs</td>
+            </tr>
+            <tr>
+              <td><strong>Clé composite sessions</strong></td>
+              <td class="mono">PK: (stay_slug, start_date)</td>
+            </tr>
+            <tr>
+              <td><strong>Clé composite prix</strong></td>
+              <td class="mono">PK: (stay_slug, start_date, end_date, city_departure)</td>
+            </tr>
+            <tr>
+              <td><strong>Colonnes inexistantes</strong></td>
+              <td class="mono">ss.id ❌ · s.universe ❌ · sp.date_text ❌</td>
+            </tr>
+            <tr>
+              <td><strong>Durées référentiel UFOVAL</strong></td>
+              <td class="mono">7j · 12j · 14j · 19j · 21j (jamais 6j ou 8j)</td>
+            </tr>
+            <tr>
+              <td><strong>Fin de semaine UFOVAL</strong></td>
+              <td class="mono">Samedi (pas Dimanche) — 7j = Dim→Sam</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <table>
+          <thead><tr><th colspan="2">Règle prix (gd_session_prices)</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Formule</strong></td>
+              <td class="mono">price_ged_total = base_price_eur + markup_duration + transport_surcharge_ged</td>
+            </tr>
+            <tr>
+              <td><strong>Markup 7j (5-8j)</strong></td>
+              <td>+180€</td>
+            </tr>
+            <tr>
+              <td><strong>Markup 14j (11-15j)</strong></td>
+              <td>+240€</td>
+            </tr>
+            <tr>
+              <td><strong>Markup 21j (18-22j)</strong></td>
+              <td>+410€</td>
+            </tr>
+            <tr>
+              <td><strong>Villes de départ</strong></td>
+              <td>20 villes (ou 5 si centre local)</td>
+            </tr>
+            <tr>
+              <td><strong>INSERT correct</strong></td>
+              <td>Copier TOUTES les villes (pas LIMIT 1)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLAN D'EXÉCUTION SQL -->
+  <div class="section">
+    <div class="section-title">Plan d'exécution SQL — Phase 2 (ordre obligatoire)</div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Action</th>
+          <th>Fichier</th>
+          <th>Étape</th>
+          <th>Résultat attendu</th>
+          <th>Prérequis</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1</strong></td>
+          <td>PV-1 : Diagnostiquer orphelins 8j (lecture seule)</td>
+          <td class="mono">PHASE2_DATA_CLEANUP_SAFE.sql</td>
+          <td>PV-1</td>
+          <td>16 sessions avec nb_villes=1</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><strong>2</strong></td>
+          <td>Backup orphelins</td>
+          <td class="mono">PHASE2_DATA_CLEANUP_SAFE.sql</td>
+          <td>1A</td>
+          <td>16 lignes sauvegardées</td>
+          <td>PV-1 validé</td>
+        </tr>
+        <tr>
+          <td><strong>3</strong></td>
+          <td>DELETE orphelins 8j gd_session_prices</td>
+          <td class="mono">PHASE2_DATA_CLEANUP_SAFE.sql</td>
+          <td>1B</td>
+          <td>16 lignes supprimées</td>
+          <td>Backup créé</td>
+        </tr>
+        <tr>
+          <td><strong>4</strong></td>
+          <td>DELETE orphelins 8j gd_stay_sessions (si présents)</td>
+          <td class="mono">PHASE2_DATA_CLEANUP_SAFE.sql</td>
+          <td>1C</td>
+          <td>0-16 lignes selon contenu</td>
+          <td>Étape 3 validée</td>
+        </tr>
+        <tr>
+          <td><strong>5</strong></td>
+          <td>UPDATE gd_stay_sessions : 6j → 7j (23/08 des 2 séjours)</td>
+          <td class="mono">PHASE2_DATA_CLEANUP_SAFE.sql</td>
+          <td>2A</td>
+          <td>2 sessions, end_date=29/08</td>
+          <td>UFOVAL confirmé fin=Samedi</td>
+        </tr>
+        <tr>
+          <td><strong>6</strong></td>
+          <td>UPDATE gd_session_prices : end_date=28/08→29/08</td>
+          <td class="mono">PHASE2_DATA_CLEANUP_SAFE.sql</td>
+          <td>2B</td>
+          <td>23 lignes (18+5 villes)</td>
+          <td>Immédiatement après étape 5</td>
+        </tr>
+        <tr>
+          <td><strong>7</strong></td>
+          <td>INSERT GRAVITY BIKE session 12/07 (is_full=true)</td>
+          <td class="mono">PHASE2_DATA_CLEANUP_SAFE.sql</td>
+          <td>3B+3C</td>
+          <td>1 session + 18 prix</td>
+          <td>Source 07-05 = 18 villes</td>
+        </tr>
+        <tr>
+          <td><strong>8</strong></td>
+          <td>INSERT GRAVITY BIKE session 26/07 (disponible)</td>
+          <td class="mono">PHASE2_DATA_CLEANUP_SAFE.sql</td>
+          <td>3D+3E</td>
+          <td>1 session + 18 prix</td>
+          <td>Source 07-05 = 18 villes</td>
+        </tr>
+        <tr>
+          <td><strong>9</strong></td>
+          <td>Checkpoint final</td>
+          <td class="mono">PHASE2_DATA_CLEANUP_SAFE.sql</td>
+          <td>Final</td>
+          <td>0 orphelins restants ✅</td>
+          <td>Toutes étapes faites</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- N8N SPECS -->
+  <div class="section">
+    <div class="section-title">Phase 3 — Refonte workflow n8n (bloquée jusqu'à Phase 2 validée)</div>
+
+    <div class="alert alert-blue">
+      <strong>📐 Spécifications immuables du scraper UFOVAL</strong>
+      Ces règles sont issues de l'audit croisé complet et ne doivent jamais être contournées.
+    </div>
+
+    <div class="two-col">
+      <div>
+        <table>
+          <thead><tr><th colspan="2">Règles de scraping</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Boucle durées</strong></td>
+              <td>Simuler le clic dropdown pour <em>chaque</em> durée disponible : 6j/7j/12j/14j/19j/21j. Ne pas se limiter à la durée par défaut.</td>
+            </tr>
+            <tr>
+              <td><strong>Calcul end_date</strong></td>
+              <td class="mono">end_date = start_date + nb_jours - 1<br>(Dim→Sam pour 7j, jamais Dim→Dim)</td>
+            </tr>
+            <tr>
+              <td><strong>Forçage Samedi</strong></td>
+              <td>Pour séjours 7j : si end_date est un Dimanche → soustraire 1 jour</td>
+            </tr>
+            <tr>
+              <td><strong>Clé de mapping</strong></td>
+              <td class="mono">stay_slug + start_date (ISO: YYYY-MM-DD)</td>
+            </tr>
+            <tr>
+              <td><strong>Colonnes interdites</strong></td>
+              <td class="mono">date_text ❌ · ss.id ❌</td>
+            </tr>
+            <tr>
+              <td><strong>Upsert on conflict</strong></td>
+              <td class="mono">ON CONFLICT (stay_slug, start_date) DO UPDATE</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <table>
+          <thead><tr><th colspan="2">Champs à synchroniser (n8n → Supabase)</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>gd_stay_sessions</strong></td>
+              <td class="mono">stay_slug, start_date, end_date, is_full, seats_left</td>
+            </tr>
+            <tr>
+              <td><strong>gd_session_prices</strong></td>
+              <td class="mono">stay_slug, start_date, end_date, base_price_eur, currency, city_departure, transport_surcharge_ufoval, price_ged_total, transport_surcharge_ged, is_full</td>
+            </tr>
+            <tr>
+              <td><strong>is_full sync</strong></td>
+              <td>Lire le statut Complet/Dispo pour chaque durée et chaque date sur UFOVAL</td>
+            </tr>
+            <tr>
+              <td><strong>Idempotence</strong></td>
+              <td>ON CONFLICT DO NOTHING pour éviter doublons en cas de re-run</td>
+            </tr>
+            <tr>
+              <td><strong>Validation</strong></td>
+              <td>Après chaque import, vérifier COUNT(city_departure) ≥ 18 par session</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="comment">// Pseudocode n8n — Boucle itérative durées UFOVAL</span>
+<span class="keyword">for</span> each stay_slug <span class="keyword">in</span> stays_list:
+  <span class="keyword">for</span> each duration <span class="keyword">in</span> [<span class="string">'6j'</span>, <span class="string">'7j'</span>, <span class="string">'12j'</span>, <span class="string">'14j'</span>, <span class="string">'19j'</span>, <span class="string">'21j'</span>]:
+    <span class="comment">// 1. Simuler le clic dropdown UFOVAL pour cette durée</span>
+    await <span class="fn">click</span>(dropdown_selector, duration)
+    await <span class="fn">waitForReload</span>()
+
+    <span class="comment">// 2. Scraper les sessions disponibles</span>
+    sessions = await <span class="fn">scrapeSessionsForDuration</span>(stay_slug, duration)
+
+    <span class="keyword">for</span> each session <span class="keyword">in</span> sessions:
+      <span class="comment">// 3. Calculer end_date correct (JAMAIS Dim→Dim)</span>
+      nb_jours = <span class="fn">durationToInt</span>(duration)  <span class="comment">// ex: '7j' → 7</span>
+      end_date = start_date + nb_jours - <span class="string">1</span>
+
+      <span class="comment">// 4. Forcer Samedi pour séjours 7j</span>
+      <span class="keyword">if</span> nb_jours == <span class="string">7</span> and <span class="fn">dayOfWeek</span>(end_date) == <span class="string">'Dimanche'</span>:
+        end_date = end_date - <span class="string">1</span>  <span class="comment">// Reculer au Samedi</span>
+
+      <span class="comment">// 5. Upsert stay_sessions</span>
+      await <span class="fn">supabase.upsert</span>('gd_stay_sessions', {
+        stay_slug, start_date, end_date,
+        is_full: session.is_full,
+        seats_left: session.seats_left
+      }, { onConflict: [<span class="string">'stay_slug'</span>, <span class="string">'start_date'</span>] })
+
+      <span class="comment">// 6. Upsert session_prices pour TOUTES les villes</span>
+      <span class="keyword">for</span> each city <span class="keyword">in</span> session.cities:  <span class="comment">// 18-20 villes</span>
+        await <span class="fn">supabase.upsert</span>('gd_session_prices', {
+          stay_slug, start_date, end_date,
+          city_departure: city.name,
+          base_price_eur: city.base_price,
+          currency: <span class="string">'EUR'</span>,
+          transport_surcharge_ufoval: city.transport,
+          price_ged_total: city.base_price + markup + city.transport_ged,
+          is_full: session.is_full
+        }, { onConflict: [<span class="string">'stay_slug'</span>, <span class="string">'start_date'</span>, <span class="string">'end_date'</span>, <span class="string">'city_departure'</span>] })
+    </div>
+  </div>
+
+  <!-- GO-LIVE VPS -->
+  <div class="section">
+    <div class="section-title">Phase 4 — Go-Live VPS (bloquant depuis 16/02)</div>
+
+    <div class="alert alert-red">
+      <strong>🔴 Bloquant depuis le 16 février — À configurer avant tout déploiement production</strong>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Variable .env</th><th>Source</th><th>Statut</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">STRIPE_SECRET_KEY</td><td>Dashboard Stripe → API Keys</td><td><span class="badge badge-err">Manquant</span></td></tr>
+        <tr><td class="mono">STRIPE_WEBHOOK_SECRET</td><td>Dashboard Stripe → Webhooks</td><td><span class="badge badge-err">Manquant</span></td></tr>
+        <tr><td class="mono">SUPABASE_SERVICE_ROLE_KEY</td><td>Supabase → Settings → API</td><td><span class="badge badge-err">Manquant</span></td></tr>
+        <tr><td class="mono">EMAIL_SERVICE_API_KEY</td><td>Prestataire email (Resend/Sendgrid)</td><td><span class="badge badge-err">Manquant</span></td></tr>
+        <tr><td class="mono">NEXT_PUBLIC_SUPABASE_URL</td><td>Supabase → Settings → API</td><td><span class="badge badge-err">Manquant</span></td></tr>
+        <tr><td class="mono">NEXT_PUBLIC_SUPABASE_ANON_KEY</td><td>Supabase → Settings → API</td><td><span class="badge badge-err">Manquant</span></td></tr>
+        <tr><td class="mono">NEXT_DISABLE_STATIC_PAGE_GENERATION=true</td><td>Déjà configuré</td><td><span class="badge badge-ok">OK</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ÉTAT CORRECTIONS -->
+  <div class="section">
+    <div class="section-title">État des fichiers SQL produits — Inventaire</div>
+    <table>
+      <thead>
+        <tr><th>Fichier</th><th>Objet</th><th>Statut</th><th>Action requise</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">sql/PHASE2_DATA_CLEANUP_SAFE.sql</td>
+          <td>DELETE orphelins 8j + UPDATE 6j→7j + INSERT GRAVITY BIKE (2 sessions)</td>
+          <td><span class="badge badge-new">NOUVEAU — v2 sécurisée</span></td>
+          <td>Exécuter dans ordre étapes 1→9</td>
+        </tr>
+        <tr>
+          <td class="mono">sql/PHASE2_CORRECTIONS_OFF_BY_ONE_ALL.sql</td>
+          <td>Diagnostic complet 24 séjours (6j + 8j)</td>
+          <td><span class="badge badge-warn">Partiellement exécuté</span></td>
+          <td>Exécuter Étape 3A pour RIVIERA, CORSICA, WEST COAST, BRETAGNE</td>
+        </tr>
+        <tr>
+          <td class="mono">sql/P0_DELETE_GHOST_8J_FINAL.sql</td>
+          <td>DELETE sessions fantômes (nb_villes &lt; 19) dans gd_session_prices et gd_stay_sessions<br>Diagnostics GRAVITY BIKE PARK + les-ptits-puisotins-1</td>
+          <td><span class="badge badge-new">NOUVEAU — Version finale</span></td>
+          <td>Exécuter Étape 0 → 1 → 2 → 3 → 4</td>
+        </tr>
+        <tr>
+          <td class="mono">sql/P0_PRICE_RESTORATION_19_SESSIONS.sql</td>
+          <td>Réinjection grilles tarifaires</td>
+          <td><span class="badge badge-err">OBSOLÈTE — Plus nécessaire</span></td>
+          <td>Les vraies sessions 7j/19 villes existent déjà → DELETE seul suffit</td>
+        </tr>
+        <tr>
+          <td class="mono">sql/P0_GRAVITY_BIKE_PARK_FIX.sql</td>
+          <td>Fix GRAVITY BIKE PARK (v1)</td>
+          <td><span class="badge badge-err">OBSOLÈTE — Remplacé</span></td>
+          <td>Intégré dans P0_DELETE_GHOST_8J_FINAL.sql Étape 5</td>
+        </tr>
+        <tr>
+          <td class="mono">sql/009_payment_system.sql</td>
+          <td>Système paiement Stripe + RLS + triggers</td>
+          <td><span class="badge badge-ok">Production ready</span></td>
+          <td>Aucune — déjà appliqué</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- QUESTION OUVERTE -->
+  <div class="section">
+    <div class="section-title">Question ouverte — À résoudre avant Phase 3</div>
+
+    <div class="alert alert-orange">
+      <strong>⚠️ les-ptits-puisotins-1 : 5 villes seulement — Centre local ou import partiel ?</strong>
+      Exécuter <code>SELECT DISTINCT city_departure FROM gd_session_prices WHERE stay_slug = 'les-ptits-puisotins-1'</code>
+      et comparer avec la page UFOVAL du séjour. Si les 5 villes sont cohérentes avec la zone géographique du centre → OK, marquer comme "centre local". Sinon → relancer le scraper n8n pour ce séjour.
+    </div>
+
+    <div class="alert alert-orange">
+      <strong>⚠️ Sessions 8j RIVIERA / CORSICA / WEST COAST / BRETAGNE — Durée UFOVAL réelle ou off-by-one ?</strong>
+      Ces séjours ont des sessions 8j avec 19 villes. Avant tout DELETE, vérifier sur UFOVAL si la durée annoncée est bien 8j ou 7j. Utiliser PHASE2_CORRECTIONS_OFF_BY_ONE_ALL.sql Étape 3A.
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <span>Document Maître GED APP — Synchronisation UFOVAL · 2026-02-18</span>
+  <span>app.groupeetdecouverte.fr · Supabase PostgreSQL · Next.js 14 · n8n</span>
+</div>
+
+</body>
+</html>

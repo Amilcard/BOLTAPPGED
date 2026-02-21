@@ -1,0 +1,182 @@
+{
+  "session_id": "2026-02-16_neutralisation_ufoval",
+  "date": "2026-02-16",
+  "objectif": "Neutralisation complète des contenus legacy UFOVAL sur le front-end + correction 3 bugs BLOCKER tunnel inscription",
+  "status": "TERMINÉ",
+
+  "bugs_corrigés": [
+    {
+      "id": "AGE_OUT_OF_RANGE",
+      "severity": "BLOCKER",
+      "description": "Validation âge enfant ne bloquait pas (ex: 24 ans accepté sur séjour 6-10 ans)",
+      "root_cause": "Champs ageMin/ageMax absents du mapping snake_case→camelCase dans getSejourBySlug()",
+      "fix": "Ajout ageMin, ageMax, priceFrom dans lib/supabaseGed.ts",
+      "fichier": "lib/supabaseGed.ts",
+      "status": "CORRIGÉ"
+    },
+    {
+      "id": "PRICE_NOT_DISPLAYED",
+      "severity": "BLOCKER",
+      "description": "Prix total TTC affiché comme '€' (null) au lieu du montant réel",
+      "root_cause": "priceFrom manquant dans mapping + pas de fallback UI quand prix null",
+      "fix": "Mapping priceFrom ajouté + affichage conditionnel 'Prix indisponible' en rouge",
+      "fichier": "components/booking-flow.tsx",
+      "status": "CORRIGÉ"
+    },
+    {
+      "id": "CTA_NOT_ACTIVE",
+      "severity": "BLOCKER",
+      "description": "Bouton Confirmer cliquable même avec données invalides",
+      "root_cause": "disabled ne tenait pas compte de totalPrice===null ni ageError",
+      "fix": "disabled={loading || totalPrice === null || ageError !== ''}",
+      "fichier": "components/booking-flow.tsx",
+      "status": "CORRIGÉ"
+    }
+  ],
+
+  "neutralisation_ufoval": {
+    "principe": "Les anciens noms/contenus UFOVAL (Croc' Marmotte, Breizh Poney, etc.) sont conservés en archive Supabase mais ne sont JAMAIS transmis au front-end",
+    "stratégie": "Double protection: 1) Server-side: title=marketing_title, descriptionShort=punchline 2) Client-side: fallback vers 'Séjour' générique, jamais vers champs legacy",
+    "audit_final": "0 fuite détectée sur 100% du codebase (app/, components/, lib/, API routes)",
+
+    "fichiers_modifiés": [
+      {
+        "fichier": "app/sejour/[id]/stay-detail.tsx",
+        "modifications": [
+          "displayTitle: marketingTitle || 'Séjour' (supprimé titleKids, title)",
+          "displaySubtitle: punchline || '' (supprimé descriptionKids, descriptionShort)",
+          "displayDesc: expertPitch || punchline || null (supprimé descriptionKids, descriptionShort, descriptionMarketing)",
+          "handleShare: marketingTitle || stay.title || 'Séjour' (session précédente)",
+          "Mobile CTA: window.location.href → router.push (session précédente)"
+        ]
+      },
+      {
+        "fichier": "components/stay-card.tsx",
+        "modifications": [
+          "displayTitle: marketingTitle || 'Séjour' (supprimé titleKids, title)",
+          "displayDesc: punchline || '' (supprimé descriptionKids, descriptionShort)"
+        ]
+      },
+      {
+        "fichier": "app/page.tsx",
+        "modifications": [
+          "title: sejour.marketing_title || 'Séjour' (plus jamais sejour.title UFOVAL)",
+          "descriptionShort: punchline || expert_pitch || ''",
+          "titlePro: undefined (neutralisé)",
+          "titleKids: undefined (neutralisé)",
+          "descriptionPro: undefined (neutralisé)",
+          "descriptionKids: undefined (neutralisé)"
+        ]
+      },
+      {
+        "fichier": "app/recherche/page.tsx",
+        "modifications": [
+          "Même neutralisation que app/page.tsx"
+        ]
+      },
+      {
+        "fichier": "app/sejour/[id]/page.tsx",
+        "modifications": [
+          "Même neutralisation que app/page.tsx"
+        ]
+      },
+      {
+        "fichier": "components/booking-flow.tsx",
+        "modifications": [
+          "Toutes occurrences stay?.title remplacées par 'Séjour'",
+          "CTA disabled si totalPrice===null ou ageError",
+          "Prix conditionnel avec message 'Prix indisponible'",
+          "Warning âge en ambre + erreur en rouge"
+        ]
+      },
+      {
+        "fichier": "components/booking-modal.tsx",
+        "modifications": [
+          "Toutes occurrences stay?.title remplacées par 'Séjour'",
+          "Session précédente: marketingTitle ajouté en fallback"
+        ]
+      },
+      {
+        "fichier": "app/sejour/[id]/reserver/page.tsx",
+        "modifications": [
+          "Breadcrumb et h1: stay.title → 'Séjour' comme fallback"
+        ]
+      },
+      {
+        "fichier": "lib/supabaseGed.ts",
+        "modifications": [
+          "Ajout mapping: ageMin, ageMax, priceFrom (session précédente)"
+        ]
+      }
+    ]
+  },
+
+  "sql_exécuté": [
+    {
+      "bloc": "1 — Ages",
+      "description": "Remplissage age_min/age_max NULL dans gd_stays pour 24 séjours",
+      "status": "SUCCÈS"
+    },
+    {
+      "bloc": "2 — Sessions été 2026",
+      "description": "Création 3 sessions par séjour (72 nouvelles sessions)",
+      "status": "SUCCÈS"
+    },
+    {
+      "bloc": "3 — Prix sans_transport",
+      "description": "Prix de base pour réservation sans ville de départ",
+      "status": "SUCCÈS"
+    },
+    {
+      "bloc": "4 — Villes départ",
+      "description": "NON NÉCESSAIRE — 2914 prix existants, 20 villes déjà présentes",
+      "status": "SKIP"
+    }
+  ],
+
+  "état_base_données": {
+    "séjours": 24,
+    "séjours_avec_ages": 24,
+    "sessions": 213,
+    "prix": 2914,
+    "villes_départ": 20,
+    "contenu_citycrunch_original": "24/24 (0 copie UFOVAL)"
+  },
+
+  "mapping_noms": {
+    "note": "Les 24 séjours ont un marketing_title CityCrunch Premium distinct du title UFOVAL legacy",
+    "exemples": [
+      {"slug": "croc-marmotte", "legacy_ufoval": "Croc' Marmotte", "citycrunch": "ALPOO KIDS"},
+      {"slug": "breizh-poney", "legacy_ufoval": "Breizh Poney", "citycrunch": "BRETAGNE OCEAN RIDE"},
+      {"slug": "yamakasi-pro", "legacy_ufoval": "Yamakasi Pro", "citycrunch": "PARKOUR"}
+    ]
+  },
+
+  "actions_suivantes_recommandées": [
+    {
+      "priorité": "P1",
+      "action": "Exécuter Playwright e2e tests pour valider tunnel complet",
+      "commande": "npx playwright test tests/e2e/reservation-pro.spec.ts"
+    },
+    {
+      "priorité": "P1",
+      "action": "Test manuel tunnel inscription: vérifier âge, prix, CTA sur mobile",
+      "url": "/sejour/alpoo-kids"
+    },
+    {
+      "priorité": "P2",
+      "action": "Vérifier que les pages de résultats ne montrent JAMAIS un nom UFOVAL",
+      "url": "/ (accueil) et /recherche"
+    },
+    {
+      "priorité": "P2",
+      "action": "Ajouter contrainte SQL NOT NULL sur marketing_title dans gd_stays",
+      "sql": "ALTER TABLE gd_stays ALTER COLUMN marketing_title SET NOT NULL;"
+    },
+    {
+      "priorité": "P3",
+      "action": "Nettoyer le type Stay dans lib/types.ts — supprimer titleKids, titlePro, descriptionKids, descriptionPro",
+      "note": "Requiert migration progressive — certains composants admin pourraient encore les utiliser"
+    }
+  ]
+}

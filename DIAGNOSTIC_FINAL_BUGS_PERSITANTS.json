@@ -1,0 +1,117 @@
+{
+  "context": "Tunnel inscription étape 5/5 - Bugs persistent malgré corrections",
+  "screenshot_analyse": {
+    "sejour": "GAMING HOUSE 1850",
+    "session": "Invalid Date - Invalid Date",
+    "ville": "Annecy (Inclus)",
+    "enfant": "Ines (24 ans)",
+    "structure": "CSV (JOHN DOE)",
+    "total_estime": "€ (symbole rouge = null)"
+  },
+
+  "bug_1_prix_absent_ROOT_CAUSE": {
+    "symptome": "Total estimé affiche juste €",
+    "valeur_affichee": "totalPrice = null",
+    "cause_identifiee": "Table gd_session_prices VIDE ou pas de données pour ce séjour",
+
+    "verification_requise": {
+      "action": "SELECT * FROM gd_session_prices WHERE stay_slug = 'gaming-house-1850' AND city_departure = 'sans_transport'",
+      "si_vide": "Aucune donnée prix → totalPrice reste null",
+      "si_rempli": "Vérifier format date_text vs matching L93 booking-flow.tsx"
+    },
+
+    "code_matching": {
+      "fichier": "components/booking-flow.tsx",
+      "ligne": 93,
+      "logique": "const dateStr = `${day}/${month}`; // Format: 24/07\nconst found = enrichmentSessions.find((s: any) => s.date_text?.includes(dateStr));",
+      "probleme_potentiel": "Si date_text = '24/07 - 31/07' et dateStr = '24/07' → match OK\nMais si date_text = '2024-07-24' → match KO"
+    },
+
+    "fallback_actuel": {
+      "ligne": 97,
+      "code": "sessionBasePrice = enrichmentSessions[0]?.promo_price_eur || enrichmentSessions[0]?.base_price_eur || null;",
+      "effet": "Si enrichmentSessions.length > 0, prend le 1er prix même si pas match exact"
+    },
+
+    "fix_temporaire_dev": {
+      "description": "Hardcoder prix pour tests UI",
+      "ligne": 103,
+      "code_suggere": "const totalPrice = sessionBasePrice !== null ? sessionBasePrice + extraVille : (stay.priceFrom || 850);"
+    }
+  },
+
+  "bug_2_age_24_ans": {
+    "symptome": "Enfant 24 ans accepté alors que validation âge implémentée",
+    "donnees_screenshot": "Ines (24 ans)",
+    "age_requis_sejour": "Probablement 6-17 ans",
+
+    "analyse_code": {
+      "validation_presente": "✅ useEffect L128-143 vérifie age vs stay.ageMin/ageMax",
+      "blocage_bouton": "✅ isStep2Valid L158 inclut && ageError === ''",
+      "affichage_erreur": "✅ L463-466 affiche message rouge si ageError"
+    },
+
+    "hypotheses_pourquoi_bypass": {
+      "1_donnees_stay_manquantes": {
+        "test": "console.log(stay.ageMin, stay.ageMax) dans useEffect",
+        "si_undefined": "Validation skip car !stay.ageMin (L129)",
+        "solution": "Vérifier que stay.ageMin/ageMax sont bien passés à BookingFlow"
+      },
+      "2_date_saisie_invalide": {
+        "test": "Vérifier format step2.childBirthDate",
+        "si_vide_ou_invalid": "calculateAge retourne null → validation skip",
+        "solution": "Forcer validation format date"
+      },
+      "3_utilisateur_contourne": {
+        "methode": "Saisit âge valide → clique Continuer → revient Step 3 → modifie date",
+        "probleme": "Validation ne re-check pas si user revient en arrière",
+        "solution": "Re-valider à chaque setStep(4)"
+      }
+    },
+
+    "verification_immediate": {
+      "ajouter_console_log": "useEffect L128: console.log('AGE CHECK:', { age, ageMin: stay.ageMin, ageMax: stay.ageMax, ageError })",
+      "verifier_props": "page.tsx L76-81: stay doit inclure ageMin/ageMax"
+    }
+  },
+
+  "bug_3_session_invalid_date": {
+    "symptome": "Session: Invalid Date - Invalid Date",
+    "cause": "selectedSession.startDate ou endDate sont null/undefined",
+    "origine": "Données DB gd_stay_sessions incomplètes",
+
+    "verification": {
+      "query": "SELECT * FROM gd_stay_sessions WHERE stay_slug = 'gaming-house-1850'",
+      "check": "Vérifier que start_date et end_date ne sont pas NULL"
+    }
+  },
+
+  "actions_prioritaires": {
+    "1_verifier_base_donnees": {
+      "tables": ["gd_session_prices", "gd_stay_sessions", "gd_stays"],
+      "colonnes": {
+        "gd_stays": "ageMin, ageMax (doivent être renseignés)",
+        "gd_stay_sessions": "start_date, end_date (ne doivent pas être NULL)",
+        "gd_session_prices": "base_price_eur, city_departure='sans_transport'"
+      }
+    },
+
+    "2_ajouter_debug_console": {
+      "fichier": "components/booking-flow.tsx",
+      "ligne_87": "console.log('SESSION PRICE:', { sessionBasePrice, enrichmentSessions, selectedSession });",
+      "ligne_103": "console.log('TOTAL PRICE:', { totalPrice, extraVille, sessionBasePrice });",
+      "ligne_133": "console.log('AGE VALIDATION:', { age, ageMin: stay.ageMin, ageMax: stay.ageMax, ageError });"
+    },
+
+    "3_fix_fallback_prix": {
+      "temporaire": "Utiliser stay.priceFrom si sessionBasePrice null",
+      "definitif": "Peupler gd_session_prices avec données réelles"
+    },
+
+    "4_bloquer_step_4_si_age_invalide": {
+      "ajouter_validation_handleSubmit": "L162: if (ageError) { setError(ageError); return; }"
+    }
+  },
+
+  "conclusion": "Les corrections CODE sont OK, mais les DONNÉES en base sont manquantes/invalides"
+}

@@ -5,7 +5,7 @@ import { HomeContent } from '@/app/home-content';
 import type { Stay } from '@/lib/types';
 import { getStayAgeData, getStayDurationDays, getStayPeriod } from '@/lib/age-utils';
 
-export const revalidate = 3600; // ISR: rebuild at most every 1 hour
+export const revalidate = 60; // ISR: refresh every 60s (n8n image updates)
 
 export default async function HomePage() {
   // Force revalidation timestamp: 2026-02-06 13:10 (Verification Round 4)

@@ -149,7 +149,7 @@ export const getCitiesDeparture = async (slug: string): Promise<string[]> => {
     .eq('stay_slug', slug)
 
   if (error) throw error
-  return [...new Set(data.map((d: any) => d.city_departure))].sort()
+  return [...new Set<string>(data.map((d: any) => d.city_departure))].sort()
 }
 
 // API SESSIONS AVEC ÂGES

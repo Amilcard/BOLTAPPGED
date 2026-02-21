@@ -1,8 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
+import type { Database } from '@/types/database.types'
 
 // Lazy singleton — createClient is deferred until first use to prevent
 // top-level runtime errors if env vars are missing during Next.js build analysis.
-let _supabaseGed: ReturnType<typeof createClient> | null = null
+let _supabaseGed: ReturnType<typeof createClient<Database>> | null = null
 
 function getClient() {
   if (!_supabaseGed) {
@@ -12,13 +13,13 @@ function getClient() {
     const key =
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcmZ2bmRnenV0Ynh3ZmR3YXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyNzI4MDksImV4cCI6MjA4NDg0ODgwOX0.GDBh-u9DEfy-w2btzNTZGm6T2npFlbdX3XK-h-rsUQw'
-    _supabaseGed = createClient(url, key)
+    _supabaseGed = createClient<Database>(url, key)
   }
   return _supabaseGed
 }
 
 // Proxy object: existing callers use `supabaseGed.from(...)` unchanged.
-export const supabaseGed = new Proxy({} as ReturnType<typeof createClient>, {
+export const supabaseGed = new Proxy({} as ReturnType<typeof createClient<Database>>, {
   get(_target, prop) {
     return (getClient() as any)[prop]
   },
@@ -35,25 +36,34 @@ export interface SessionPriceFilters {
   city?: string | null
 }
 
+// Wish alignée sur gd_wishes (schéma DB réel)
 export interface Wish {
-  stay_slug: string
-  child_first_name?: string
-  child_last_name?: string
-  child_birth_date?: string
-  email?: string
+  sejour_slug: string
+  prenom: string
+  date_naissance: string
+  session_date?: string | null
+  city_departure?: string | null
+  motivation?: string | null
+  status?: string | null
 }
 
+// Inscription alignée sur gd_inscriptions (schéma DB réel)
 export interface Inscription {
-  stay_slug: string
-  session_id?: string
-  organisation: string
-  social_worker_name: string
-  email: string
-  phone: string
-  child_first_name: string
-  child_last_name: string
-  child_birth_date: string
-  notes?: string
+  sejour_slug: string
+  jeune_prenom: string
+  jeune_nom: string
+  jeune_date_naissance: string
+  jeune_besoins?: string | null
+  referent_nom?: string | null
+  referent_email?: string | null
+  referent_tel?: string | null
+  session_date?: string | null
+  city_departure?: string | null
+  options_educatives?: string | null
+  remarques?: string | null
+  price_total?: number | null
+  status?: string | null
+  payment_method?: string | null
 }
 
 // API SÉJOURS
@@ -119,10 +129,10 @@ export const getSejourBySlug = async (slug: string) => {
     expertiseLabel: data.expertise_label,
     intensityLabel: data.intensity_label,
     priceIncludesFeatures: data.price_includes_features,
-    // FIX CRITIQUE: ces champs manquaient → validation âge et fallback prix KO
+    // FIX CRITIQUE: ces champs manquaient → validation âge KO
     ageMin: data.age_min,
     ageMax: data.age_max,
-    priceFrom: data.price_from,
+    // price_from n'existe pas dans gd_stays — prix via gd_session_prices
   }
 }
 

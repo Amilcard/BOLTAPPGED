@@ -33,9 +33,9 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
   ]);
 
   // Sprint 1: Calcul unifié âges + durée via helpers centralisés
-  const sessionAgeData = staySessions.map(s => ({ age_min: s.age_min, age_max: s.age_max }));
+  const sessionAgeData = staySessions.map(s => ({ age_min: s.age_min ?? 0, age_max: s.age_max ?? 0 }));
   const { ageMin, ageMax, ageRangesDisplay } = getStayAgeData(sessionAgeData);
-  const sessionDateData = staySessions.map(s => ({ start_date: s.start_date, end_date: s.end_date }));
+  const sessionDateData = staySessions.map(s => ({ start_date: s.start_date ?? '', end_date: s.end_date ?? '' }));
   const durationDays = getStayDurationDays(sessionDateData, 7);
 
   // Dédupliquer sessions par dates (éviter doublons ville)
@@ -51,7 +51,7 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
   // Parse price_includes_features (jsonb → string[])
   const priceIncludesRaw = stay.price_includes_features;
   const priceIncludesFeatures: string[] | null = Array.isArray(priceIncludesRaw)
-    ? priceIncludesRaw
+    ? (priceIncludesRaw as unknown[]).filter((x): x is string => typeof x === 'string')
     : null;
 
   // Mapper vers le format attendu par StayDetail
@@ -75,8 +75,8 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
     ageMax,
     ageRangesDisplay, // NEW: Detailed age ranges for display
     themes: themesMap[stay.slug] || [], // Multi-thèmes depuis gd_stay_themes
-    imageCover: stay.images?.[0] || '',
-    images: stay.images || [],
+    imageCover: (Array.isArray(stay.images) ? (stay.images as string[])[0] : '') || '',
+    images: Array.isArray(stay.images) ? (stay.images as string[]) : [],
     published: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -84,7 +84,7 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
     educationalOption: null,
     geoLabel: stay.location_city || null,
     geoPrecision: stay.location_region || null,
-    accommodationLabel: stay.centre_name || null,
+    accommodationLabel: stay.centre_name || undefined,
     // Nouveau format: villes avec extra_eur + sessions formatées pour le prix
     contentKids: {
       departureCities, // {city, extra_eur}[]

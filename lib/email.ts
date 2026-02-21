@@ -1,6 +1,11 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.EMAIL_SERVICE_API_KEY);
+// Lazy singleton — prevents top-level crash when EMAIL_SERVICE_API_KEY is absent at build time.
+let _resend: Resend | null = null;
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.EMAIL_SERVICE_API_KEY);
+  return _resend;
+}
 
 // Domaine groupeetdecouverte.fr vérifié sur Resend
 const FROM_EMAIL = 'Groupe & Découverte <noreply@groupeetdecouverte.fr>';
@@ -30,7 +35,7 @@ export async function sendInscriptionConfirmation(data: InscriptionEmailData) {
 
   try {
     console.log('[EMAIL] Envoi confirmation vers:', data.referentEmail, 'depuis:', FROM_EMAIL);
-    const result = await resend.emails.send({
+    const result = await getResend().emails.send({
       from: FROM_EMAIL,
       to: data.referentEmail,
       subject: `Confirmation d'inscription - ${data.jeunePrenom} ${data.jeuneNom}`,
@@ -75,7 +80,7 @@ export async function sendAdminNewInscriptionNotification(data: InscriptionEmail
   }
 
   try {
-    const result = await resend.emails.send({
+    const result = await getResend().emails.send({
       from: FROM_EMAIL,
       to: ADMIN_EMAIL,
       subject: `Nouvelle inscription - ${data.jeunePrenom} ${data.jeuneNom}`,
@@ -126,7 +131,7 @@ export async function sendStatusChangeEmail(
   if (!statusInfo) return null;
 
   try {
-    const result = await resend.emails.send({
+    const result = await getResend().emails.send({
       from: FROM_EMAIL,
       to: referentEmail,
       subject: `Inscription ${statusInfo.label.toLowerCase()} - ${jeunePrenom} ${jeuneNom}`,

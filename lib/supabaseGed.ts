@@ -58,7 +58,7 @@ export interface Inscription {
 }
 
 // API SÉJOURS
-export const getSejours = async (filters: StayFilters = {}) => {
+export const getSejours = async (filters: StayFilters = {}): Promise<any[]> => {
   let query = supabaseGed
     .from('gd_stays')
     .select('*, marketing_title, punchline, expert_pitch, programme, title_kids, title_pro, description_kids, description_pro, emotion_tag, carousel_group, spot_label, standing_label, expertise_label, intensity_label, price_includes_features')
@@ -93,7 +93,7 @@ export const getSejours = async (filters: StayFilters = {}) => {
   })) || []
 }
 
-export const getSejourBySlug = async (slug: string) => {
+export const getSejourBySlug = async (slug: string): Promise<any> => {
   const { data, error } = await supabaseGed
     .from('gd_stays')
     .select('*, marketing_title, punchline, expert_pitch, programme, title_kids, title_pro, description_kids, description_pro, emotion_tag, carousel_group, spot_label, standing_label, expertise_label, intensity_label, price_includes_features')
@@ -128,7 +128,7 @@ export const getSejourBySlug = async (slug: string) => {
 }
 
 // API PRIX
-export const getSessionPrices = async (slug: string, city: string | null = null) => {
+export const getSessionPrices = async (slug: string, city: string | null = null): Promise<any[]> => {
   let query = supabaseGed
     .from('gd_session_prices')
     .select('*')
@@ -142,7 +142,7 @@ export const getSessionPrices = async (slug: string, city: string | null = null)
   return data
 }
 
-export const getCitiesDeparture = async (slug: string) => {
+export const getCitiesDeparture = async (slug: string): Promise<string[]> => {
   const { data, error } = await supabaseGed
     .from('gd_session_prices')
     .select('city_departure')
@@ -153,7 +153,7 @@ export const getCitiesDeparture = async (slug: string) => {
 }
 
 // API SESSIONS AVEC ÂGES
-export const getStaySessions = async (slug: string) => {
+export const getStaySessions = async (slug: string): Promise<any[]> => {
   const { data, error } = await supabaseGed
     .from('gd_stay_sessions')
     .select('*')
@@ -233,7 +233,7 @@ export const getSessionPricesFormatted = async (slug: string) => {
 }
 
 // API SOUHAITS & INSCRIPTIONS
-export const createWish = async (wish: Wish) => {
+export const createWish = async (wish: Wish): Promise<any> => {
   const { data, error } = await supabaseGed
     .from('gd_wishes')
     .insert([wish])
@@ -243,7 +243,7 @@ export const createWish = async (wish: Wish) => {
   return data?.[0]
 }
 
-export const createInscription = async (inscription: Inscription) => {
+export const createInscription = async (inscription: Inscription): Promise<any> => {
   const { data, error } = await supabaseGed
     .from('gd_inscriptions')
     .insert([inscription])

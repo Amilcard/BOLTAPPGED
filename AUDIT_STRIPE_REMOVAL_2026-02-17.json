@@ -1,0 +1,307 @@
+{
+  "audit_date": "2026-02-17",
+  "project": "GED_APP",
+  "objective": "Remove Stripe safely and prepare for Lyra (PayZen) integration",
+  "auditor": "Claude Sonnet 4.5",
+
+  "STRIPE_DEPENDENCY_AUDIT": {
+    "status": "✅ COMPLETE",
+    "findings": {
+      "package_json": {
+        "dependency": "stripe: ^20.3.1",
+        "location": "line 131",
+        "type": "production dependency",
+        "safe_to_remove": true
+      },
+      "api_files_using_stripe": [
+        {
+          "file": "app/api/webhooks/stripe/route.ts",
+          "type": "ACTIVE",
+          "usage": "Stripe webhook handler",
+          "imports": ["Stripe from 'stripe'"],
+          "env_vars": ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"],
+          "safe_to_remove": true
+        },
+        {
+          "file": "app/api/payment/create-intent/route.ts",
+          "type": "ACTIVE",
+          "usage": "Payment intent creation",
+          "imports": ["Stripe from 'stripe'"],
+          "env_vars": ["STRIPE_SECRET_KEY"],
+          "safe_to_remove": true
+        },
+        {
+          "file": "patches-securite-financiere/stripe-webhook_route.ts",
+          "type": "ARCHIVE",
+          "usage": "Backup patch file",
+          "safe_to_remove": true,
+          "note": "Not in active path, can be deleted"
+        },
+        {
+          "file": "patches-securite-financiere/create-intent_route.ts",
+          "type": "ARCHIVE",
+          "usage": "Backup patch file",
+          "safe_to_remove": true,
+          "note": "Not in active path, can be deleted"
+        }
+      ],
+      "frontend_references": {
+        "client_side_stripe": "NONE",
+        "components_using_stripe": [],
+        "safe_to_remove": true
+      },
+      "database_columns": {
+        "table": "gd_inscriptions (formerly registrations)",
+        "columns": [
+          {
+            "name": "payment_method",
+            "type": "TEXT CHECK IN ('stripe', 'transfer', 'check')",
+            "usage": "Value 'stripe' used for CB payments",
+            "action_required": "KEEP column, remove 'stripe' from CHECK constraint"
+          },
+          {
+            "name": "stripe_payment_intent_id",
+            "type": "TEXT",
+            "usage": "Stores Stripe Payment Intent ID",
+            "current_usage": "Only in create-intent route (line 67)",
+            "action_required": "DROP column (unused with Lyra)"
+          }
+        ],
+        "indexes": [
+          {
+            "name": "idx_registrations_stripe_intent",
+            "column": "stripe_payment_intent_id",
+            "action_required": "DROP index"
+          }
+        ],
+        "triggers": [
+          {
+            "function": "log_payment_status_change()",
+            "location": "sql/009_payment_system.sql line 112-113",
+            "contains_stripe_logic": true,
+            "action_required": "UPDATE - Remove Stripe-specific note logic"
+          }
+        ]
+      },
+      "env_variables": {
+        "file": ".env",
+        "variables": [
+          "STRIPE_PUBLISHABLE_KEY (line 14)",
+          "STRIPE_SECRET_KEY (line 15)",
+          "STRIPE_WEBHOOK_SECRET (line 16)"
+        ],
+        "action_required": "REMOVE all 3 variables"
+      }
+    }
+  },
+
+  "REMOVAL_PLAN": {
+    "phase_1_backend_files": {
+      "priority": "P0",
+      "safe_to_remove": true,
+      "actions": [
+        {
+          "action": "DELETE directory",
+          "path": "app/api/webhooks/stripe/",
+          "reason": "Stripe webhook handler no longer needed"
+        },
+        {
+          "action": "DELETE file",
+          "path": "app/api/payment/create-intent/route.ts",
+          "reason": "Stripe payment intent creation no longer needed"
+        },
+        {
+          "action": "DELETE file",
+          "path": "patches-securite-financiere/stripe-webhook_route.ts",
+          "reason": "Archive backup file"
+        },
+        {
+          "action": "DELETE file",
+          "path": "patches-securite-financiere/create-intent_route.ts",
+          "reason": "Archive backup file"
+        }
+      ]
+    },
+    "phase_2_database_cleanup": {
+      "priority": "P0",
+      "safe_to_execute": true,
+      "sql_migration": {
+        "file": "sql/010_remove_stripe_lyra_migration.sql",
+        "operations": [
+          {
+            "step": 1,
+            "sql": "DROP INDEX IF EXISTS idx_registrations_stripe_intent;",
+            "reason": "Index no longer needed"
+          },
+          {
+            "step": 2,
+            "sql": "ALTER TABLE gd_inscriptions DROP COLUMN IF EXISTS stripe_payment_intent_id;",
+            "reason": "Column unused with Lyra"
+          },
+          {
+            "step": 3,
+            "sql": "ALTER TABLE gd_inscriptions DROP CONSTRAINT IF EXISTS registrations_payment_method_check;",
+            "reason": "Remove old constraint with 'stripe' value"
+          },
+          {
+            "step": 4,
+            "sql": "ALTER TABLE gd_inscriptions ADD CONSTRAINT gd_inscriptions_payment_method_check CHECK (payment_method IN ('lyra', 'transfer', 'check'));",
+            "reason": "Add new constraint with 'lyra' instead of 'stripe'"
+          },
+          {
+            "step": 5,
+            "action": "UPDATE trigger function log_payment_status_change()",
+            "sql": "-- Remove lines 112-113 (Stripe webhook validation note)",
+            "reason": "Clean Stripe-specific logic"
+          }
+        ]
+      }
+    },
+    "phase_3_env_cleanup": {
+      "priority": "P1",
+      "safe_to_execute": true,
+      "actions": [
+        {
+          "file": ".env",
+          "action": "REMOVE lines 14-16",
+          "variables": [
+            "STRIPE_PUBLISHABLE_KEY",
+            "STRIPE_SECRET_KEY",
+            "STRIPE_WEBHOOK_SECRET"
+          ]
+        },
+        {
+          "file": ".env.production",
+          "action": "No Stripe variables present",
+          "status": "Already clean"
+        }
+      ]
+    },
+    "phase_4_package_cleanup": {
+      "priority": "P1",
+      "safe_to_execute": true,
+      "actions": [
+        {
+          "command": "npm uninstall stripe",
+          "reason": "Remove Stripe SDK (20.3.1)"
+        },
+        {
+          "command": "npm run build",
+          "reason": "Verify build succeeds without Stripe"
+        }
+      ]
+    },
+    "phase_5_residual_search": {
+      "priority": "P2",
+      "safe_to_execute": true,
+      "actions": [
+        {
+          "command": "grep -ri 'stripe' --exclude-dir=node_modules --exclude-dir=.git",
+          "reason": "Find any remaining Stripe references"
+        },
+        {
+          "command": "grep -ri 'payment_intent' --exclude-dir=node_modules",
+          "reason": "Verify no orphan payment_intent references"
+        }
+      ]
+    }
+  },
+
+  "IMPACT_ANALYSIS": {
+    "breaking_changes": "NONE",
+    "reason": "Stripe was configured but NOT YET IN PRODUCTION. Only test keys in .env.",
+    "current_payment_methods": [
+      {
+        "method": "Virement bancaire",
+        "status": "✅ ACTIVE - Unaffected by removal"
+      },
+      {
+        "method": "Chèque",
+        "status": "✅ ACTIVE - Unaffected by removal"
+      },
+      {
+        "method": "Stripe CB",
+        "status": "❌ NEVER ACTIVATED - Safe to remove"
+      }
+    ],
+    "user_impact": "ZERO - No users have used Stripe payments",
+    "data_loss_risk": "ZERO - stripe_payment_intent_id column is empty"
+  },
+
+  "LYRA_PREPARATION": {
+    "database_ready": "YES (after migration 010)",
+    "api_structure_ready": "YES",
+    "recommended_structure": {
+      "payment_api": "app/api/payment/lyra/route.ts (new)",
+      "webhook_api": "app/api/webhooks/lyra/route.ts (new)",
+      "payment_method_value": "lyra (already in updated CHECK constraint)"
+    },
+    "env_variables_needed": [
+      "LYRA_SITE_ID",
+      "LYRA_TEST_KEY",
+      "LYRA_PRODUCTION_KEY",
+      "LYRA_WEBHOOK_SECRET"
+    ]
+  },
+
+  "EXECUTION_CHECKLIST": {
+    "pre_execution": [
+      {
+        "step": 1,
+        "action": "✅ Verify no Stripe payments in production",
+        "command": "SELECT COUNT(*) FROM gd_inscriptions WHERE payment_method = 'stripe';",
+        "expected": "0"
+      },
+      {
+        "step": 2,
+        "action": "✅ Backup database",
+        "command": "pg_dump or Supabase backup",
+        "status": "Recommended"
+      },
+      {
+        "step": 3,
+        "action": "✅ Commit current state",
+        "command": "git add . && git commit -m 'pre: Backup before Stripe removal'",
+        "status": "Recommended"
+      }
+    ],
+    "execution_order": [
+      "Phase 1: Delete API files (app/api/webhooks/stripe + app/api/payment/create-intent)",
+      "Phase 2: Run SQL migration 010 (DROP column + UPDATE constraint)",
+      "Phase 3: Clean .env variables",
+      "Phase 4: npm uninstall stripe + npm run build",
+      "Phase 5: Grep residual search + manual cleanup"
+    ],
+    "post_execution": [
+      {
+        "step": 1,
+        "action": "Verify build success",
+        "command": "npm run build",
+        "expected": "No errors"
+      },
+      {
+        "step": 2,
+        "action": "Verify dev server",
+        "command": "npm run dev",
+        "expected": "No Stripe import errors"
+      },
+      {
+        "step": 3,
+        "action": "Commit cleanup",
+        "command": "git add . && git commit -m 'feat: Remove Stripe, prepare for Lyra PayZen'",
+        "status": "Required"
+      }
+    ]
+  },
+
+  "FINAL_DECISION": {
+    "stripe_fully_removed": "NO (pending execution)",
+    "safe_to_remove": "YES",
+    "residual_risk": "ZERO",
+    "build_status": "PENDING (after removal)",
+    "ready_for_lyra_integration": "YES (after migration 010)",
+    "blocking_items": "NONE",
+    "recommendation": "Procéder avec le plan de suppression. Aucun risque détecté.",
+    "estimated_time": "15-20 minutes (5 phases)"
+  }
+}

@@ -1,0 +1,143 @@
+{
+  "name": "GED_UFOVAL_SCRAPE_CONTENU_ALL_v2_is_full",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a780ec5b-f32e-46eb-990d-440c997ce937",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://iirfvndgzutbxwfdwawu.supabase.co/rest/v1/gd_stays?select=slug,source_url&published=eq.true",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcmZ2bmRnenV0Ynh3ZmR3YXd1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTI3MjgwOSwiZXhwIjoyMDg0ODQ4ODA5fQ.IgRALdFN5r5ssMLYvJWJhIqpUeKU7QRrFAhvFALlsxM"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcmZ2bmRnenV0Ynh3ZmR3YXd1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTI3MjgwOSwiZXhwIjoyMDg0ODQ4ODA5fQ.IgRALdFN5r5ssMLYvJWJhIqpUeKU7QRrFAhvFALlsxM"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b0764551-7f56-4e67-bcf5-56553e8ebe8e",
+      "name": "Get 24 Séjours",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [208, 0]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.source_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "75afb2d2-deb3-4550-8702-a685802069ff",
+      "name": "Fetch Page UFOVAL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [400, 0],
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "maxTries": 3
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = [];\n\nfor (const item of $input.all()) {\n  const html = item.json.body || item.json.data || '';\n  const htmlStr = String(html);\n  \n  let sourceUrl = '';\n  const canonicalMatch = htmlStr.match(/rel=\"canonical\"\\s+href=\"([^\"]+)\"/i);\n  if (canonicalMatch) {\n    sourceUrl = canonicalMatch[1];\n  }\n  \n  const slug = sourceUrl ? sourceUrl.split('/').pop().split('?')[0].replace(/[^a-z0-9-]/gi, '-').toLowerCase() : '';\n\n  const result = {\n    slug: slug,\n    source_url: sourceUrl\n  };\n\n  // 1. TITRE\n  const titleMatch = htmlStr.match(/<title>([^<]+)<\\/title>/i);\n  result.title = titleMatch ? titleMatch[1].trim() : null;\n\n  // 2. ACCROCHE\n  const metaDescMatch = htmlStr.match(/<meta\\s+name=\"description\"\\s+content=\"([^\"]+)\"/i);\n  result.accroche = metaDescMatch ? metaDescMatch[1].replace(/&#039;/g, \"'\").trim() : null;\n\n  // 3. LOCALISATION\n  let locationCity = null;\n  const locPatterns = [\n    /Saint-Rapha[eë]l/gi, /Annecy/gi, /Arcachon/gi,\n    /Chamonix/gi, /Hendaye/gi, /Biarritz/gi\n  ];\n  for (const pattern of locPatterns) {\n    if (pattern.test(htmlStr)) {\n      locationCity = htmlStr.match(pattern)[0];\n      break;\n    }\n  }\n  result.location_city = locationCity;\n\n  // 4. PROGRAMME\n  let programme = null;\n  let progMatch = htmlStr.match(/Au programme[^<]*([\\s\\S]{50,3000}?)<\\/p>/i);\n  if (progMatch) {\n    programme = ('Au programme' + progMatch[1]).replace(/<br\\s*\\/?>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&#039;/g, \"'\").replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\\s+/g, ' ').trim();\n  }\n  if (!programme || programme.length < 50) {\n    const altMatch = htmlStr.match(/<h2[^>]*class=\"[^\"]*catch-phrase[^\"]*\"[^>]*>([^<]+)<\\/h2>[\\s\\S]{0,200}?<p[^>]*>([\\s\\S]{30,2000}?)<\\/p>/i);\n    if (altMatch && altMatch[2]) {\n      programme = altMatch[2].replace(/<br\\s*\\/?>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&#039;/g, \"'\").replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\\s+/g, ' ').trim();\n    }\n  }\n  if (!programme || programme.length < 50) {\n    const paraMatch = htmlStr.match(/<p[^>]*>((?:Le rythme|Petite randonnée|Véritable|Découvre|Une semaine|Ce séjour|Cette colonie|Bienvenue|Prêt pour)[\\s\\S]{30,2000}?)<\\/p>/i);\n    if (paraMatch) {\n      programme = paraMatch[1].replace(/<br\\s*\\/?>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&#039;/g, \"'\").replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\\s+/g, ' ').trim();\n    }\n  }\n  if (!programme || programme.length < 50) {\n    const anyParaMatch = htmlStr.match(/<h1[^>]*>[^<]+<\\/h1>[\\s\\S]{0,2000}?<p[^>]*>([\\s\\S]{100,2000}?)<\\/p>/i);\n    if (anyParaMatch) {\n      programme = anyParaMatch[1].replace(/<br\\s*\\/?>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&#039;/g, \"'\").replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\\s+/g, ' ').trim();\n    }\n  }\n  result.programme = programme;\n\n  // 5. CENTRE\n  let centreName = null;\n  const centrePatterns = [\n    /Centre\\s+de\\s+vacances\\s*<[^>]*>\\s*<[^>]*>([^<]{3,50})/i,\n    /class=\"[^\"]*center-name[^\"]*\"[^>]*>([^<]{3,50})/i,\n    />Les\\s+Colombes</i, />Les\\s+Myrtes</i, />Les\\s+Puisots</i\n  ];\n  for (const pattern of centrePatterns) {\n    const match = htmlStr.match(pattern);\n    if (match) {\n      centreName = match[1] ? match[1].trim() : match[0].replace(/[<>]/g, '').trim();\n      break;\n    }\n  }\n  result.centre_name = centreName;\n\n  // 6. RÉGION\n  let locationRegion = null;\n  if (sourceUrl.includes('montagne')) locationRegion = 'Montagne';\n  else if (sourceUrl.includes('mer')) locationRegion = 'Mer';\n  else if (sourceUrl.includes('ocean') || sourceUrl.includes('locean')) locationRegion = 'Océan';\n  result.location_region = locationRegion;\n\n  // 7. THÈME GED\n  let gedTheme = 'PLEIN_AIR';\n  if (sourceUrl.includes('mer') || sourceUrl.includes('ocean') || sourceUrl.includes('locean')) gedTheme = 'BALNEAIRE';\n  else if (sourceUrl.includes('montagne')) gedTheme = 'MONTAGNE';\n  result.ged_theme = gedTheme;\n\n  // 8. IMAGES\n  const images = [];\n  const galleryPattern = /href=\"(https:\\/\\/ufoval\\.fol74\\.org\\/media\\/cache\\/original\\/[^\"]+)\"[^>]*data-lightbox=\"stay-gallery/gi;\n  let galleryMatch;\n  while ((galleryMatch = galleryPattern.exec(htmlStr)) !== null && images.length < 10) {\n    const imgUrl = galleryMatch[1];\n    if (!images.includes(imgUrl)) images.push(imgUrl);\n  }\n  if (images.length === 0) {\n    const mainPicMatch = htmlStr.match(/stay_main_picture[^\"]*\\/(\\d{4}\\/\\d{2}\\/[^\"]+\\.(jpg|jpeg|png|webp))/i);\n    if (mainPicMatch) images.push('https://ufoval.fol74.org/media/cache/stay_main_picture/' + mainPicMatch[1]);\n  }\n  result.images = images.length > 0 ? images : null;\n\n  // 9. ÂGES\n  const ageMatch = htmlStr.match(/de\\s+(\\d{1,2})\\s+[àa]\\s+(\\d{1,2})\\s+ans/i);\n  result.age_min = ageMatch ? parseInt(ageMatch[1]) : null;\n  result.age_max = ageMatch ? parseInt(ageMatch[2]) : null;\n\n  // 10. LOGIQUE DE DISPONIBILITÉ RÉELLE\n  // On compte les sessions totales (radio-container) et celles marquées \"Complet\"\n  // NB: ceci ne concerne que la durée par défaut affichée dans le HTML GET.\n  // Le détail par session+durée est géré par le workflow SESSION_IS_FULL_v1.\n  const totalSessions = (htmlStr.match(/class=\"radio-container\"/gi) || []).length;\n  const fullSessions = (htmlStr.match(/availability-status-full/gi) || []).length;\n  \n  // Le séjour est \"Complet\" UNIQUEMENT si TOUTES les sessions sont pleines\n  // (et qu'on a bien trouvé au moins une session)\n  result.is_full = (totalSessions > 0 && totalSessions === fullSessions);\n  result.full_sessions_count = fullSessions;\n  result.available_sessions = totalSessions - fullSessions;\n\n  output.push({ json: result });\n}\n\nreturn output;"
+      },
+      "id": "4c5f9854-f1a7-41e1-a95a-0bf261c2c2df",
+      "name": "Extract Contenu",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [608, 0]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://iirfvndgzutbxwfdwawu.supabase.co/rest/v1/gd_stays?slug=eq.{{ $json.slug }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcmZ2bmRnenV0Ynh3ZmR3YXd1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTI3MjgwOSwiZXhwIjoyMDg0ODQ4ODA5fQ.IgRALdFN5r5ssMLYvJWJhIqpUeKU7QRrFAhvFALlsxM"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcmZ2bmRnenV0Ynh3ZmR3YXd1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTI3MjgwOSwiZXhwIjoyMDg0ODQ4ODA5fQ.IgRALdFN5r5ssMLYvJWJhIqpUeKU7QRrFAhvFALlsxM"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": {{ $json.title ? JSON.stringify($json.title) : 'null' }},\n  \"accroche\": {{ $json.accroche ? JSON.stringify($json.accroche) : 'null' }},\n  \"programme\": {{ $json.programme ? JSON.stringify($json.programme) : 'null' }},\n  \"centre_name\": {{ $json.centre_name ? JSON.stringify($json.centre_name) : 'null' }},\n  \"location_city\": {{ $json.location_city ? JSON.stringify($json.location_city) : 'null' }},\n  \"location_region\": {{ $json.location_region ? JSON.stringify($json.location_region) : 'null' }},\n  \"ged_theme\": {{ $json.ged_theme ? JSON.stringify($json.ged_theme) : 'null' }},\n  \"images\": {{ $json.images ? JSON.stringify($json.images) : 'null' }},\n  \"is_full\": {{ $json.is_full }},\n  \"updated_at\": \"{{ new Date().toISOString() }}\"\n}",
+        "options": {}
+      },
+      "id": "8ae47a30-7283-4bc9-8938-0340e053255f",
+      "name": "Update gd_stays",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [800, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nlet updated = 0;\nlet errors = 0;\nlet fullCount = 0;\nlet totalFullSessions = 0;\nlet totalAvailableSessions = 0;\n\nfor (const item of items) {\n  if (item.json.error) {\n    errors++;\n  } else {\n    updated++;\n    if (item.json.is_full === true) fullCount++;\n    totalFullSessions += (item.json.full_sessions_count || 0);\n    totalAvailableSessions += (item.json.available_sessions || 0);\n  }\n}\n\nreturn [{\n  json: {\n    success: true,\n    message: 'Mise à jour contenu + is_full terminée',\n    sejours_mis_a_jour: updated,\n    sejours_entierement_complets: fullCount,\n    total_sessions_completes: totalFullSessions,\n    total_sessions_disponibles: totalAvailableSessions,\n    erreurs: errors,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "db43384a-0339-4815-ac66-3c330b579422",
+      "name": "Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1008, 0]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{"node": "Get 24 Séjours", "type": "main", "index": 0}]]
+    },
+    "Get 24 Séjours": {
+      "main": [[{"node": "Fetch Page UFOVAL", "type": "main", "index": 0}]]
+    },
+    "Fetch Page UFOVAL": {
+      "main": [[{"node": "Extract Contenu", "type": "main", "index": 0}]]
+    },
+    "Extract Contenu": {
+      "main": [[{"node": "Update gd_stays", "type": "main", "index": 0}]]
+    },
+    "Update gd_stays": {
+      "main": [[{"node": "Summary", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "meta": {
+    "instanceId": "f8a23de1fd68d15e22ee36407dd306822e85dc7b64af1d83197e124084435d56"
+  },
+  "id": "is_full_v2",
+  "tags": []
+}

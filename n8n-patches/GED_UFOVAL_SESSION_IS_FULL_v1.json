@@ -1,0 +1,168 @@
+{
+  "name": "GED_UFOVAL_SESSION_IS_FULL_v4",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "hours", "hoursInterval": 6 }]
+        }
+      },
+      "id": "trigger-01",
+      "name": "Toutes les 6h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-200, 0]
+    },
+    {
+      "parameters": {},
+      "id": "trigger-manual",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [-200, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://iirfvndgzutbxwfdwawu.supabase.co/rest/v1/gd_stays?select=slug,source_url&published=eq.true&source_url=neq.null",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcmZ2bmRnenV0Ynh3ZmR3YXd1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTI3MjgwOSwiZXhwIjoyMDg0ODQ4ODA5fQ.IgRALdFN5r5ssMLYvJWJhIqpUeKU7QRrFAhvFALlsxM"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcmZ2bmRnenV0Ynh3ZmR3YXd1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTI3MjgwOSwiZXhwIjoyMDg0ODQ4ODA5fQ.IgRALdFN5r5ssMLYvJWJhIqpUeKU7QRrFAhvFALlsxM"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-get-stays",
+      "name": "Get Séjours publiés",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [40, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// v4 — Parsing robuste + cookies de session PHP\n// Confirmé par DEBUG v4 : POST UFOVAL requiert le cookie PHPSESSID\n// ============================================================\n\nconst MOIS_FR = {\n  'janv': 1, 'fevr': 2, 'mars': 3, 'avr': 4, 'avri': 4,\n  'mai': 5, 'juin': 6, 'juil': 7, 'aout': 8,\n  'sept': 9, 'octo': 10, 'oct': 10, 'nov': 11, 'nove': 11, 'dec': 12, 'dece': 12\n};\n\nfunction parseDate(text) {\n  const clean = text.toLowerCase()\n    .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')\n    .replace(/lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche/gi, '')\n    .replace(/\\./g, '').trim();\n  const match = clean.match(/(\\d{1,2})\\s+([a-z]+)/);\n  if (!match) return null;\n  const day = parseInt(match[1]);\n  const monthStr = match[2].substring(0, 4);\n  const month = MOIS_FR[monthStr] || MOIS_FR[match[2]];\n  if (!month) return null;\n  return { day, month };\n}\n\nfunction parseSessionsFromHtml(html, duration, year) {\n  const sessions = [];\n  const labelMatches = html.match(/<label[^>]*>[\\s\\S]*?<\\/label>/gi) || [];\n  for (const label of labelMatches) {\n    const stripped = label.replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim();\n    if (!stripped.includes(' au ')) continue;\n    const isFull = label.includes('availability-status-full') || label.includes('Complet');\n    const parts = stripped.split(/ au /i);\n    if (parts.length >= 2) {\n      const start = parseDate(parts[0]);\n      const end = parseDate(parts[1]);\n      if (start && end) {\n        sessions.push({\n          start_date: year + '-' + String(start.month).padStart(2, '0') + '-' + String(start.day).padStart(2, '0'),\n          end_date: year + '-' + String(end.month).padStart(2, '0') + '-' + String(end.day).padStart(2, '0'),\n          is_full: isFull,\n          duration: duration\n        });\n      }\n    }\n  }\n  return sessions;\n}\n\nfunction extractCookies(headers) {\n  const sc = headers && headers['set-cookie'];\n  if (Array.isArray(sc)) return sc.map(c => c.split(';')[0]).join('; ');\n  if (typeof sc === 'string') return sc.split(';')[0];\n  return '';\n}\n\n// === MAIN ===\nconst output = [];\nconst targetYear = new Date().getFullYear();\n\nfor (const item of $input.all()) {\n  const slug = item.json.slug;\n  const sourceUrl = item.json.source_url;\n  if (!sourceUrl) {\n    output.push({ json: { slug, error: 'No source_url', sessions: [] } });\n    continue;\n  }\n\n  // STEP 1: GET avec returnFullResponse pour capturer les cookies\n  let pageHtml, cookies;\n  try {\n    const resp = await this.helpers.httpRequest({\n      method: 'GET', url: sourceUrl, json: false, returnFullResponse: true\n    });\n    pageHtml = String(resp.body);\n    cookies = extractCookies(resp.headers);\n  } catch (e) {\n    output.push({ json: { slug, error: 'GET failed: ' + e.message, sessions: [] } });\n    continue;\n  }\n\n  // STEP 2: Extraire form action + CSRF token + durées\n  const faMatch = pageHtml.match(/action=\"(\\/fr\\/stay\\/\\d+\\/update-availabilities-cart-form)\"/i);\n  const tkMatch = pageHtml.match(/name=\"stay_duration\\[_token\\]\"\\s+value=\"([^\"]+)\"/i);\n  const durRegex = /<option\\s+value=\"(\\d+)\"[^>]*>\\d+\\s*jours?<\\/option>/gi;\n  const durations = [];\n  let dm;\n  while ((dm = durRegex.exec(pageHtml)) !== null) durations.push(parseInt(dm[1]));\n  const defMatch = pageHtml.match(/<option\\s+value=\"(\\d+)\"[^>]*selected/i);\n  const defaultDuration = defMatch ? parseInt(defMatch[1]) : -1;\n\n  // STEP 3: Parser toutes les durées\n  const allSessions = [];\n\n  // 3a: Durée par défaut (dans le HTML GET)\n  allSessions.push(...parseSessionsFromHtml(pageHtml, defaultDuration, targetYear));\n\n  // 3b: Autres durées via POST AJAX avec cookies\n  if (faMatch && tkMatch && durations.length > 0) {\n    const formAction = 'https://ufoval.fol74.org' + faMatch[1];\n    const csrfToken = tkMatch[1];\n\n    for (const dur of durations) {\n      if (dur === defaultDuration) continue;\n      try {\n        const headers = {\n          'Content-Type': 'application/x-www-form-urlencoded',\n          'X-Requested-With': 'XMLHttpRequest'\n        };\n        if (cookies) headers['Cookie'] = cookies;\n\n        const response = await this.helpers.httpRequest({\n          method: 'POST', url: formAction, headers,\n          body: 'stay_duration[duration]=' + dur + '&stay_duration[_token]=' + encodeURIComponent(csrfToken),\n          json: false\n        });\n\n        // Réponse = objet {html:...} ou string JSON\n        let htmlContent = '';\n        if (typeof response === 'object' && response && response.html) {\n          htmlContent = response.html;\n        } else if (typeof response === 'string') {\n          try { htmlContent = JSON.parse(response).html || ''; } catch(e) { htmlContent = response; }\n        }\n\n        if (htmlContent) {\n          allSessions.push(...parseSessionsFromHtml(htmlContent, dur, targetYear));\n        }\n      } catch (e) {\n        // Skip silencieusement\n      }\n      await new Promise(r => setTimeout(r, 500));\n    }\n  }\n\n  output.push({\n    json: {\n      slug,\n      totalSessions: allSessions.length,\n      fullSessions: allSessions.filter(s => s.is_full).length,\n      sessions: allSessions\n    }\n  });\n\n  await new Promise(r => setTimeout(r, 1000));\n}\n\nreturn output;"
+      },
+      "id": "node-scrape-all",
+      "name": "Scrape Toutes Sessions UFOVAL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [300, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = [];\nfor (const item of $input.all()) {\n  const { slug, sessions, error } = item.json;\n  if (error || !sessions || sessions.length === 0) continue;\n  for (const session of sessions) {\n    output.push({\n      json: {\n        slug,\n        start_date: session.start_date,\n        end_date: session.end_date,\n        is_full: session.is_full,\n        duration: session.duration\n      }\n    });\n  }\n}\nif (output.length === 0) {\n  return [{ json: { slug: 'NONE', error: 'No sessions found', start_date: '', end_date: '', is_full: false, duration: 0 } }];\n}\nreturn output;"
+      },
+      "id": "node-flatten",
+      "name": "Flatten Sessions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [560, 100]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "cond-has-slug",
+              "leftValue": "={{ $json.slug }}",
+              "rightValue": "NONE",
+              "operator": { "type": "string", "operation": "notEquals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "node-filter",
+      "name": "Filter Valid Sessions",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [780, 100]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://iirfvndgzutbxwfdwawu.supabase.co/rest/v1/gd_session_prices?stay_slug=eq.{{ $json.slug }}&start_date=eq.{{ $json.start_date }}&end_date=eq.{{ $json.end_date }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcmZ2bmRnenV0Ynh3ZmR3YXd1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTI3MjgwOSwiZXhwIjoyMDg0ODQ4ODA5fQ.IgRALdFN5r5ssMLYvJWJhIqpUeKU7QRrFAhvFALlsxM"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcmZ2bmRnenV0Ynh3ZmR3YXd1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTI3MjgwOSwiZXhwIjoyMDg0ODQ4ODA5fQ.IgRALdFN5r5ssMLYvJWJhIqpUeKU7QRrFAhvFALlsxM"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"is_full\": {{ $json.is_full }}\n}",
+        "options": {}
+      },
+      "id": "node-update-prices",
+      "name": "PATCH gd_session_prices.is_full",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1000, 100],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Summary v4 — Le PATCH avec Prefer:return=representation retourne\n// les rows mises à jour. n8n déplie les arrays, donc chaque item.json\n// est soit un objet {stay_slug, is_full, ...} soit un objet vide {}.\nconst items = $input.all();\nlet updated = 0;\nlet noMatch = 0;\nlet markedFull = 0;\nlet markedAvailable = 0;\nconst slugs = new Set();\n\nfor (const item of items) {\n  const data = item.json;\n  // Cas 1: objet avec stay_slug = row retournée par Supabase\n  if (data && data.stay_slug) {\n    updated++;\n    if (data.is_full === true) markedFull++;\n    else markedAvailable++;\n    slugs.add(data.stay_slug);\n  }\n  // Cas 2: objet vide ou sans stay_slug = pas de correspondance en BDD\n  else if (data && !data.stay_slug && Object.keys(data).length === 0) {\n    noMatch++;\n  }\n  // Cas 3: array (au cas où n8n ne déplie pas)\n  else if (Array.isArray(data)) {\n    if (data.length === 0) noMatch++;\n    else {\n      for (const row of data) {\n        updated++;\n        if (row.is_full === true) markedFull++;\n        else markedAvailable++;\n        if (row.stay_slug) slugs.add(row.stay_slug);\n      }\n    }\n  }\n}\n\nreturn [{\n  json: {\n    success: true,\n    message: 'Sync is_full par session terminee',\n    sejours_traites: slugs.size,\n    sessions_mises_a_jour: updated,\n    sessions_completes: markedFull,\n    sessions_disponibles: markedAvailable,\n    sessions_sans_correspondance_bdd: noMatch,\n    total_items_recus: items.length,\n    sejours: Array.from(slugs),\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "node-summary",
+      "name": "Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1220, 100]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Toutes les 6h": {
+      "main": [[{ "node": "Get Séjours publiés", "type": "main", "index": 0 }]]
+    },
+    "Manual Trigger": {
+      "main": [[{ "node": "Get Séjours publiés", "type": "main", "index": 0 }]]
+    },
+    "Get Séjours publiés": {
+      "main": [[{ "node": "Scrape Toutes Sessions UFOVAL", "type": "main", "index": 0 }]]
+    },
+    "Scrape Toutes Sessions UFOVAL": {
+      "main": [[{ "node": "Flatten Sessions", "type": "main", "index": 0 }]]
+    },
+    "Flatten Sessions": {
+      "main": [[{ "node": "Filter Valid Sessions", "type": "main", "index": 0 }]]
+    },
+    "Filter Valid Sessions": {
+      "main": [[{ "node": "PATCH gd_session_prices.is_full", "type": "main", "index": 0 }]]
+    },
+    "PATCH gd_session_prices.is_full": {
+      "main": [[{ "node": "Summary", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "instanceId": "f8a23de1fd68d15e22ee36407dd306822e85dc7b64af1d83197e124084435d56"
+  },
+  "id": "session_is_full_v4",
+  "tags": []
+}

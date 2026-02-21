@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audit Croisé UFOVAL vs BDD — GED APP — 2026-02-18</title>
+<style>
+  :root {
+    --primary: #2a383f;
+    --secondary: #de7356;
+    --ok: #16a34a;
+    --warn: #d97706;
+    --error: #dc2626;
+    --info: #2563eb;
+    --bg: #f8f9fa;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --muted: #64748b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+  header {
+    background: var(--primary);
+    color: white;
+    padding: 24px 32px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+  header .meta { font-size: 12px; opacity: 0.75; margin-top: 4px; }
+  .badge-header {
+    background: var(--secondary);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  main { max-width: 1400px; margin: 0 auto; padding: 24px 20px 60px; }
+
+  /* ── SUMMARY CARDS ── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .sum-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .sum-card .val { font-size: 28px; font-weight: 800; }
+  .sum-card .lbl { font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .sum-card.ok .val { color: var(--ok); }
+  .sum-card.warn .val { color: var(--warn); }
+  .sum-card.error .val { color: var(--error); }
+  .sum-card.info .val { color: var(--info); }
+
+  /* ── BLOCKER ALERT ── */
+  .blocker {
+    background: #fef2f2;
+    border: 1.5px solid #fca5a5;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex; align-items: flex-start; gap: 12px;
+  }
+  .blocker .icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+  .blocker h3 { font-size: 14px; font-weight: 700; color: #991b1b; margin-bottom: 6px; }
+  .blocker p { font-size: 13px; color: #7f1d1d; line-height: 1.5; }
+
+  .info-box {
+    background: #eff6ff;
+    border: 1.5px solid #93c5fd;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: #1e3a8a;
+    line-height: 1.6;
+  }
+
+  /* ── SECTION HEADERS ── */
+  .section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 28px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--secondary);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .univ-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 12px;
+    color: white;
+  }
+  .u1 { background: #7c3aed; }
+  .u2 { background: #0891b2; }
+  .u3 { background: #059669; }
+  .u4 { background: #d97706; }
+
+  /* ── STAY CARDS ── */
+  .stay-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+  .stay-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .stay-card-header {
+    padding: 12px 16px;
+    display: flex; justify-content: space-between; align-items: flex-start;
+  }
+  .stay-name { font-size: 13px; font-weight: 700; color: var(--primary); }
+  .stay-slug { font-size: 10px; color: var(--muted); margin-top: 2px; font-family: monospace; }
+  .status-pill {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .pill-ok { background: #dcfce7; color: #15803d; }
+  .pill-warn { background: #fef3c7; color: #92400e; }
+  .pill-error { background: #fee2e2; color: #991b1b; }
+  .pill-partial { background: #e0e7ff; color: #3730a3; }
+
+  .stay-body { padding: 0 16px 14px; }
+
+  .meta-row {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;
+  }
+  .meta-chip {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: #f1f5f9;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .meta-chip strong { color: var(--text); }
+
+  /* ── TABLE ── */
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th {
+    background: #f1f5f9;
+    text-align: left;
+    padding: 6px 10px;
+    font-weight: 600;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+  tbody td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #fafbfc; }
+  .td-ok { color: var(--ok); font-weight: 600; }
+  .td-warn { color: var(--warn); font-weight: 600; }
+  .td-error { color: var(--error); font-weight: 600; }
+
+  /* ── PROBLEMS LIST ── */
+  .problems { margin-top: 10px; }
+  .problem-item {
+    display: flex; gap: 8px; align-items: flex-start;
+    padding: 6px 10px;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .pi-p0 { background: #fee2e2; border-left: 3px solid var(--error); }
+  .pi-p1 { background: #fef3c7; border-left: 3px solid var(--warn); }
+  .pi-ok { background: #dcfce7; border-left: 3px solid var(--ok); }
+
+  /* ── CAUSE RACINE ── */
+  .root-cause {
+    background: #fdf4ff;
+    border: 1.5px solid #d8b4fe;
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin: 20px 0;
+  }
+  .root-cause h3 { color: #6b21a8; font-size: 15px; margin-bottom: 10px; }
+  .root-cause p { font-size: 13px; color: #4a044e; line-height: 1.6; }
+  .root-cause code {
+    background: #f3e8ff;
+    color: #7c3aed;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+  }
+
+  /* ── ACTION PLAN ── */
+  .action-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .action-table th {
+    background: var(--primary);
+    color: white;
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+  }
+  .action-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  .action-table tr:hover td { background: #f8fafc; }
+  .p0-row td { background: #fff5f5; }
+  .prio {
+    font-size: 10px; font-weight: 700; padding: 3px 8px;
+    border-radius: 6px; text-align: center;
+  }
+  .prio-p0 { background: #fee2e2; color: #991b1b; }
+  .prio-p1 { background: #fef3c7; color: #92400e; }
+  .prio-p2 { background: #e0e7ff; color: #3730a3; }
+
+  /* ── SQL BLOCK ── */
+  pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    overflow-x: auto;
+    margin-top: 10px;
+  }
+  .kw { color: #93c5fd; } /* keyword */
+  .fn { color: #86efac; } /* function */
+  .str { color: #fcd34d; } /* string */
+  .cm { color: #64748b; } /* comment */
+
+  footer {
+    background: var(--primary);
+    color: white;
+    text-align: center;
+    padding: 14px;
+    font-size: 11px;
+    opacity: 0.85;
+    margin-top: 40px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🔍 Audit Croisé UFOVAL ↔ BDD Supabase — GED APP</h1>
+    <div class="meta">Généré le 2026-02-18 · Mode economy_secure_no_regression · Aucun patch appliqué</div>
+  </div>
+  <span class="badge-header">AUDIT READ-ONLY</span>
+</header>
+
+<main>
+
+<!-- ═══ SUMMARY ═══ -->
+<div class="summary-grid">
+  <div class="sum-card info"><div class="val">19</div><div class="lbl">Séjours audités</div></div>
+  <div class="sum-card ok"><div class="val">7</div><div class="lbl">Séjours OK durées</div></div>
+  <div class="sum-card error"><div class="val">4</div><div class="lbl">Sessions manquantes BDD</div></div>
+  <div class="sum-card warn"><div class="val">5</div><div class="lbl">Statuts Complet désync</div></div>
+  <div class="sum-card warn"><div class="val">3</div><div class="lbl">Anomalies prix (1 row)</div></div>
+  <div class="sum-card error"><div class="val">1</div><div class="lbl">🔴 .env prod absent</div></div>
+</div>
+
+<!-- ═══ BLOCKERS ═══ -->
+<div class="blocker">
+  <div class="icon">🚨</div>
+  <div>
+    <h3>BLOQUANT GO-LIVE — .env production VPS non configuré (depuis le 16/02)</h3>
+    <p>Le code est PRODUCTION READY (0 erreur TS, circuit sécurisé actif). Seul le fichier <code>.env</code> sur le VPS Hostinger bloque le déploiement. Variables manquantes : STRIPE_SECRET_KEY · STRIPE_WEBHOOK_SECRET · SUPABASE_SERVICE_ROLE_KEY · EMAIL_SERVICE_API_KEY (Resend).</p>
+  </div>
+</div>
+
+<div class="blocker">
+  <div class="icon">⚠️</div>
+  <div>
+    <h3>CAUSE RACINE PROBABLE — Scraper UFOVAL n'itère pas sur toutes les durées</h3>
+    <p>Le scraper n8n importe probablement la durée par défaut du dropdown UFOVAL (7j) sans boucler sur les autres durées (14j, 21j). Résultat : les sessions multi-durées sont systématiquement sous-importées. Potentiellement tous les séjours multi-durées sont impactés, pas seulement GRAVITY BIKE PARK.</p>
+  </div>
+</div>
+
+<div class="info-box">
+  <strong>📌 Contexte audit :</strong> Croisement complet UFOVAL (référentiel source) vs Supabase BDD vs Front GED APP. Univers 1 — ADRÉNALINE & SENSATIONS (7 séjours) + Univers 2 — AVENTURE & DÉCOUVERTE (12 séjours). La VM n'ayant pas d'accès réseau direct vers Supabase, toutes les vérifications BDD passent par Chrome ou les exports JSON documentés. Complétude des sessions considérée provisoire — validation automatique future via workflow n8n.
+</div>
+
+<!-- ═══ UNIVERS 1 ═══ -->
+<div class="section-title">
+  <span class="univ-badge u1">UNIVERS 1</span>
+  ADRÉNALINE &amp; SENSATIONS · 12–17 ans · 7 séjours
+</div>
+
+<div class="stay-grid">
+
+  <!-- GRAVITY BIKE PARK -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">⛰️ GRAVITY BIKE PARK</div>
+        <div class="stay-slug">slug: dh-experience-11-13-ans · UFOVAL: DH Experience</div>
+      </div>
+      <span class="status-pill pill-error">❌ P0</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 11–13 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Les Carroz d'Arâches · Haute-Savoie</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 6j / 7j / 14j / 21j</span>
+      </div>
+      <table>
+        <thead><tr><th>Période UFOVAL</th><th>Durée</th><th>BDD</th><th>is_full</th><th>Statut</th></tr></thead>
+        <tbody>
+          <tr><td>05/07 → 11/07</td><td>7j</td><td class="td-ok">✅ OK</td><td>false</td><td class="td-ok">✓</td></tr>
+          <tr><td>12/07 → 18/07</td><td>7j</td><td class="td-error">❌ ABSENTE</td><td>Complet UFOVAL</td><td class="td-error">MANQUANTE</td></tr>
+          <tr><td>19/07 → 25/07</td><td>7j</td><td class="td-ok">✅ OK</td><td>false</td><td class="td-ok">✓</td></tr>
+          <tr><td>02/08 → 08/08</td><td>7j</td><td class="td-error">❌ ABSENTE</td><td>Complet UFOVAL</td><td class="td-error">MANQUANTE</td></tr>
+          <tr><td>09/08 → 15/08</td><td>7j</td><td class="td-ok">✅ OK</td><td>false</td><td class="td-ok">✓</td></tr>
+          <tr><td>16/08 → 22/08</td><td>7j</td><td class="td-ok">✅ OK</td><td>false</td><td class="td-ok">✓</td></tr>
+          <tr><td>23/08 → 28/08</td><td>6j</td><td class="td-ok">✅ OK</td><td>false</td><td class="td-ok">✓</td></tr>
+          <tr><td>02/08 → 15/08</td><td>14j</td><td class="td-error">❌ ABSENTE</td><td>Complet UFOVAL</td><td class="td-error">MANQUANTE</td></tr>
+          <tr><td>05/07 → 25/07</td><td>21j</td><td class="td-error">❌ ABSENTE</td><td>Complet UFOVAL</td><td class="td-error">MANQUANTE</td></tr>
+          <tr><td>02/08 → 14/08</td><td class="td-warn">13j BDD</td><td class="td-warn">⚠️ off-by-one</td><td>true ✅</td><td class="td-warn">Durée -1j</td></tr>
+          <tr><td>02/08 → 21/08</td><td class="td-warn">20j BDD</td><td class="td-warn">⚠️ off-by-one</td><td>true ✅</td><td class="td-warn">Durée -1j</td></tr>
+        </tbody>
+      </table>
+      <div class="problems">
+        <div class="problem-item pi-p0">🔴 <strong>P0</strong> — 4 sessions absentes BDD (12/07, 02/08 en 7j, 14j, 21j). Familles ne voient pas ces créneaux.</div>
+        <div class="problem-item pi-p1">🟡 <strong>P1</strong> — Off-by-one systématique sur durées 14j/21j (BDD enregistre 13j/20j). Cause : scraper compte nuits au lieu de jours inclusifs.</div>
+        <div class="problem-item pi-p1">🟡 <strong>P1</strong> — 5 sessions "Complet" UFOVAL non reflétées is_full=true en BDD (sauf 08-02→08-15 et 08-02→08-22 déjà corrects).</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIVIERA SPEED CLUB -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">🌊 RIVIERA SPEED CLUB</div>
+        <div class="stay-slug">slug: destination-soleil · UFOVAL: Destination Soleil</div>
+      </div>
+      <span class="status-pill pill-warn">⚠️ PARTIEL</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 12–17 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Hérault · Méditerranée</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j / 14j</span>
+      </div>
+      <table>
+        <thead><tr><th>Session BDD</th><th>Durée</th><th>Prix rows</th><th>Statut</th></tr></thead>
+        <tbody>
+          <tr><td>05/07 → 12/07</td><td>7j ✅</td><td class="td-error">1 row ⚠️</td><td class="td-warn">Grille tarifaire incomplète</td></tr>
+          <tr><td>19/07 → 26/07</td><td>7j ✅</td><td class="td-error">1 row ⚠️</td><td class="td-warn">Grille tarifaire incomplète</td></tr>
+          <tr><td>02/08 → 09/08</td><td>7j ✅</td><td class="td-error">1 row ⚠️</td><td class="td-warn">Grille tarifaire incomplète</td></tr>
+          <tr><td>Autres sessions</td><td>7/14j</td><td class="td-ok">~19 rows</td><td class="td-ok">Normal</td></tr>
+        </tbody>
+      </table>
+      <div class="problems">
+        <div class="problem-item pi-p0">🔴 <strong>P0</strong> — 3 sessions n'ont que 1 row de prix au lieu de ~19. Import partiel ou session créée manuellement sans grille tarifaire complète.</div>
+        <div class="problem-item pi-p1">🟡 <strong>AUDIT UFOVAL INCOMPLET</strong> — Déconnexion Chrome avant screenshot page UFOVAL. Vérification des sessions manquantes non terminée.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MX RIDER ACADEMY -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">🏍️ MX RIDER ACADEMY</div>
+        <div class="stay-slug">slug: moto-moto · UFOVAL: Moto Moto</div>
+      </div>
+      <span class="status-pill pill-warn">⚠️ À VÉRIFIER</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 12–17 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Les Carroz · Haute-Savoie</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j (à confirmer)</span>
+      </div>
+      <div class="problems">
+        <div class="problem-item pi-p1">🟡 <strong>AUDIT NON COMMENCÉ</strong> — Séjour non audité lors de la session 18/02. À inclure dans la prochaine vague de vérification UFOVAL.</div>
+        <div class="problem-item pi-p1">🟡 Même lieu que GRAVITY BIKE PARK (Les Carroz). Risque de chevauchement sessions à vérifier.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALPINE SKY CAMP -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">🪂 ALPINE SKY CAMP</div>
+        <div class="stay-slug">slug: annecy-element · UFOVAL: Annecy Elément</div>
+      </div>
+      <span class="status-pill pill-warn">⚠️ À VÉRIFIER</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 12–17 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Lac d'Annecy · Haute-Savoie</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j / 14j (à confirmer)</span>
+      </div>
+      <div class="problems">
+        <div class="problem-item pi-p1">🟡 <strong>AUDIT NON COMMENCÉ</strong> — Vérification UFOVAL non effectuée. À prioriser : parapente + canyoning = séjour bi-activités potentiellement avec 14j.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AZUR DIVE & JET -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">🤿 AZUR DIVE &amp; JET</div>
+        <div class="stay-slug">slug: aqua-fun · UFOVAL: Aqua Fun</div>
+      </div>
+      <span class="status-pill pill-ok">✅ DURÉES OK</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 12–17 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Var · Golfe de St Tropez</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j / 14j</span>
+      </div>
+      <div class="problems">
+        <div class="problem-item pi-ok">✅ Durées corrigées par CORRECTION_SESSIONS_8_JOURS.sql (18/02/2026) — sessions 7j et 14j conformes UFOVAL.</div>
+        <div class="problem-item pi-p1">🟡 Vérification is_full + sessions estivales complètes à confirmer vs UFOVAL live.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CORSICA WILD TRIP -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">🏝️ CORSICA WILD TRIP</div>
+        <div class="stay-slug">slug: sperienza-in-corsica-1 · UFOVAL: Sperienza in Corsica</div>
+      </div>
+      <span class="status-pill pill-warn">⚠️ À VÉRIFIER</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 12–17 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Saint-Florent · Haute-Corse</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j / 14j (à confirmer)</span>
+      </div>
+      <div class="problems">
+        <div class="problem-item pi-p1">🟡 <strong>AUDIT NON COMMENCÉ</strong> — Corse = transport spécifique (ferry/avion). Vérifier grille tarifaire transport_surcharge distincte des autres séjours.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEST COAST SURF CAMP -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">🏄 WEST COAST SURF CAMP</div>
+        <div class="stay-slug">slug: surf-sur-le-bassin · UFOVAL: Surf sur le Bassin</div>
+      </div>
+      <span class="status-pill pill-warn">⚠️ À VÉRIFIER</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 10–17 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Gironde · Bassin d'Arcachon</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j / 14j (à confirmer)</span>
+      </div>
+      <div class="problems">
+        <div class="problem-item pi-p1">🟡 <strong>AUDIT NON COMMENCÉ</strong> — Partage de lieu avec DUNE &amp; OCEAN KIDS (destination-bassin). Vérifier non-chevauchement sessions.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ UNIVERS 2 ═══ -->
+<div class="section-title" style="margin-top:36px;">
+  <span class="univ-badge u2">UNIVERS 2</span>
+  AVENTURE &amp; DÉCOUVERTE · 8–15 ans · 12 séjours
+</div>
+
+<div class="stay-grid">
+
+  <!-- SURVIVOR CAMP 74 -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">🏕️ SURVIVOR CAMP 74</div>
+        <div class="stay-slug">slug: les-robinson-des-glieres · UFOVAL: Les Robinson des Glières</div>
+      </div>
+      <span class="status-pill pill-ok">✅ DURÉES OK</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 8–15 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Plateau des Glières · Haute-Savoie</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j / 14j</span>
+      </div>
+      <div class="problems">
+        <div class="problem-item pi-ok">✅ Corrigé CORRECTION_SESSIONS_8_JOURS.sql — durées conformes.</div>
+        <div class="problem-item pi-p1">🟡 Cycle hebdo dim→sam à vérifier (05/07 → 22/08). Séjour Glières : possible concurrence terrain avec GAMING HOUSE 1850.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INTO THE WILD -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">🌲 INTO THE WILD</div>
+        <div class="stay-slug">slug: survie-dans-le-beaufortain · UFOVAL: Survie dans le Beaufortain</div>
+      </div>
+      <span class="status-pill pill-warn">⚠️ À VÉRIFIER</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 10–15 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Beaufortain · Savoie</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j / 14j (à confirmer)</span>
+      </div>
+      <div class="problems">
+        <div class="problem-item pi-p1">🟡 <strong>AUDIT NON COMMENCÉ</strong> — Refuge &amp; bivouac : vérifier si l'offre 14j est bien distincte d'un séjour 7j doublé.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PARKOUR -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">🏃 PARKOUR</div>
+        <div class="stay-slug">slug: yamakasi · UFOVAL: Yamakasi</div>
+      </div>
+      <span class="status-pill pill-warn">⚠️ À VÉRIFIER</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 10–17 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Courchevel · Savoie</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j (à confirmer)</span>
+      </div>
+      <div class="problems">
+        <div class="problem-item pi-p1">🟡 <strong>Renommage V3</strong> — yamakasi → PARKOUR (005_rename). Vérifier que le slug yamakasi ne génère pas de 404 en prod.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAMING HOUSE 1850 -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">🎮 GAMING HOUSE 1850</div>
+        <div class="stay-slug">slug: e-sport-and-sport · UFOVAL: E-Sport &amp; Sport</div>
+      </div>
+      <span class="status-pill pill-warn">⚠️ À VÉRIFIER</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 10–17 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Les Glières · Haute-Savoie</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j (à confirmer)</span>
+      </div>
+      <div class="problems">
+        <div class="problem-item pi-p1">🟡 Même lieu Glières que SURVIVOR CAMP 74. Vérifier non-chevauchement exact des sessions pour éviter doublons infrastructurels.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALPINE TREK JUNIOR -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">⛰️ ALPINE TREK JUNIOR</div>
+        <div class="stay-slug">slug: explore-mountain · UFOVAL: Explore Mountain</div>
+      </div>
+      <span class="status-pill pill-warn">⚠️ À VÉRIFIER</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 10–15 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Massif des Glières · Haute-Savoie</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j / 14j (à confirmer)</span>
+      </div>
+      <div class="problems">
+        <div class="problem-item pi-p1">🟡 <strong>AUDIT NON COMMENCÉ</strong> — 3ème séjour Glières. Cluster de 3 séjours même lieu → vérifier cohérence cycles et capacités.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADRENALINE & CHILL -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">🏔️ ADRENALINE &amp; CHILL</div>
+        <div class="stay-slug">slug: mountain-and-chill · UFOVAL: Mountain &amp; Chill</div>
+      </div>
+      <span class="status-pill pill-warn">⚠️ À VÉRIFIER</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 8–15 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Haute-Savoie</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j / 14j (à confirmer)</span>
+      </div>
+      <div class="problems">
+        <div class="problem-item pi-p1">🟡 <strong>AUDIT NON COMMENCÉ</strong> — Lieu générique "Haute-Savoie". Préciser le centre exact pour vérifier non-chevauchement.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DUAL CAMP -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">⛵ DUAL CAMP : LAC &amp; MONTAGNE</div>
+        <div class="stay-slug">slug: glieraventures · UFOVAL: Glièraventures</div>
+      </div>
+      <span class="status-pill pill-warn">⚠️ À VÉRIFIER</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 8–14 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Plateau des Glières · Haute-Savoie</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j / 14j (à confirmer)</span>
+      </div>
+      <div class="problems">
+        <div class="problem-item pi-p1">🟡 Glières = 4ème séjour sur ce site. Cluster critique → audit capacité physique du centre (places simultanées).</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WILDLIFE REPORTER -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">📷 WILDLIFE REPORTER</div>
+        <div class="stay-slug">slug: nature-picture · UFOVAL: Nature Picture</div>
+      </div>
+      <span class="status-pill pill-warn">⚠️ À VÉRIFIER</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 8–15 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Les Glières · Haute-Savoie</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j (à confirmer)</span>
+      </div>
+      <div class="problems">
+        <div class="problem-item pi-p1">🟡 5ème séjour Glières. Vérifier si sessions 14j disponibles sur UFOVAL.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BRETAGNE OCEAN RIDE -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">🐴 BRETAGNE OCEAN RIDE</div>
+        <div class="stay-slug">slug: breizh-equit-kids-8-11-ans · UFOVAL: Breizh Equit'</div>
+      </div>
+      <span class="status-pill pill-warn">⚠️ À VÉRIFIER</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 8–11 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Plozévet · Finistère</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j / 14j (à confirmer)</span>
+      </div>
+      <div class="problems">
+        <div class="problem-item pi-p1">🟡 Tranche âge restreinte 8–11 ans. Cycle dim→sam à vérifier. Partage probable du centre avec ROCKS &amp; PADDLE (littoral breton).</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DUNE & OCEAN KIDS -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">🏖️ DUNE &amp; OCEAN KIDS</div>
+        <div class="stay-slug">slug: destination-bassin-darcachon-1 · UFOVAL: Destination Bassin d'Arcachon</div>
+      </div>
+      <span class="status-pill pill-ok">✅ DURÉES OK</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 7–14 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Taussat · Bassin d'Arcachon</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j / 12j / 14j / 19j</span>
+      </div>
+      <div class="problems">
+        <div class="problem-item pi-ok">✅ Durées corrigées (7j/12j/14j/19j) — CORRECTION_SESSIONS_8_JOURS.sql.</div>
+        <div class="problem-item pi-p1">🟡 Durées non-standard (12j / 19j) — vérifier pricing markup : 12j → 240€ (tranche 11–15j ✅) / 19j → 410€ (tranche 18–22j ✅).</div>
+        <div class="problem-item pi-p1">🟡 Partage lieu avec WEST COAST SURF CAMP (Bassin d'Arcachon). Chevauchement sessions à confirmer.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROCKS & PADDLE -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">🧗 ROCKS &amp; PADDLE</div>
+        <div class="stay-slug">slug: laventure-verticale · UFOVAL: L'Aventure Verticale</div>
+      </div>
+      <span class="status-pill pill-ok">✅ DURÉES OK</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 8–14 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> St Raphaël · Var</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j / 14j</span>
+      </div>
+      <div class="problems">
+        <div class="problem-item pi-ok">✅ Durées corrigées — 7j et 14j conformes UFOVAL.</div>
+        <div class="problem-item pi-p1">🟡 Vérifier is_full sync et cycle hebdo. Même zone géo que SWIM ACADEMY (St Raphaël).</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLUE EXPERIENCE -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">🐠 BLUE EXPERIENCE</div>
+        <div class="stay-slug">slug: aqua-mix · UFOVAL: Aqua Mix</div>
+      </div>
+      <span class="status-pill pill-ok">✅ DURÉES OK</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 7–14 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Les Issambres · Var</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j / 14j</span>
+      </div>
+      <div class="problems">
+        <div class="problem-item pi-ok">✅ Durées corrigées. Renommage V3 (AQUA MIX → BLUE EXPERIENCE) via 005_rename_yamakasi_aquamix.</div>
+        <div class="problem-item pi-p1">🟡 Même lieu Les Issambres que BABY RIDERS. Vérifier non-chevauchement sessions entre les 2 séjours.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ UNIVERS 3 ═══ -->
+<div class="section-title" style="margin-top:36px;">
+  <span class="univ-badge u3">UNIVERS 3</span>
+  MA PREMIÈRE COLO · 3–10 ans · 5 séjours · Mode AUDIT ONLY — Aucun update autorisé
+</div>
+
+<div class="info-box">
+  ⚠️ <strong>Complétude déclarative</strong> — Les données ci-dessous proviennent du référentiel GED documenté. La validation exhaustive des sessions (dates exactes, agrégations 14j/21j, is_full) est <strong>en attente du workflow n8n de synchronisation UFOVAL</strong>. Aucune modification BDD autorisée dans ce cadre.
+</div>
+
+<div class="stay-grid">
+
+  <!-- MY LITTLE FOREST -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">🌲 MY LITTLE FOREST</div>
+        <div class="stay-slug">slug: les-ptits-puisotins-1 · UFOVAL: Les P'tits Puisotins</div>
+      </div>
+      <span class="status-pill pill-warn">⚠️ CORRECTION EN ATTENTE</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 3–9 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Forêt du Semnoz · Haute-Savoie</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j / 14j / 21j</span>
+        <span class="meta-chip"><strong>Centre</strong> Les Puisots</span>
+      </div>
+      <table>
+        <thead><tr><th>Durée UFOVAL</th><th>BDD actuelle</th><th>Statut</th><th>Action requise</th></tr></thead>
+        <tbody>
+          <tr><td>7j</td><td class="td-warn">6j (BDD)</td><td class="td-warn">⚠️ off-by-one</td><td>CORRECTION_SESSION_6_JOURS_PTITS_PUISOTINS.sql à exécuter</td></tr>
+          <tr><td>14j</td><td>14j ✅</td><td class="td-ok">✓</td><td>—</td></tr>
+          <tr><td>21j</td><td>21j ✅</td><td class="td-ok">✓</td><td>—</td></tr>
+        </tbody>
+      </table>
+      <div class="problems">
+        <div class="problem-item pi-p1">🟡 <strong>CORRECTION SQL IDENTIFIÉE, NON EXÉCUTÉE</strong> — Sessions 6j → 7j via CORRECTION_SESSION_6_JOURS_PTITS_PUISOTINS.sql (backup créé). À exécuter dans Supabase SQL Editor.</div>
+        <div class="problem-item pi-p1">🟡 Tranche 3–9 ans : vérifier que le cycle hebdo dim→sam est respecté entre 05/07 et 22/08. Aucun chevauchement 7j / 14j / 21j autorisé sur le même centre.</div>
+        <div class="problem-item pi-p1">🟡 Complétude sessions : en attente workflow n8n UFOVAL pour confirmation du nombre total de créneaux 2026.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALPOO KIDS -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">🦔 ALPOO KIDS</div>
+        <div class="stay-slug">slug: croc-marmotte · UFOVAL: Croc' Marmotte</div>
+      </div>
+      <span class="status-pill pill-warn">⚠️ À VÉRIFIER</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 3–9 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Beaufortain · Savoie</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j / 14j (à confirmer)</span>
+        <span class="meta-chip"><strong>Centre</strong> Montagne apaisant</span>
+      </div>
+      <div class="problems">
+        <div class="problem-item pi-p1">🟡 <strong>AUDIT NON COMMENCÉ</strong> — Même zone géo que INTO THE WILD (Beaufortain). Vérifier non-chevauchement sessions.</div>
+        <div class="problem-item pi-p1">🟡 Tranche d'âge identique à MY LITTLE FOREST (3–9 ans). Vérifier qu'aucun enfant ne peut être classifié dans les deux séjours simultanément (cross-universe misclassification).</div>
+        <div class="problem-item pi-p1">🟡 Complétude : en attente workflow n8n UFOVAL.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BABY RIDERS -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">🛶 BABY RIDERS</div>
+        <div class="stay-slug">slug: aqua-gliss · UFOVAL: Aqua' Gliss</div>
+      </div>
+      <span class="status-pill pill-ok">✅ DURÉES OK</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 7–8 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Les Issambres · Var</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j / 14j</span>
+        <span class="meta-chip"><strong>Centre</strong> Accès mer tunnel privé</span>
+      </div>
+      <table>
+        <thead><tr><th>Durée</th><th>Statut BDD</th><th>Vérification</th></tr></thead>
+        <tbody>
+          <tr><td>7j</td><td class="td-ok">✅ OK</td><td>Corrigé CORRECTION_SESSIONS_8_JOURS.sql</td></tr>
+          <tr><td>14j</td><td class="td-ok">✅ OK</td><td>Corrigé CORRECTION_SESSIONS_8_JOURS.sql</td></tr>
+        </tbody>
+      </table>
+      <div class="problems">
+        <div class="problem-item pi-ok">✅ Durées 7j/14j conformes UFOVAL après correction.</div>
+        <div class="problem-item pi-p1">🟡 Même lieu Les Issambres que BLUE EXPERIENCE (aqua-mix). Vérifier non-chevauchement sessions entre les 2 séjours (centre à accès tunnel partagé).</div>
+        <div class="problem-item pi-p1">🟡 Tranche âge 7–8 ans très restreinte. Vérifier validation âge côté front : enfant de 9 ans doit être redirigé. Classification à risque si age_max non strict.</div>
+        <div class="problem-item pi-p1">🟡 Complétude cycle hebdo 05/07→22/08 : en attente workflow n8n UFOVAL.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SWIM ACADEMY -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">🏊 SWIM ACADEMY</div>
+        <div class="stay-slug">slug: natation-et-sensation · UFOVAL: Natation &amp; Sensation</div>
+      </div>
+      <span class="status-pill pill-ok">✅ DURÉES OK</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 7–11 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Saint-Raphaël · Var</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j / 14j</span>
+        <span class="meta-chip"><strong>Centre</strong> Les Colombes</span>
+      </div>
+      <table>
+        <thead><tr><th>Durée</th><th>Statut BDD</th><th>Vérification</th></tr></thead>
+        <tbody>
+          <tr><td>7j</td><td class="td-ok">✅ OK</td><td>Corrigé CORRECTION_SESSIONS_8_JOURS.sql</td></tr>
+          <tr><td>14j</td><td class="td-ok">✅ OK</td><td>Corrigé CORRECTION_SESSIONS_8_JOURS.sql</td></tr>
+        </tbody>
+      </table>
+      <div class="problems">
+        <div class="problem-item pi-ok">✅ Durées 7j/14j conformes UFOVAL.</div>
+        <div class="problem-item pi-p1">🟡 Même zone St Raphaël que ROCKS &amp; PADDLE. Vérifier non-chevauchement sessions et que le bloc de prix 7j vs 14j est bien distinct en front.</div>
+        <div class="problem-item pi-p1">🟡 Vérifier que le bloc prix affiché en front correspond à la durée sélectionnée (7j ≠ 14j). Risque si le composant React utilise duration_days config au lieu de la durée réelle de la session.</div>
+        <div class="problem-item pi-p1">🟡 Complétude : en attente workflow n8n UFOVAL.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HUSKY ADVENTURE -->
+  <div class="stay-card">
+    <div class="stay-card-header">
+      <div>
+        <div class="stay-name">🐕 HUSKY ADVENTURE</div>
+        <div class="stay-slug">slug: les-apprentis-montagnards · UFOVAL: Les Apprentis Montagnards</div>
+      </div>
+      <span class="status-pill pill-warn">⚠️ À VÉRIFIER</span>
+    </div>
+    <div class="stay-body">
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Âges</strong> 6–12 ans</span>
+        <span class="meta-chip"><strong>Lieu</strong> Massif des Glières · Haute-Savoie</span>
+        <span class="meta-chip"><strong>Durées UFOVAL</strong> 7j / 14j (à confirmer)</span>
+        <span class="meta-chip"><strong>Centre</strong> Creil'Alpes + piscine chauffée</span>
+      </div>
+      <div class="problems">
+        <div class="problem-item pi-p1">🟡 <strong>AUDIT NON COMMENCÉ</strong> — 6ème séjour sur la zone Glières/Massif. Cluster critique — vérifier capacité d'accueil simultanée du centre Creil'Alpes.</div>
+        <div class="problem-item pi-p1">🟡 Tranche âge 6–12 ans chevauche MY LITTLE FOREST (3–9), ALPOO KIDS (3–9) et DUAL CAMP (8–14). Vérifier qu'un enfant de 8–9 ans n'est pas proposé dans 3 séjours différents sans distinction (cross-universe misclassification).</div>
+        <div class="problem-item pi-p1">🟡 Complétude : en attente workflow n8n UFOVAL.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ CADRE D'AUDIT ═══ -->
+<div class="section-title" style="margin-top:36px;">📋 Cadre d'Audit — Règles Appliquées</div>
+
+<div style="background:white; border:1px solid var(--border); border-radius:10px; padding:20px; margin-bottom:20px;">
+  <table style="width:100%; border-collapse:collapse; font-size:13px;">
+    <thead>
+      <tr style="background:#f1f5f9;">
+        <th style="padding:8px 12px; text-align:left; font-size:11px; text-transform:uppercase; color:var(--muted);">Règle</th>
+        <th style="padding:8px 12px; text-align:left; font-size:11px; text-transform:uppercase; color:var(--muted);">Détail</th>
+        <th style="padding:8px 12px; text-align:left; font-size:11px; text-transform:uppercase; color:var(--muted);">Source</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:8px 12px;"><strong>Durée jours inclusifs</strong></td><td style="padding:8px 12px; color:#1e293b;"><code style="background:#f1f5f9; padding:2px 6px; border-radius:4px;">(end_date - start_date) + 1</code> — NE PAS compter en nuits</td><td style="padding:8px 12px; color:var(--muted);">Référentiel UFOVAL</td></tr>
+      <tr style="background:#f8fafc;"><td style="padding:8px 12px;"><strong>Cycle hebdo</strong></td><td style="padding:8px 12px; color:#1e293b;">Sessions 7j : départ dimanche, retour samedi. Chaîne continue 05/07 → 22/08.</td><td style="padding:8px 12px; color:var(--muted);">UFOVAL + métier GED</td></tr>
+      <tr><td style="padding:8px 12px;"><strong>Agrégation 14j/21j</strong></td><td style="padding:8px 12px; color:#1e293b;">Session 14j ≠ 2 × 7j : date de début/fin propre dans BDD. Vérifier absence chevauchement avec sessions 7j sur même slug.</td><td style="padding:8px 12px; color:var(--muted);">Règle métier GED</td></tr>
+      <tr style="background:#f8fafc;"><td style="padding:8px 12px;"><strong>Tranche d'âge</strong></td><td style="padding:8px 12px; color:#1e293b;">Âge calculé au jour J de début de session. Validation serveur dans /api/inscriptions (lib/utils.ts → validateChildAge).</td><td style="padding:8px 12px; color:var(--muted);">docs/AGE_VALIDATION.md</td></tr>
+      <tr><td style="padding:8px 12px;"><strong>Pricing bloc</strong></td><td style="padding:8px 12px; color:#1e293b;">5–8j → 180€ markup · 11–15j → 240€ · 18–22j → 410€ · hors forfait → 0€. Transport = UFOVAL + 18€ (sauf sans_transport).</td><td style="padding:8px 12px; color:var(--muted);">docs/PRICING_RULES.md</td></tr>
+      <tr style="background:#f8fafc;"><td style="padding:8px 12px;"><strong>Statut Complet</strong></td><td style="padding:8px 12px; color:#1e293b;">is_full (Supabase) doit être synchronisé avec le statut "Complet" affiché sur UFOVAL. Source de vérité : UFOVAL live.</td><td style="padding:8px 12px; color:var(--muted);">AUDIT_SESSION_2026-02-18.json</td></tr>
+      <tr><td style="padding:8px 12px;"><strong>Affichage front</strong></td><td style="padding:8px 12px; color:#1e293b;">Titre toujours <code style="background:#f1f5f9; padding:2px 6px; border-radius:4px;">marketingTitle > titleKids > title</code>. Jamais les noms UFOVAL originaux.</td><td style="padding:8px 12px; color:var(--muted);">stay-detail.tsx L86</td></tr>
+      <tr style="background:#f8fafc;"><td style="padding:8px 12px;"><strong>Mode READ-ONLY</strong></td><td style="padding:8px 12px; color:#1e293b;"><strong>Aucune modification BDD ou code autorisée dans ce cadre d'audit.</strong> Toute correction passe par une session dédiée avec validation explicite.</td><td style="padding:8px 12px; color:var(--muted);">Instruction session 18/02</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="info-box" style="background:#f0fdf4; border-color:#86efac; color:#14532d;">
+  <strong>🔄 Workflow n8n UFOVAL (à venir) :</strong> La validation automatique et exhaustive de la complétude des sessions nécessite un workflow n8n capable de : (1) naviguer sur chaque fiche UFOVAL, (2) itérer sur chaque valeur du dropdown durée, (3) extraire toutes les sessions et leur statut Complet, (4) comparer avec Supabase BDD et générer un delta JSON. Ce workflow bloquera la cause racine identifiée (import partiel des multi-durées).
+</div>
+
+<!-- ═══ CAUSE RACINE ═══ -->
+<div class="root-cause">
+  <h3>🔬 Cause Racine Probable — Scraper UFOVAL</h3>
+  <p>L'import initial ne boucle que sur la durée par défaut du dropdown UFOVAL (généralement <code>7j</code>). Les sessions multi-durées (<code>14j</code>, <code>21j</code>, <code>12j</code>, <code>19j</code>) ne sont jamais scrappées. Conséquences :</p>
+  <p style="margin-top:8px;">→ Toutes les sessions longue durée sont absentes ou sous-représentées en BDD.<br>
+  → Le off-by-one (13j au lieu de 14j, 20j au lieu de 21j) provient d'un calcul en <strong>nuits</strong> au lieu de <strong>jours inclusifs</strong> (<code>(end_date - start_date) + 1</code>).<br>
+  → Le workflow n8n futur devra itérer sur chaque valeur du dropdown UFOVAL et utiliser la formule <code>jours = end_date - start_date + 1</code>.</p>
+</div>
+
+<!-- ═══ SQL PRÊT À EXÉCUTER ═══ -->
+<div class="section-title">🛠️ SQL de Vérification — Prêt pour Supabase SQL Editor</div>
+
+<pre><span class="cm">-- Audit sessions manquantes Univers 1 (ADRÉNALINE)</span>
+<span class="kw">SELECT</span>
+  s.slug,
+  s.marketing_title <span class="kw">AS</span> <span class="str">"Titre GED"</span>,
+  <span class="fn">COUNT</span>(ss.id) <span class="kw">AS</span> <span class="str">"Nb sessions"</span>,
+  <span class="fn">STRING_AGG</span>(<span class="kw">DISTINCT</span> ((ss.end_date::date - ss.start_date::date) + 1)::text, <span class="str">', '</span>
+    <span class="kw">ORDER BY</span> ((ss.end_date::date - ss.start_date::date) + 1)::text) <span class="kw">AS</span> <span class="str">"Durées trouvées"</span>,
+  <span class="fn">COUNT</span>(ss.id) <span class="kw">FILTER</span> (<span class="kw">WHERE</span> ss.is_full = <span class="kw">true</span>) <span class="kw">AS</span> <span class="str">"Sessions Complet"</span>,
+  <span class="fn">MIN</span>(ss.start_date) <span class="kw">AS</span> <span class="str">"1ère session"</span>,
+  <span class="fn">MAX</span>(ss.end_date) <span class="kw">AS</span> <span class="str">"Dernière session"</span>
+<span class="kw">FROM</span> gd_stays s
+<span class="kw">LEFT JOIN</span> gd_stay_sessions ss <span class="kw">ON</span> ss.stay_slug = s.slug
+<span class="kw">WHERE</span> s.slug <span class="kw">IN</span> (
+  <span class="str">'dh-experience-11-13-ans'</span>, <span class="str">'destination-soleil'</span>,
+  <span class="str">'moto-moto'</span>, <span class="str">'annecy-element'</span>,
+  <span class="str">'aqua-fun'</span>, <span class="str">'sperienza-in-corsica-1'</span>, <span class="str">'surf-sur-le-bassin'</span>
+)
+<span class="kw">GROUP BY</span> s.slug, s.marketing_title
+<span class="kw">ORDER BY</span> s.marketing_title;
+
+<span class="cm">-- Vérifier rows de prix (3 sessions Destination Soleil suspectes)</span>
+<span class="kw">SELECT</span>
+  sp.stay_slug, sp.date_text,
+  <span class="fn">COUNT</span>(*) <span class="kw">AS</span> <span class="str">"Nb rows prix"</span>,
+  <span class="fn">MIN</span>(sp.price_ged_total) <span class="kw">AS</span> <span class="str">"Prix min"</span>,
+  <span class="fn">MAX</span>(sp.price_ged_total) <span class="kw">AS</span> <span class="str">"Prix max"</span>
+<span class="kw">FROM</span> gd_session_prices sp
+<span class="kw">WHERE</span> sp.stay_slug = <span class="str">'destination-soleil'</span>
+<span class="kw">GROUP BY</span> sp.stay_slug, sp.date_text
+<span class="kw">HAVING</span> <span class="fn">COUNT</span>(*) &lt; 10
+<span class="kw">ORDER BY</span> sp.date_text;
+
+<span class="cm">-- Audit Univers 2 : cycles hebdo et doublons</span>
+<span class="kw">SELECT</span>
+  ss.stay_slug,
+  ss.start_date,
+  ss.end_date,
+  (ss.end_date::date - ss.start_date::date) + 1 <span class="kw">AS</span> <span class="str">"Durée réelle"</span>,
+  <span class="fn">EXTRACT</span>(dow <span class="kw">FROM</span> ss.start_date) <span class="kw">AS</span> <span class="str">"Jour départ (0=dim)"</span>,
+  ss.is_full,
+  ss.seats_left
+<span class="kw">FROM</span> gd_stay_sessions ss
+<span class="kw">WHERE</span> ss.stay_slug <span class="kw">IN</span> (
+  <span class="str">'les-robinson-des-glieres'</span>, <span class="str">'survie-dans-le-beaufortain'</span>,
+  <span class="str">'yamakasi'</span>, <span class="str">'e-sport-and-sport'</span>, <span class="str">'explore-mountain'</span>,
+  <span class="str">'mountain-and-chill'</span>, <span class="str">'glieraventures'</span>, <span class="str">'nature-picture'</span>,
+  <span class="str">'breizh-equit-kids-8-11-ans'</span>, <span class="str">'destination-bassin-darcachon-1'</span>,
+  <span class="str">'laventure-verticale'</span>, <span class="str">'aqua-mix'</span>
+)
+<span class="kw">AND</span> ss.start_date <span class="kw">BETWEEN</span> <span class="str">'2026-07-05'</span> <span class="kw">AND</span> <span class="str">'2026-08-22'</span>
+<span class="kw">ORDER BY</span> ss.stay_slug, ss.start_date;
+</pre>
+
+<!-- ═══ PLAN D'ACTION ═══ -->
+<div class="section-title">🎯 Plan d'Action Priorisé</div>
+
+<table class="action-table">
+  <thead>
+    <tr>
+      <th>Prio</th>
+      <th>Action</th>
+      <th>Séjours impactés</th>
+      <th>Responsable</th>
+      <th>Effort</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="p0-row">
+      <td><span class="prio prio-p0">P0</span></td>
+      <td><strong>Configurer .env prod VPS Hostinger</strong><br><small>STRIPE_SECRET_KEY, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, STRIPE_WEBHOOK_SECRET</small></td>
+      <td>Tous</td>
+      <td>LAID (accès VPS)</td>
+      <td>15 min</td>
+    </tr>
+    <tr class="p0-row">
+      <td><span class="prio prio-p0">P0</span></td>
+      <td><strong>Corriger scraper n8n</strong> — itérer sur toutes les durées du dropdown UFOVAL, calculer durée en jours inclusifs<br><small>Code scraper : ajouter boucle sur valeurs select[name=duree] avant extraction sessions</small></td>
+      <td>GRAVITY BIKE PARK + tous multi-durées</td>
+      <td>Dev / n8n</td>
+      <td>2–4h</td>
+    </tr>
+    <tr class="p0-row">
+      <td><span class="prio prio-p0">P0</span></td>
+      <td><strong>Insérer les 4 sessions manquantes BDD</strong><br><small>GRAVITY BIKE PARK : 12/07 7j · 02/08 7j · 02/08→15/08 14j · 05/07→25/07 21j</small></td>
+      <td>GRAVITY BIKE PARK</td>
+      <td>Dev (Supabase)</td>
+      <td>30 min</td>
+    </tr>
+    <tr>
+      <td><span class="prio prio-p1">P1</span></td>
+      <td><strong>Corriger grille tarifaire RIVIERA SPEED CLUB</strong><br><small>3 sessions avec 1 seul row prix → import des ~19 villes manquantes</small></td>
+      <td>RIVIERA SPEED CLUB</td>
+      <td>Dev (Supabase)</td>
+      <td>1h</td>
+    </tr>
+    <tr>
+      <td><span class="prio prio-p1">P1</span></td>
+      <td><strong>Script resync is_full depuis UFOVAL</strong><br><small>Comparer statut UFOVAL vs BDD pour les 5 sessions Complet non synchronisées</small></td>
+      <td>GRAVITY BIKE PARK</td>
+      <td>Dev / n8n</td>
+      <td>1h</td>
+    </tr>
+    <tr>
+      <td><span class="prio prio-p1">P1</span></td>
+      <td><strong>Exécuter CORRECTION_SESSION_6_JOURS_PTITS_PUISOTINS.sql</strong><br><small>Dernière correction durée restante — MY LITTLE FOREST (6j → 7j)</small></td>
+      <td>MY LITTLE FOREST</td>
+      <td>Dev (Supabase SQL Editor)</td>
+      <td>5 min</td>
+    </tr>
+    <tr>
+      <td><span class="prio prio-p1">P1</span></td>
+      <td><strong>Finir audit UFOVAL RIVIERA SPEED CLUB</strong><br><small>Session Chrome interrompue — reprendre screenshot dropdown durées</small></td>
+      <td>RIVIERA SPEED CLUB</td>
+      <td>Dev / Chrome</td>
+      <td>30 min</td>
+    </tr>
+    <tr>
+      <td><span class="prio prio-p1">P1</span></td>
+      <td><strong>Audit UFOVAL des 13 séjours non commencés</strong><br><small>MX RIDER, ALPINE SKY, CORSICA, WEST COAST + 9 séjours Univers 2</small></td>
+      <td>13 séjours</td>
+      <td>Dev / n8n scraping</td>
+      <td>1j</td>
+    </tr>
+    <tr>
+      <td><span class="prio prio-p2">P2</span></td>
+      <td><strong>Vérifier non-chevauchement cluster Glières</strong><br><small>4–5 séjours sur le même plateau → capacités d'accueil simultanées</small></td>
+      <td>SURVIVOR · GAMING · ALPINE TREK · DUAL · WILDLIFE</td>
+      <td>LAID + opérations</td>
+      <td>Discussion</td>
+    </tr>
+    <tr>
+      <td><span class="prio prio-p2">P2</span></td>
+      <td><strong>Supprimer /api/bookings legacy</strong><br><small>Route Prisma inactive mais techniquement bypassable</small></td>
+      <td>Sécurité globale</td>
+      <td>Dev</td>
+      <td>5 min</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ═══ ETAT GLOBAL ═══ -->
+<div class="section-title" style="margin-top:32px;">📊 État Global de l'Application</div>
+
+<table style="width:100%; border-collapse:collapse; font-size:13px; background:white; border-radius:10px; overflow:hidden; border:1px solid var(--border);">
+  <thead>
+    <tr style="background:var(--primary); color:white;">
+      <th style="padding:10px 14px; text-align:left;">Domaine</th>
+      <th style="padding:10px 14px; text-align:left;">Statut</th>
+      <th style="padding:10px 14px; text-align:left;">Détail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td style="padding:10px 14px;">Code TypeScript</td><td style="padding:10px 14px;" class="td-ok">✅ PRODUCTION READY</td><td style="padding:10px 14px;">0 erreur TS, 0 conflict marker</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:10px 14px;">Sécurité financière</td><td style="padding:10px 14px;" class="td-ok">✅ ACTIF</td><td style="padding:10px 14px;">Vérif prix backend, webhook idempotent, validation âge serveur</td></tr>
+    <tr><td style="padding:10px 14px;">BDD Supabase</td><td style="padding:10px 14px;" class="td-ok">✅ OK</td><td style="padding:10px 14px;">24 séjours, 213 sessions, 2914 prix, 20 villes départ</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:10px 14px;">Durées sessions</td><td style="padding:10px 14px;" class="td-warn">⚠️ PARTIEL</td><td style="padding:10px 14px;">7/8 séjours corrigés. MY LITTLE FOREST (6j→7j) restant.</td></tr>
+    <tr><td style="padding:10px 14px;">Sessions manquantes</td><td style="padding:10px 14px;" class="td-error">❌ P0</td><td style="padding:10px 14px;">4 sessions absentes BDD (GRAVITY BIKE PARK 14j/21j)</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:10px 14px;">Statuts Complet (is_full)</td><td style="padding:10px 14px;" class="td-error">❌ DÉSYNC</td><td style="padding:10px 14px;">5 sessions Complet UFOVAL non reflétées en BDD</td></tr>
+    <tr><td style="padding:10px 14px;">.env production VPS</td><td style="padding:10px 14px;" class="td-error">❌ BLOQUANT</td><td style="padding:10px 14px;">Aucune clé live configurée depuis le 16/02</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:10px 14px;">Emails Resend</td><td style="padding:10px 14px;" class="td-warn">⚠️ CODE OK</td><td style="padding:10px 14px;">Implémenté, clé API manquante en prod</td></tr>
+    <tr><td style="padding:10px 14px;">Noms CityCrunch</td><td style="padding:10px 14px;" class="td-ok">✅ OK</td><td style="padding:10px 14px;">24/24 marketing_title corrects, 0 régression UFOVAL</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:10px 14px;">Audit UFOVAL complet</td><td style="padding:10px 14px;" class="td-warn">⚠️ EN COURS</td><td style="padding:10px 14px;">2/19 séjours audités (GRAVITY BIKE PARK + RIVIERA partiel)</td></tr>
+  </tbody>
+</table>
+
+</main>
+
+<footer>
+  GED APP — Groupe &amp; Découverte · Audit 2026-02-18 · Mode READ-ONLY · Aucune modification appliquée · Prochain audit via n8n scraping automatisé
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,173 @@
+{
+  "name": "GED — PHASE3 Sessions & Prix Sync v2",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "node-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://iirfvndgzutbxwfdwawu.supabase.co/rest/v1/gd_stays?select=slug,source_url&published=eq.true",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcmZ2bmRnenV0Ynh3ZmR3YXd1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTI3MjgwOSwiZXhwIjoyMDg0ODQ4ODA5fQ.IgRALdFN5r5ssMLYvJWJhIqpUeKU7QRrFAhvFALlsxM"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcmZ2bmRnenV0Ynh3ZmR3YXd1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTI3MjgwOSwiZXhwIjoyMDg0ODQ4ODA5fQ.IgRALdFN5r5ssMLYvJWJhIqpUeKU7QRrFAhvFALlsxM"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-get-stays",
+      "name": "Get 24 Séjours",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ================================================================\n// PHASE 3 v2 — Générer (slug, source_url, durée) pour chaque séjour\n// Durées UFOVAL valides : 7, 12, 14, 19, 21 jours\n// 120 requêtes max (24 séjours × 5 durées)\n// ================================================================\n\nconst DUREES = [7, 12, 14, 19, 21];\nconst output = [];\n\nfor (const item of $input.all()) {\n  const { slug, source_url } = item.json;\n  if (!source_url || !slug) continue;\n\n  for (const jours of DUREES) {\n    // Construire l'URL avec le paramètre durée UFOVAL\n    // ⚠️ Adapter 'nb_jours' si le vrai paramètre UFOVAL est différent\n    // Inspecter une URL UFOVAL dans le navigateur pour confirmer\n    const sep = source_url.includes('?') ? '&' : '?';\n    const url_duree = `${source_url}${sep}nb_jours=${jours}`;\n\n    output.push({\n      json: { slug, source_url_base: source_url, url_duree, duree_jours: jours }\n    });\n  }\n}\n\nreturn output;"
+      },
+      "id": "node-expand",
+      "name": "Expand Durées (7-12-14-19-21j)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url_duree }}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "node-fetch",
+      "name": "Fetch UFOVAL par Durée",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [660, 300],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ================================================================\n// PHASE 3 v3 — Extraction sessions depuis HTML UFOVAL\n// RÈGLES GELÉES :\n//   1. end_date = start_date + duree_jours - 1 (inclusif)\n//   2. Si end_date est Dimanche → reculer d'1 jour → Samedi (anti-ghost 8j)\n//   3. Durées valides : 7, 12, 14, 19, 21 — jamais 8j\n//   4. Clé composite upsert : (stay_slug, start_date)\n// FIX v3 : protection null sur parseDate + duree_jours + calcul date pur (pas de Date())\n// ================================================================\n\nconst VALID_DUREES = [7, 12, 14, 19, 21];\n\nconst MOIS_FR = {\n  'janv': 1, 'fev': 2, 'fevr': 2, 'mars': 3,\n  'avri': 4, 'avr': 4, 'mai': 5, 'juin': 6,\n  'juil': 7, 'aout': 8, 'aou': 8,\n  'sept': 9, 'sep': 9, 'octo': 10, 'oct': 10,\n  'nove': 11, 'nov': 11, 'dece': 12, 'dec': 12\n};\n\n// Calcul de date SANS new Date() pour éviter les bugs timezone\n// Utilise uniquement des entiers : année, mois, jour\nconst JOURS_PAR_MOIS = [0,31,28,31,30,31,30,31,31,30,31,30,31];\n\nfunction estBissextile(y) { return (y%4===0 && y%100!==0) || y%400===0; }\n\nfunction addDaysPure(y, m, d, delta) {\n  // Ajoute delta jours à (y,m,d) en arithmétique pure\n  d += delta;\n  while (true) {\n    const maxJ = (m === 2 && estBissextile(y)) ? 29 : JOURS_PAR_MOIS[m];\n    if (d <= maxJ) break;\n    d -= maxJ;\n    m++;\n    if (m > 12) { m = 1; y++; }\n  }\n  while (d < 1) {\n    m--;\n    if (m < 1) { m = 12; y--; }\n    d += (m === 2 && estBissextile(y)) ? 29 : JOURS_PAR_MOIS[m];\n  }\n  return { y, m, d };\n}\n\nfunction toISO(y, m, d) {\n  return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;\n}\n\n// Jour de la semaine (Zeller simplifié) — retourne 0=Dim, 6=Sam\nfunction jourSemaine(y, m, d) {\n  if (m < 3) { m += 12; y--; }\n  const k = y % 100, j = Math.floor(y / 100);\n  const h = (d + Math.floor(13*(m+1)/5) + k + Math.floor(k/4) + Math.floor(j/4) - 2*j) % 7;\n  return ((h + 6) % 7 + 1) % 7; // 0=Dim, 1=Lun … 6=Sam\n}\n\nfunction parseDate(text, year) {\n  if (!text || typeof text !== 'string') return null;\n  const clean = text\n    .toLowerCase()\n    .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')\n    .replace(/lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche/gi, '')\n    .replace(/\\./g, '').trim();\n  const match = clean.match(/(\\d{1,2})\\s+([a-z]+)/);\n  if (!match) return null;\n  const day = parseInt(match[1], 10);\n  if (isNaN(day) || day < 1 || day > 31) return null;\n  const mKey = Object.keys(MOIS_FR).find(k => match[2].startsWith(k));\n  if (!mKey) return null;\n  const month = MOIS_FR[mKey];\n  return { y: year, m: month, d: day };\n}\n\nconst output = [];\nconst year = new Date().getFullYear();\n\nfor (const item of $input.all()) {\n  const slug = item.json.slug;\n  const duree_jours = parseInt(item.json.duree_jours, 10);\n\n  // Sécurité : slug et durée valide obligatoires\n  if (!slug || isNaN(duree_jours) || !VALID_DUREES.includes(duree_jours)) continue;\n\n  const html = item.json.body || item.json.data || '';\n  if (!html || html.length < 200) continue; // page vide → durée absente pour ce séjour\n\n  const labelMatches = html.match(/<label[^>]*>[\\s\\S]*?<\\/label>/gi) || [];\n\n  for (const label of labelMatches) {\n    const stripped = label.replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim();\n    if (!stripped.toLowerCase().includes(' au ')) continue;\n\n    const isFull =\n      label.includes('availability-status-full') ||\n      /complet|sold.?out/i.test(label);\n\n    const parts = stripped.split(/ au /i);\n    if (parts.length < 2) continue;\n\n    // Parsing date début\n    const startParsed = parseDate(parts[0], year);\n    if (!startParsed) continue;\n\n    // Filtre juillet-août uniquement\n    if (startParsed.m < 6 || startParsed.m > 9) continue;\n\n    // ── RÈGLE 1 : end_date = start + duree - 1 (calcul pur, sans new Date) ──\n    const endParsed = addDaysPure(startParsed.y, startParsed.m, startParsed.d, duree_jours - 1);\n\n    // ── RÈGLE 2 : anti-ghost — si end_date est Dimanche → reculer au Samedi ──\n    const jourFin = jourSemaine(endParsed.y, endParsed.m, endParsed.d);\n    let endFinal = endParsed;\n    if (jourFin === 0) { // Dimanche\n      endFinal = addDaysPure(endParsed.y, endParsed.m, endParsed.d, -1);\n    }\n\n    // ── RÈGLE 3 : recalcul durée réelle après correction Samedi ──\n    // Calcul delta en jours (simple soustraction de valeurs absolues)\n    const startAbs = startParsed.y * 365 + startParsed.m * 31 + startParsed.d;\n    const endAbs   = endFinal.y   * 365 + endFinal.m   * 31 + endFinal.d;\n    const duree_reelle = endAbs - startAbs + 1;\n\n    if (!VALID_DUREES.includes(duree_reelle)) continue; // ghost résiduel → ignorer\n\n    output.push({\n      json: {\n        slug,\n        start_date: toISO(startParsed.y, startParsed.m, startParsed.d),\n        end_date:   toISO(endFinal.y, endFinal.m, endFinal.d),\n        duree_jours: duree_reelle,\n        is_full: isFull,\n        seats_left: isFull ? 0 : null\n      }\n    });\n  }\n}\n\nreturn output.length > 0 ? output : [{ json: { _skip: true } }];"
+      },
+      "id": "node-extract",
+      "name": "Extract Sessions (anti-ghost)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json._skip }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "notEquals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "node-filter",
+      "name": "Filtrer sessions vides",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [1100, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://iirfvndgzutbxwfdwawu.supabase.co/rest/v1/gd_stay_sessions",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcmZ2bmRnenV0Ynh3ZmR3YXd1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTI3MjgwOSwiZXhwIjoyMDg0ODQ4ODA5fQ.IgRALdFN5r5ssMLYvJWJhIqpUeKU7QRrFAhvFALlsxM"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcmZ2bmRnenV0Ynh3ZmR3YXd1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTI3MjgwOSwiZXhwIjoyMDg0ODQ4ODA5fQ.IgRALdFN5r5ssMLYvJWJhIqpUeKU7QRrFAhvFALlsxM"
+            },
+            { "name": "Content-Type", "value": "application/json" },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"stay_slug\": \"{{ $json.slug }}\",\n  \"start_date\": \"{{ $json.start_date }}\",\n  \"end_date\": \"{{ $json.end_date }}\",\n  \"is_full\": {{ $json.is_full }},\n  \"seats_left\": null\n}",
+        "options": {}
+      },
+      "id": "node-upsert-sessions",
+      "name": "UPSERT gd_stay_sessions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1320, 300],
+      "notes": "ON CONFLICT (stay_slug, start_date) → merge-duplicates\nMet à jour : end_date, is_full\nNe touche pas : created_at"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ================================================================\n// PHASE 3 v2 — Rapport final\n// ================================================================\n\nconst items = $input.all();\nlet ok = 0;\nlet errors = [];\n\nfor (const item of items) {\n  const r = item.json;\n  if (r.statusCode && r.statusCode >= 400) {\n    errors.push({ slug: r.stay_slug || '?', error: r.message || `HTTP ${r.statusCode}` });\n  } else {\n    ok++;\n  }\n}\n\nreturn [{\n  json: {\n    phase: 'PHASE_3_SESSIONS_SYNC',\n    timestamp: new Date().toISOString(),\n    status: errors.length === 0 ? '✅ SUCCESS' : '⚠️ PARTIEL',\n    upserts_ok: ok,\n    errors_count: errors.length,\n    errors,\n    next_step: errors.length === 0\n      ? 'Phase 3 OK → Exécuter P1_MANUAL_FIXES_GRAVITY_MYFOREST.sql puis configurer .env VPS'\n      : 'Analyser les erreurs ci-dessus et relancer'\n  }\n}];"
+      },
+      "id": "node-summary",
+      "name": "Rapport",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1540, 300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "Get 24 Séjours", "type": "main", "index": 0 }]]
+    },
+    "Get 24 Séjours": {
+      "main": [[{ "node": "Expand Durées (7-12-14-19-21j)", "type": "main", "index": 0 }]]
+    },
+    "Expand Durées (7-12-14-19-21j)": {
+      "main": [[{ "node": "Fetch UFOVAL par Durée", "type": "main", "index": 0 }]]
+    },
+    "Fetch UFOVAL par Durée": {
+      "main": [[{ "node": "Extract Sessions (anti-ghost)", "type": "main", "index": 0 }]]
+    },
+    "Extract Sessions (anti-ghost)": {
+      "main": [[{ "node": "Filtrer sessions vides", "type": "main", "index": 0 }]]
+    },
+    "Filtrer sessions vides": {
+      "main": [[{ "node": "UPSERT gd_stay_sessions", "type": "main", "index": 0 }]]
+    },
+    "UPSERT gd_stay_sessions": {
+      "main": [[{ "node": "Rapport", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "tags": [
+    { "name": "Phase 3 — Sessions Sync" }
+  ]
+}

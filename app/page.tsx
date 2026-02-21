@@ -34,7 +34,7 @@ export default async function HomePage() {
   }
 
   // Mapper les données GED vers le type Stay attendu
-  const staysData: Stay[] = sejoursGed.map(sejour => {
+  const staysData: Stay[] = sejoursGed.map((sejour: any) => {
     const sessions = sessionsMap.get(sejour.slug) || [];
 
     // Sprint 1: Calcul unifié âges + durée via helpers centralisés

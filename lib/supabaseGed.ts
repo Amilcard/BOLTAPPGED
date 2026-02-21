@@ -17,8 +17,9 @@ function getClient() {
   return _supabaseGed
 }
 
-// Proxy object: existing callers use `supabaseGed.from(...)` unchanged.
-export const supabaseGed = new Proxy({} as ReturnType<typeof createClient>, {
+// Proxy object: typed as 'any' to prevent 'never' inference cascade
+// caused by untyped SupabaseClient<any> schema in supabase-js.
+export const supabaseGed = new Proxy({} as any, {
   get(_target, prop) {
     return (getClient() as any)[prop]
   },

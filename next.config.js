@@ -2,8 +2,8 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Mode standalone uniquement pour build production Docker
-  output: process.env.NODE_ENV === 'production' ? 'standalone' : undefined,
+  // Standalone required for VPS/PM2 deployment (node server.js)
+  output: 'standalone',
   experimental: {
     // LOT 1: Fix module resolution - remove parent directory tracing
     outputFileTracingRoot: path.join(__dirname),

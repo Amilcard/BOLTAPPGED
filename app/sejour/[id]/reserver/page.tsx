@@ -44,6 +44,21 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
   // Enrichir stay avec les données attendues par BookingFlow
   const enrichedStay = {
     ...stay,
+    // Champs Stay requis par BookingFlow
+    id: stay.slug,
+    title: stay.marketingTitle || stay.title || 'Séjour',
+    descriptionShort: stay.punchline || stay.expertPitch || '',
+    geography: stay.location_region || stay.location_city || '',
+    accommodation: stay.centre_name || '',
+    supervision: 'Équipe Groupe & Découverte',
+    imageCover: Array.isArray(stay.images) ? (stay.images as string[])[0] || '' : '',
+    images: Array.isArray(stay.images) ? (stay.images as string[]) : [],
+    published: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    durationDays: undefined,
+    period: undefined,
+    themes: [],
     departureCities,
     enrichmentSessions,
   };
@@ -77,7 +92,8 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-white rounded-2xl shadow-lg border border-primary-100 overflow-hidden">
           <BookingFlow
-            stay={enrichedStay}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            stay={enrichedStay as any}
             sessions={sessions}
             initialSessionId={searchParams.session}
             initialCity={searchParams.ville}

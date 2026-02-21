@@ -25,10 +25,10 @@ export default async function RecherchePage() {
       sessionsMap.set(row.stay_slug, []);
     }
     sessionsMap.get(row.stay_slug)!.push({
-      age_min: row.age_min,
-      age_max: row.age_max,
-      start_date: row.start_date,
-      end_date: row.end_date,
+      age_min: row.age_min ?? 0,
+      age_max: row.age_max ?? 0,
+      start_date: row.start_date ?? '',
+      end_date: row.end_date ?? '',
     });
   }
 

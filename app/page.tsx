@@ -14,7 +14,7 @@ export default async function HomePage() {
     getSejours(),
     supabaseGed.from('gd_stay_sessions')
       .select('stay_slug, age_min, age_max, start_date, end_date')
-      .then(({ data }) => data || []),
+      .then(({ data }) => (data || []) as Array<{ stay_slug: string; age_min: number; age_max: number; start_date: string; end_date: string }>),
     getAllStayThemes(),
     getMinPricesBySlug()
   ]);

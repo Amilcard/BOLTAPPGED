@@ -618,7 +618,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
               ) : (
                 <div className="space-y-2 mb-4">
                   {sessions.map(session => {
-                    const isFull = IS_TEST_MODE ? false : (session?.seatsLeft ?? 0) <= 0;
+                    const isFull = IS_TEST_MODE ? false : (session?.seatsLeft !== -1 && (session?.seatsLeft ?? 0) <= 0);
                     const isSelected = preSelectedSessionId === session?.id;
                     return (
                       <button
@@ -648,7 +648,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                               au {formatDateLong(session?.endDate ?? '')}
                             </div>
                             <div className={`text-xs mt-1 ${isFull ? 'text-red-500' : 'text-green-600'}`}>
-                              {isFull ? 'Complet' : IS_TEST_MODE ? 'Test - illimité' : (session?.seatsLeft === 1 ? '1 place' : `${session?.seatsLeft ?? 0} places`)}
+                              {isFull ? 'Complet' : IS_TEST_MODE ? 'Test - illimité' : (session?.seatsLeft === -1 ? 'Places disponibles' : session?.seatsLeft === 1 ? '1 place' : `${session?.seatsLeft ?? 0} places`)}
                             </div>
                           </div>
                         </div>
@@ -728,7 +728,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                     if (preSelectedCity) params.set('ville', preSelectedCity);
                     router.push(`/sejour/${slug}/reserver?${params.toString()}`);
                   }}
-                  disabled={!preSelectedSessionId || !preSelectedCity || (!IS_TEST_MODE && sessions.filter(s => (s?.seatsLeft ?? 0) > 0).length === 0)}
+                  disabled={!preSelectedSessionId || !preSelectedCity || (!IS_TEST_MODE && sessions.filter(s => s?.seatsLeft === -1 || (s?.seatsLeft ?? 0) > 0).length === 0)}
                   className="w-full"
                   size="lg"
                 >

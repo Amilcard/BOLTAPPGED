@@ -6,14 +6,12 @@ import { usePathname } from 'next/navigation';
 import { useApp } from './providers';
 import { Logo } from './logo';
 import { VITRINE_LINKS } from '@/config/vitrineLinks';
-import { Users, Baby, Menu, X, RotateCcw, ArrowLeft, FileText, Mail } from 'lucide-react';
+import { Users, Baby, Menu, X, RotateCcw, ArrowLeft } from 'lucide-react';
 
 // LOT GRAPHISME 1: App is search-only engine - no internal nav
 // All links in minimal header point to VITRINE_LINKS (external)
 const vitrineLinks = [
   { label: 'Retour au site', route: VITRINE_LINKS.HOME, icon: ArrowLeft, showInKids: true },
-  { label: 'Demande individualisée', route: VITRINE_LINKS.DEMANDE, icon: FileText, showInKids: false },
-  { label: 'Contact', route: VITRINE_LINKS.CONTACT, icon: Mail, showInKids: true },
 ];
 
 interface HeaderProps {

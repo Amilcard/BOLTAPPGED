@@ -47,3 +47,5 @@ app/debug-db/
 # local editor
 .vscode/
 .env
+.vercel
+.env*.local

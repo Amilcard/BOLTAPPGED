@@ -4,10 +4,12 @@ import { verifyAuth } from '@/lib/auth-middleware';
 import { createClient } from '@supabase/supabase-js';
 import { sendStatusChangeEmail } from '@/lib/email';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 /**
  * GET /api/admin/inscriptions/[id]
@@ -15,6 +17,7 @@ const supabase = createClient(
  */
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const supabase = getSupabase();
     const auth = await verifyAuth(req);
     if (!auth) {
       return NextResponse.json(
@@ -53,6 +56,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
  */
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const supabase = getSupabase();
     const auth = await verifyAuth(req);
     if (!auth || !['ADMIN', 'EDITOR'].includes(auth.role)) {
       return NextResponse.json(

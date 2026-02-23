@@ -17,6 +17,12 @@ function getSupabase() {
 }
 
 export async function POST(req: NextRequest) {
+  // STRIPE DÉSACTIVÉ — en attente de signature du contrat
+  return NextResponse.json(
+    { error: { code: 'STRIPE_DISABLED', message: 'Le paiement en ligne est temporairement indisponible.' } },
+    { status: 503 }
+  );
+
   try {
     const stripe = getStripe();
     const supabase = getSupabase();

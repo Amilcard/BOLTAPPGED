@@ -46,8 +46,6 @@ export async function POST(request: NextRequest) {
 
     const data = parsed.data;
 
-    console.log("DEBUG FULL PAYLOAD:", JSON.stringify(data, null, 2));
-
     // Validation âge (garde-fou serveur : 3-17 ans global GED)
     const birthDate = new Date(data.childBirthDate);
     if (isNaN(birthDate.getTime())) {
@@ -72,11 +70,6 @@ export async function POST(request: NextRequest) {
     // ── PATCH SÉCURITÉ FINANCIÈRE : vérification prix côté serveur ──
     // Normaliser la date envoyée par le front (peut être ISO ou date pure)
     const normalizedDate = data.sessionDate.split('T')[0]; // "2026-07-05T00:00:00Z" → "2026-07-05"
-    console.log("DEBUG PRICE FILTER:", {
-      staySlug: data.staySlug,
-      sessionDate: normalizedDate,
-      cityDeparture: data.cityDeparture,
-    });
     // Stratégie: chercher par date pure d'abord, fallback par plage si timestamptz
     let priceRow: any = null;
     let priceError: any = null;
@@ -105,8 +98,6 @@ export async function POST(request: NextRequest) {
       priceRow = priceRows2?.[0] ?? null;
       priceError = priceErr2;
     }
-
-    console.log("DEBUG PRICE RESULT:", { priceRow, priceError: priceError?.message });
 
     if (priceError || !priceRow) {
       // Fallback : prix sans transport si ville non trouvée

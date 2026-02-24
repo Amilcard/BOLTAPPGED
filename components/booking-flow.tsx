@@ -65,6 +65,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   const [selectedCity, setSelectedCity] = useState<string>(normalizedInitialCity);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'bank_transfer' | 'cheque' | null>(null);
 
   // Wrapper setStep qui reset l'erreur à chaque changement d'étape
   const setStep = (s: number | ((prev: number) => number)) => {
@@ -184,6 +185,12 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   const handleSubmit = async () => {
     if (!selectedSessionId || !selectedSession) return;
 
+    // SÉCURITÉ: Bloquer si mode de paiement non choisi
+    if (!paymentMethod) {
+      setError('Veuillez choisir un mode de paiement.');
+      return;
+    }
+
     // SÉCURITÉ: Bloquer si prix non calculé
     if (totalPrice === null) {
       setError('Impossible de finaliser : tarif indisponible.');
@@ -222,6 +229,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
           remarques,
           priceTotal: totalPrice ?? 0,
           consent: step2.consent,
+          paymentMethod,
         }),
       });
 
@@ -629,6 +637,49 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               )}
             </div>
           </div>
+          {/* Choix mode de paiement — sélection obligatoire */}
+          <div className="space-y-2">
+            <h4 className="font-semibold text-primary text-sm">Mode de paiement *</h4>
+            {[
+              { value: 'bank_transfer', label: 'Virement bancaire', desc: 'Coordonnées IBAN communiquées par email', disabled: false },
+              { value: 'cheque', label: 'Chèque', desc: 'À l\'ordre de Groupe & Découverte', disabled: false },
+              { value: 'card', label: 'Carte bancaire (bientôt disponible)', desc: 'Paiement sécurisé en ligne', disabled: true },
+            ].map(opt => {
+              const isSelected = paymentMethod === opt.value;
+              return (
+                <label
+                  key={opt.value}
+                  className={`flex items-start gap-3 p-3 rounded-xl border-2 transition-all ${
+                    opt.disabled
+                      ? 'border-primary-100 bg-primary-50 opacity-50 cursor-not-allowed'
+                      : isSelected
+                      ? 'border-secondary bg-secondary/5 ring-2 ring-secondary/20 cursor-pointer'
+                      : 'border-primary-200 hover:border-primary-300 cursor-pointer'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
+                    isSelected ? 'border-secondary bg-secondary' : 'border-primary-300'
+                  }`}>
+                    {isSelected && <Check className="w-3 h-3 text-white" />}
+                  </div>
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value={opt.value}
+                    checked={isSelected}
+                    disabled={opt.disabled}
+                    onChange={() => !opt.disabled && setPaymentMethod(opt.value as 'card' | 'bank_transfer' | 'cheque')}
+                    className="sr-only"
+                  />
+                  <div>
+                    <div className="font-medium text-sm text-primary-800">{opt.label}</div>
+                    <div className="text-xs text-primary-500">{opt.desc}</div>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+
           {totalPrice === null && (
             <div className="p-3 bg-amber-50 text-amber-700 rounded-xl text-sm border border-amber-200 flex items-center gap-2">
               <AlertCircle className="w-4 h-4" /> Le tarif n'a pas pu être calculé. Veuillez réessayer ou contacter l'équipe.
@@ -653,11 +704,11 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             </button>
             <button
               onClick={handleSubmit}
-              disabled={loading || totalPrice === null || ageError !== ''}
+              disabled={loading || totalPrice === null || ageError !== '' || !paymentMethod}
               className="flex-1 py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-              {loading ? 'Envoi...' : 'Confirmer'}
+              {loading ? 'Envoi...' : paymentMethod === 'card' ? 'Payer maintenant' : 'Confirmer l\'inscription'}
             </button>
           </div>
         </div>
@@ -679,7 +730,23 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             <p><strong>Ville :</strong> {selectedCity === 'sans_transport' ? 'Sans transport (par vos soins)' : selectedCity}</p>
             <p><strong>Enfant :</strong> {step2.childFirstName} (né le {new Date(step2.childBirthDate).toLocaleDateString('fr-FR')})</p>
             <p><strong>Contact :</strong> {step1.email}</p>
+            <p><strong>Mode de paiement :</strong> {paymentMethod === 'bank_transfer' ? 'Virement bancaire' : paymentMethod === 'cheque' ? 'Chèque' : 'Carte bancaire'}</p>
           </div>
+
+          {/* Instructions paiement selon mode choisi */}
+          {paymentMethod === 'bank_transfer' && (
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-left text-sm">
+              <h4 className="font-semibold text-blue-800 mb-2">Instructions de virement</h4>
+              <p className="text-blue-700 text-xs">Les coordonnées bancaires (IBAN) vous ont été envoyées par email. Veuillez effectuer le virement en indiquant votre référence <strong>{bookingId?.slice(0, 8)?.toUpperCase()}</strong> en libellé.</p>
+            </div>
+          )}
+          {paymentMethod === 'cheque' && (
+            <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-left text-sm">
+              <h4 className="font-semibold text-amber-800 mb-2">Instructions chèque</h4>
+              <p className="text-amber-700 text-xs">Merci d'adresser votre chèque à l'ordre de <strong>Groupe & Découverte</strong>, en indiquant la référence <strong>{bookingId?.slice(0, 8)?.toUpperCase()}</strong> au dos. L'adresse d'envoi vous a été communiquée par email.</p>
+            </div>
+          )}
+
           <button
             onClick={() => router.push(`/sejour/${stay.slug}`)}
             className="mt-6 px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary-600 transition-colors"

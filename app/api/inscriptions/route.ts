@@ -27,6 +27,7 @@ const inscriptionSchema = z.object({
   remarques: z.string().optional(),
   priceTotal: z.number().min(0),
   consent: z.boolean().refine(v => v === true, { message: 'Consentement requis' }),
+  paymentMethod: z.enum(['card', 'bank_transfer', 'cheque']).optional().default('bank_transfer'),
 });
 
 export async function POST(request: NextRequest) {
@@ -245,6 +246,7 @@ export async function POST(request: NextRequest) {
         price_total: Math.round(data.priceTotal),
         status: 'en_attente',
         payment_status: 'pending_payment',
+        payment_method: data.paymentMethod,
       })
       .select()
       .single();
@@ -272,10 +274,11 @@ export async function POST(request: NextRequest) {
       sessionDate: normalizedDate,
       cityDeparture: data.cityDeparture === 'sans_transport' ? 'Sans transport' : data.cityDeparture,
       priceTotal: data.priceTotal,
+      paymentMethod: data.paymentMethod,
       paymentReference: inscription.payment_reference || inscription.id,
     };
-    sendInscriptionConfirmation(emailData).catch(() => {});
-    sendAdminNewInscriptionNotification(emailData).catch(() => {});
+    sendInscriptionConfirmation(emailData).catch(console.error);
+    sendAdminNewInscriptionNotification(emailData).catch(console.error);
 
     return NextResponse.json(
       {

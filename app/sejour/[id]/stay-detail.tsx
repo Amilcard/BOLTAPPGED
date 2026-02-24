@@ -858,7 +858,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   if (preSelectedCity) params.set('ville', preSelectedCity);
                   router.push(`/sejour/${slug}/reserver?${params.toString()}`);
                 }}
-                disabled={sessions.filter(s => (s?.seatsLeft ?? 0) > 0).length === 0}
+                disabled={sessions.filter(s => s?.seatsLeft === -1 || (s?.seatsLeft ?? 0) > 0).length === 0}
                 className="w-full"
                 size="default"
               >

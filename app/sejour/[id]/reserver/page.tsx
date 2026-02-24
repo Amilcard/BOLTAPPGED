@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
-import { getSejourBySlug, getStaySessions, getDepartureCitiesFormatted, getSessionPricesFormatted } from '@/lib/supabaseGed';
+import { getSejourBySlug, getStaySessions, getDepartureCitiesFormatted, getSessionPricesFormatted, getSessionPrices } from '@/lib/supabaseGed';
 import { BookingFlow } from '@/components/booking-flow';
 
 export const dynamic = 'force-dynamic';
@@ -15,30 +15,32 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
   const stay = await getSejourBySlug(params.id);
   if (!stay) notFound();
 
-  // Récupérer sessions + villes + prix
-  const [sessionsRaw, departureCities, enrichmentSessions] = await Promise.all([
+  // Récupérer sessions + villes + prix + is_full UFOVAL (source de vérité)
+  const [sessionsRaw, departureCities, enrichmentSessions, sessionPrices] = await Promise.all([
     getStaySessions(params.id),
     getDepartureCitiesFormatted(params.id),
     getSessionPricesFormatted(params.id),
+    getSessionPrices(params.id), // is_full mis à jour par n8n UFOVAL toutes les 6h
   ]);
 
-  // Places limitées  dispatcher selon séjours pour urgence (12, 5, 11, 7)
-  const seatsOptions = [12, 5, 11, 7];
-  const seatsForThisStay = seatsOptions[params.id.length % seatsOptions.length];
+  // Index is_full par clé start_date|end_date pour lookup rapide
+  const isFullMap = new Map<string, boolean>(
+    sessionPrices.map((p: any) => [`${p.start_date}|${p.end_date}`, p.is_full === true])
+  );
 
   // Filtrer sessions sans dates valides (guard null DB)
   const validSessions = sessionsRaw.filter((s: any) => s.start_date && s.end_date);
 
   // Map snake_case DB → camelCase frontend
   // IMPORTANT: l'ID = slug__start__end — identique au format de sejour/[id]/page.tsx
-  const sessions = validSessions.map((s: any, idx: number) => ({
+  const sessions = validSessions.map((s: any) => ({
     ...s,
     id: `${params.id}__${s.start_date}__${s.end_date}`,
     stayId: params.id,
     startDate: s.start_date,
     endDate: s.end_date,
-    // Alterner places entre sessions d'un même séjour
-    seatsLeft: seatsOptions[idx % seatsOptions.length],
+    // is_full UFOVAL — source de vérité Supabase — 0 = complet, -1 = dispo
+    seatsLeft: isFullMap.get(`${s.start_date}|${s.end_date}`) ? 0 : -1,
   }));
 
   // Enrichir stay avec les données attendues par BookingFlow

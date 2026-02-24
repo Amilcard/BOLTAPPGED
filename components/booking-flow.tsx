@@ -150,7 +150,8 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     }
   }, [step2.childBirthDate, stay.ageMin, stay.ageMax]);
 
-  const validSessions = sessions?.filter(s => (s?.seatsLeft ?? 0) > 0) ?? [];
+  // -1 = dispo illimité (UFOVAL source de vérité), 0 = complet
+  const validSessions = sessions?.filter(s => s?.seatsLeft === -1 || (s?.seatsLeft ?? 0) > 0) ?? [];
   const sessionsUnique = (sessions || []).filter((s, idx, arr) => {
     const key = `${s.startDate}-${s.endDate}`;
     return idx === arr.findIndex(x => `${x.startDate}-${x.endDate}` === key);
@@ -330,7 +331,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                         {formatDateLong(session?.startDate ?? '')} - {formatDateLong(session?.endDate ?? '')}
                       </div>
                       <div className={`text-xs ${isFull ? 'text-red-500' : 'text-primary-500'}`}>
-                        {isFull ? 'Complet' : `${session?.seatsLeft ?? 0} places restantes`}
+                        {isFull ? 'Complet' : session?.seatsLeft === -1 ? 'Places disponibles' : `${session?.seatsLeft} places restantes`}
                       </div>
                     </div>
                     {displayPrice && !isFull && (

@@ -62,9 +62,10 @@ export async function sendInscriptionConfirmation(data: InscriptionEmailData) {
               <h3 style="color: #1e40af; margin: 0 0 8px 0; font-size: 15px;">Instructions de virement bancaire</h3>
               <p style="margin: 0 0 8px 0; color: #1e3a8a; font-size: 14px;">Merci d'effectuer le virement en mentionnant votre référence <strong>${data.paymentReference || ''}</strong> en libellé.</p>
               <table style="font-size: 13px; color: #1e3a8a;">
-                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">Titulaire</td><td><strong>Groupe &amp; Découverte</strong></td></tr>
-                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">IBAN</td><td><strong>FR76 XXXX XXXX XXXX XXXX XXXX XXX</strong></td></tr>
-                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">BIC</td><td><strong>XXXXXXXXX</strong></td></tr>
+                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">Titulaire</td><td><strong>GROUPE ET DECOUVERTE</strong></td></tr>
+                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">IBAN</td><td><strong>FR76 1027 8073 4600 0204 0900 146</strong></td></tr>
+                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">BIC</td><td><strong>CMCIFR2A</strong></td></tr>
+                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">Domiciliation</td><td>CCM LYON GAMBETTA</td></tr>
                 <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">Libellé</td><td><strong>${data.paymentReference || data.jeunePrenom}</strong></td></tr>
               </table>
               <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 12px;">⚠️ Votre inscription sera validée à réception du règlement.</p>
@@ -76,8 +77,8 @@ export async function sendInscriptionConfirmation(data: InscriptionEmailData) {
               <h3 style="color: #92400e; margin: 0 0 8px 0; font-size: 15px;">Instructions chèque</h3>
               <p style="margin: 0 0 8px 0; color: #78350f; font-size: 14px;">Merci d'adresser votre chèque à l'ordre de <strong>Groupe &amp; Découverte</strong>, en inscrivant la référence <strong>${data.paymentReference || ''}</strong> au dos.</p>
               <table style="font-size: 13px; color: #78350f;">
-                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">À l'ordre de</td><td><strong>Groupe &amp; Découverte</strong></td></tr>
-                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">Adresse</td><td><strong>Groupe &amp; Découverte — [ADRESSE À COMPLÉTER]</strong></td></tr>
+                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">À l'ordre de</td><td><strong>GROUPE ET DECOUVERTE</strong></td></tr>
+                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">Adresse</td><td><strong>3 rue Flobert — 42000 Saint-Étienne</strong></td></tr>
                 <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">Référence au dos</td><td><strong>${data.paymentReference || data.jeunePrenom}</strong></td></tr>
               </table>
               <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 12px;">⚠️ Votre inscription sera validée à réception du chèque.</p>

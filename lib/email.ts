@@ -53,10 +53,38 @@ export async function sendInscriptionConfirmation(data: InscriptionEmailData) {
               <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Session</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${data.sessionDate}</td></tr>
               <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Départ</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${data.cityDeparture.replace(/_/g, ' ')}</td></tr>
               <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Montant</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: bold;">${data.priceTotal.toFixed(2)} €</td></tr>
-              ${data.paymentMethod ? `<tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Paiement</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${data.paymentMethod}</td></tr>` : ''}
-              ${data.paymentReference ? `<tr><td style="padding: 8px; color: #6b7280;">Référence</td><td style="padding: 8px;">${data.paymentReference}</td></tr>` : ''}
+              <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Mode de paiement</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${data.paymentMethod === 'bank_transfer' ? 'Virement bancaire' : data.paymentMethod === 'cheque' ? 'Chèque' : 'Carte bancaire'}</td></tr>
+              ${data.paymentReference ? `<tr><td style="padding: 8px; color: #6b7280;">Référence</td><td style="padding: 8px; font-weight: bold;">${data.paymentReference}</td></tr>` : ''}
             </table>
-            <p style="color: #6b7280; font-size: 14px;">Votre inscription est en attente de validation. Vous recevrez un email de confirmation une fois validée.</p>
+
+            ${data.paymentMethod === 'bank_transfer' ? `
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px; margin: 16px 0;">
+              <h3 style="color: #1e40af; margin: 0 0 8px 0; font-size: 15px;">Instructions de virement bancaire</h3>
+              <p style="margin: 0 0 8px 0; color: #1e3a8a; font-size: 14px;">Merci d'effectuer le virement en mentionnant votre référence <strong>${data.paymentReference || ''}</strong> en libellé.</p>
+              <table style="font-size: 13px; color: #1e3a8a;">
+                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">Titulaire</td><td><strong>Groupe &amp; Découverte</strong></td></tr>
+                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">IBAN</td><td><strong>FR76 XXXX XXXX XXXX XXXX XXXX XXX</strong></td></tr>
+                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">BIC</td><td><strong>XXXXXXXXX</strong></td></tr>
+                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">Libellé</td><td><strong>${data.paymentReference || data.jeunePrenom}</strong></td></tr>
+              </table>
+              <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 12px;">⚠️ Votre inscription sera validée à réception du règlement.</p>
+            </div>
+            ` : ''}
+
+            ${data.paymentMethod === 'cheque' ? `
+            <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 16px; margin: 16px 0;">
+              <h3 style="color: #92400e; margin: 0 0 8px 0; font-size: 15px;">Instructions chèque</h3>
+              <p style="margin: 0 0 8px 0; color: #78350f; font-size: 14px;">Merci d'adresser votre chèque à l'ordre de <strong>Groupe &amp; Découverte</strong>, en inscrivant la référence <strong>${data.paymentReference || ''}</strong> au dos.</p>
+              <table style="font-size: 13px; color: #78350f;">
+                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">À l'ordre de</td><td><strong>Groupe &amp; Découverte</strong></td></tr>
+                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">Adresse</td><td><strong>Groupe &amp; Découverte — [ADRESSE À COMPLÉTER]</strong></td></tr>
+                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">Référence au dos</td><td><strong>${data.paymentReference || data.jeunePrenom}</strong></td></tr>
+              </table>
+              <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 12px;">⚠️ Votre inscription sera validée à réception du chèque.</p>
+            </div>
+            ` : ''}
+
+            <p style="color: #6b7280; font-size: 14px;">Votre inscription est en attente de validation. Vous recevrez un email de confirmation une fois le paiement reçu et validé.</p>
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
             <p style="color: #9ca3af; font-size: 12px;">Groupe &amp; Découverte — Séjours de vacances pour enfants et adolescents</p>
           </div>

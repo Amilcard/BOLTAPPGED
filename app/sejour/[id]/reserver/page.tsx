@@ -62,7 +62,7 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
     // Requête 1 : candidats même carousel_group (max 10 pour avoir de la marge au tri)
     const { data: candidates } = await supabaseGed
       .from('gd_stays')
-      .select('slug, marketing_title, punchline, images, age_min, age_max, price_base')
+      .select('slug, marketing_title, punchline, images, age_min, age_max')
       .eq('published', true)
       .eq('carousel_group', stay.carousel_group)
       .neq('slug', params.id)
@@ -86,15 +86,10 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
       // Tri : même tranche d'âge > durée proche > prix croissant
       const currentAgeMin = stay.age_min ?? 0;
       const currentAgeMax = stay.age_max ?? 99;
-      const currentPrice = stay.price_base ?? 0;
-
       filtered.sort((a: any, b: any) => {
         const aAgeMatch = a.age_min === currentAgeMin && a.age_max === currentAgeMax ? 0 : 1;
         const bAgeMatch = b.age_min === currentAgeMin && b.age_max === currentAgeMax ? 0 : 1;
-        if (aAgeMatch !== bAgeMatch) return aAgeMatch - bAgeMatch;
-        const aPriceDiff = Math.abs((a.price_base ?? 0) - currentPrice);
-        const bPriceDiff = Math.abs((b.price_base ?? 0) - currentPrice);
-        return aPriceDiff - bPriceDiff;
+        return aAgeMatch - bAgeMatch;
       });
 
       alternativeStays = filtered.slice(0, 3);

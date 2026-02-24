@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
-import { getSejourBySlug, getStaySessions, getDepartureCitiesFormatted, getSessionPricesFormatted, getSessionPrices } from '@/lib/supabaseGed';
+import { getSejourBySlug, getStaySessions, getDepartureCitiesFormatted, getSessionPricesFormatted, getSessionPrices, supabaseGed } from '@/lib/supabaseGed';
 import { BookingFlow } from '@/components/booking-flow';
 
 export const dynamic = 'force-dynamic';
@@ -56,6 +56,19 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
   const availableSessions = sessions.filter(s => s.seatsLeft === -1 || s.seatsLeft > 0);
   const allFull = availableSessions.length === 0;
 
+  // Séjours alternatifs si complet — même carousel_group, max 3, lecture seule, pas de jointure
+  let alternativeStays: { slug: string; marketing_title: string | null; punchline: string | null; images: any }[] = [];
+  if (allFull && stay.carousel_group) {
+    const { data: alts } = await supabaseGed
+      .from('gd_stays')
+      .select('slug, marketing_title, punchline, images')
+      .eq('published', true)
+      .eq('carousel_group', stay.carousel_group)
+      .neq('slug', params.id)
+      .limit(3);
+    alternativeStays = alts ?? [];
+  }
+
   // Enrichir stay avec les données attendues par BookingFlow
   const enrichedStay = {
     ...stay,
@@ -107,17 +120,52 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-white rounded-2xl shadow-lg border border-primary-100 overflow-hidden">
           {allFull ? (
-            <div className="flex flex-col items-center justify-center py-16 px-8 text-center gap-6">
-              <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
-                <span className="text-3xl">😔</span>
+            <div className="flex flex-col items-center py-12 px-8 gap-8">
+              {/* Header complet */}
+              <div className="text-center flex flex-col items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
+                  <span className="text-2xl">😔</span>
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-1">Séjour complet</h2>
+                  <p className="text-gray-500 text-sm max-w-sm">
+                    Toutes les sessions de ce séjour sont actuellement complètes.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">Séjour complet</h2>
-                <p className="text-gray-500 text-sm max-w-sm">
-                  Toutes les sessions de ce séjour sont actuellement complètes.
-                  Consultez nos autres séjours disponibles.
-                </p>
-              </div>
+
+              {/* Carrousel alternatifs */}
+              {alternativeStays.length > 0 && (
+                <div className="w-full">
+                  <p className="text-sm font-semibold text-gray-700 mb-3">
+                    Ces séjours similaires ont encore des places :
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {alternativeStays.map(alt => {
+                      const img = Array.isArray(alt.images) ? alt.images[0] : null;
+                      return (
+                        <Link
+                          key={alt.slug}
+                          href={`/sejour/${alt.slug}`}
+                          className="group rounded-xl border border-gray-100 overflow-hidden hover:border-primary/30 hover:shadow-md transition-all"
+                        >
+                          {img && (
+                            <div className="h-28 overflow-hidden bg-gray-50">
+                              <img src={img} alt={alt.marketing_title || ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            </div>
+                          )}
+                          <div className="p-3">
+                            <p className="font-semibold text-sm text-gray-900 line-clamp-1">{alt.marketing_title || alt.slug}</p>
+                            {alt.punchline && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{alt.punchline}</p>}
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* CTAs */}
               <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
                 <Link
                   href="/sejours"
@@ -129,7 +177,7 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
                   href={`/sejour/${params.id}`}
                   className="flex-1 text-center border border-primary text-primary rounded-xl py-3 px-4 font-medium text-sm hover:bg-primary/5 transition-colors"
                 >
-                  Retour catalogue
+                  Retour fiche
                 </Link>
               </div>
             </div>

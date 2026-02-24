@@ -193,6 +193,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ── VÉRIFICATION is_full UFOVAL (source de vérité) ──
+    const { data: isFullRow } = await supabase
+      .from('gd_session_prices')
+      .select('is_full')
+      .eq('stay_slug', data.staySlug)
+      .eq('start_date', normalizedDate)
+      .limit(1)
+      .single();
+
+    if (isFullRow?.is_full === true) {
+      return NextResponse.json(
+        { error: { code: 'SESSION_FULL', message: 'Cette session est complète selon UFOVAL.' } },
+        { status: 400 }
+      );
+    }
+
     // Créer l'inscription dans gd_inscriptions (adapté au schéma DB existant)
     // Pas de colonne 'organisation' en DB → on l'inclut dans remarques
     const remarquesWithOrga = `[ORGANISATION]: ${data.organisation}\n${data.remarques || ''}`.trim();

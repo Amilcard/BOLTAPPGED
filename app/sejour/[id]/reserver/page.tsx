@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { getSejourBySlug, getStaySessions, getDepartureCitiesFormatted, getSessionPricesFormatted, getSessionPrices } from '@/lib/supabaseGed';
@@ -42,6 +42,19 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
     // is_full UFOVAL — source de vérité Supabase — 0 = complet, -1 = dispo
     seatsLeft: isFullMap.get(`${s.start_date}|${s.end_date}`) ? 0 : -1,
   }));
+
+  // FIX_1 — Guard : session manquante ou invalide → redirect fiche séjour
+  if (!searchParams.session) {
+    redirect(`/sejour/${params.id}`);
+  }
+  const sessionExists = sessions.some(s => s.id === searchParams.session);
+  if (!sessionExists) {
+    redirect(`/sejour/${params.id}`);
+  }
+
+  // FIX_2 — Guard : toutes sessions complètes → pas de BookingFlow
+  const availableSessions = sessions.filter(s => s.seatsLeft === -1 || s.seatsLeft > 0);
+  const allFull = availableSessions.length === 0;
 
   // Enrichir stay avec les données attendues par BookingFlow
   const enrichedStay = {
@@ -93,13 +106,42 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
       {/* Contenu principal */}
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-white rounded-2xl shadow-lg border border-primary-100 overflow-hidden">
-          <BookingFlow
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            stay={enrichedStay as any}
-            sessions={sessions}
-            initialSessionId={searchParams.session}
-            initialCity={searchParams.ville}
-          />
+          {allFull ? (
+            <div className="flex flex-col items-center justify-center py-16 px-8 text-center gap-6">
+              <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
+                <span className="text-3xl">😔</span>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 mb-2">Séjour complet</h2>
+                <p className="text-gray-500 text-sm max-w-sm">
+                  Toutes les sessions de ce séjour sont actuellement complètes.
+                  Consultez nos autres séjours disponibles.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
+                <Link
+                  href="/sejours"
+                  className="flex-1 text-center bg-primary text-white rounded-xl py-3 px-4 font-medium text-sm hover:bg-primary/90 transition-colors"
+                >
+                  Voir autres séjours
+                </Link>
+                <Link
+                  href={`/sejour/${params.id}`}
+                  className="flex-1 text-center border border-primary text-primary rounded-xl py-3 px-4 font-medium text-sm hover:bg-primary/5 transition-colors"
+                >
+                  Retour catalogue
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <BookingFlow
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              stay={enrichedStay as any}
+              sessions={availableSessions}
+              initialSessionId={searchParams.session}
+              initialCity={searchParams.ville}
+            />
+          )}
         </div>
       </div>
     </div>

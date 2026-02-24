@@ -193,6 +193,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ── VÉRIFICATION cohérence sessionId → stayId ──
+    const { data: sessionCheck } = await supabase
+      .from('gd_stay_sessions')
+      .select('id')
+      .eq('stay_slug', data.staySlug)
+      .eq('start_date', normalizedDate)
+      .limit(1)
+      .single();
+
+    if (!sessionCheck) {
+      return NextResponse.json(
+        { error: { code: 'SESSION_INVALID', message: 'Cette session n\'appartient pas à ce séjour.' } },
+        { status: 400 }
+      );
+    }
+
     // ── VÉRIFICATION is_full UFOVAL (source de vérité) ──
     const { data: isFullRow } = await supabase
       .from('gd_session_prices')

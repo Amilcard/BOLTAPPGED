@@ -2,7 +2,7 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // 'standalone' retiré — spécifique VPS/PM2, incompatible avec Vercel
+  output: 'standalone',
   experimental: {
     outputFileTracingRoot: path.join(__dirname),
     outputFileTracingExcludes: {

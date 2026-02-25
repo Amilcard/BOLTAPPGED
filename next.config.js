@@ -5,6 +5,9 @@ const nextConfig = {
   // 'standalone' retiré — spécifique VPS/PM2, incompatible avec Vercel
   experimental: {
     outputFileTracingRoot: path.join(__dirname),
+    outputFileTracingExcludes: {
+      '*': ['supabase/**/*'],
+    },
   },
   eslint: {
     ignoreDuringBuilds: true,

@@ -20,6 +20,8 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 # Skip data fetching during build (pages will be rendered at runtime)
 ENV SKIP_BUILD_STATIC_GENERATION=1
+# Supprimer les fichiers Deno/Supabase Edge Functions incompatibles avec le build Next.js
+RUN rm -rf supabase/
 # Generate Prisma client before build
 RUN npx prisma generate
 RUN npm run build

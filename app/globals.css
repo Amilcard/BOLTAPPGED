@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+    --font-rubik: 'Rubik', sans-serif;
     /* Aligned with new logo: #2a383f (dark) + #de7356 (terracotta) */
     --background: 0 0% 100%;
     --foreground: 200 20% 20%;

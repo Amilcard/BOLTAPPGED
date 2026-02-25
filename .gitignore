@@ -3,6 +3,12 @@ node_modules/
 .DS_Store
 *.log
 
+# archives sessions IA - ne pas pousser sur git
+_archives/
+stay.ageMax
+FICHIERS_CREES.txt
+01_UFOVAL_IS_FULL_SESSIONS_v4.json
+
 # local/build artifacts
 .metadata_never_index
 tsconfig.tsbuildinfo

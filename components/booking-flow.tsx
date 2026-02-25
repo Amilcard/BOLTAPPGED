@@ -583,10 +583,17 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                 type="checkbox"
                 checked={step2.consent}
                 onChange={e => setStep2({ ...step2, consent: e.target.checked })}
-                className="w-5 h-5 mt-0.5 text-secondary rounded"
+                className="w-5 h-5 mt-0.5 text-secondary rounded shrink-0"
               />
               <span className="text-sm text-primary-600">
-                J&apos;accepte les conditions générales et autorise le traitement des données *
+                J&apos;ai lu et j&apos;accepte les{' '}
+                <a href="/cgv" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-primary" onClick={e => e.stopPropagation()}>
+                  Conditions Générales de Vente
+                </a>{' '}
+                et les{' '}
+                <a href="/cgu" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-primary" onClick={e => e.stopPropagation()}>
+                  CGU
+                </a>. Je confirme que les données de l&apos;enfant sont saisies dans le cadre de mes fonctions et avec l&apos;accord des responsables légaux. *
               </span>
             </label>
           </div>

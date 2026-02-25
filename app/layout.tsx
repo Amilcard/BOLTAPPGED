@@ -1,14 +1,10 @@
 import type { Metadata } from 'next';
-import { Rubik } from 'next/font/google';
+import '@fontsource/rubik/400.css';
+import '@fontsource/rubik/500.css';
+import '@fontsource/rubik/600.css';
+import '@fontsource/rubik/700.css';
 import './globals.css';
 import { Providers } from '@/components/providers';
-
-const rubik = Rubik({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-rubik',
-  display: 'swap',
-});
 
 export const dynamic = 'force-dynamic';
 
@@ -37,7 +33,7 @@ export default function RootLayout({
       <head>
         <script src="https://apps.abacus.ai/chatllm/appllm-lib.js" />
       </head>
-      <body className={`${rubik.variable} font-sans`}>
+      <body className="font-sans">
         <Providers>{children}</Providers>
       </body>
     </html>

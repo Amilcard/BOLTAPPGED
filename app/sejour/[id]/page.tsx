@@ -91,7 +91,7 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
       sessionsFormatted: sessionPricesFormatted // Pour matching prix
     },
     sourceUrl: stay.source_url || null,
-    pdfUrl: null,
+    pdfUrl: stay.pdf_url || null,
     price_base: uniqueSessions[0]?.price_ged_total || null,
     price_unit: '€',
     pro_price_note: 'Tarif communiqué aux professionnels',

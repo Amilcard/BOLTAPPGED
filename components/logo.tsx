@@ -6,7 +6,7 @@ interface LogoProps {
 }
 
 export function Logo({ variant = 'default', className = '' }: LogoProps) {
-  // Pour le variant compact, on garde une version simplifiée ou on pourrait utiliser une icône si disponible
+  // Compact mobile : G & D
   if (variant === 'compact') {
     return (
       <div className={`flex items-center gap-1 ${className}`}>
@@ -17,20 +17,14 @@ export function Logo({ variant = 'default', className = '' }: LogoProps) {
     );
   }
 
-  // Logo horizontal pour le header
+  // Logo horizontal desktop nettoyé
   return (
     <div className={`flex items-center ${className}`}>
       <img
-        src="/GLOGO GED NEW.svg"
+        src="/logo-clean.svg"
         alt="Groupe et Découverte"
-        className={`h-8 sm:h-9 w-auto object-contain ${variant === 'white' ? 'brightness-0 invert' : ''}`}
-        onError={(e) => {
-          // Fallback au PNG si le SVG échoue (ou vice-versa)
-          const target = e.target as HTMLImageElement;
-          if (target.src.endsWith('.svg')) {
-            target.src = '/GLOGO GED NEW.png';
-          }
-        }}
+        className={`w-[180px] sm:w-[230px] h-auto object-contain flex-shrink-0`}
+        style={variant === 'white' ? { filter: 'brightness(0) invert(1)' } : {}}
       />
     </div>
   );

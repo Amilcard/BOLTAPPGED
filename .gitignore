@@ -55,3 +55,12 @@ app/debug-db/
 .env
 .vercel
 .env*.local
+
+# fichiers temporaires de dev
+deploy-fixes.patch
+generate_clean_logo.js
+supabase_functions_search_path_fix.sql
+supabase_security_fix.sql
+
+# documents légaux (données sensibles)
+Documents_Legaux/

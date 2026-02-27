@@ -44,7 +44,7 @@ type EnrichmentData = { source_url: string; departures: DepartureData[]; session
 
 const PRIORITY_CITIES = ['paris', 'lyon', 'marseille', 'lille', 'bordeaux', 'rennes'];
 
-export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], price_base?: number | null, price_unit?: string, pro_price_note?: string, sourceUrl?: string | null, geoLabel?: string | null, geoPrecision?: string | null, accommodationLabel?: string | null, contentKids?: any, rawSessions?: any[], images?: string[] } }) {
+export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], price_base?: number | null, price_unit?: string, pro_price_note?: string, sourceUrl?: string | null, pdfUrl?: string | null, geoLabel?: string | null, geoPrecision?: string | null, accommodationLabel?: string | null, contentKids?: any, rawSessions?: any[], images?: string[] } }) {
   const { mode, mounted, refreshWishlist } = useApp();
   const router = useRouter();
   const [showBooking, setShowBooking] = useState(false);
@@ -58,6 +58,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
   // Enrichment data
   const stayUrl = String((stay as any)?.sourceUrl ?? "").trim();
+  const pdfUrl = (stay as any)?.pdfUrl ?? null;
   const contentKidsParsed = typeof stay?.contentKids === 'string' ? JSON.parse(stay.contentKids) : stay?.contentKids;
   const allDepartureCities: DepartureData[] = contentKidsParsed?.departureCities ?? [];
   const sessionsFormatted = contentKidsParsed?.sessionsFormatted ?? [];
@@ -534,6 +535,23 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                     </li>
                   ))}
                 </ol>
+              )}
+
+              {/* === TÉLÉCHARGEMENT PDF — conditionnel, zéro impact si pdfUrl null === */}
+              {pdfUrl && (
+                <div className="mt-5 pt-4 border-t border-gray-100">
+                  <a
+                    href={pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download
+                    className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border-2 border-primary/20 bg-primary/5 text-primary text-sm font-semibold hover:bg-primary/10 hover:border-primary/40 transition-all group"
+                  >
+                    <Download className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+                    Télécharger la fiche descriptive
+                    <span className="text-xs text-primary/50 font-normal">PDF</span>
+                  </a>
+                </div>
               )}
             </section>
 

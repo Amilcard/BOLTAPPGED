@@ -1,9 +1,13 @@
 import { getSejours } from '@/lib/supabaseGed';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/auth-middleware';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  if (!requireAdmin(req)) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+  }
   const sejours = await getSejours();
   const debug = sejours.slice(0, 5).map((s: any) => ({
     slug: s.slug,

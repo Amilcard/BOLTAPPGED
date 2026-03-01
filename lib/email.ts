@@ -62,10 +62,10 @@ export async function sendInscriptionConfirmation(data: InscriptionEmailData) {
               <h3 style="color: #1e40af; margin: 0 0 8px 0; font-size: 15px;">Instructions de virement bancaire</h3>
               <p style="margin: 0 0 8px 0; color: #1e3a8a; font-size: 14px;">Merci d'effectuer le virement en mentionnant votre référence <strong>${data.paymentReference || ''}</strong> en libellé.</p>
               <table style="font-size: 13px; color: #1e3a8a;">
-                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">Titulaire</td><td><strong>GROUPE ET DECOUVERTE</strong></td></tr>
-                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">IBAN</td><td><strong>FR76 1027 8073 4600 0204 0900 146</strong></td></tr>
-                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">BIC</td><td><strong>CMCIFR2A</strong></td></tr>
-                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">Domiciliation</td><td>CCM LYON GAMBETTA</td></tr>
+                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">Titulaire</td><td><strong>${process.env.ORG_BANK_HOLDER || 'GROUPE ET DECOUVERTE'}</strong></td></tr>
+                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">IBAN</td><td><strong>${process.env.ORG_BANK_IBAN || 'Contactez-nous pour les coordonnées bancaires'}</strong></td></tr>
+                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">BIC</td><td><strong>${process.env.ORG_BANK_BIC || ''}</strong></td></tr>
+                <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">Domiciliation</td><td>${process.env.ORG_BANK_BRANCH || ''}</td></tr>
                 <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">Libellé</td><td><strong>${data.paymentReference || data.jeunePrenom}</strong></td></tr>
               </table>
               <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 12px;">⚠️ Votre inscription sera validée à réception du règlement.</p>

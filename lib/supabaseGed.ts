@@ -7,12 +7,13 @@ let _supabaseGed: ReturnType<typeof createClient<Database>> | null = null
 
 function getClient() {
   if (!_supabaseGed) {
-    const url =
-      process.env.NEXT_PUBLIC_SUPABASE_URL ||
-      'https://iirfvndgzutbxwfdwawu.supabase.co'
-    const key =
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcmZ2bmRnenV0Ynh3ZmR3YXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyNzI4MDksImV4cCI6MjA4NDg0ODgwOX0.GDBh-u9DEfy-w2btzNTZGm6T2npFlbdX3XK-h-rsUQw'
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (!url || !key) {
+      throw new Error(
+        '[supabaseGed] Variables d\'environnement manquantes : NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY sont requises.'
+      )
+    }
     _supabaseGed = createClient<Database>(url, key)
   }
   return _supabaseGed

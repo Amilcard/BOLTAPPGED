@@ -1,8 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import fs from "node:fs";
 import path from "node:path";
+import { requireAdmin } from "@/lib/auth-middleware";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  if (!requireAdmin(req)) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
   const p = path.resolve(process.cwd(), "out/ufoval/ufoval_enrichment_full.json");
   if (!fs.existsSync(p)) {
     return NextResponse.json(

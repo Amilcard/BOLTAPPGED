@@ -15,8 +15,22 @@ echo "🚀 Installation SQL - Projet GED"
 echo "================================="
 echo ""
 
-# Connection string
-CONNECTION_STRING="postgresql://postgres:DBUM6aLeioZ1j9eC@db.iirfvndgzutbxwfdwawu.supabase.co:5432/postgres"
+# Connection string — lue depuis les variables d'environnement
+# Définissez DB_HOST, DB_PASSWORD (et optionnellement DB_USER, DB_PORT, DB_NAME)
+# avant d'exécuter ce script, ou via un fichier .env
+DB_HOST="${DB_HOST:-}"
+DB_PORT="${DB_PORT:-5432}"
+DB_NAME="${DB_NAME:-postgres}"
+DB_USER="${DB_USER:-postgres}"
+DB_PASSWORD="${DB_PASSWORD:-}"
+
+if [ -z "$DB_HOST" ] || [ -z "$DB_PASSWORD" ]; then
+  echo -e "${RED}❌ Variables DB_HOST et DB_PASSWORD requises.${NC}"
+  echo "   Exemple : DB_HOST=db.xxx.supabase.co DB_PASSWORD=monMotDePasse ./install_ged_complete.sh"
+  exit 1
+fi
+
+CONNECTION_STRING="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
 
 # ============================================
 # 1. Vérifier psql

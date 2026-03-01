@@ -1,7 +1,8 @@
 // ROUTE DE DEBUG — À SUPPRIMER APRÈS TESTS
 // Tester via: /api/debug-is-full?slug=dh-experience-11-13-ans
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabaseGed } from '@/lib/supabaseGed';
+import { requireAdmin } from '@/lib/auth-middleware';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +21,10 @@ interface StayDebug {
   marketing_title: string | null;
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  if (!requireAdmin(request)) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+  }
   const { searchParams } = new URL(request.url);
   const slug = searchParams.get('slug') || 'dh-experience-11-13-ans';
 

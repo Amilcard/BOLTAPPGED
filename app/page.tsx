@@ -38,7 +38,12 @@ export default async function HomePage() {
     const sessions = sessionsMap.get(sejour.slug) || [];
 
     // Sprint 1: Calcul unifié âges + durée via helpers centralisés
-    const { ageMin, ageMax, ageRangesDisplay } = getStayAgeData(sessions);
+    // FIX BUG-1: Fallback vers gd_stays.age_min/age_max si aucune session dans gd_stay_sessions
+    const { ageMin, ageMax, ageRangesDisplay } = getStayAgeData(
+      sessions,
+      sejour.age_min ?? 6,
+      sejour.age_max ?? 17
+    );
     const durationDays = getStayDurationDays(sessions, 7);
 
     // Récupérer les thèmes depuis gd_stay_themes (multi-thèmes)

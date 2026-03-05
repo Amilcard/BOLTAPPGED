@@ -33,8 +33,13 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
   ]);
 
   // Sprint 1: Calcul unifié âges + durée via helpers centralisés
+  // FIX BUG-1: Fallback vers gd_stays.age_min/age_max si aucune session dans gd_stay_sessions
   const sessionAgeData = staySessions.map(s => ({ age_min: s.age_min ?? 0, age_max: s.age_max ?? 0 }));
-  const { ageMin, ageMax, ageRangesDisplay } = getStayAgeData(sessionAgeData);
+  const { ageMin, ageMax, ageRangesDisplay } = getStayAgeData(
+    sessionAgeData,
+    stay.age_min ?? 6,
+    stay.age_max ?? 17
+  );
   const sessionDateData = staySessions.map(s => ({ start_date: s.start_date ?? '', end_date: s.end_date ?? '' }));
   const durationDays = getStayDurationDays(sessionDateData, 7);
 

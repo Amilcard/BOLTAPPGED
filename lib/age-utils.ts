@@ -85,8 +85,8 @@ export function getStayPeriod(sessions: SessionDateData[], fallback: string = 'Ã
  */
 export function getStayAgeData(
   sessions: SessionAgeData[],
-  fallbackMin: number = 6,
-  fallbackMax: number = 17
+  fallbackMin: number = 0,
+  fallbackMax: number = 0
 ): {
   ageMin: number;
   ageMax: number;
@@ -155,8 +155,8 @@ export function formatAgeRangesDisplay(ranges: string[]): string {
  */
 export function calculateGlobalAgeRange(
   sessions: SessionAgeData[],
-  defaultMin: number = 6,
-  defaultMax: number = 17
+  defaultMin: number = 0,
+  defaultMax: number = 0
 ): { ageMin: number; ageMax: number } {
   if (!sessions || sessions.length === 0) {
     return { ageMin: defaultMin, ageMax: defaultMax };

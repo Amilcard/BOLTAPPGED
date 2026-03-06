@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (priceError || !priceRow) {
-      // Fallback : prix sans transport si ville non trouvée
+      // Fallback : prix sans transport si ville non trouvée pour cette date
       const { data: baseRows1 } = await supabase
         .from('gd_session_prices')
         .select('price_ged_total')
@@ -142,29 +142,79 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Prix base sans transport — on accepte uniquement ce prix
-      const serverPrice = basePriceRow.price_ged_total ?? 0;
-      if (Math.abs(data.priceTotal - serverPrice) > 1) {
-        console.error('PRICE_MISMATCH (fallback):', { frontend: data.priceTotal, server: serverPrice });
+      // FIX PRIX MULTI-SÉJOURS: le front calcule base(sans_transport) + transport_surcharge
+      // Si la ville n'est pas dans gd_session_prices pour cette date, chercher le surcoût
+      // transport via une autre session pour cette ville (données UFOVAL peuvent être incomplètes)
+      const sansBasePrice = basePriceRow.price_ged_total ?? 0;
+      let cityTransportSurcharge = 0;
+      if (data.cityDeparture !== 'sans_transport') {
+        const { data: cityTransportRows } = await supabase
+          .from('gd_session_prices')
+          .select('transport_surcharge_ged')
+          .eq('stay_slug', data.staySlug)
+          .eq('city_departure', data.cityDeparture)
+          .limit(1);
+        cityTransportSurcharge = cityTransportRows?.[0]?.transport_surcharge_ged ?? 0;
+      }
+
+      // Accepter si le prix correspond à la base OU à base + transport (formule front)
+      const frontCalcFallback = sansBasePrice + cityTransportSurcharge;
+      const matchesSansTransport = Math.abs(data.priceTotal - sansBasePrice) <= 1;
+      const matchesFrontCalcFallback = Math.abs(data.priceTotal - frontCalcFallback) <= 1;
+
+      if (!matchesSansTransport && !matchesFrontCalcFallback) {
+        console.error('PRICE_MISMATCH (fallback):', {
+          frontend: data.priceTotal,
+          sansBase: sansBasePrice,
+          frontCalc: frontCalcFallback,
+          transport: cityTransportSurcharge,
+        });
         return NextResponse.json(
           { error: { code: 'PRICE_MISMATCH', message: 'Le prix envoyé ne correspond pas au tarif en base.' } },
           { status: 400 }
         );
       }
-      // Forcer le prix serveur
-      data.priceTotal = serverPrice;
+      // Forcer le prix vérifié (frontCalc si disponible, sinon sansBase)
+      data.priceTotal = matchesFrontCalcFallback ? Math.round(frontCalcFallback) : sansBasePrice;
     } else {
-      // Prix exact trouvé (ville + session)
-      const serverPrice = priceRow.price_ged_total ?? 0;
-      if (Math.abs(data.priceTotal - serverPrice) > 1) {
-        console.error('PRICE_MISMATCH:', { frontend: data.priceTotal, server: serverPrice, city: data.cityDeparture });
+      // Prix exact trouvé pour cette ville + session
+      const serverCityPrice = priceRow.price_ged_total ?? 0;
+      const transportSurcharge = priceRow.transport_surcharge_ged ?? 0;
+
+      // FIX PRIX MULTI-SÉJOURS: Le front calcule base(sans_transport) + transport_surcharge_ged
+      // Récupérer aussi le prix sans_transport pour valider la formule du front
+      // (certains séjours UFOVAL ont price_ged_total(ville) ≠ price_ged_total(sans_transport) + surcharge)
+      const { data: sansRows } = await supabase
+        .from('gd_session_prices')
+        .select('price_ged_total')
+        .eq('stay_slug', data.staySlug)
+        .eq('start_date', normalizedDate)
+        .eq('city_departure', 'sans_transport')
+        .limit(1);
+      const sansBasePrice = sansRows?.[0]?.price_ged_total ?? null;
+      // Formule attendue par le front: base_sans_transport + transport_surcharge_ged
+      const frontCalcPrice = sansBasePrice !== null ? sansBasePrice + transportSurcharge : null;
+
+      // Accepter si le prix correspond AU PRIX VILLE ou À LA FORMULE FRONT
+      const matchesCityTotal = Math.abs(data.priceTotal - serverCityPrice) <= 1;
+      const matchesFrontCalc = frontCalcPrice !== null && Math.abs(data.priceTotal - frontCalcPrice) <= 1;
+
+      if (!matchesCityTotal && !matchesFrontCalc) {
+        console.error('PRICE_MISMATCH:', {
+          frontend: data.priceTotal,
+          serverCityPrice,
+          frontCalcPrice,
+          sansBasePrice,
+          transportSurcharge,
+          city: data.cityDeparture,
+        });
         return NextResponse.json(
           { error: { code: 'PRICE_MISMATCH', message: 'Le prix envoyé ne correspond pas au tarif en base.' } },
           { status: 400 }
         );
       }
-      // Forcer le prix serveur (source de vérité)
-      data.priceTotal = serverPrice;
+      // Forcer le prix serveur validé (prix ville DB = source de vérité)
+      data.priceTotal = serverCityPrice;
     }
 
     // ── CAPACITY CHECK (read-only, pas de décrement) ──

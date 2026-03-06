@@ -34,11 +34,12 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
 
   // Sprint 1: Calcul unifié âges + durée via helpers centralisés
   // FIX BUG-1: Fallback vers gd_stays.age_min/age_max si aucune session dans gd_stay_sessions
+  // FIX BUG-2: ?? 0 au lieu de ?? 6/17 — évite l'affichage fantôme "6-17 ANS" si age null en BDD
   const sessionAgeData = staySessions.map(s => ({ age_min: s.age_min ?? 0, age_max: s.age_max ?? 0 }));
   const { ageMin, ageMax, ageRangesDisplay } = getStayAgeData(
     sessionAgeData,
-    stay.age_min ?? 6,
-    stay.age_max ?? 17
+    stay.age_min ?? 0,
+    stay.age_max ?? 0
   );
   const sessionDateData = staySessions.map(s => ({ start_date: s.start_date ?? '', end_date: s.end_date ?? '' }));
   const durationDays = getStayDurationDays(sessionDateData, 7);

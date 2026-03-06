@@ -39,10 +39,12 @@ export default async function HomePage() {
 
     // Sprint 1: Calcul unifié âges + durée via helpers centralisés
     // FIX BUG-1: Fallback vers gd_stays.age_min/age_max si aucune session dans gd_stay_sessions
+    // FIX BUG-2: ?? 0 au lieu de ?? 6/17 — évite l'affichage fantôme "6-17 ANS" si age null en BDD
+    //            StayCard affichera 'ENFANTS' (0 est falsy) plutôt qu'une tranche incorrecte
     const { ageMin, ageMax, ageRangesDisplay } = getStayAgeData(
       sessions,
-      sejour.age_min ?? 6,
-      sejour.age_max ?? 17
+      sejour.age_min ?? 0,
+      sejour.age_max ?? 0
     );
     const durationDays = getStayDurationDays(sessions, 7);
 

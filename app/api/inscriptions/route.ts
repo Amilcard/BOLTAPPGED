@@ -27,8 +27,18 @@ const inscriptionSchema = z.object({
   remarques: z.string().optional(),
   priceTotal: z.number().min(0),
   consent: z.boolean().refine(v => v === true, { message: 'Consentement requis' }),
-  paymentMethod: z.enum(['card', 'bank_transfer', 'cheque']).optional().default('bank_transfer'),
+  paymentMethod: z.enum(['card', 'bank_transfer', 'cheque', 'lyra', 'transfer', 'check']).optional().default('bank_transfer'),
 });
+
+// Mapping front-end → DB constraint values
+const PAYMENT_METHOD_MAP: Record<string, string> = {
+  card: 'lyra',
+  bank_transfer: 'transfer',
+  cheque: 'check',
+  lyra: 'lyra',
+  transfer: 'transfer',
+  check: 'check',
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -158,13 +168,13 @@ export async function POST(request: NextRequest) {
     }
 
     // ── CAPACITY CHECK (read-only, pas de décrement) ──
-    const { data: sessionRow } = await supabase
+    const { data: sessionRows } = await supabase
       .from('gd_stay_sessions')
       .select('seats_left, age_min, age_max')
       .eq('stay_slug', data.staySlug)
-      .eq('start_date', data.sessionDate)
-      .limit(1)
-      .single();
+      .eq('start_date', normalizedDate)
+      .limit(1);
+    const sessionRow = sessionRows?.[0] ?? null;
 
     // Validation âge spécifique au séjour
     if (sessionRow && sessionRow.age_min !== null && sessionRow.age_max !== null) {
@@ -185,30 +195,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── VÉRIFICATION cohérence sessionId → stayId ──
-    const { data: sessionCheck } = await supabase
+    // ── VÉRIFICATION cohérence session → séjour ──
+    const { data: sessionCheckRows } = await supabase
       .from('gd_stay_sessions')
-      .select('id')
+      .select('stay_slug')
       .eq('stay_slug', data.staySlug)
       .eq('start_date', normalizedDate)
-      .limit(1)
-      .single();
+      .limit(1);
+    const sessionCheck = sessionCheckRows?.[0] ?? null;
 
+    // Si pas de session trouvée, on vérifie au moins que le séjour existe
+    // (certains séjours n'ont pas de sessions dans gd_stay_sessions mais ont des prix)
     if (!sessionCheck) {
-      return NextResponse.json(
-        { error: { code: 'SESSION_INVALID', message: 'Cette session n\'appartient pas à ce séjour.' } },
-        { status: 400 }
-      );
+      const { data: stayExists } = await supabase
+        .from('gd_stays')
+        .select('slug')
+        .eq('slug', data.staySlug)
+        .limit(1);
+      if (!stayExists || stayExists.length === 0) {
+        return NextResponse.json(
+          { error: { code: 'SESSION_INVALID', message: 'Ce séjour n\'existe pas.' } },
+          { status: 400 }
+        );
+      }
+      // Le séjour existe mais pas de session dans gd_stay_sessions → on continue
+      // (la vérification prix a déjà validé via gd_session_prices)
     }
 
     // ── VÉRIFICATION is_full UFOVAL (source de vérité) ──
-    const { data: isFullRow } = await supabase
+    const { data: isFullRows } = await supabase
       .from('gd_session_prices')
       .select('is_full')
       .eq('stay_slug', data.staySlug)
       .eq('start_date', normalizedDate)
-      .limit(1)
-      .single();
+      .eq('city_departure', data.cityDeparture)
+      .limit(1);
+    const isFullRow = isFullRows?.[0] ?? null;
 
     if (isFullRow?.is_full === true) {
       return NextResponse.json(
@@ -220,7 +242,9 @@ export async function POST(request: NextRequest) {
     // Créer l'inscription dans gd_inscriptions (adapté au schéma DB existant)
     // Pas de colonne 'organisation' en DB → on l'inclut dans remarques
     const remarquesWithOrga = `[ORGANISATION]: ${data.organisation}\n${data.remarques || ''}`.trim();
-    const { data: inscription, error } = await supabase
+    // Normaliser la méthode de paiement pour correspondre à la contrainte DB
+    const dbPaymentMethod = PAYMENT_METHOD_MAP[data.paymentMethod] || 'transfer';
+    const { data: inscriptionRows, error } = await supabase
       .from('gd_inscriptions')
       .insert({
         sejour_slug: data.staySlug,
@@ -237,14 +261,17 @@ export async function POST(request: NextRequest) {
         price_total: Math.round(data.priceTotal),
         status: 'en_attente',
         payment_status: 'pending_payment',
-        payment_method: data.paymentMethod,
+        payment_method: dbPaymentMethod,
       })
-      .select()
-      .single();
+      .select();
+    const inscription = inscriptionRows?.[0] ?? null;
 
-    if (error) {
+    if (error || !inscription) {
       console.error('Supabase insert error:', error);
-      throw error;
+      return NextResponse.json(
+        { error: { code: 'INSERT_ERROR', message: 'Impossible de créer l\'inscription.', details: error?.message } },
+        { status: 500 }
+      );
     }
 
     // Récupérer le nom marketing du séjour pour l'email

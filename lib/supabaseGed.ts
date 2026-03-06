@@ -13,7 +13,15 @@ function getClient() {
     const key =
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcmZ2bmRnenV0Ynh3ZmR3YXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyNzI4MDksImV4cCI6MjA4NDg0ODgwOX0.GDBh-u9DEfy-w2btzNTZGm6T2npFlbdX3XK-h-rsUQw'
-    _supabaseGed = createClient<Database>(url, key)
+    // FIX CACHE: forcer cache: 'no-store' sur toutes les requêtes Supabase
+    // Next.js 14+ met en cache les fetch() par défaut, ce qui retourne des données stale
+    // même avec `export const dynamic = 'force-dynamic'` au niveau page.
+    _supabaseGed = createClient<Database>(url, key, {
+      global: {
+        fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+          fetch(input, { ...init, cache: 'no-store' }),
+      },
+    })
   }
   return _supabaseGed
 }

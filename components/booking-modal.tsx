@@ -61,6 +61,7 @@ export function BookingModal({ stay, sessions, departureCities = [], enrichmentS
   const [error, setError] = useState('');
   const [bookingId, setBookingId] = useState('');
   const [showAllSessions, setShowAllSessions] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'bank_transfer' | 'cheque' | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // P0: Focus management refs
@@ -194,6 +195,7 @@ export function BookingModal({ stay, sessions, departureCities = [], enrichmentS
           remarques: addressNote,
           priceTotal: totalPrice ?? 0,
           consent: step2.consent,
+          paymentMethod: paymentMethod ?? 'bank_transfer',
         }),
       });
 
@@ -649,6 +651,44 @@ export function BookingModal({ stay, sessions, departureCities = [], enrichmentS
                 </div>
               </div>
 
+              {/* Mode de paiement */}
+              <div>
+                <p className="text-sm font-medium text-primary mb-2">Mode de paiement <span className="text-red-500">*</span></p>
+                <div className="space-y-2">
+                  {[
+                    { value: 'bank_transfer', label: 'Virement bancaire', desc: 'Coordonnées IBAN communiquées par email' },
+                    { value: 'cheque', label: 'Chèque', desc: "À l'ordre de Groupe & Découverte" },
+                  ].map(opt => (
+                    <label
+                      key={opt.value}
+                      className={`flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                        paymentMethod === opt.value
+                          ? 'border-secondary bg-secondary/5'
+                          : 'border-primary-200 hover:border-primary-400'
+                      }`}
+                    >
+                      <div className={`w-5 h-5 mt-0.5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                        paymentMethod === opt.value ? 'border-secondary bg-secondary' : 'border-primary-300'
+                      }`}>
+                        {paymentMethod === opt.value && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value={opt.value}
+                        checked={paymentMethod === opt.value}
+                        onChange={() => setPaymentMethod(opt.value as 'bank_transfer' | 'cheque')}
+                        className="sr-only"
+                      />
+                      <div>
+                        <p className="text-sm font-medium text-primary">{opt.label}</p>
+                        <p className="text-xs text-primary-500">{opt.desc}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               {error && (
                 <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100 flex items-center gap-2">
                   <AlertCircle className="w-4 h-4" /> {error}
@@ -664,7 +704,7 @@ export function BookingModal({ stay, sessions, departureCities = [], enrichmentS
                 </button>
                 <button
                   onClick={handleSubmit}
-                  disabled={loading}
+                  disabled={loading || !paymentMethod}
                   className="flex-1 py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}

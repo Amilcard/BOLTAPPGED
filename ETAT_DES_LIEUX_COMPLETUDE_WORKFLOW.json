@@ -1,0 +1,119 @@
+{
+  "_meta": {
+    "titre": "État des lieux — Workflow VÉRIFICATION COMPLÉTUDE SÉJOURS UFOVAL",
+    "date": "2026-03-08",
+    "derniere_maj": "2026-03-08T17:45 (après déploiement v6)",
+    "auteur": "Claude (audit technique + corrections)",
+    "workflow_id": "kG6OASM4PxZaBt9H",
+    "workflow_name": "VERIFICATION COMPLETUDE SEJOURS UFOVAL",
+    "vps": "srv1307641.hstgr.cloud (147.93.126.86)",
+    "supabase_project": "iirfvndgzutbxwfdwawu"
+  },
+
+  "statut_global": "FONCTIONNEL — V6 déployée et vérifiée",
+
+  "resultats_v6": {
+    "date_execution": "2026-03-08T16:38:15 (heure serveur)",
+    "sejours_traites": 25,
+    "sejours_upserted": 22,
+    "sejours_filtres": 3,
+    "total_sessions_extraites": 51,
+    "sessions_complet_detectees": 4,
+    "sejours_avec_complet": [
+      "survie-dans-le-beaufortain (3 sessions, 2 complet)",
+      "dh-experience-11-13-ans (3 sessions, 1 complet)",
+      "destination-soleil (2 sessions, 1 complet)"
+    ],
+    "destination_soleil_detail": {
+      "session_1": {"start": "2026-07-04", "end": "2026-07-17", "prix": 1390, "status": "complet", "is_available": false},
+      "session_2": {"start": "2026-07-18", "end": "2026-07-31", "prix": 1390, "status": "open", "is_available": true},
+      "is_full": false,
+      "updated_at": "2026-03-08T15:38:08.281+00:00"
+    }
+  },
+
+  "corrections_appliquees": {
+    "v3_code_extraction": {
+      "description": "Remplacement du regex <option> par extraction des <label for='cart_step_availability_availability_XXX'>",
+      "details": [
+        "Extraction des dates depuis <div class='date h6'> avec parser français (parseDateFR)",
+        "Détection COMPLET via class='availability-status-full' sur le label",
+        "Calcul is_full = true si toutes les sessions sont complet",
+        "Extraction du prix depuis <div class='final-price'>",
+        "Regex mois français corrigé: [^\\s.]+ pour gérer août, février etc."
+      ]
+    },
+    "v4_loop_connection": {
+      "description": "Ajout de la connexion loop-back HTTP Request1 → Split Seed URLs",
+      "probleme": "splitInBatches n'avait pas de boucle de retour, seul le premier item était traité"
+    },
+    "v5_batch_size": {
+      "description": "Changement batchSize de 30 à 1",
+      "probleme": "Avec batchSize=30, les 25 items partaient en un seul batch, la boucle ne faisait qu'un tour"
+    },
+    "v6_false_outputs": {
+      "description": "Ajout des connexions false des nœuds IF vers Split Seed URLs",
+      "probleme": "Quand Keep Only OK ou FILTER__VALID_ITEMS_FOR_DB filtrait un item, la chaîne s'arrêtait et le loop-back (HTTP Request1 → Split Seed URLs) n'était jamais atteint. La boucle se cassait après le premier item filtré.",
+      "correction": [
+        "Keep Only OK (false output) → Split Seed URLs",
+        "FILTER__VALID_ITEMS_FOR_DB (false output) → Split Seed URLs"
+      ]
+    },
+    "v6_webhook_connection": {
+      "description": "Connexion Webhook → Set Config (au lieu de Split Out)",
+      "probleme": "Le webhook arrivait sur Split Out qui ne déclenche pas le pipeline de scraping"
+    },
+    "v6_upsert_body": {
+      "description": "Ajout de updated_at: new Date().toISOString() dans le body upsert",
+      "probleme": "updated_at n'était jamais mis à jour, restait figé à la dernière modification manuelle"
+    }
+  },
+
+  "problemes_initiaux_resolus": {
+    "P1_extraction_sessions": "RÉSOLU — Le regex <option> a été remplacé par le parsing des <label> UFOVAL",
+    "P2_detection_complet": "RÉSOLU — Détection via class='availability-status-full' fonctionnelle (4 sessions complet détectées)",
+    "P3_updated_at_absent": "RÉSOLU — updated_at est maintenant inclus dans l'upsert",
+    "P4_is_full_jamais_calcule": "RÉSOLU — is_full est calculé correctement (all sessions complet → true)",
+    "P5_sessions_json_vide_ecrase": "RÉSOLU — Les items sans sessions sont filtrés par Keep Only OK (status='NO_SESSIONS') et ne sont pas upsertés",
+    "P6_alternative_json_inexistante": "NON TRAITÉ (mineur) — Code mort toujours présent mais sans impact"
+  },
+
+  "points_restants": {
+    "sejours_non_mis_a_jour": {
+      "description": "3 des 25 URLs UFOVAL ne passent pas les filtres (extraction échoue ou conditions non remplies)",
+      "severite": "MINEUR",
+      "action": "Identifier les 3 URLs en échec et investiguer (titre non trouvé, sessions non extraites, ou slug ne matchant pas)",
+      "non_concernes": ["les-ptits-puisotins-1 (ancien import)", "test-curl-webhook-v2 (entrée de test)", "husky-adventure (import ancien)"]
+    },
+    "destination_soleil_2_sessions": {
+      "description": "destination-soleil a 2 sessions en BDD alors que l'état des lieux initial en mentionnait 4. Probablement le site UFOVAL a été mis à jour entre temps (saison avancée).",
+      "severite": "INFO — pas un bug, reflet de la réalité du site"
+    },
+    "gd_stay_sessions_non_alimentee": {
+      "description": "La table gd_stay_sessions existe mais n'est toujours pas alimentée par ce workflow. Seul sessions_json dans gd_stays est mis à jour.",
+      "severite": "MINEUR"
+    }
+  },
+
+  "infrastructure": {
+    "vps": "srv1307641.hstgr.cloud (Hostinger VPS)",
+    "ip": "147.93.126.86",
+    "n8n_url": "https://n8n.srv1307641.hstgr.cloud",
+    "n8n_docker": "/docker/n8n/ (docker compose)",
+    "workflow_1_id": "kG6OASM4PxZaBt9H (sessions/complétude) — V6 ACTIVE",
+    "workflow_2_id": "0GlIeZKVR7VoUFYNOYMVl (enrichissement contenu)",
+    "workflow_3_id": "Z2zKVFQC93CDx_2yHfJta (AI images)",
+    "webhook_url": "https://n8n.srv1307641.hstgr.cloud/webhook/ufoval-import",
+    "supabase_project": "iirfvndgzutbxwfdwawu",
+    "supabase_table_principale": "gd_stays",
+    "supabase_table_sessions": "gd_stay_sessions (existe mais non alimentée)"
+  },
+
+  "workflow_v6_pipeline": {
+    "description": "Pipeline complet après toutes les corrections",
+    "chaine_principale": "Webhook → Set Config → Prepare URLs → Split Seed URLs (batchSize=1) → HTTP Request Detail Page → Extract Detail + Sessions → Keep Only OK ($json.status=='OK') → Map GED Theme → Calc GED Price → FILTER__VALID_ITEMS_FOR_DB → HTTP__UPSERT_GD_STAYS → Code in JavaScript1 → HTTP Request1 → (loop back to Split Seed URLs)",
+    "chaine_export": "Calc GED Price → Filter Available Sessions → Aggregate Final Export → Format Export JSON → Write JSON Export → If → HTTP Request",
+    "loop_back_false_keep_only_ok": "Keep Only OK (false) → Split Seed URLs",
+    "loop_back_false_filter": "FILTER__VALID_ITEMS_FOR_DB (false) → Split Seed URLs"
+  }
+}

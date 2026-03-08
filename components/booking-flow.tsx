@@ -2,9 +2,15 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, ChevronRight, ChevronLeft, Loader2, Info, AlertCircle, Calendar, MapPin } from 'lucide-react';
+import { Check, ChevronRight, ChevronLeft, Loader2, Info, AlertCircle, Calendar, MapPin, CreditCard } from 'lucide-react';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import type { Stay, StaySession } from '@/lib/types';
 import { formatDate, formatDateLong } from '@/lib/utils';
+
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+  : null;
 
 interface DepartureCity {
   city: string;
@@ -43,6 +49,52 @@ const STANDARD_CITIES = [
   'Paris', 'Lyon', 'Lille', 'Marseille', 'Bordeaux', 'Rennes'
 ];
 
+// Composant interne pour le formulaire de paiement Stripe
+function StripePaymentForm({ onSuccess, onError }: { onSuccess: () => void; onError: (msg: string) => void }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [processing, setProcessing] = useState(false);
+
+  const handlePayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setProcessing(true);
+    try {
+      const { error } = await stripe.confirmPayment({
+        elements,
+        redirect: 'if_required',
+      });
+
+      if (error) {
+        onError(error.message || 'Erreur lors du paiement.');
+      } else {
+        onSuccess();
+      }
+    } catch (err: any) {
+      onError(err.message || 'Erreur inattendue.');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handlePayment} className="space-y-4">
+      <div className="p-4 bg-white border border-primary-200 rounded-xl">
+        <PaymentElement options={{ layout: 'tabs' }} />
+      </div>
+      <button
+        type="submit"
+        disabled={!stripe || processing}
+        className="w-full py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
+        {processing ? 'Paiement en cours...' : 'Payer maintenant'}
+      </button>
+    </form>
+  );
+}
+
 export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity = '' }: BookingFlowProps) {
   const router = useRouter();
   const departureCities = (stay as any).departureCities || [];
@@ -66,6 +118,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'bank_transfer' | 'cheque' | null>(null);
+  const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
 
   // Wrapper setStep qui reset l'erreur à chaque changement d'étape
   const setStep = (s: number | ((prev: number) => number)) => {
@@ -236,7 +289,23 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error?.message ?? 'Erreur lors de la réservation');
 
-      setBookingId(data?.id ?? '');
+      const inscriptionId = data?.id ?? '';
+      setBookingId(inscriptionId);
+
+      // Si paiement CB, créer le PaymentIntent et afficher le formulaire Stripe
+      if (paymentMethod === 'card' && inscriptionId) {
+        const piRes = await fetch('/api/payment/create-intent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inscriptionId }),
+        });
+        const piData = await piRes.json();
+        if (!piRes.ok) throw new Error(piData?.error?.message || piData?.error || 'Erreur création paiement');
+        setStripeClientSecret(piData.clientSecret);
+        setStep(6); // Step 6 = formulaire Stripe
+        return;
+      }
+
       setStep(5);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
@@ -248,7 +317,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   return (
     <div className="p-6">
       {/* Progress */}
-      {step < 5 && (
+      {step < 5 && step !== 6 && (
         <div className="flex gap-2 mb-6">
           {[0, 1, 2, 3, 4].map(i => (
             <div
@@ -257,6 +326,13 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                 i <= step ? 'bg-secondary' : 'bg-primary-100'
               }`}
             />
+          ))}
+        </div>
+      )}
+      {step === 6 && (
+        <div className="flex gap-2 mb-6">
+          {[0, 1, 2, 3, 4].map(i => (
+            <div key={i} className="h-1 flex-1 rounded-full bg-secondary" />
           ))}
         </div>
       )}
@@ -650,7 +726,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             {[
               { value: 'bank_transfer', label: 'Virement bancaire', desc: 'Coordonnées IBAN communiquées par email', disabled: false },
               { value: 'cheque', label: 'Chèque', desc: 'À l\'ordre de Groupe & Découverte', disabled: false },
-              { value: 'card', label: 'Carte bancaire (bientôt disponible)', desc: 'Paiement sécurisé en ligne', disabled: true },
+              { value: 'card', label: 'Carte bancaire', desc: 'Paiement sécurisé en ligne via Stripe', disabled: false },
             ].map(opt => {
               const isSelected = paymentMethod === opt.value;
               return (
@@ -721,6 +797,44 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
         </div>
       )}
 
+      {/* Step 6: Stripe Payment Form */}
+      {step === 6 && stripeClientSecret && stripePromise && (
+        <div className="space-y-4">
+          <h3 className="font-medium text-primary text-lg">Paiement sécurisé</h3>
+          <div className="bg-primary-50 p-3 rounded-xl text-sm text-primary-600 flex items-center gap-2">
+            <CreditCard className="w-4 h-4" />
+            <span>Montant : <strong>{totalPrice} €</strong> — Référence : <strong>{bookingId?.slice(0, 8)?.toUpperCase()}</strong></span>
+          </div>
+          <Elements
+            stripe={stripePromise}
+            options={{
+              clientSecret: stripeClientSecret,
+              appearance: {
+                theme: 'stripe',
+                variables: { colorPrimary: '#e07a5f' },
+              },
+              locale: 'fr',
+            }}
+          >
+            <StripePaymentForm
+              onSuccess={() => setStep(5)}
+              onError={(msg) => setError(msg)}
+            />
+          </Elements>
+          {error && (
+            <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" /> {error}
+            </div>
+          )}
+          <button
+            onClick={() => { setStep(4); setStripeClientSecret(null); }}
+            className="w-full py-2 text-sm text-primary-500 hover:text-primary hover:underline"
+          >
+            ← Choisir un autre mode de paiement
+          </button>
+        </div>
+      )}
+
       {/* Step 5: Success */}
       {step === 5 && (
         <div className="text-center py-6">
@@ -751,6 +865,12 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-left text-sm">
               <h4 className="font-semibold text-amber-800 mb-2">Instructions chèque</h4>
               <p className="text-amber-700 text-xs">Merci d'adresser votre chèque à l'ordre de <strong>Groupe & Découverte</strong>, en indiquant la référence <strong>{bookingId?.slice(0, 8)?.toUpperCase()}</strong> au dos. L'adresse d'envoi vous a été communiquée par email.</p>
+            </div>
+          )}
+          {paymentMethod === 'card' && (
+            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl text-left text-sm">
+              <h4 className="font-semibold text-green-800 mb-2">Paiement confirmé</h4>
+              <p className="text-green-700 text-xs">Votre paiement par carte bancaire a bien été accepté. Un email de confirmation vous a été envoyé avec tous les détails.</p>
             </div>
           )}
 

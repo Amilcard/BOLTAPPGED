@@ -18,12 +18,6 @@ function getSupabase() {
 }
 
 export async function POST(req: NextRequest) {
-  // STRIPE DÉSACTIVÉ — en attente de signature du contrat
-  return NextResponse.json(
-    { received: false, error: 'Stripe webhooks temporairement désactivés.' },
-    { status: 503 }
-  );
-
   try {
     const stripe = getStripe();
     const supabase = getSupabase();

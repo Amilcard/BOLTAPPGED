@@ -4,12 +4,10 @@ import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { sendInscriptionConfirmation, sendAdminNewInscriptionNotification } from '@/lib/email';
 
-// Utiliser service_role si disponible, sinon fallback sur anon key
 function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY manquante');
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, key);
 }
 
 const inscriptionSchema = z.object({

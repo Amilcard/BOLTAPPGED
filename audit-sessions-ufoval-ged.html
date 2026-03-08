@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audit GED vs UFOVAL — Sessions, Complétudes & Âges</title>
+<style>
+  :root {
+    --primary: #1e3a5f;
+    --danger: #dc2626;
+    --warning: #f59e0b;
+    --success: #16a34a;
+    --info: #2563eb;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --muted: #64748b;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+  .header { background: var(--primary); color: white; padding: 2rem; }
+  .header h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .header p { opacity: 0.8; font-size: 0.875rem; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .summary-card { background: var(--card); border-radius: 12px; padding: 1.25rem; border-left: 4px solid; }
+  .summary-card.danger { border-color: var(--danger); }
+  .summary-card.warning { border-color: var(--warning); }
+  .summary-card.info { border-color: var(--info); }
+  .summary-card .number { font-size: 2rem; font-weight: 800; }
+  .summary-card .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-top: 0.25rem; }
+
+  .section { margin-bottom: 2.5rem; }
+  .section-title { font-size: 1.125rem; font-weight: 700; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary); display: flex; align-items: center; gap: 0.5rem; }
+  .section-title .badge { font-size: 0.7rem; background: var(--danger); color: white; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+
+  .anomaly-table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--card); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 1rem; }
+  .anomaly-table th { background: #f1f5f9; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.75rem 1rem; text-align: left; color: var(--muted); font-weight: 600; white-space: nowrap; }
+  .anomaly-table td { padding: 0.75rem 1rem; border-top: 1px solid var(--border); font-size: 0.85rem; vertical-align: top; }
+  .anomaly-table tr:hover td { background: #f8fafc; }
+
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; }
+  .tag-danger { background: #fef2f2; color: var(--danger); }
+  .tag-warning { background: #fffbeb; color: #b45309; }
+  .tag-info { background: #eff6ff; color: var(--info); }
+
+  .date-compare { display: flex; flex-direction: column; gap: 2px; }
+  .date-ufoval { color: var(--success); font-weight: 600; font-size: 0.8rem; }
+  .date-ufoval::before { content: "UFOVAL: "; font-weight: 400; color: var(--muted); }
+  .date-ged { color: var(--danger); font-weight: 600; font-size: 0.8rem; }
+  .date-ged::before { content: "GED: "; font-weight: 400; color: var(--muted); }
+
+  .cause-box { background: #fefce8; border: 1px solid #fde68a; border-radius: 8px; padding: 1rem; margin-top: 0.75rem; font-size: 0.85rem; }
+  .cause-box strong { color: #92400e; }
+
+  .fix-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 1rem; margin-top: 0.75rem; font-size: 0.85rem; }
+  .fix-box strong { color: #166534; }
+
+  .architecture-note { background: var(--card); border-radius: 12px; padding: 1.5rem; border: 1px solid var(--border); margin-bottom: 2rem; }
+  .architecture-note h3 { font-size: 0.95rem; margin-bottom: 0.75rem; }
+  .arch-flow { font-family: 'Courier New', monospace; font-size: 0.8rem; background: #f1f5f9; padding: 1rem; border-radius: 8px; line-height: 1.8; overflow-x: auto; }
+
+  .sejour-name { font-weight: 700; color: var(--primary); }
+  .highlight { background: #fef08a; padding: 1px 4px; border-radius: 3px; }
+
+  .workflow-diagram { background: #f1f5f9; border-radius: 8px; padding: 1rem; font-family: monospace; font-size: 0.75rem; margin: 1rem 0; line-height: 1.8; }
+
+  @media (max-width: 768px) {
+    .anomaly-table { display: block; overflow-x: auto; }
+    .summary-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div style="max-width:1100px;margin:0 auto;">
+    <h1>Audit GED vs UFOVAL</h1>
+    <p>Sessions, dates, complétudes & tranches d'âge — 5 mars 2026</p>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ========== RÉSUMÉ ========== -->
+<div class="summary-grid">
+  <div class="summary-card danger">
+    <div class="number" style="color:var(--danger)">9</div>
+    <div class="label">Dates de sessions incorrectes</div>
+  </div>
+  <div class="summary-card warning">
+    <div class="number" style="color:var(--warning)">2</div>
+    <div class="label">Complétudes non synchronisées</div>
+  </div>
+  <div class="summary-card info">
+    <div class="number" style="color:var(--info)">2</div>
+    <div class="label">Tranches d'âge incohérentes</div>
+  </div>
+  <div class="summary-card danger">
+    <div class="number" style="color:var(--primary)">8</div>
+    <div class="label">Séjours impactés</div>
+  </div>
+</div>
+
+<!-- ========== ARCHITECTURE ========== -->
+<div class="architecture-note">
+  <h3>Flux de données actuel</h3>
+  <div class="arch-flow">
+UFOVAL (site web) ──[n8n toutes les 6h]──► gd_session_prices.is_full (Supabase)
+                                             │
+gd_stay_sessions (dates/âges importés)  ◄────┘  ← <b>Source des dates affichées côté GED</b>
+                                             │
+StayDetail / StayCard (front React)     ◄────┘  ← Affichage final
+  </div>
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:0.75rem;">
+    Le workflow n8n <code>01_UFOVAL_IS_FULL_SESSIONS_v4.json</code> met à jour uniquement le champ <code>is_full</code> dans <code>gd_session_prices</code>.
+    Les dates (<code>start_date</code>, <code>end_date</code>) sont issues de l'import initial dans <code>gd_stay_sessions</code> et <code>gd_session_prices</code>.
+  </p>
+</div>
+
+<!-- ========== SECTION 1: DATES INCORRECTES ========== -->
+<div class="section">
+  <h2 class="section-title">
+    1. Dates de sessions incorrectes
+    <span class="badge">9 anomalies</span>
+  </h2>
+
+  <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem;">
+    Les dates <code>end_date</code> dans <code>gd_session_prices</code> et/ou <code>gd_stay_sessions</code> ne correspondent pas aux dates réelles affichées sur le site UFOVAL.
+  </p>
+
+  <table class="anomaly-table">
+    <thead>
+      <tr>
+        <th>Séjour</th>
+        <th>Session</th>
+        <th>Date UFOVAL (correcte)</th>
+        <th>Date GED (erronée)</th>
+        <th>Écart</th>
+        <th>Type</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="sejour-name">My Little Forest</span></td>
+        <td>Juillet</td>
+        <td class="date-compare"><span class="date-ufoval">5 → 25/07</span></td>
+        <td class="date-compare"><span class="date-ged">5 → 26/07</span></td>
+        <td><span class="highlight">+1 jour</span></td>
+        <td><span class="tag tag-danger">end_date</span></td>
+      </tr>
+      <tr>
+        <td><span class="sejour-name">My Little Forest</span></td>
+        <td>Août</td>
+        <td class="date-compare"><span class="date-ufoval">2 → 22/08</span></td>
+        <td class="date-compare"><span class="date-ged">2 → 29/08</span></td>
+        <td><span class="highlight">+7 jours</span></td>
+        <td><span class="tag tag-danger">end_date</span></td>
+      </tr>
+      <tr>
+        <td><span class="sejour-name">Dune Ocean Kids</span></td>
+        <td>Juillet</td>
+        <td class="date-compare"><span class="date-ufoval">5 → 23/07</span></td>
+        <td class="date-compare"><span class="date-ged">5 → 30/07</span></td>
+        <td><span class="highlight">+7 jours</span></td>
+        <td><span class="tag tag-danger">end_date</span></td>
+      </tr>
+      <tr>
+        <td><span class="sejour-name">Dune Ocean Kids</span></td>
+        <td>Août</td>
+        <td class="date-compare"><span class="date-ufoval">2 → 20/08</span></td>
+        <td class="date-compare"><span class="date-ged">2 → 27/08</span></td>
+        <td><span class="highlight">+7 jours</span></td>
+        <td><span class="tag tag-danger">end_date</span></td>
+      </tr>
+      <tr>
+        <td><span class="sejour-name">Dual Camp</span></td>
+        <td>Juillet</td>
+        <td class="date-compare"><span class="date-ufoval">5 → 19/07</span></td>
+        <td class="date-compare"><span class="date-ged">5 → 25/07</span></td>
+        <td><span class="highlight">+6 jours</span></td>
+        <td><span class="tag tag-danger">end_date</span></td>
+      </tr>
+      <tr>
+        <td><span class="sejour-name">Dual Camp</span></td>
+        <td>Août</td>
+        <td class="date-compare"><span class="date-ufoval">1 → 15/08</span></td>
+        <td class="date-compare"><span class="date-ged">1 → 22/08</span></td>
+        <td><span class="highlight">+7 jours</span></td>
+        <td><span class="tag tag-danger">end_date</span></td>
+      </tr>
+      <tr>
+        <td><span class="sejour-name">Adrenaline Chill</span></td>
+        <td>Juillet</td>
+        <td class="date-compare"><span class="date-ufoval">5 → 19/07</span></td>
+        <td class="date-compare"><span class="date-ged">5 → 26/07</span></td>
+        <td><span class="highlight">+7 jours</span></td>
+        <td><span class="tag tag-danger">end_date</span></td>
+      </tr>
+      <tr>
+        <td><span class="sejour-name">Adrenaline Chill</span></td>
+        <td>Août</td>
+        <td class="date-compare"><span class="date-ufoval">1 → 15/08</span></td>
+        <td class="date-compare"><span class="date-ged">1 → 22/08</span></td>
+        <td><span class="highlight">+7 jours</span></td>
+        <td><span class="tag tag-danger">end_date</span></td>
+      </tr>
+      <tr>
+        <td><span class="sejour-name">Alpine Sky Camp</span></td>
+        <td>Juillet</td>
+        <td class="date-compare"><span class="date-ufoval">5 → 25/07</span></td>
+        <td class="date-compare"><span class="date-ged">5 → 26/07</span></td>
+        <td><span class="highlight">+1 jour</span></td>
+        <td><span class="tag tag-danger">end_date</span></td>
+      </tr>
+      <tr>
+        <td><span class="sejour-name">Alpine Sky Camp</span></td>
+        <td>Août</td>
+        <td class="date-compare"><span class="date-ufoval">2 → 22/08</span></td>
+        <td class="date-compare"><span class="date-ged">1 → 22/08</span></td>
+        <td><span class="highlight">start_date -1j</span></td>
+        <td><span class="tag tag-warning">start_date</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="cause-box">
+    <strong>Cause probable :</strong> Les dates ont été importées initialement dans <code>gd_stay_sessions</code> et <code>gd_session_prices</code> lors du scraping UFOVAL. Le workflow n8n (<code>01_UFOVAL_IS_FULL_SESSIONS_v4.json</code>) ne met à jour que le champ <code>is_full</code> — il ne corrige jamais les dates. Si UFOVAL a modifié ses dates de sessions après l'import initial, ou si le parsing des dates françaises a eu un décalage (ex : "samedi 25 juil." interprété comme le 26), la BDD GED reste désynchronisée.
+  </div>
+
+  <div class="fix-box">
+    <strong>Correctifs recommandés :</strong><br>
+    <b>Court terme :</b> Corriger manuellement les <code>end_date</code> (et <code>start_date</code> pour Alpine Sky Camp août) directement en BDD Supabase dans les tables <code>gd_session_prices</code> ET <code>gd_stay_sessions</code>.<br>
+    <b>Moyen terme :</b> Enrichir le workflow n8n pour qu'il compare et mette à jour les dates scrappées (pas seulement <code>is_full</code>), avec un flag <code>date_changed</code> pour traçabilité.
+  </div>
+</div>
+
+<!-- ========== SECTION 2: COMPLÉTUDES ========== -->
+<div class="section">
+  <h2 class="section-title">
+    2. Complétudes non synchronisées (n8n)
+    <span class="badge">2 anomalies</span>
+  </h2>
+
+  <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem;">
+    Sessions marquées "Complet" sur UFOVAL mais encore affichées comme disponibles sur GED (ou inversement).
+    Le workflow n8n fait un <code>PATCH gd_session_prices.is_full</code> toutes les 6h, mais le matching repose sur <code>stay_slug + start_date + end_date</code>.
+  </p>
+
+  <table class="anomaly-table">
+    <thead>
+      <tr>
+        <th>Séjour</th>
+        <th>Session</th>
+        <th>Statut UFOVAL</th>
+        <th>Statut GED</th>
+        <th>Cause probable</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="sejour-name">Alpoo Kids</span></td>
+        <td>5 → 11/07</td>
+        <td><span class="tag tag-danger">COMPLET</span></td>
+        <td><span class="tag tag-info">Disponible</span></td>
+        <td>Le PATCH n8n matche sur <code>start_date + end_date</code> — si les dates GED diffèrent, le PATCH ne trouve pas la row et le <code>is_full</code> reste <code>false</code></td>
+      </tr>
+      <tr>
+        <td><span class="sejour-name">West Coast Surf Camp</span></td>
+        <td>5 → 16/07</td>
+        <td><span class="tag tag-danger">COMPLET</span></td>
+        <td><span class="tag tag-info">Disponible</span></td>
+        <td>Même problème de matching dates. Si les dates GED ne correspondent pas exactement aux dates scrappées, la requête <code>eq.start_date.eq.end_date</code> ne matche rien.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="cause-box">
+    <strong>Analyse technique :</strong> Le workflow n8n v4 fait un PATCH avec ce pattern :<br>
+    <code style="background:#fff;padding:2px 6px;border-radius:4px;">
+      gd_session_prices?stay_slug=eq.{slug}&start_date=eq.{scraped_start}&end_date=eq.{scraped_end}
+    </code><br>
+    Si les dates en BDD sont décalées par rapport aux dates scrappées sur UFOVAL (cf. section 1), le PATCH retourne 0 rows updated et le statut <code>is_full</code> n'est jamais mis à jour. C'est un effet domino : <b>les erreurs de dates provoquent les erreurs de complétude</b>.
+  </div>
+
+  <div class="fix-box">
+    <strong>Correctifs recommandés :</strong><br>
+    <b>1.</b> Corriger d'abord les dates (section 1) → le prochain cycle n8n mettra naturellement à jour les <code>is_full</code>.<br>
+    <b>2.</b> Ajouter dans le workflow n8n un log/alerte quand un PATCH retourne 0 rows (= session non trouvée en BDD).<br>
+    <b>3.</b> Envisager un matching plus souple : <code>stay_slug + start_date</code> uniquement (sans <code>end_date</code>) si une seule session commence à cette date.
+  </div>
+</div>
+
+<!-- ========== SECTION 3: TRANCHES D'ÂGE ========== -->
+<div class="section">
+  <h2 class="section-title">
+    3. Tranches d'âge carrousel incohérentes
+    <span class="badge">2 anomalies</span>
+  </h2>
+
+  <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem;">
+    Les tranches d'âge affichées sur les cartes carrousel (<code>StayCard</code>) ne correspondent pas au public cible réel du séjour.
+    L'affichage utilise <code>stay.ageRangesDisplay</code> calculé depuis <code>gd_stay_sessions.age_min / age_max</code>, avec un fallback sur <code>gd_stays.age_min / age_max</code> (défaut : 6–17).
+  </p>
+
+  <table class="anomaly-table">
+    <thead>
+      <tr>
+        <th>Séjour</th>
+        <th>Âge affiché (carrousel)</th>
+        <th>Âge réel (cible)</th>
+        <th>Source de l'erreur</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="sejour-name">Alpine Sky Camp</span></td>
+        <td><span class="tag tag-danger">6-17 ANS</span></td>
+        <td><span class="tag tag-info">15-17 ANS</span></td>
+        <td>
+          <code>gd_stay_sessions.age_min/age_max</code> contient probablement les valeurs par défaut (6/17) au lieu des valeurs réelles (15/17), OU aucune session n'a de données d'âge → fallback sur <code>gd_stays.age_min=6, age_max=17</code> (défaut schema)
+        </td>
+      </tr>
+      <tr>
+        <td><span class="sejour-name">West Coast Surf Camp</span></td>
+        <td><span class="tag tag-danger">6-17 ANS</span></td>
+        <td><span class="tag tag-info">12-17 ANS</span></td>
+        <td>
+          Même problème : les champs <code>age_min/age_max</code> dans <code>gd_stay_sessions</code> ou <code>gd_stays</code> utilisent les valeurs par défaut au lieu des valeurs spécifiques au séjour
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="cause-box">
+    <strong>Analyse technique :</strong> Le code dans <code>page.tsx</code> (home) calcule les âges via <code>getStayAgeData(sessions)</code> qui fait un <code>Math.min/Math.max</code> sur toutes les sessions. Si les sessions ont <code>age_min=0, age_max=0</code> (ou null → converti en 0), le calcul retourne <code>0-0</code> et le fallback <code>gd_stays.age_min=6, age_max=17</code> s'applique. Le <code>StayCard</code> affiche alors "6-17 ANS" par défaut, quel que soit le public réel.
+  </div>
+
+  <div class="fix-box">
+    <strong>Correctifs recommandés :</strong><br>
+    <b>Court terme :</b> Mettre à jour <code>gd_stays.age_min</code> et <code>gd_stays.age_max</code> pour Alpine Sky Camp (15/17) et West Coast Surf Camp (12/17) directement en BDD.<br>
+    <b>Court terme :</b> Mettre à jour <code>gd_stay_sessions.age_min / age_max</code> pour chaque session de ces séjours avec les bonnes valeurs.<br>
+    <b>Moyen terme :</b> Ajouter une validation dans le script d'import qui alerte quand <code>age_min/age_max</code> = valeurs par défaut (6/17) pour des séjours clairement ciblés ados.
+  </div>
+</div>
+
+<!-- ========== SECTION 4: SYNTHÈSE CORRECTIFS ========== -->
+<div class="section">
+  <h2 class="section-title">4. Plan de correction</h2>
+
+  <table class="anomaly-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Action</th>
+        <th>Table(s)</th>
+        <th>Priorité</th>
+        <th>Complexité</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>Corriger les 9 dates erronées (<code>end_date</code> / <code>start_date</code>) pour les 6 séjours concernés</td>
+        <td><code>gd_session_prices</code> + <code>gd_stay_sessions</code></td>
+        <td><span class="tag tag-danger">Critique</span></td>
+        <td>SQL UPDATE direct — 15 min</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>Vérifier que le prochain cycle n8n met à jour les <code>is_full</code> d'Alpoo Kids et West Coast (après correction dates)</td>
+        <td><code>gd_session_prices</code></td>
+        <td><span class="tag tag-danger">Critique</span></td>
+        <td>Déclencher manuellement le workflow — 5 min</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>Corriger <code>age_min/age_max</code> pour Alpine Sky Camp (15-17) et West Coast (12-17)</td>
+        <td><code>gd_stays</code> + <code>gd_stay_sessions</code></td>
+        <td><span class="tag tag-warning">Haute</span></td>
+        <td>SQL UPDATE — 5 min</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>Ajouter un log d'alerte dans le workflow n8n quand un PATCH retourne 0 rows</td>
+        <td>n8n workflow JSON</td>
+        <td><span class="tag tag-info">Moyenne</span></td>
+        <td>Modifier le noeud Summary — 30 min</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>Enrichir le workflow n8n pour comparer et mettre à jour les dates (pas seulement <code>is_full</code>)</td>
+        <td>n8n + <code>gd_session_prices</code></td>
+        <td><span class="tag tag-info">Moyenne</span></td>
+        <td>Nouveau noeud de comparaison — 2h</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>Auditer tous les séjours publiés pour vérifier les <code>age_min/age_max</code> vs cible réelle</td>
+        <td><code>gd_stays</code> + <code>gd_stay_sessions</code></td>
+        <td><span class="tag tag-info">Moyenne</span></td>
+        <td>Requête SQL + vérification manuelle — 30 min</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ========== SECTION 5: REQUÊTES SQL ========== -->
+<div class="section">
+  <h2 class="section-title">5. Requêtes SQL correctives (à adapter aux slugs réels)</h2>
+
+  <div style="background:#1e293b;color:#e2e8f0;border-radius:10px;padding:1.25rem;font-family:'Courier New',monospace;font-size:0.78rem;line-height:1.7;overflow-x:auto;margin-bottom:1rem;">
+    <span style="color:#94a3b8;">-- 1. DATES: My Little Forest (adapter le slug)</span><br>
+    <span style="color:#7dd3fc;">UPDATE</span> gd_session_prices <span style="color:#7dd3fc;">SET</span> end_date = <span style="color:#fde68a;">'2026-07-25'</span><br>
+    &nbsp;&nbsp;<span style="color:#7dd3fc;">WHERE</span> stay_slug = <span style="color:#fde68a;">'my-little-forest'</span> <span style="color:#7dd3fc;">AND</span> start_date = <span style="color:#fde68a;">'2026-07-05'</span>;<br>
+    <span style="color:#7dd3fc;">UPDATE</span> gd_session_prices <span style="color:#7dd3fc;">SET</span> end_date = <span style="color:#fde68a;">'2026-08-22'</span><br>
+    &nbsp;&nbsp;<span style="color:#7dd3fc;">WHERE</span> stay_slug = <span style="color:#fde68a;">'my-little-forest'</span> <span style="color:#7dd3fc;">AND</span> start_date = <span style="color:#fde68a;">'2026-08-02'</span>;<br><br>
+
+    <span style="color:#94a3b8;">-- 2. DATES: Dune Ocean Kids</span><br>
+    <span style="color:#7dd3fc;">UPDATE</span> gd_session_prices <span style="color:#7dd3fc;">SET</span> end_date = <span style="color:#fde68a;">'2026-07-23'</span><br>
+    &nbsp;&nbsp;<span style="color:#7dd3fc;">WHERE</span> stay_slug = <span style="color:#fde68a;">'dune-ocean-kids'</span> <span style="color:#7dd3fc;">AND</span> start_date = <span style="color:#fde68a;">'2026-07-05'</span>;<br>
+    <span style="color:#7dd3fc;">UPDATE</span> gd_session_prices <span style="color:#7dd3fc;">SET</span> end_date = <span style="color:#fde68a;">'2026-08-20'</span><br>
+    &nbsp;&nbsp;<span style="color:#7dd3fc;">WHERE</span> stay_slug = <span style="color:#fde68a;">'dune-ocean-kids'</span> <span style="color:#7dd3fc;">AND</span> start_date = <span style="color:#fde68a;">'2026-08-02'</span>;<br><br>
+
+    <span style="color:#94a3b8;">-- 3. DATES: Dual Camp</span><br>
+    <span style="color:#7dd3fc;">UPDATE</span> gd_session_prices <span style="color:#7dd3fc;">SET</span> end_date = <span style="color:#fde68a;">'2026-07-19'</span><br>
+    &nbsp;&nbsp;<span style="color:#7dd3fc;">WHERE</span> stay_slug = <span style="color:#fde68a;">'dual-camp'</span> <span style="color:#7dd3fc;">AND</span> start_date = <span style="color:#fde68a;">'2026-07-05'</span>;<br>
+    <span style="color:#7dd3fc;">UPDATE</span> gd_session_prices <span style="color:#7dd3fc;">SET</span> end_date = <span style="color:#fde68a;">'2026-08-15'</span><br>
+    &nbsp;&nbsp;<span style="color:#7dd3fc;">WHERE</span> stay_slug = <span style="color:#fde68a;">'dual-camp'</span> <span style="color:#7dd3fc;">AND</span> start_date = <span style="color:#fde68a;">'2026-08-01'</span>;<br><br>
+
+    <span style="color:#94a3b8;">-- 4. DATES: Adrenaline Chill</span><br>
+    <span style="color:#7dd3fc;">UPDATE</span> gd_session_prices <span style="color:#7dd3fc;">SET</span> end_date = <span style="color:#fde68a;">'2026-07-19'</span><br>
+    &nbsp;&nbsp;<span style="color:#7dd3fc;">WHERE</span> stay_slug = <span style="color:#fde68a;">'adrenaline-chill'</span> <span style="color:#7dd3fc;">AND</span> start_date = <span style="color:#fde68a;">'2026-07-05'</span>;<br>
+    <span style="color:#7dd3fc;">UPDATE</span> gd_session_prices <span style="color:#7dd3fc;">SET</span> end_date = <span style="color:#fde68a;">'2026-08-15'</span><br>
+    &nbsp;&nbsp;<span style="color:#7dd3fc;">WHERE</span> stay_slug = <span style="color:#fde68a;">'adrenaline-chill'</span> <span style="color:#7dd3fc;">AND</span> start_date = <span style="color:#fde68a;">'2026-08-01'</span>;<br><br>
+
+    <span style="color:#94a3b8;">-- 5. DATES: Alpine Sky Camp</span><br>
+    <span style="color:#7dd3fc;">UPDATE</span> gd_session_prices <span style="color:#7dd3fc;">SET</span> end_date = <span style="color:#fde68a;">'2026-07-25'</span><br>
+    &nbsp;&nbsp;<span style="color:#7dd3fc;">WHERE</span> stay_slug = <span style="color:#fde68a;">'alpine-sky-camp'</span> <span style="color:#7dd3fc;">AND</span> start_date = <span style="color:#fde68a;">'2026-07-05'</span>;<br>
+    <span style="color:#7dd3fc;">UPDATE</span> gd_session_prices <span style="color:#7dd3fc;">SET</span> start_date = <span style="color:#fde68a;">'2026-08-02'</span><br>
+    &nbsp;&nbsp;<span style="color:#7dd3fc;">WHERE</span> stay_slug = <span style="color:#fde68a;">'alpine-sky-camp'</span> <span style="color:#7dd3fc;">AND</span> start_date = <span style="color:#fde68a;">'2026-08-01'</span>;<br><br>
+
+    <span style="color:#94a3b8;">-- 6. ÂGES: Alpine Sky Camp → 15-17</span><br>
+    <span style="color:#7dd3fc;">UPDATE</span> gd_stays <span style="color:#7dd3fc;">SET</span> age_min = <span style="color:#fde68a;">15</span>, age_max = <span style="color:#fde68a;">17</span><br>
+    &nbsp;&nbsp;<span style="color:#7dd3fc;">WHERE</span> slug = <span style="color:#fde68a;">'alpine-sky-camp'</span>;<br>
+    <span style="color:#7dd3fc;">UPDATE</span> gd_stay_sessions <span style="color:#7dd3fc;">SET</span> age_min = <span style="color:#fde68a;">15</span>, age_max = <span style="color:#fde68a;">17</span><br>
+    &nbsp;&nbsp;<span style="color:#7dd3fc;">WHERE</span> stay_slug = <span style="color:#fde68a;">'alpine-sky-camp'</span>;<br><br>
+
+    <span style="color:#94a3b8;">-- 7. ÂGES: West Coast Surf Camp → 12-17</span><br>
+    <span style="color:#7dd3fc;">UPDATE</span> gd_stays <span style="color:#7dd3fc;">SET</span> age_min = <span style="color:#fde68a;">12</span>, age_max = <span style="color:#fde68a;">17</span><br>
+    &nbsp;&nbsp;<span style="color:#7dd3fc;">WHERE</span> slug = <span style="color:#fde68a;">'west-coast-surf-camp'</span>;<br>
+    <span style="color:#7dd3fc;">UPDATE</span> gd_stay_sessions <span style="color:#7dd3fc;">SET</span> age_min = <span style="color:#fde68a;">12</span>, age_max = <span style="color:#fde68a;">17</span><br>
+    &nbsp;&nbsp;<span style="color:#7dd3fc;">WHERE</span> stay_slug = <span style="color:#fde68a;">'west-coast-surf-camp'</span>;<br><br>
+
+    <span style="color:#94a3b8;">-- ⚠️ IMPORTANT: Exécuter les mêmes UPDATEs sur gd_stay_sessions</span><br>
+    <span style="color:#94a3b8;">-- (mêmes filtres stay_slug + start_date, même correction end_date)</span><br>
+    <span style="color:#94a3b8;">-- Puis déclencher le workflow n8n manuellement pour resync is_full</span>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

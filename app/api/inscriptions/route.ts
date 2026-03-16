@@ -283,7 +283,7 @@ export async function POST(request: NextRequest) {
 
     if (isFullRow?.is_full === true) {
       return NextResponse.json(
-        { error: { code: 'SESSION_FULL', message: 'Cette session est complète selon UFOVAL.' } },
+        { error: { code: 'SESSION_FULL', message: 'Cette session est complète.' } },
         { status: 400 }
       );
     }

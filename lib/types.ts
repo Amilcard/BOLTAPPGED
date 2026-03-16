@@ -108,6 +108,12 @@ export interface InscriptionSupabase {
   besoins_pris_en_compte?: boolean;
   equipe_informee?: boolean;
   note_pro?: string;
+  // Phase 3 — préférences + besoins spécifiques
+  pref_nouvelles_sejour?: string; // oui, non, si_besoin
+  pref_canal_contact?: string; // email, telephone, les_deux
+  pref_bilan_fin_sejour?: boolean;
+  consignes_communication?: string;
+  besoins_specifiques?: string;
 }
 
 export type ViewMode = 'pro' | 'kids';

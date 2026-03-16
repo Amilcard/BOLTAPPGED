@@ -331,6 +331,44 @@ function InscriptionDetail({
             </div>
           </div>
 
+          {/* Phase 3 — Préférences & besoins du référent (lecture seule admin) */}
+          {(inscription.pref_nouvelles_sejour || inscription.pref_canal_contact ||
+            inscription.pref_bilan_fin_sejour || inscription.consignes_communication ||
+            inscription.besoins_specifiques) && (
+            <div className="border-t pt-4">
+              <h3 className="font-semibold text-primary mb-3">Préférences du référent</h3>
+              <div className="space-y-2 text-sm text-gray-700">
+                {inscription.pref_nouvelles_sejour && (
+                  <p>
+                    <strong>Nouvelles pendant le séjour :</strong>{' '}
+                    {{ oui: 'Oui, régulièrement', non: 'Non merci', si_besoin: 'Si besoin uniquement' }[inscription.pref_nouvelles_sejour] || inscription.pref_nouvelles_sejour}
+                  </p>
+                )}
+                {inscription.pref_canal_contact && (
+                  <p>
+                    <strong>Canal de contact préféré :</strong>{' '}
+                    {{ email: 'Email', telephone: 'Téléphone', les_deux: 'Email + Téléphone' }[inscription.pref_canal_contact] || inscription.pref_canal_contact}
+                  </p>
+                )}
+                {inscription.pref_bilan_fin_sejour && (
+                  <p><strong>Bilan de fin de séjour :</strong> Souhaité</p>
+                )}
+                {inscription.consignes_communication && (
+                  <div>
+                    <strong>Consignes de communication :</strong>
+                    <p className="mt-1 bg-gray-50 rounded px-3 py-2 text-gray-600">{inscription.consignes_communication}</p>
+                  </div>
+                )}
+                {inscription.besoins_specifiques && (
+                  <div>
+                    <strong>Besoins spécifiques :</strong>
+                    <p className="mt-1 bg-amber-50 border border-amber-200 rounded px-3 py-2 text-gray-700">{inscription.besoins_specifiques}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Lien suivi pro */}
           {suiviLink && (
             <div className="border-t pt-4">

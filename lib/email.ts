@@ -22,6 +22,10 @@ interface InscriptionEmailData {
   priceTotal: number;
   paymentMethod?: string;
   paymentReference?: string;
+  // Phase 1 — parcours pro
+  dossierRef?: string;
+  organisation?: string;
+  suiviUrl?: string | null;
 }
 
 /**
@@ -54,8 +58,18 @@ export async function sendInscriptionConfirmation(data: InscriptionEmailData) {
               <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Départ</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${data.cityDeparture.replace(/_/g, ' ')}</td></tr>
               <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Montant</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: bold;">${data.priceTotal.toFixed(2)} €</td></tr>
               <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Mode de paiement</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${data.paymentMethod === 'bank_transfer' ? 'Virement bancaire' : data.paymentMethod === 'cheque' ? 'Chèque' : 'Carte bancaire'}</td></tr>
-              ${data.paymentReference ? `<tr><td style="padding: 8px; color: #6b7280;">Référence</td><td style="padding: 8px; font-weight: bold;">${data.paymentReference}</td></tr>` : ''}
+              ${data.paymentReference ? `<tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Référence paiement</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: bold;">${data.paymentReference}</td></tr>` : ''}
+              ${data.dossierRef ? `<tr><td style="padding: 8px; color: #6b7280;">N° de dossier</td><td style="padding: 8px; font-weight: bold; font-family: monospace;">${data.dossierRef}</td></tr>` : ''}
             </table>
+
+            ${data.suiviUrl ? `
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin: 16px 0;">
+              <h3 style="color: #166534; margin: 0 0 8px 0; font-size: 15px;">Suivi de votre dossier</h3>
+              <p style="margin: 0 0 12px 0; color: #15803d; font-size: 14px;">Retrouvez à tout moment l'état de votre inscription et des éventuels autres dossiers liés à votre structure :</p>
+              <a href="${data.suiviUrl}" style="display: inline-block; background: #166534; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 14px;">Accéder au suivi</a>
+              <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 12px;">Ce lien est personnel et réservé à votre structure. Conservez-le précieusement.</p>
+            </div>
+            ` : ''}
 
             ${data.paymentMethod === 'bank_transfer' ? `
             <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px; margin: 16px 0;">
@@ -119,6 +133,8 @@ export async function sendAdminNewInscriptionNotification(data: InscriptionEmail
           <ul>
             <li><strong>Jeune :</strong> ${data.jeunePrenom} ${data.jeuneNom}</li>
             <li><strong>Référent :</strong> ${data.referentNom} (${data.referentEmail})</li>
+            ${data.organisation ? `<li><strong>Structure :</strong> ${data.organisation}</li>` : ''}
+            ${data.dossierRef ? `<li><strong>Dossier :</strong> <code>${data.dossierRef}</code></li>` : ''}
             <li><strong>Séjour :</strong> ${data.sejourSlug}</li>
             <li><strong>Session :</strong> ${data.sessionDate}</li>
             <li><strong>Départ :</strong> ${data.cityDeparture}</li>

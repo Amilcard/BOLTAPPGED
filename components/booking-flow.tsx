@@ -131,13 +131,13 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
 
   const firstInputRef = useRef<HTMLInputElement>(null);
 
-  const calculateAge = (birthDate: string): number | null => {
+  const calculateAge = (birthDate: string, referenceDate?: Date): number | null => {
     if (!birthDate) return null;
     const birth = new Date(birthDate);
-    const today = new Date();
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    const ref = referenceDate ?? new Date();
+    let age = ref.getFullYear() - birth.getFullYear();
+    const monthDiff = ref.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && ref.getDate() < birth.getDate())) {
       age--;
     }
     return age;
@@ -186,13 +186,14 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     }
   }, [step]);
 
-  // Validation âge enfant vs tranche séjour
+  // Validation âge enfant vs tranche séjour — référence : date de début de session
   useEffect(() => {
     if (!step2.childBirthDate || !stay.ageMin || !stay.ageMax) {
       setAgeError('');
       return;
     }
-    const age = calculateAge(step2.childBirthDate);
+    const sessionRef = selectedSession?.startDate ? new Date(selectedSession.startDate) : undefined;
+    const age = calculateAge(step2.childBirthDate, sessionRef);
     if (age === null) {
       setAgeError('');
       return;
@@ -202,7 +203,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     } else {
       setAgeError('');
     }
-  }, [step2.childBirthDate, stay.ageMin, stay.ageMax]);
+  }, [step2.childBirthDate, stay.ageMin, stay.ageMax, selectedSession]);
 
   // -1 = dispo illimité (UFOVAL source de vérité), 0 = complet
   const validSessions = sessions?.filter(s => s?.seatsLeft === -1 || (s?.seatsLeft ?? 0) > 0) ?? [];
@@ -633,9 +634,9 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                 className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
                 required
               />
-              {step2.childBirthDate && calculateAge(step2.childBirthDate) !== null && (
+              {step2.childBirthDate && calculateAge(step2.childBirthDate, selectedSession?.startDate ? new Date(selectedSession.startDate) : undefined) !== null && (
                 <p className={`mt-1 text-xs ${ageError ? 'text-red-500 font-medium' : 'text-primary-500'}`}>
-                  Âge : {calculateAge(step2.childBirthDate)} ans
+                  Âge au départ : {calculateAge(step2.childBirthDate, selectedSession?.startDate ? new Date(selectedSession.startDate) : undefined)} ans
                   {ageError && ` • ${ageError}`}
                 </p>
               )}

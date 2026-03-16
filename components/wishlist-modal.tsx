@@ -132,7 +132,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
         </div>
 
         <h2 className="text-lg font-bold text-primary text-center mb-1">
-          {saved ? "C'est noté !" : "Ce séjour te plaît ?"}
+          {saved ? "C'est noté !" : "Tu veux noter ce séjour ?"}
         </h2>
         <p className="text-sm text-primary-500 text-center mb-6">{stayTitle}</p>
 
@@ -228,7 +228,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
         {/* Motivation field */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-primary mb-2">
-            Pourquoi ce séjour t'intéresse ? <span className="text-red-500">*</span>
+            Qu'est-ce qui t'attire dans ce séjour ? <span className="text-red-500">*</span>
           </label>
           <textarea
             value={motivation}

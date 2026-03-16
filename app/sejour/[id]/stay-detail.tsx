@@ -630,7 +630,10 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
           {/* === SIDEBAR: SESSIONS & CTA === */}
           <div className="lg:col-span-1">
             <div className="sticky top-6 bg-white rounded-xl shadow-brand p-5">
-              <h3 className="font-bold text-gray-900 mb-3 text-sm">Sessions disponibles</h3>
+              <h3 className="font-bold text-gray-900 mb-1 text-sm">Sessions disponibles</h3>
+              {!isKids && (
+                <p className="text-xs text-primary-400 mb-3">Sélectionnez une session et une ville pour accéder à l'inscription.</p>
+              )}
               {sessions.length === 0 ? (
                 <p className="text-sm text-gray-500">Aucune session disponible</p>
               ) : (

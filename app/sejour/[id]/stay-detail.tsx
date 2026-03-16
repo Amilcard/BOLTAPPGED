@@ -23,7 +23,7 @@ import {
   ArrowLeft,
   X,
   Clock,
-  Download,   // Added based on usage in file
+  FileText,   // Icône consultation PDF (remplace Download)
 } from 'lucide-react';
 import { getReassurancePoints, getThemeStyle } from '@/config/premium-themes';
 import type { Stay, StaySession } from '@/lib/types';
@@ -537,18 +537,17 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                 </ol>
               )}
 
-              {/* === TÉLÉCHARGEMENT PDF — conditionnel, zéro impact si pdfUrl null === */}
+              {/* === FICHE SÉJOUR PDF — conditionnel, zéro impact si pdfUrl null === */}
               {pdfUrl && (
                 <div className="mt-5 pt-4 border-t border-gray-100">
                   <a
-                    href={pdfUrl}
+                    href={`/api/pdf/${stay.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    download
                     className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border-2 border-primary/20 bg-primary/5 text-primary text-sm font-semibold hover:bg-primary/10 hover:border-primary/40 transition-all group"
                   >
-                    <Download className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
-                    Télécharger la fiche descriptive
+                    <FileText className="w-4 h-4 group-hover:scale-105 transition-transform" />
+                    Consulter la fiche séjour
                     <span className="text-xs text-primary/50 font-normal">PDF</span>
                   </a>
                 </div>

@@ -25,15 +25,14 @@ const inscriptionSchema = z.object({
   remarques: z.string().optional(),
   priceTotal: z.number().min(0),
   consent: z.boolean().refine(v => v === true, { message: 'Consentement requis' }),
-  paymentMethod: z.enum(['card', 'bank_transfer', 'cheque', 'lyra', 'transfer', 'check']).optional().default('bank_transfer'),
+  paymentMethod: z.enum(['card', 'bank_transfer', 'cheque', 'transfer', 'check']).optional().default('bank_transfer'),
 });
 
 // Mapping front-end → DB constraint values
 const PAYMENT_METHOD_MAP: Record<string, string> = {
-  card: 'lyra',
+  card: 'stripe',
   bank_transfer: 'transfer',
   cheque: 'check',
-  lyra: 'lyra',
   transfer: 'transfer',
   check: 'check',
 };
@@ -343,8 +342,11 @@ export async function POST(request: NextRequest) {
       paymentMethod: data.paymentMethod,
       paymentReference: inscription.payment_reference || inscription.id,
     };
-    sendInscriptionConfirmation(emailData).catch(console.error);
-    sendAdminNewInscriptionNotification(emailData).catch(console.error);
+    // Await both emails before returning — fire-and-forget is killed by serverless on return
+    await Promise.allSettled([
+      sendInscriptionConfirmation(emailData),
+      sendAdminNewInscriptionNotification(emailData),
+    ]);
 
     return NextResponse.json(
       {

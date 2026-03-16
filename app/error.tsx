@@ -22,7 +22,7 @@ export default function Error({
         </h1>
         
         <p className="text-gray-500 mb-8 leading-relaxed">
-          {error.message || "Nous n'avons pas pu traiter votre demande. Veuillez réessayer."}
+          Nous n&apos;avons pas pu traiter votre demande. Veuillez réessayer.
         </p>
 
         <Button

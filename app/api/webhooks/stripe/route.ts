@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { headers } from 'next/headers';
+import { sendPaymentConfirmedAdminNotification } from '@/lib/email';
 
 function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -74,7 +75,7 @@ export async function POST(req: NextRequest) {
         // VÉRIFICATION MONTANT : comparer Stripe vs DB
         const { data: inscription } = await supabase
           .from('gd_inscriptions')
-          .select('price_total')
+          .select('price_total, referent_nom, referent_email, jeune_prenom, jeune_nom, sejour_slug, dossier_ref')
           .eq('id', inscriptionId)
           .single();
 
@@ -109,6 +110,19 @@ export async function POST(req: NextRequest) {
           console.error('Error updating payment status:', error);
         } else {
           console.log(`Payment succeeded for inscription ${inscriptionId}`);
+          // Notification admin non-bloquante
+          if (inscription) {
+            const rec = inscription as Record<string, unknown>;
+            sendPaymentConfirmedAdminNotification({
+              inscriptionId,
+              referentNom: (rec.referent_nom as string) || '',
+              jeunePrenom: (rec.jeune_prenom as string) || '',
+              jeuneNom: (rec.jeune_nom as string) || '',
+              sejourSlug: (rec.sejour_slug as string) || '',
+              dossierRef: (rec.dossier_ref as string) || '',
+              amount: paymentIntent.amount / 100,
+            }).catch(() => {});
+          }
         }
         break;
       }

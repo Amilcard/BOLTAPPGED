@@ -66,13 +66,14 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     const body = await req.json();
-    const { status, payment_status } = body;
+    const { status, payment_status, documents_status, besoins_pris_en_compte, equipe_informee, note_pro } = body;
 
     // Validation des statuts
     const validStatuses = ['en_attente', 'validee', 'refusee', 'annulee'];
     const validPaymentStatuses = ['pending_payment', 'paid', 'failed'];
+    const validDocStatuses = ['en_attente', 'partiellement_recus', 'complets'];
 
-    const updateData: Record<string, string> = {};
+    const updateData: Record<string, unknown> = {};
 
     if (status) {
       if (!validStatuses.includes(status)) {
@@ -92,6 +93,26 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         );
       }
       updateData.payment_status = payment_status;
+    }
+
+    // Phase 2 — champs suivi séjour
+    if (documents_status !== undefined) {
+      if (!validDocStatuses.includes(documents_status)) {
+        return NextResponse.json(
+          { error: { code: 'validation_error', message: `Statut documents invalide. Valeurs : ${validDocStatuses.join(', ')}` } },
+          { status: 400 }
+        );
+      }
+      updateData.documents_status = documents_status;
+    }
+    if (besoins_pris_en_compte !== undefined) {
+      updateData.besoins_pris_en_compte = Boolean(besoins_pris_en_compte);
+    }
+    if (equipe_informee !== undefined) {
+      updateData.equipe_informee = Boolean(equipe_informee);
+    }
+    if (note_pro !== undefined) {
+      updateData.note_pro = typeof note_pro === 'string' ? note_pro : null;
     }
 
     if (Object.keys(updateData).length === 0) {

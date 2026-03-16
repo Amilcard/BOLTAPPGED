@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import { STORAGE_KEYS, formatDate } from '@/lib/utils';
-import { Eye } from 'lucide-react';
+import { Eye, ClipboardCopy } from 'lucide-react';
 import { InscriptionSupabase } from '@/lib/types';
 
 const STATUS_OPTIONS = [
@@ -77,6 +77,15 @@ export default function AdminDemandes() {
         <InscriptionDetail
           inscription={selectedInscription}
           onClose={() => setSelectedInscription(null)}
+          onUpdate={() => {
+            fetchInscriptions();
+            // Rafraîchir aussi l'inscription sélectionnée
+            fetch(`/api/admin/inscriptions/${selectedInscription.id}`, {
+              headers: { Authorization: `Bearer ${localStorage.getItem(STORAGE_KEYS.AUTH)}` },
+            })
+              .then(r => r.ok ? r.json() : null)
+              .then(d => { if (d) setSelectedInscription(d); });
+          }}
         />
       )}
 
@@ -91,6 +100,7 @@ export default function AdminDemandes() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Date</th>
+                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Dossier</th>
                   <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Jeune</th>
                   <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Séjour</th>
                   <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Référent</th>
@@ -108,6 +118,9 @@ export default function AdminDemandes() {
                     <tr key={insc.id} className="hover:bg-gray-50">
                       <td className="px-4 py-4 text-sm text-gray-500">
                         {formatDate(insc.created_at)}
+                      </td>
+                      <td className="px-4 py-4 text-xs font-mono text-gray-500">
+                        {insc.dossier_ref || '—'}
                       </td>
                       <td className="px-4 py-4 font-medium">
                         {insc.jeune_prenom} {insc.jeune_nom}
@@ -160,21 +173,56 @@ export default function AdminDemandes() {
   );
 }
 
+const DOC_STATUS_OPTIONS = [
+  { value: 'en_attente', label: 'En attente' },
+  { value: 'partiellement_recus', label: 'Partiels' },
+  { value: 'complets', label: 'Complets' },
+];
+
 function InscriptionDetail({
   inscription,
   onClose,
+  onUpdate,
 }: {
   inscription: InscriptionSupabase;
   onClose: () => void;
+  onUpdate: () => void;
 }) {
   const paymentStyle = PAYMENT_STATUS_LABELS[inscription.payment_status || 'pending_payment']
     || PAYMENT_STATUS_LABELS.pending_payment;
+  const [saving, setSaving] = useState(false);
+
+  const patchField = async (field: string, value: unknown) => {
+    setSaving(true);
+    try {
+      const token = localStorage.getItem(STORAGE_KEYS.AUTH);
+      await fetch(`/api/admin/inscriptions/${inscription.id}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: value }),
+      });
+      onUpdate();
+    } catch (err) {
+      console.error('Erreur mise à jour:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const suiviLink = inscription.suivi_token
+    ? `${window.location.origin}/suivi/${inscription.suivi_token}`
+    : null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b flex justify-between items-center">
-          <h2 className="text-xl font-bold">Détail inscription</h2>
+          <div>
+            <h2 className="text-xl font-bold">Détail inscription</h2>
+            {inscription.dossier_ref && (
+              <p className="text-sm text-gray-500 font-mono">{inscription.dossier_ref}</p>
+            )}
+          </div>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
         </div>
         <div className="p-6 space-y-4">
@@ -221,6 +269,89 @@ function InscriptionDetail({
             )}
           </div>
 
+          {/* Phase 2 — Suivi séjour (toggles admin) */}
+          <div className="border-t pt-4">
+            <h3 className="font-semibold text-primary mb-3">Suivi du séjour</h3>
+
+            {/* Documents */}
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm text-gray-700">Documents</span>
+              <select
+                className="text-sm border rounded-lg px-3 py-1.5"
+                value={inscription.documents_status || 'en_attente'}
+                disabled={saving}
+                onChange={(e) => patchField('documents_status', e.target.value)}
+              >
+                {DOC_STATUS_OPTIONS.map(o => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Besoins pris en compte */}
+            <label className="flex items-center justify-between mb-3 cursor-pointer">
+              <span className="text-sm text-gray-700">Besoins spécifiques pris en compte</span>
+              <input
+                type="checkbox"
+                checked={inscription.besoins_pris_en_compte || false}
+                disabled={saving}
+                onChange={(e) => patchField('besoins_pris_en_compte', e.target.checked)}
+                className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+            </label>
+
+            {/* Équipe informée */}
+            <label className="flex items-center justify-between mb-3 cursor-pointer">
+              <span className="text-sm text-gray-700">Équipe informée</span>
+              <input
+                type="checkbox"
+                checked={inscription.equipe_informee || false}
+                disabled={saving}
+                onChange={(e) => patchField('equipe_informee', e.target.checked)}
+                className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+            </label>
+
+            {/* Note pro */}
+            <div>
+              <label className="text-sm text-gray-700 block mb-1">Note pro (visible par le référent)</label>
+              <textarea
+                className="w-full border rounded-lg px-3 py-2 text-sm resize-none"
+                rows={3}
+                defaultValue={inscription.note_pro || ''}
+                disabled={saving}
+                placeholder="Ex : Prévoir un accompagnateur supplémentaire pour ce groupe..."
+                onBlur={(e) => {
+                  const val = e.target.value.trim();
+                  if (val !== (inscription.note_pro || '')) {
+                    patchField('note_pro', val || null);
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Lien suivi pro */}
+          {suiviLink && (
+            <div className="border-t pt-4">
+              <h3 className="font-semibold text-primary mb-2">Lien de suivi pro</h3>
+              <div className="flex items-center gap-2">
+                <input
+                  readOnly
+                  value={suiviLink}
+                  className="flex-1 text-xs font-mono bg-gray-50 border rounded px-2 py-1.5 text-gray-600"
+                />
+                <button
+                  onClick={() => navigator.clipboard.writeText(suiviLink)}
+                  className="p-1.5 hover:bg-gray-100 rounded"
+                  title="Copier le lien"
+                >
+                  <ClipboardCopy size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Notes */}
           {(inscription.options_educatives || inscription.remarques) && (
             <div>
@@ -238,6 +369,11 @@ function InscriptionDetail({
             Créée le {new Date(inscription.created_at).toLocaleDateString('fr-FR', {
               day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
             })}
+            {inscription.updated_at && (
+              <> · Mise à jour le {new Date(inscription.updated_at).toLocaleDateString('fr-FR', {
+                day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+              })}</>
+            )}
           </p>
         </div>
       </div>

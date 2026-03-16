@@ -288,9 +288,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Créer l'inscription dans gd_inscriptions (adapté au schéma DB existant)
-    // Pas de colonne 'organisation' en DB → on l'inclut dans remarques
-    const remarquesWithOrga = `[ORGANISATION]: ${data.organisation}\n${data.remarques || ''}`.trim();
+    // Créer l'inscription dans gd_inscriptions
+    // Phase 1 pro : organisation dédiée + dossier_ref généré côté serveur
+    const now = new Date();
+    const datePrefix = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const randomSuffix = Math.random().toString(36).substring(2, 10).toUpperCase();
+    const dossierRef = `DOS-${datePrefix}-${randomSuffix}`;
+    // Remarques nettoyées (on ne stocke plus l'orga dedans, elle a sa propre colonne)
+    const cleanRemarks = data.remarques || '';
     // Normaliser la méthode de paiement pour correspondre à la contrainte DB
     const dbPaymentMethod = PAYMENT_METHOD_MAP[data.paymentMethod] || 'transfer';
     const { data: inscriptionRows, error } = await supabase
@@ -305,8 +310,11 @@ export async function POST(request: NextRequest) {
         referent_nom: data.socialWorkerName,
         referent_email: data.email,
         referent_tel: data.phone,
+        organisation: data.organisation,
+        dossier_ref: dossierRef,
+        // suivi_token est auto-généré par Supabase (DEFAULT gen_random_uuid())
         options_educatives: data.optionsEducatives || null,
-        remarques: remarquesWithOrga,
+        remarques: cleanRemarks,
         price_total: Math.round(data.priceTotal),
         status: 'en_attente',
         payment_status: 'pending_payment',
@@ -332,6 +340,8 @@ export async function POST(request: NextRequest) {
     const sejourDisplayName = stayInfo?.[0]?.marketing_title || data.staySlug.replace(/-/g, ' ');
 
     // Emails non-bloquants (fire-and-forget)
+    const appBaseUrl = process.env.NEXTAUTH_URL || 'https://app.groupeetdecouverte.fr';
+    const suiviUrl = inscription.suivi_token ? `${appBaseUrl}/suivi/${inscription.suivi_token}` : null;
     const emailData = {
       referentNom: data.socialWorkerName,
       referentEmail: data.email,
@@ -343,6 +353,9 @@ export async function POST(request: NextRequest) {
       priceTotal: data.priceTotal,
       paymentMethod: data.paymentMethod,
       paymentReference: inscription.payment_reference || inscription.id,
+      dossierRef: inscription.dossier_ref || dossierRef,
+      organisation: data.organisation,
+      suiviUrl,
     };
     // Await both emails before returning — fire-and-forget is killed by serverless on return
     await Promise.allSettled([
@@ -354,6 +367,8 @@ export async function POST(request: NextRequest) {
       {
         id: inscription.id,
         payment_reference: inscription.payment_reference,
+        dossier_ref: inscription.dossier_ref,
+        suivi_token: inscription.suivi_token,
         status: inscription.status,
       },
       { status: 201 }

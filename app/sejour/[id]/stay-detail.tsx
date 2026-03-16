@@ -736,7 +736,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   className="w-full"
                   size="lg"
                 >
-                  Ce séjour m'intéresse
+                  Ajouter à mes souhaits
                 </Button>
               ) : (
                 <Button
@@ -866,7 +866,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
           <div className="flex-1">
             {isKids ? (
               <Button onClick={handleKidsCTA} className="w-full" size="default">
-                Ça m'intéresse
+                Ajouter à mes souhaits
               </Button>
             ) : (
               <Button

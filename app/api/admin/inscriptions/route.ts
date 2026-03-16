@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '@/lib/auth-middleware';
+import { requireEditor } from '@/lib/auth-middleware';
 import { createClient } from '@supabase/supabase-js';
 
 function getSupabase() {
@@ -18,7 +18,7 @@ function getSupabase() {
 export async function GET(req: NextRequest) {
   try {
     const supabase = getSupabase();
-    const auth = await verifyAuth(req);
+    const auth = requireEditor(req);
     if (!auth) {
       return NextResponse.json(
         { error: { code: 'unauthorized', message: 'Non autorisé' } },
@@ -29,7 +29,8 @@ export async function GET(req: NextRequest) {
     // Paramètres optionnels de filtrage
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
-    const limit = parseInt(searchParams.get('limit') || '100', 10);
+    const parsedLimit = parseInt(searchParams.get('limit') || '100', 10);
+    const limit = Number.isFinite(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 500) : 100;
 
     let query = supabase
       .from('gd_inscriptions')

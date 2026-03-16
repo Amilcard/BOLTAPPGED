@@ -25,6 +25,12 @@ interface DossierSuivi {
   besoinsPrisEnCompte?: boolean;
   equipeInformee?: boolean;
   notePro?: string;
+  // Phase 3 — préférences + besoins
+  prefNouvellesSejour?: string;
+  prefCanalContact?: string;
+  prefBilanFinSejour?: boolean;
+  consignesCommunication?: string;
+  besoinsSpecifiques?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -194,6 +200,27 @@ export default function SuiviProPage() {
           })()}
         </div>
 
+        {/* Bloc contacts utiles */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+          <h3 className="font-semibold text-gray-800 mb-3">Contacts utiles</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-gray-500">Contact Groupe &amp; Découverte</p>
+              <p className="font-medium">contact@groupeetdecouverte.fr</p>
+              <p className="text-gray-500 mt-0.5">04 77 49 54 75</p>
+            </div>
+            <div>
+              <p className="text-gray-500">Adresse</p>
+              <p className="font-medium">3 rue Flobert — 42000 Saint-Étienne</p>
+            </div>
+            <div className="sm:col-span-2">
+              <p className="text-gray-500">Horaires</p>
+              <p className="font-medium">Du lundi au vendredi, 9h-12h / 14h-17h</p>
+              <p className="text-xs text-gray-400 mt-1">Pendant le séjour, l'équipe sur place est joignable aux horaires communiqués dans le courrier de convocation.</p>
+            </div>
+          </div>
+        </div>
+
         {/* Liste des dossiers */}
         <div className="space-y-4">
           {data.dossiers.map((d) => {
@@ -283,6 +310,9 @@ export default function SuiviProPage() {
                   </div>
                 )}
 
+                {/* Phase 3 — Préférences de suivi + besoins (éditable par le référent) */}
+                <PreferencesBlock dossier={d} token={token} />
+
                 {/* Footer léger */}
                 <div className="px-6 py-2 text-xs text-gray-400 border-t border-gray-50 flex justify-between">
                   <span>Créé le {formatDate(d.createdAt)}</span>
@@ -305,6 +335,11 @@ export default function SuiviProPage() {
       {/* CSS print */}
       <style jsx global>{`
         @media print {
+          .preferences-block { display: none !important; }
+        }
+      `}</style>
+      <style jsx global>{`
+        @media print {
           body { background: white !important; }
           .print\\:hidden { display: none !important; }
           .print\\:bg-white { background: white !important; }
@@ -314,6 +349,157 @@ export default function SuiviProPage() {
           .rounded-xl { border-radius: 4px !important; }
         }
       `}</style>
+    </div>
+  );
+}
+
+// === Composant préférences de suivi (éditable par le référent) ===
+function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: string }) {
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const patchField = async (field: string, value: unknown) => {
+    setSaving(true);
+    setSaved(false);
+    try {
+      const res = await fetch(`/api/suivi/${token}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inscriptionId: dossier.id, field, value }),
+      });
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }
+    } catch (err) {
+      console.error('Erreur mise à jour préférence:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Indicateur : quelque chose est renseigné
+  const hasPrefs = dossier.prefNouvellesSejour && dossier.prefNouvellesSejour !== 'si_besoin';
+  const hasBesoins = !!dossier.besoinsSpecifiques;
+
+  return (
+    <div className="preferences-block border-t border-gray-100 print:hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full px-6 py-3 flex items-center justify-between text-sm text-gray-600 hover:bg-gray-50 transition"
+      >
+        <span className="font-medium">
+          Préférences de suivi &amp; besoins spécifiques
+          {(hasPrefs || hasBesoins) && (
+            <span className="ml-2 text-xs text-green-600 font-normal">Renseigné</span>
+          )}
+        </span>
+        <span className="text-gray-400">{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open && (
+        <div className="px-6 pb-4 space-y-4">
+          <p className="text-xs text-gray-400">
+            Ces préférences nous aident à adapter notre communication pendant le séjour. Elles ne constituent pas un engagement contractuel.
+          </p>
+
+          {saved && (
+            <div className="text-xs text-green-600 font-medium">Enregistré</div>
+          )}
+
+          {/* Nouvelles pendant le séjour */}
+          <div>
+            <label className="text-sm text-gray-700 block mb-1">
+              Souhaitez-vous recevoir des nouvelles pendant le séjour ?
+            </label>
+            <select
+              className="text-sm border rounded-lg px-3 py-1.5 w-full sm:w-auto"
+              defaultValue={dossier.prefNouvellesSejour || 'si_besoin'}
+              disabled={saving}
+              onChange={(e) => patchField('pref_nouvelles_sejour', e.target.value)}
+            >
+              <option value="oui">Oui, je souhaite être tenu informé</option>
+              <option value="si_besoin">Uniquement si nécessaire</option>
+              <option value="non">Non, sauf urgence</option>
+            </select>
+          </div>
+
+          {/* Canal préféré */}
+          <div>
+            <label className="text-sm text-gray-700 block mb-1">
+              Canal de contact préféré
+            </label>
+            <select
+              className="text-sm border rounded-lg px-3 py-1.5 w-full sm:w-auto"
+              defaultValue={dossier.prefCanalContact || 'email'}
+              disabled={saving}
+              onChange={(e) => patchField('pref_canal_contact', e.target.value)}
+            >
+              <option value="email">Email</option>
+              <option value="telephone">Téléphone</option>
+              <option value="les_deux">Email et téléphone</option>
+            </select>
+          </div>
+
+          {/* Bilan fin de séjour */}
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              defaultChecked={dossier.prefBilanFinSejour || false}
+              disabled={saving}
+              onChange={(e) => patchField('pref_bilan_fin_sejour', e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300"
+            />
+            <span className="text-sm text-gray-700">Je souhaite un bilan écrit en fin de séjour</span>
+          </label>
+
+          {/* Consignes communication */}
+          <div>
+            <label className="text-sm text-gray-700 block mb-1">
+              Consignes particulières de communication
+            </label>
+            <textarea
+              className="w-full border rounded-lg px-3 py-2 text-sm resize-none"
+              rows={2}
+              maxLength={500}
+              defaultValue={dossier.consignesCommunication || ''}
+              disabled={saving}
+              placeholder="Ex : ne pas appeler entre 12h et 14h, contacter plutôt la directrice de l'établissement..."
+              onBlur={(e) => {
+                const v = e.target.value.trim();
+                if (v !== (dossier.consignesCommunication || '')) {
+                  patchField('consignes_communication', v);
+                }
+              }}
+            />
+          </div>
+
+          {/* Besoins spécifiques */}
+          <div>
+            <label className="text-sm text-gray-700 block mb-1">
+              Besoins spécifiques à anticiper pour le séjour
+            </label>
+            <textarea
+              className="w-full border rounded-lg px-3 py-2 text-sm resize-none"
+              rows={3}
+              maxLength={1000}
+              defaultValue={dossier.besoinsSpecifiques || ''}
+              disabled={saving}
+              placeholder="Ex : attention renforcée nécessaire, repères utiles pour l'équipe, modalités facilitant l'intégration, éléments à anticiper avant le départ..."
+              onBlur={(e) => {
+                const v = e.target.value.trim();
+                if (v !== (dossier.besoinsSpecifiques || '')) {
+                  patchField('besoins_specifiques', v);
+                }
+              }}
+            />
+            <p className="text-xs text-gray-400 mt-1">
+              Ces informations sont transmises à l'équipe encadrante pour préparer au mieux l'accueil.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

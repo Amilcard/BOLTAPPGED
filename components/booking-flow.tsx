@@ -528,49 +528,65 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
         <div className="space-y-4">
           <h3 className="font-medium text-primary text-lg">Étape 3/5 : Informations de la structure</h3>
           <div className="space-y-3">
-            <input
-              ref={firstInputRef}
-              type="text"
-              placeholder="Organisation *"
-              value={step1.organisation}
-              onChange={e => setStep1({ ...step1, organisation: e.target.value })}
-              className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
-            />
-            <input
-              type="text"
-              placeholder="Adresse (n° et rue) *"
-              value={step1.addresseStructure || ''}
-              onChange={e => setStep1({ ...step1, addresseStructure: e.target.value })}
-              className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
-            />
-            <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="text-sm text-primary-600 mb-1 block">Organisation *</label>
               <input
+                ref={firstInputRef}
                 type="text"
-                placeholder="Code postal *"
-                value={(step1 as any).codePostal || ''}
-                onChange={e => setStep1({ ...step1, codePostal: e.target.value.replace(/\D/g, '').slice(0, 5) } as any)}
-                maxLength={5}
-                className={`px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${(step1 as any).codePostal && (step1 as any).codePostal.length !== 5 ? 'border-red-400' : 'border-primary-200'}`}
-              />
-              <input
-                type="text"
-                placeholder="Ville *"
-                value={(step1 as any).ville || ''}
-                onChange={e => setStep1({ ...step1, ville: e.target.value } as any)}
-                className={`col-span-2 px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${(step1 as any).ville && (step1 as any).ville.trim().length < 2 ? 'border-red-400' : 'border-primary-200'}`}
+                placeholder="Nom de la structure"
+                value={step1.organisation}
+                onChange={e => setStep1({ ...step1, organisation: e.target.value })}
+                className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
               />
             </div>
-            <input
-              type="text"
-              placeholder="Nom complet *"
-              value={step1.socialWorkerName}
-              onChange={e => setStep1({ ...step1, socialWorkerName: e.target.value })}
-              className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
-            />
             <div>
+              <label className="text-sm text-primary-600 mb-1 block">Adresse *</label>
+              <input
+                type="text"
+                placeholder="N° et rue"
+                value={step1.addresseStructure || ''}
+                onChange={e => setStep1({ ...step1, addresseStructure: e.target.value })}
+                className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="text-sm text-primary-600 mb-1 block">Code postal *</label>
+                <input
+                  type="text"
+                  placeholder="42000"
+                  value={(step1 as any).codePostal || ''}
+                  onChange={e => setStep1({ ...step1, codePostal: e.target.value.replace(/\D/g, '').slice(0, 5) } as any)}
+                  maxLength={5}
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${(step1 as any).codePostal && (step1 as any).codePostal.length !== 5 ? 'border-red-400' : 'border-primary-200'}`}
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm text-primary-600 mb-1 block">Ville *</label>
+                <input
+                  type="text"
+                  placeholder="Saint-Étienne"
+                  value={(step1 as any).ville || ''}
+                  onChange={e => setStep1({ ...step1, ville: e.target.value } as any)}
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${(step1 as any).ville && (step1 as any).ville.trim().length < 2 ? 'border-red-400' : 'border-primary-200'}`}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm text-primary-600 mb-1 block">Nom du référent *</label>
+              <input
+                type="text"
+                placeholder="Prénom et nom"
+                value={step1.socialWorkerName}
+                onChange={e => setStep1({ ...step1, socialWorkerName: e.target.value })}
+                className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-primary-600 mb-1 block">Email *</label>
               <input
                 type="email"
-                placeholder="Email *"
+                placeholder="nom@structure.fr"
                 value={step1.email}
                 onChange={e => setStep1({ ...step1, email: e.target.value })}
                 className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.email && !isEmailValid ? 'border-red-400' : 'border-primary-200'}`}
@@ -580,9 +596,10 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               )}
             </div>
             <div>
+              <label className="text-sm text-primary-600 mb-1 block">Téléphone *</label>
               <input
                 type="tel"
-                placeholder="Téléphone (portable de préférence) *"
+                placeholder="06 12 34 56 78"
                 value={step1.phone}
                 onChange={e => setStep1({ ...step1, phone: e.target.value })}
                 className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.phone && !isPhoneValid ? 'border-red-400' : 'border-primary-200'}`}

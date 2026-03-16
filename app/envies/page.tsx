@@ -55,7 +55,7 @@ export default function EnviesPage() {
             </div>
             <h2 className="text-lg font-semibold text-primary mb-2">Pas encore de souhaits</h2>
             <p className="text-sm text-gray-500 mb-6 leading-relaxed">
-              Quand un séjour te plaît, clique sur "Ce séjour m'intéresse" pour l'enregistrer ici.
+              Quand un séjour te plaît, clique sur &quot;Ajouter à mes souhaits&quot; pour l'enregistrer ici.
             </p>
             <Link
               href="/"

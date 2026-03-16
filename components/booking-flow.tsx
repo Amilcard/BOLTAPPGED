@@ -364,7 +364,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
       {/* Step 0: Session */}
       {step === 0 && (
         <div className="space-y-4">
-          <h3 className="font-medium text-primary text-lg">Étape 1/5 : Choisir une session</h3>
+          <h3 className="font-medium text-primary text-lg">Étape 1/5 : Choisir une session — demande d&apos;inscription</h3>
           <div className="space-y-2">
             {sessionsUnique.slice(0, showAllSessions ? undefined : 4).map(session => {
               const isFull = (session?.seatsLeft ?? 0) === 0;
@@ -882,12 +882,14 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-left text-sm">
               <h4 className="font-semibold text-blue-800 mb-2">Instructions de virement</h4>
               <p className="text-blue-700 text-xs">Les coordonnées bancaires (IBAN) vous ont été envoyées par email. Veuillez effectuer le virement en indiquant votre référence <strong>{bookingId?.slice(0, 8)?.toUpperCase()}</strong> en libellé.</p>
+              <p className="text-blue-600 text-xs mt-2 font-medium">Notre équipe vous contactera par email pour valider l&apos;inscription après réception du règlement.</p>
             </div>
           )}
           {paymentMethod === 'cheque' && (
             <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-left text-sm">
               <h4 className="font-semibold text-amber-800 mb-2">Instructions chèque</h4>
-              <p className="text-amber-700 text-xs">Merci d'adresser votre chèque à l'ordre de <strong>Groupe & Découverte</strong>, en indiquant la référence <strong>{bookingId?.slice(0, 8)?.toUpperCase()}</strong> au dos. L'adresse d'envoi vous a été communiquée par email.</p>
+              <p className="text-amber-700 text-xs">Merci d&apos;adresser votre chèque à l&apos;ordre de <strong>Groupe &amp; Découverte</strong>, en indiquant la référence <strong>{bookingId?.slice(0, 8)?.toUpperCase()}</strong> au dos. L&apos;adresse d&apos;envoi vous a été communiquée par email.</p>
+              <p className="text-amber-700 text-xs mt-2 font-medium">Notre équipe vous contactera par email pour valider l&apos;inscription après réception du règlement.</p>
             </div>
           )}
           {paymentMethod === 'card' && (

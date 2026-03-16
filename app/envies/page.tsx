@@ -106,7 +106,7 @@ export default function EnviesPage() {
                         </span>
                         {item.emailStructure && (
                           <span className="text-xs text-gray-500 truncate max-w-[140px]">
-                            Éducateur : {item.emailStructure}
+                            Référent·e : {item.emailStructure}
                           </span>
                         )}
                       </div>

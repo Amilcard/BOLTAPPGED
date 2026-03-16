@@ -141,8 +141,8 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
           <p className="text-sm text-primary">
             <span className="font-medium">
               {saved
-                ? `Ta demande sera envoyée à ${prenomReferent.trim() || 'ton référent'}.`
-                : 'Complète ce formulaire pour retrouver ce séjour dans "Mes souhaits".'
+                ? `C'est noté ! Pour que ton éducateur le sache, clique sur "Envoyer à mon éducateur".`
+                : 'Note ce séjour dans tes souhaits pour en parler avec ton éducateur.'
               }
             </span>
           </p>
@@ -276,7 +276,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
             {isSubmitting ? (
               <>Enregistrement...</>
             ) : (
-              'Enregistrer ma demande'
+              'Enregistrer ce souhait'
             )}
           </button>
         )}
@@ -288,7 +288,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
               onClick={handleShare}
               className="w-full py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary/90 transition"
             >
-              <Share2 className="w-4 h-4" /> Partager à mon éducateur
+              <Share2 className="w-4 h-4" /> Envoyer à mon éducateur
             </button>
             <Link
               href="/envies"

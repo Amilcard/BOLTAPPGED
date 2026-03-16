@@ -632,7 +632,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
             <div className="sticky top-6 bg-white rounded-xl shadow-brand p-5">
               <h3 className="font-bold text-gray-900 mb-1 text-sm">Sessions disponibles</h3>
               {!isKids && (
-                <p className="text-xs text-primary-400 mb-3">Sélectionnez une session et une ville pour accéder à l'inscription.</p>
+                <p className="text-xs text-primary-500 mb-3">Sélectionnez une session et une ville pour accéder à l'inscription.</p>
               )}
               {sessions.length === 0 ? (
                 <p className="text-sm text-gray-500">Aucune session disponible</p>
@@ -858,7 +858,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                <div className="flex flex-col">
                   <span className="text-xs text-gray-500">À partir de</span>
                   <span className="text-xl font-bold text-primary">{priceBreakdown.minPrice}€</span>
-                  <span className="text-[10px] text-gray-400">sans transport</span>
+                  <span className="text-xs text-gray-500">sans transport</span>
                </div>
              ) : (
                 <span className="text-sm font-medium text-gray-500">

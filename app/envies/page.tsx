@@ -105,8 +105,8 @@ export default function EnviesPage() {
                           {timeAgo(item.addedAt)}
                         </span>
                         {item.emailStructure && (
-                          <span className="text-xs text-gray-400 truncate max-w-[140px]">
-                            → {item.emailStructure}
+                          <span className="text-xs text-gray-500 truncate max-w-[140px]">
+                            Éducateur : {item.emailStructure}
                           </span>
                         )}
                       </div>

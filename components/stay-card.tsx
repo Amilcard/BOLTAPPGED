@@ -97,11 +97,11 @@ export function StayCard({ stay }: { stay: Stay }) {
             {/* Prix (PRO uniquement) */}
             {!isKids && stay?.priceFrom ? (
               <div className="flex items-baseline gap-1">
-                <span className="text-[10px] text-gray-400 uppercase tracking-wide">Dès</span>
+                <span className="text-xs text-gray-500 uppercase tracking-wide">Dès</span>
                 <span className="text-lg font-bold text-secondary font-heading">{stay.priceFrom}€</span>
               </div>
             ) : !isKids ? (
-              <span className="text-xs text-gray-400">Tarif sur demande</span>
+              <span className="text-xs text-gray-500">Tarif sur demande</span>
             ) : (
               <div />
             )}

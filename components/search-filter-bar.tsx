@@ -28,6 +28,7 @@ export function SearchFilterBar({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Rechercher un séjour, un lieu, une thématique…"
+            aria-label="Rechercher un séjour"
             className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all"
           />
           {hasQuery && (

@@ -715,7 +715,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
       {/* Step 4: Validation */}
       {step === 4 && (
         <div className="space-y-4">
-          <h3 className="font-medium text-primary text-lg">Étape 5/5 : Validation de la réservation</h3>
+          <h3 className="font-medium text-primary text-lg">Étape 5/5 : Récapitulatif et envoi de la demande</h3>
           <div className="bg-primary-50 p-4 rounded-xl space-y-2 border border-primary-100">
             <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
               <Check className="w-4 h-4 text-green-600" /> Récapitulatif de la demande
@@ -809,7 +809,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               className="flex-1 py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-              {loading ? 'Envoi...' : paymentMethod === 'card' ? 'Payer maintenant' : 'Confirmer l\'inscription'}
+              {loading ? 'Envoi...' : paymentMethod === 'card' ? 'Payer maintenant' : 'Envoyer la demande'}
             </button>
           </div>
         </div>
@@ -859,9 +859,14 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Check className="w-8 h-8 text-green-600" />
           </div>
-          <h3 className="text-xl font-semibold text-primary mb-2">Réservation confirmée !</h3>
+          <h3 className="text-xl font-semibold text-primary mb-2">
+            {paymentMethod === 'card' ? 'Réservation confirmée !' : 'Demande enregistrée'}
+          </h3>
           <p className="text-primary-600 mb-4">
-            Votre demande pour <strong>{stay?.marketingTitle || 'Séjour'}</strong> a été enregistrée.
+            Votre demande pour <strong>{stay?.marketingTitle || 'Séjour'}</strong> a bien été enregistrée.
+            {paymentMethod !== 'card' && (
+              <span className="block mt-1 text-sm text-primary-500">Elle sera confirmée dès réception de votre règlement.</span>
+            )}
           </p>
           <div className="bg-primary-50 p-4 rounded-xl text-left text-sm space-y-1">
             <p><strong>Référence :</strong> {bookingId?.slice(0, 8)?.toUpperCase() || bookingId}</p>

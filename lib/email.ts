@@ -9,7 +9,7 @@ function getResend() {
 
 // Domaine groupeetdecouverte.fr vérifié sur Resend
 const FROM_EMAIL = 'Groupe & Découverte <noreply@groupeetdecouverte.fr>';
-const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'admin@groupeetdecouverte.fr';
+const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'contact@groupeetdecouverte.fr,groupeetdecouverte@gmail.com';
 
 interface InscriptionEmailData {
   referentNom: string;

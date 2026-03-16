@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { STORAGE_KEYS } from '@/lib/utils';
 import { Map, Calendar, FileText, Users } from 'lucide-react';
-import { VITRINE_LINKS } from '@/config/vitrineLinks';
+
 
 interface Stats {
   stays: number;
@@ -25,8 +25,7 @@ export default function AdminDashboard() {
     const token = localStorage.getItem(STORAGE_KEYS.AUTH);
 
     if (!token) {
-      // LOT 1: Redirect to vitrine if not authenticated (no public admin access)
-      window.location.href = VITRINE_LINKS.HOME;
+      router.replace('/login');
       return;
     }
 
@@ -43,8 +42,7 @@ export default function AdminDashboard() {
       })
       .then((data) => setStats(data))
       .catch(() => {
-        // Invalid token - redirect to vitrine
-        window.location.href = VITRINE_LINKS.HOME;
+        router.replace('/login');
       })
       .finally(() => setIsLoading(false));
   }, []);

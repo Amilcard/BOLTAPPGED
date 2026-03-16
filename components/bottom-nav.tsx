@@ -6,7 +6,7 @@ import { useApp } from './providers';
 
 const proNavItems = [
   { key: 'home', label: 'Accueil', route: '/', icon: Home },
-  { key: 'search', label: 'Recherche', route: '/sejours', icon: Search },
+  { key: 'search', label: 'Recherche', route: '/recherche', icon: Search },
   { key: 'help', label: 'Infos', route: '/infos', icon: Info },
 ];
 

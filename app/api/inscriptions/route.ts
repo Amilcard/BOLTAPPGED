@@ -61,10 +61,12 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    // Référence : date de début de session (pas aujourd'hui)
+    // Un enfant doit avoir l'âge requis au moment du départ, pas à l'inscription
+    const sessionStartDate = new Date(data.sessionDate.split('T')[0]);
+    let age = sessionStartDate.getFullYear() - birthDate.getFullYear();
+    const monthDiff = sessionStartDate.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && sessionStartDate.getDate() < birthDate.getDate())) {
       age--;
     }
     if (age < 3 || age > 17) {

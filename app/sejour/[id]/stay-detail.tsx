@@ -851,7 +851,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
         </div>
       )}
       {/* Mobile Sticky Action Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-8 z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="flex items-center gap-4">
           <div className="flex-1">
              {priceBreakdown.minPrice ? (

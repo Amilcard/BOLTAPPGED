@@ -100,6 +100,14 @@ export interface InscriptionSupabase {
   payment_method?: string;
   created_at: string;
   updated_at?: string;
+  // Phase 1 — parcours pro
+  dossier_ref?: string;
+  suivi_token?: string;
+  // Phase 2 — suivi séjour
+  documents_status?: string; // en_attente, partiellement_recus, complets
+  besoins_pris_en_compte?: boolean;
+  equipe_informee?: boolean;
+  note_pro?: string;
 }
 
 export type ViewMode = 'pro' | 'kids';

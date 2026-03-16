@@ -1,14 +1,13 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Search, Info, Briefcase, Heart } from 'lucide-react';
+import { Home, Search, Info, Heart } from 'lucide-react';
 import { useApp } from './providers';
 
 const proNavItems = [
   { key: 'home', label: 'Accueil', route: '/', icon: Home },
   { key: 'search', label: 'Recherche', route: '/sejours', icon: Search },
   { key: 'help', label: 'Infos', route: '/infos', icon: Info },
-  { key: 'pro', label: 'Espace pro', route: '/espace-pro', icon: Briefcase },
 ];
 
 const kidsNavItems = [

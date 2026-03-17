@@ -1,19 +1,38 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { STORAGE_KEYS } from '@/lib/utils';
 import { Map, Calendar, FileText, Users } from 'lucide-react';
-
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend,
+} from 'recharts';
 
 interface Stats {
   stays: number;
   sessions: number;
   bookings: number;
   bookingsNew: number;
+  byStatus?: Record<string, number>;
+  recentDays?: { date: string; count: number }[];
+  topSejours?: { slug: string; label: string; count: number }[];
 }
+
+const STATUS_COLORS: Record<string, string> = {
+  en_attente: '#f59e0b',
+  validee: '#16a34a',
+  refusee: '#dc2626',
+  annulee: '#6b7280',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  en_attente: 'En attente',
+  validee: 'Validée',
+  refusee: 'Refusée',
+  annulee: 'Annulée',
+};
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -29,7 +48,6 @@ export default function AdminDashboard() {
       return;
     }
 
-    // Verify token is valid
     fetch('/api/admin/stats', {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -55,9 +73,7 @@ export default function AdminDashboard() {
     );
   }
 
-  if (!isAuthenticated) {
-    return null; // Will redirect in useEffect
-  }
+  if (!isAuthenticated) return null;
 
   const cards = [
     { label: 'Séjours', value: stats?.stays ?? '-', icon: Map, color: 'bg-blue-500' },
@@ -66,10 +82,29 @@ export default function AdminDashboard() {
     { label: 'Nouvelles', value: stats?.bookingsNew ?? '-', icon: Users, color: 'bg-red-500' },
   ];
 
+  // Données pie chart
+  const pieData = stats?.byStatus
+    ? Object.entries(stats.byStatus)
+        .filter(([, v]) => v > 0)
+        .map(([key, value]) => ({
+          name: STATUS_LABELS[key] || key,
+          value,
+          color: STATUS_COLORS[key] || '#9ca3af',
+        }))
+    : [];
+
+  // Données bar chart (7 jours)
+  const barData = (stats?.recentDays || []).map((d) => ({
+    date: new Date(d.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }),
+    inscriptions: d.count,
+  }));
+
   return (
     <div>
       <h1 className="text-3xl font-bold text-primary mb-8">Dashboard</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+      {/* Cartes compteurs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {cards.map((card) => {
           const Icon = card.icon;
           return (
@@ -83,6 +118,68 @@ export default function AdminDashboard() {
           );
         })}
       </div>
+
+      {/* Graphiques */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+        {/* Répartition par statut */}
+        {pieData.length > 0 && (
+          <div className="bg-white rounded-xl shadow p-6">
+            <h2 className="font-semibold text-primary mb-4">Répartition par statut</h2>
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={90}
+                  dataKey="value"
+                  label={({ name, value }) => `${name} (${value})`}
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* Inscriptions 7 derniers jours */}
+        {barData.length > 0 && (
+          <div className="bg-white rounded-xl shadow p-6">
+            <h2 className="font-semibold text-primary mb-4">Inscriptions (7 derniers jours)</h2>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={barData}>
+                <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                <Tooltip />
+                <Bar dataKey="inscriptions" fill="#2a383f" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+
+      {/* Top séjours */}
+      {stats?.topSejours && stats.topSejours.length > 0 && (
+        <div className="bg-white rounded-xl shadow p-6">
+          <h2 className="font-semibold text-primary mb-4">Top 5 séjours les plus demandés</h2>
+          <div className="space-y-3">
+            {stats.topSejours.map((s, i) => (
+              <div key={s.slug} className="flex items-center gap-3">
+                <span className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold">
+                  {i + 1}
+                </span>
+                <span className="flex-1 text-sm capitalize">{s.label}</span>
+                <span className="font-bold text-primary">{s.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

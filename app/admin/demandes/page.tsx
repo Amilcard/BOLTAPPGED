@@ -3,8 +3,20 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import { STORAGE_KEYS, formatDate } from '@/lib/utils';
-import { Eye, ClipboardCopy } from 'lucide-react';
+import { Eye, ClipboardCopy, Download, FileCheck, FileClock } from 'lucide-react';
 import { InscriptionSupabase } from '@/lib/types';
+
+// Types dossier enfant (lecture admin)
+interface DossierEnfantAdmin {
+  exists: boolean;
+  bulletin_completed: boolean;
+  sanitaire_completed: boolean;
+  liaison_completed: boolean;
+  renseignements_completed: boolean;
+  bulletin_complement: Record<string, unknown>;
+  fiche_sanitaire: Record<string, unknown>;
+  fiche_liaison_jeune: Record<string, unknown>;
+}
 
 const STATUS_OPTIONS = [
   { value: 'en_attente', label: 'En attente', color: 'bg-blue-100 text-blue-700' },
@@ -369,6 +381,9 @@ function InscriptionDetail({
             </div>
           )}
 
+          {/* Phase 4 — Dossier enfant (lecture seule admin) */}
+          <DossierEnfantAdminBlock inscriptionId={inscription.id} token={inscription.suivi_token} />
+
           {/* Lien suivi pro */}
           {suiviLink && (
             <div className="border-t pt-4">
@@ -415,6 +430,159 @@ function InscriptionDetail({
           </p>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Bloc admin lecture seule : état du dossier enfant + téléchargement PDF
+ */
+function DossierEnfantAdminBlock({ inscriptionId, token }: { inscriptionId: string; token?: string }) {
+  const [dossier, setDossier] = useState<DossierEnfantAdmin | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const loadDossier = async () => {
+    if (dossier || loading) return;
+    setLoading(true);
+    try {
+      const authToken = localStorage.getItem(STORAGE_KEYS.AUTH);
+      const res = await fetch(`/api/admin/dossier-enfant/${inscriptionId}`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      if (res.ok) {
+        setDossier(await res.json());
+      }
+    } catch (err) {
+      console.error('Erreur chargement dossier enfant:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpen = () => {
+    setOpen(!open);
+    if (!open) loadDossier();
+  };
+
+  const completedCount = dossier
+    ? [dossier.bulletin_completed, dossier.sanitaire_completed, dossier.liaison_completed].filter(Boolean).length
+    : 0;
+
+  const downloadPdf = async (type: string, label: string) => {
+    if (!token) return;
+    const res = await fetch(`/api/dossier-enfant/${inscriptionId}/pdf?token=${token}&type=${type}`);
+    if (!res.ok) return;
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${label.replace(/ /g, '_')}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="border-t pt-4">
+      <button onClick={handleOpen} className="flex items-center justify-between w-full text-left">
+        <h3 className="font-semibold text-primary flex items-center gap-2">
+          Dossier enfant
+          {dossier && completedCount > 0 && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-normal">
+              {completedCount}/3 validé{completedCount > 1 ? 's' : ''}
+            </span>
+          )}
+          {dossier && completedCount === 0 && dossier.exists && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-normal">
+              En cours
+            </span>
+          )}
+          {dossier && !dossier.exists && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 font-normal">
+              Non commencé
+            </span>
+          )}
+        </h3>
+        <span className="text-gray-400 text-sm">{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open && (
+        <div className="mt-3 space-y-3">
+          {loading && <p className="text-sm text-gray-400">Chargement...</p>}
+
+          {dossier && !dossier.exists && (
+            <p className="text-sm text-gray-500 italic">Le référent n&apos;a pas encore commencé le dossier enfant.</p>
+          )}
+
+          {dossier && dossier.exists && (
+            <>
+              <div className="space-y-2">
+                <DocStatusLine label="Bulletin d'inscription" completed={dossier.bulletin_completed}
+                  onDownload={dossier.bulletin_completed ? () => downloadPdf('bulletin', 'Bulletin_Inscription') : undefined} />
+                <DocStatusLine label="Fiche sanitaire de liaison" completed={dossier.sanitaire_completed}
+                  onDownload={dossier.sanitaire_completed ? () => downloadPdf('sanitaire', 'Fiche_Sanitaire') : undefined} />
+                <DocStatusLine label="Fiche de liaison jeune" completed={dossier.liaison_completed}
+                  onDownload={dossier.liaison_completed ? () => downloadPdf('liaison', 'Fiche_Liaison') : undefined} />
+              </div>
+
+              {dossier.fiche_sanitaire && Object.keys(dossier.fiche_sanitaire).length > 0 && (
+                <div className="mt-3 p-3 bg-gray-50 rounded-lg text-sm space-y-1">
+                  <p className="text-xs font-semibold text-gray-500 uppercase">Infos sanitaires clés</p>
+                  {(dossier.fiche_sanitaire as Record<string, unknown>).allergie_asthme === 'oui' && (
+                    <p className="text-orange-700">Asthme signalé</p>
+                  )}
+                  {(dossier.fiche_sanitaire as Record<string, unknown>).allergie_alimentaire === 'oui' && (
+                    <p className="text-orange-700">Allergie alimentaire signalée</p>
+                  )}
+                  {(dossier.fiche_sanitaire as Record<string, unknown>).allergie_medicamenteuse === 'oui' && (
+                    <p className="text-orange-700">Allergie médicamenteuse signalée</p>
+                  )}
+                  {(dossier.fiche_sanitaire as Record<string, unknown>).traitement_en_cours === true && (
+                    <p className="text-orange-700">Traitement médical en cours</p>
+                  )}
+                  {(dossier.fiche_sanitaire as Record<string, unknown>).pai === true && (
+                    <p className="text-blue-700">P.A.I. signalé</p>
+                  )}
+                  {(dossier.fiche_sanitaire as Record<string, unknown>).aeeh === true && (
+                    <p className="text-blue-700">AEEH signalée</p>
+                  )}
+                  {!!(dossier.fiche_sanitaire as Record<string, unknown>).recommandations_parents && (
+                    <div>
+                      <p className="text-gray-500 text-xs mt-1">Recommandations parents :</p>
+                      <p className="text-gray-700">{String((dossier.fiche_sanitaire as Record<string, unknown>).recommandations_parents)}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DocStatusLine({ label, completed, onDownload }: {
+  label: string; completed: boolean; onDownload?: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <div className="flex items-center gap-2">
+        {completed ? (
+          <FileCheck size={16} className="text-green-600" />
+        ) : (
+          <FileClock size={16} className="text-gray-400" />
+        )}
+        <span className={completed ? 'text-gray-800' : 'text-gray-400'}>{label}</span>
+      </div>
+      {onDownload && (
+        <button
+          onClick={onDownload}
+          className="flex items-center gap-1 text-xs text-primary hover:underline"
+        >
+          <Download size={14} /> PDF
+        </button>
+      )}
     </div>
   );
 }

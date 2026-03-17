@@ -57,13 +57,11 @@ export async function POST(req: NextRequest) {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(verifiedAmount * 100), // Convertir en centimes
       currency: 'eur',
+      payment_method_types: ['card'],
       metadata: {
         inscriptionId,
         jeune_prenom: inscription.jeune_prenom,
         sejour_slug: inscription.sejour_slug,
-      },
-      automatic_payment_methods: {
-        enabled: true,
       },
     });
 

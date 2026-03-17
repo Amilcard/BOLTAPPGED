@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, ChevronRight, ChevronLeft, Loader2, Info, AlertCircle, Calendar, MapPin, CreditCard } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import type { Stay, StaySession } from '@/lib/types';
 import { formatDate, formatDateLong } from '@/lib/utils';
 
@@ -49,27 +49,53 @@ const STANDARD_CITIES = [
   'Paris', 'Lyon', 'Lille', 'Marseille', 'Bordeaux', 'Rennes'
 ];
 
+// Style du CardElement Stripe
+const CARD_ELEMENT_OPTIONS = {
+  style: {
+    base: {
+      fontSize: '16px',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      color: '#1a1a2e',
+      '::placeholder': { color: '#9ca3af' },
+      iconColor: '#e07a5f',
+    },
+    invalid: {
+      color: '#dc2626',
+      iconColor: '#dc2626',
+    },
+  },
+  hidePostalCode: true,
+};
+
 // Composant interne pour le formulaire de paiement Stripe
-function StripePaymentForm({ onSuccess, onError }: { onSuccess: () => void; onError: (msg: string) => void }) {
+function StripePaymentForm({ clientSecret, onSuccess, onError }: { clientSecret: string; onSuccess: () => void; onError: (msg: string) => void }) {
   const stripe = useStripe();
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
+  const [cardReady, setCardReady] = useState(false);
 
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!stripe || !elements) return;
 
+    const cardElement = elements.getElement(CardElement);
+    if (!cardElement) {
+      onError('Impossible de charger le formulaire de paiement.');
+      return;
+    }
+
     setProcessing(true);
     try {
-      const { error } = await stripe.confirmPayment({
-        elements,
-        redirect: 'if_required',
+      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: { card: cardElement },
       });
 
       if (error) {
         onError(error.message || 'Erreur lors du paiement.');
-      } else {
+      } else if (paymentIntent?.status === 'succeeded') {
         onSuccess();
+      } else {
+        onError('Le paiement n\'a pas abouti. Veuillez réessayer.');
       }
     } catch (err: any) {
       onError(err.message || 'Erreur inattendue.');
@@ -81,11 +107,18 @@ function StripePaymentForm({ onSuccess, onError }: { onSuccess: () => void; onEr
   return (
     <form onSubmit={handlePayment} className="space-y-4">
       <div className="p-4 bg-white border border-primary-200 rounded-xl">
-        <PaymentElement options={{ layout: 'tabs' }} />
+        <CardElement
+          options={CARD_ELEMENT_OPTIONS}
+          onReady={() => setCardReady(true)}
+          onChange={(event) => {
+            if (event.error) onError(event.error.message);
+            else onError('');
+          }}
+        />
       </div>
       <button
         type="submit"
-        disabled={!stripe || processing}
+        disabled={!stripe || !cardReady || processing}
         className="w-full py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
@@ -178,19 +211,6 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   });
 
   const [ageError, setAgeError] = useState('');
-
-  // Mémoriser les options Stripe pour éviter que <Elements> se remonte à chaque render
-  const stripeOptions = useMemo(() => {
-    if (!stripeClientSecret) return null;
-    return {
-      clientSecret: stripeClientSecret,
-      appearance: {
-        theme: 'stripe' as const,
-        variables: { colorPrimary: '#e07a5f' },
-      },
-      locale: 'fr' as const,
-    };
-  }, [stripeClientSecret]);
 
   // useEffect hooks APRÈS déclaration des states
   useEffect(() => {
@@ -837,20 +857,17 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
         </div>
       )}
 
-      {/* Step 6: Stripe Payment Form */}
-      {step === 6 && stripeOptions && stripePromise && (
+      {/* Step 6: Stripe Payment Form (CardElement) */}
+      {step === 6 && stripeClientSecret && stripePromise && (
         <div className="space-y-4">
           <h3 className="font-medium text-primary text-lg">Paiement sécurisé</h3>
           <div className="bg-primary-50 p-3 rounded-xl text-sm text-primary-600 flex items-center gap-2">
             <CreditCard className="w-4 h-4" />
             <span>Montant : <strong>{totalPrice} €</strong> — Référence : <strong>{bookingId?.slice(0, 8)?.toUpperCase()}</strong></span>
           </div>
-          <Elements
-            key={stripeClientSecret}
-            stripe={stripePromise}
-            options={stripeOptions!}
-          >
+          <Elements stripe={stripePromise}>
             <StripePaymentForm
+              clientSecret={stripeClientSecret}
               onSuccess={() => setStep(5)}
               onError={(msg) => setError(msg)}
             />

@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { verifyAuth } from '@/lib/auth-middleware';
 
 function getSupabase() {
   return createClient(
@@ -12,17 +13,26 @@ function getSupabase() {
 /**
  * GET /api/admin/propositions — Liste toutes les propositions tarifaires
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const auth = verifyAuth(request);
+    if (!auth) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     const supabase = getSupabase();
     const { data, error } = await supabase
       .from('gd_propositions_tarifaires')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error (GET propositions):', error);
+      throw error;
+    }
     return NextResponse.json({ propositions: data || [] });
   } catch (err: any) {
+    console.error('Error in GET /api/admin/propositions:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
@@ -35,6 +45,11 @@ export async function GET() {
  */
 export async function POST(req: NextRequest) {
   try {
+    const auth = verifyAuth(req);
+    if (!auth) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     const supabase = getSupabase();
     const body = await req.json();
 
@@ -127,6 +142,11 @@ export async function POST(req: NextRequest) {
  */
 export async function PATCH(req: NextRequest) {
   try {
+    const auth = verifyAuth(req);
+    if (!auth) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     const supabase = getSupabase();
     const body = await req.json();
     const { id, ...updates } = body;

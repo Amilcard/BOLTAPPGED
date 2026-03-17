@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { verifyAuth } from '@/lib/auth-middleware';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { readFile } from 'fs/promises';
 import path from 'path';
@@ -33,6 +34,11 @@ function formatPrice(amount: number): string {
  */
 export async function GET(req: NextRequest) {
   try {
+    const auth = verifyAuth(req);
+    if (!auth) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     const propositionId = req.nextUrl.searchParams.get('id');
     if (!propositionId) {
       return NextResponse.json({ error: 'ID manquant' }, { status: 400 });

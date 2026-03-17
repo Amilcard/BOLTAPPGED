@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, ChevronRight, ChevronLeft, Loader2, Info, AlertCircle, Calendar, MapPin, CreditCard } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
@@ -178,6 +178,19 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   });
 
   const [ageError, setAgeError] = useState('');
+
+  // Mémoriser les options Stripe pour éviter que <Elements> se remonte à chaque render
+  const stripeOptions = useMemo(() => {
+    if (!stripeClientSecret) return null;
+    return {
+      clientSecret: stripeClientSecret,
+      appearance: {
+        theme: 'stripe' as const,
+        variables: { colorPrimary: '#e07a5f' },
+      },
+      locale: 'fr' as const,
+    };
+  }, [stripeClientSecret]);
 
   // useEffect hooks APRÈS déclaration des states
   useEffect(() => {
@@ -825,7 +838,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
       )}
 
       {/* Step 6: Stripe Payment Form */}
-      {step === 6 && stripeClientSecret && stripePromise && (
+      {step === 6 && stripeOptions && stripePromise && (
         <div className="space-y-4">
           <h3 className="font-medium text-primary text-lg">Paiement sécurisé</h3>
           <div className="bg-primary-50 p-3 rounded-xl text-sm text-primary-600 flex items-center gap-2">
@@ -833,15 +846,9 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             <span>Montant : <strong>{totalPrice} €</strong> — Référence : <strong>{bookingId?.slice(0, 8)?.toUpperCase()}</strong></span>
           </div>
           <Elements
+            key={stripeClientSecret}
             stripe={stripePromise}
-            options={{
-              clientSecret: stripeClientSecret,
-              appearance: {
-                theme: 'stripe',
-                variables: { colorPrimary: '#e07a5f' },
-              },
-              locale: 'fr',
-            }}
+            options={stripeOptions!}
           >
             <StripePaymentForm
               onSuccess={() => setStep(5)}

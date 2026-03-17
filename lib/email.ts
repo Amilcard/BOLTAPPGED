@@ -153,6 +153,52 @@ export async function sendAdminNewInscriptionNotification(data: InscriptionEmail
 }
 
 /**
+ * Notification admin quand un paiement Stripe est confirmé
+ */
+export async function sendPaymentConfirmedAdminNotification(data: {
+  inscriptionId: string;
+  referentNom: string;
+  jeunePrenom: string;
+  jeuneNom: string;
+  sejourSlug: string;
+  dossierRef: string;
+  amount: number;
+}) {
+  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
+    return null;
+  }
+
+  try {
+    const result = await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: ADMIN_EMAIL,
+      subject: `Paiement confirmé — ${data.jeunePrenom} ${data.jeuneNom} (${data.amount.toFixed(2)} €)`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #16a34a; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">
+            <h2 style="margin: 0; font-size: 18px;">Paiement CB confirmé</h2>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 20px; border-radius: 0 0 8px 8px;">
+            <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+              <tr><td style="padding: 6px 0; color: #6b7280;">Jeune</td><td style="padding: 6px 0; font-weight: bold;">${data.jeunePrenom} ${data.jeuneNom}</td></tr>
+              <tr><td style="padding: 6px 0; color: #6b7280;">Référent</td><td style="padding: 6px 0;">${data.referentNom}</td></tr>
+              <tr><td style="padding: 6px 0; color: #6b7280;">Séjour</td><td style="padding: 6px 0;">${data.sejourSlug.replace(/-/g, ' ')}</td></tr>
+              ${data.dossierRef ? `<tr><td style="padding: 6px 0; color: #6b7280;">Dossier</td><td style="padding: 6px 0; font-family: monospace;">${data.dossierRef}</td></tr>` : ''}
+              <tr><td style="padding: 6px 0; color: #6b7280;">Montant</td><td style="padding: 6px 0; font-weight: bold; color: #16a34a;">${data.amount.toFixed(2)} €</td></tr>
+            </table>
+            <p style="margin-top: 16px;"><a href="https://app.groupeetdecouverte.fr/admin/demandes" style="background: #2a383f; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-size: 14px;">Voir dans l'admin</a></p>
+          </div>
+        </div>
+      `,
+    });
+    return result;
+  } catch (error) {
+    console.error('[EMAIL] Erreur envoi notification paiement admin:', error);
+    return null;
+  }
+}
+
+/**
  * Email de changement de statut d'inscription
  */
 export async function sendStatusChangeEmail(

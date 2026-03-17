@@ -51,10 +51,20 @@ export async function GET(
     }
 
     // 2. Récupérer TOUS les dossiers du même référent (même email)
-    // → permet la vue multi-enfants / multi-dossiers
+    // → colonnes explicites (RGPD : ne pas exposer remarques, stripe_id, etc.)
     const { data: dossiers, error: dossiersErr } = await supabase
       .from('gd_inscriptions')
-      .select('*')
+      .select(
+        'id, dossier_ref, sejour_slug, session_date, city_departure, ' +
+        'jeune_prenom, jeune_nom, jeune_date_naissance, ' +
+        'organisation, referent_nom, ' +
+        'price_total, status, payment_status, payment_method, payment_reference, ' +
+        'options_educatives, ' +
+        'documents_status, besoins_pris_en_compte, equipe_informee, note_pro, ' +
+        'pref_nouvelles_sejour, pref_canal_contact, pref_bilan_fin_sejour, ' +
+        'consignes_communication, besoins_specifiques, ' +
+        'created_at, updated_at'
+      )
       .eq('referent_email', source.referent_email)
       .order('created_at', { ascending: false });
 
@@ -64,7 +74,7 @@ export async function GET(
     }
 
     // 3. Enrichir avec les noms marketing des séjours
-    const rows = (dossiers || []) as Record<string, unknown>[];
+    const rows = (dossiers || []) as unknown as Record<string, unknown>[];
     const slugs = [...new Set(rows.map(d => d.sejour_slug as string))];
     let stayNames: Record<string, string> = {};
     if (slugs.length > 0) {
@@ -73,7 +83,7 @@ export async function GET(
         .select('slug, marketing_title')
         .in('slug', slugs);
       if (stays) {
-        const stayRows = stays as { slug: string; marketing_title?: string }[];
+        const stayRows = stays as unknown as { slug: string; marketing_title?: string }[];
         stayNames = Object.fromEntries(
           stayRows.map(s => [s.slug, s.marketing_title || s.slug.replace(/-/g, ' ')])
         );
@@ -105,6 +115,12 @@ export async function GET(
         besoinsPrisEnCompte: d.besoins_pris_en_compte,
         equipeInformee: d.equipe_informee,
         notePro: d.note_pro,
+        // Phase 3 — préférences + besoins
+        prefNouvellesSejour: d.pref_nouvelles_sejour,
+        prefCanalContact: d.pref_canal_contact,
+        prefBilanFinSejour: d.pref_bilan_fin_sejour,
+        consignesCommunication: d.consignes_communication,
+        besoinsSpecifiques: d.besoins_specifiques,
         createdAt: d.created_at,
         updatedAt: d.updated_at,
       };
@@ -112,7 +128,7 @@ export async function GET(
 
     return NextResponse.json({
       referent: {
-        nom: source.organisation || (dossiers?.[0]?.referent_nom ?? ''),
+        nom: source.organisation || (rows[0]?.referent_nom as string ?? ''),
         email: source.referent_email,
         organisation: source.organisation,
       },
@@ -121,6 +137,118 @@ export async function GET(
     });
   } catch (error) {
     console.error('GET /api/suivi/[token] error:', error);
+    return NextResponse.json(
+      { error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur' } },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PATCH /api/suivi/[token]
+ * Permet au référent de mettre à jour ses préférences de suivi et besoins spécifiques.
+ * Body attendu : { inscriptionId, field, value }
+ * Sécurité : le token doit correspondre à un dossier du même référent.
+ * Seuls les champs éditables par le référent sont acceptés.
+ */
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { token: string } }
+) {
+  try {
+    const { token } = params;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!token || !uuidRegex.test(token)) {
+      return NextResponse.json(
+        { error: { code: 'INVALID_TOKEN', message: 'Lien invalide.' } },
+        { status: 400 }
+      );
+    }
+
+    const supabase = getSupabase();
+    const body = await req.json();
+    const { inscriptionId, field, value } = body;
+
+    if (!inscriptionId || !field) {
+      return NextResponse.json(
+        { error: { code: 'MISSING_PARAMS', message: 'Paramètres manquants.' } },
+        { status: 400 }
+      );
+    }
+
+    // Champs éditables par le référent (whitelist stricte)
+    const editableFields: Record<string, (v: unknown) => unknown> = {
+      pref_nouvelles_sejour: (v) => {
+        const allowed = ['oui', 'non', 'si_besoin'];
+        return allowed.includes(v as string) ? v : 'si_besoin';
+      },
+      pref_canal_contact: (v) => {
+        const allowed = ['email', 'telephone', 'les_deux'];
+        return allowed.includes(v as string) ? v : 'email';
+      },
+      pref_bilan_fin_sejour: (v) => Boolean(v),
+      consignes_communication: (v) => {
+        const s = typeof v === 'string' ? v.trim().slice(0, 500) : null;
+        return s || null;
+      },
+      besoins_specifiques: (v) => {
+        const s = typeof v === 'string' ? v.trim().slice(0, 1000) : null;
+        return s || null;
+      },
+    };
+
+    if (!editableFields[field]) {
+      return NextResponse.json(
+        { error: { code: 'FIELD_NOT_ALLOWED', message: 'Ce champ n\'est pas modifiable.' } },
+        { status: 403 }
+      );
+    }
+
+    // Vérifier que le token correspond à un dossier du même référent
+    const { data: sourceRaw } = await supabase
+      .from('gd_inscriptions')
+      .select('referent_email')
+      .eq('suivi_token', token)
+      .single();
+    const tokenOwner = sourceRaw as { referent_email: string } | null;
+
+    if (!tokenOwner) {
+      return NextResponse.json(
+        { error: { code: 'NOT_FOUND', message: 'Token invalide.' } },
+        { status: 404 }
+      );
+    }
+
+    // Vérifier que l'inscription ciblée appartient au même référent
+    const { data: targetRaw } = await supabase
+      .from('gd_inscriptions')
+      .select('referent_email')
+      .eq('id', inscriptionId)
+      .single();
+    const target = targetRaw as { referent_email: string } | null;
+
+    if (!target || target.referent_email !== tokenOwner.referent_email) {
+      return NextResponse.json(
+        { error: { code: 'FORBIDDEN', message: 'Accès non autorisé à ce dossier.' } },
+        { status: 403 }
+      );
+    }
+
+    // Appliquer la mise à jour
+    const sanitizedValue = editableFields[field](value);
+    const { error: updateErr } = await supabase
+      .from('gd_inscriptions')
+      .update({ [field]: sanitizedValue })
+      .eq('id', inscriptionId);
+
+    if (updateErr) {
+      console.error('PATCH /api/suivi/[token] update error:', updateErr);
+      throw updateErr;
+    }
+
+    return NextResponse.json({ ok: true, field, value: sanitizedValue });
+  } catch (error) {
+    console.error('PATCH /api/suivi/[token] error:', error);
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur' } },
       { status: 500 }

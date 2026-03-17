@@ -691,7 +691,16 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               </span>
             </label>
           </div>
-          {error && (
+          {ageError && (
+            <div className="p-4 bg-red-50 text-red-700 rounded-xl text-sm border border-red-200 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold">Âge incompatible avec ce séjour</p>
+                <p className="mt-1">{ageError}. Veuillez vérifier la date de naissance ou choisir un autre séjour adapté à l&apos;âge de l&apos;enfant.</p>
+              </div>
+            </div>
+          )}
+          {error && !ageError && (
             <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm">{error}</div>
           )}
           <div className="flex gap-3">

@@ -9,11 +9,14 @@ interface Sejour {
   title: string;
 }
 
-interface Session {
+interface SessionPrice {
   stay_slug: string;
   start_date: string;
   end_date: string;
   city_departure: string;
+  base_price_eur: number;
+  transport_surcharge_ged: number;
+  price_ged_total: number;
 }
 
 interface Proposition {
@@ -50,7 +53,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string; icon: typeof
 export default function PropositionsPage() {
   const [propositions, setPropositions] = useState<Proposition[]>([]);
   const [sejours, setSejours] = useState<Sejour[]>([]);
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessions, setSessions] = useState<SessionPrice[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -92,7 +95,9 @@ export default function PropositionsPage() {
     try {
       const res = await fetch('/api/admin/stays', { headers: authHeaders() });
       const data = await res.json();
-      setSejours(data.stays || []);
+      // L'API retourne directement un tableau (pas { stays: [...] })
+      const stays = Array.isArray(data) ? data : (data.stays || []);
+      setSejours(stays);
     } catch (err) {
       console.error('Error loading sejours:', err);
     }
@@ -103,7 +108,7 @@ export default function PropositionsPage() {
     loadSejours();
   }, [loadPropositions, loadSejours]);
 
-  // Quand un séjour est sélectionné, charger ses sessions
+  // Quand un séjour est sélectionné, charger ses sessions depuis session_prices
   useEffect(() => {
     if (!form.sejour_slug) {
       setSessions([]);
@@ -111,23 +116,18 @@ export default function PropositionsPage() {
     }
     const loadSessions = async () => {
       try {
-        const res = await fetch(`/api/admin/stays/${form.sejour_slug}/sessions`);
+        const res = await fetch(
+          `/api/admin/session-prices?stay_slug=${encodeURIComponent(form.sejour_slug)}`,
+          { headers: authHeaders() }
+        );
         if (res.ok) {
           const data = await res.json();
           setSessions(data.sessions || []);
-        }
-      } catch {
-        // Fallback : charger depuis session_prices
-        try {
-          const res = await fetch('/api/admin/sessions');
-          if (res.ok) {
-            const data = await res.json();
-            const filtered = (data.sessions || []).filter((s: any) => s.stay_slug === form.sejour_slug);
-            setSessions(filtered);
-          }
-        } catch {
+        } else {
           setSessions([]);
         }
+      } catch {
+        setSessions([]);
       }
     };
     loadSessions();
@@ -186,7 +186,7 @@ export default function PropositionsPage() {
   const villesDepart = [...new Set(sessions.map(s => s.city_departure).filter(Boolean))];
 
   // Extraire sessions uniques (start+end)
-  const uniqueSessions = sessions.reduce((acc: Session[], s) => {
+  const uniqueSessions = sessions.reduce((acc: SessionPrice[], s) => {
     if (!acc.find(a => a.start_date === s.start_date && a.end_date === s.end_date)) {
       acc.push(s);
     }

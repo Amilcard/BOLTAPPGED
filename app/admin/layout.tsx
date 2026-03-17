@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getStoredAuth, clearStoredAuth } from '@/lib/utils';
-import { LayoutDashboard, Map, Calendar, FileText, Users, LogOut } from 'lucide-react';
+import { LayoutDashboard, Map, Calendar, FileText, Users, LogOut, Receipt } from 'lucide-react';
 import { Logo } from '@/components/logo';
 
 const navItems = [
@@ -14,6 +14,7 @@ const navItems = [
   { href: '/admin/sejours', label: 'Séjours', icon: Map },
   { href: '/admin/sessions', label: 'Sessions', icon: Calendar },
   { href: '/admin/demandes', label: 'Demandes', icon: FileText },
+  { href: '/admin/propositions', label: 'Propositions', icon: Receipt },
   { href: '/admin/users', label: 'Utilisateurs', icon: Users },
 ];
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { DossierEnfantPanel } from '@/components/dossier-enfant/DossierEnfantPanel';
 
 // === Types locaux (lecture seule, pas besoin d'exporter) ===
 interface DossierSuivi {
@@ -312,6 +313,19 @@ export default function SuiviProPage() {
 
                 {/* Phase 3 — Préférences de suivi + besoins (éditable par le référent) */}
                 <PreferencesBlock dossier={d} token={token} />
+
+                {/* Phase 4 — Dossier enfant : documents officiels */}
+                <DossierEnfantPanel
+                  inscription={{
+                    id: d.id,
+                    jeunePrenom: d.jeunePrenom,
+                    jeuneNom: d.jeuneNom,
+                    jeuneDateNaissance: d.jeuneDateNaissance,
+                    sejourNom: d.sejourNom,
+                    sessionDate: d.sessionDate,
+                  }}
+                  token={token}
+                />
 
                 {/* Footer léger */}
                 <div className="px-6 py-2 text-xs text-gray-400 border-t border-gray-50 flex justify-between">

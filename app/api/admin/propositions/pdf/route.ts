@@ -3,8 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { verifyAuth } from '@/lib/auth-middleware';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-import { readFile } from 'fs/promises';
-import path from 'path';
 
 function getSupabase() {
   return createClient(
@@ -57,6 +55,18 @@ export async function GET(req: NextRequest) {
 
     const p = prop as Record<string, any>;
 
+    // Nettoyer les caractères non-WinAnsi (tirets spéciaux, guillemets, etc.)
+    const clean = (str: unknown): string => {
+      if (!str) return '';
+      return String(str)
+        .replace(/[\u2013\u2014]/g, '-')   // tirets longs → tiret simple
+        .replace(/[\u2018\u2019]/g, "'")   // guillemets simples courbes
+        .replace(/[\u201C\u201D]/g, '"')   // guillemets doubles courbes
+        .replace(/\u2026/g, '...')          // points de suspension
+        .replace(/\u00A0/g, ' ')            // espace insécable
+        .replace(/[^\x20-\xFF]/g, '');      // supprimer tout hors WinAnsi
+    };
+
     // Créer un nouveau document PDF A4
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([595.28, 841.89]); // A4
@@ -67,8 +77,9 @@ export async function GET(req: NextRequest) {
 
     // Helper : écriture top-down
     const write = (x: number, y: number, text: string, opts?: { font?: typeof fontBold; size?: number; color?: typeof ORANGE }) => {
-      if (!text) return;
-      page.drawText(text, {
+      const safeText = clean(text);
+      if (!safeText) return;
+      page.drawText(safeText, {
         x,
         y: height - y,
         size: opts?.size || 10,
@@ -103,25 +114,9 @@ export async function GET(req: NextRequest) {
     // Bande orange en haut
     drawRect(0, 0, width, 4, ORANGE);
 
-    // Essayer de charger le logo
-    try {
-      const logoPath = path.join(process.cwd(), 'public', 'GLOGO GED NEW.png');
-      const logoBytes = await readFile(logoPath);
-      const logoImage = await pdfDoc.embedPng(logoBytes);
-      const logoDims = logoImage.scale(0.15);
-      page.drawImage(logoImage, {
-        x: 40,
-        y: height - 85,
-        width: logoDims.width,
-        height: logoDims.height,
-      });
-    } catch {
-      // Si logo manquant, on continue sans
-    }
-
-    // Titre association
-    write(120, 30, 'Association Groupe et Découverte', { font: fontBold, size: 16, color: ORANGE });
-    write(120, 50, 'Colonies de vacances - Séjours de distanciation', { size: 11, color: GRAY_TEXT });
+    // Titre association (sans logo pour compatibilité Vercel serverless)
+    write(40, 30, 'Association Groupe et Decouverte', { font: fontBold, size: 16, color: ORANGE });
+    write(40, 50, 'Colonies de vacances - Sejours educatifs', { size: 11, color: GRAY_TEXT });
 
     // ===================================================
     // DESTINATAIRE — Structure sociale (en haut à droite)
@@ -154,8 +149,8 @@ export async function GET(req: NextRequest) {
       curY += 20;
     };
 
-    writeRow('De l\'inscrit :', `${p.enfant_nom.toUpperCase()} ${p.enfant_prenom}`, true);
-    writeRow('Concerne le séjour :', p.sejour_titre, true);
+    writeRow('Enfant :', `${(p.enfant_nom || '').toUpperCase()} ${p.enfant_prenom || ''}`, true);
+    writeRow('Sejour :', p.sejour_titre || p.sejour_slug || '', true);
 
     // Activités — peut être long, on le met en plus petit
     if (p.sejour_activites) {

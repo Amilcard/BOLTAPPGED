@@ -205,7 +205,10 @@ export default function PropositionsPage() {
       const res = await fetch(`/api/admin/propositions/pdf?id=${id}`, {
         headers: authHeaders(),
       });
-      if (!res.ok) throw new Error('Erreur PDF');
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        throw new Error(errData.error || `Erreur ${res.status}`);
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');

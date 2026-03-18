@@ -166,7 +166,7 @@ export default function AdminDemandes() {
                   const statusStyle = getStatusStyle(insc.status);
                   const paymentStyle = getPaymentStyle(insc.payment_status);
                   return (
-                    <tr key={insc.id} className="hover:bg-gray-50">
+                    <tr key={insc.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedInscription(insc)}>
                       <td className="px-4 py-4 text-sm text-gray-500">
                         {formatDate(insc.created_at)}
                       </td>
@@ -177,7 +177,7 @@ export default function AdminDemandes() {
                         {insc.jeune_prenom} {insc.jeune_nom}
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-600">
-                        {insc.sejour_slug}
+                        {(insc as any).sejour_titre || insc.sejour_slug}
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-600">
                         {insc.organisation ? `${insc.referent_nom} (${insc.organisation})` : insc.referent_nom}

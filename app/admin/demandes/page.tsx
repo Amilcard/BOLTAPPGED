@@ -91,14 +91,25 @@ export default function AdminDemandes() {
     fetchInscriptions();
   };
 
-  const handleDelete = async (id: string, jeune: string) => {
-    if (!confirm(`Supprimer definitivement l'inscription de ${jeune} ? Cette action est irreversible.`)) return;
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH);
-    await fetch(`/api/admin/inscriptions/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    fetchInscriptions();
+  const handleDelete = async (e: React.MouseEvent, id: string, jeune: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm(`Supprimer definitivement l'inscription de ${jeune} ? Cette action est irreversible.`)) return;
+    try {
+      const token = localStorage.getItem(STORAGE_KEYS.AUTH);
+      const res = await fetch(`/api/admin/inscriptions/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        window.alert(`Erreur suppression: ${err?.error?.message || res.status}`);
+        return;
+      }
+      fetchInscriptions();
+    } catch (err) {
+      window.alert('Erreur reseau lors de la suppression');
+    }
   };
 
   const getStatusStyle = (status: string) =>
@@ -197,7 +208,7 @@ export default function AdminDemandes() {
                             <Eye size={18} />
                           </button>
                           <button
-                            onClick={() => handleDelete(insc.id, `${insc.jeune_prenom} ${insc.jeune_nom}`)}
+                            onClick={(e) => handleDelete(e, insc.id, `${insc.jeune_prenom} ${insc.jeune_nom}`)}
                             className="p-2 hover:bg-red-50 rounded text-gray-400 hover:text-red-600 transition"
                             title="Supprimer"
                           >

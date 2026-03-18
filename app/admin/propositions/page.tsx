@@ -187,17 +187,24 @@ export default function PropositionsPage() {
     return { base, transport, encadrement: encadr, total: base + transport + encadr };
   };
 
-  const deleteProposition = async (id: string, enfant: string) => {
-    if (!confirm(`Supprimer la proposition de ${enfant} ?`)) return;
+  const deleteProposition = async (e: React.MouseEvent, id: string, enfant: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm(`Supprimer la proposition de ${enfant} ?`)) return;
     try {
-      await fetch('/api/admin/propositions', {
+      const res = await fetch('/api/admin/propositions', {
         method: 'DELETE',
         headers: authHeaders(),
         body: JSON.stringify({ id }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        window.alert(`Erreur: ${err?.error || res.status}`);
+        return;
+      }
       loadPropositions();
     } catch (err) {
-      console.error('Error deleting proposition:', err);
+      window.alert('Erreur reseau');
     }
   };
 
@@ -559,7 +566,7 @@ export default function PropositionsPage() {
                           </button>
                         )}
                         <button
-                          onClick={() => deleteProposition(p.id, `${p.enfant_prenom} ${p.enfant_nom}`)}
+                          onClick={(e) => deleteProposition(e, p.id, `${p.enfant_prenom} ${p.enfant_nom}`)}
                           className="p-1.5 hover:bg-red-50 rounded-lg transition text-gray-400 hover:text-red-600" title="Supprimer"
                         >
                           <Trash2 size={16} />

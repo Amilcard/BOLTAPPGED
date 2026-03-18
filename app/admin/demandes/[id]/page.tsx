@@ -99,12 +99,21 @@ export default function InscriptionDetailPage() {
 
   const handleDelete = async () => {
     if (!insc) return;
-    if (!confirm(`Supprimer definitivement l'inscription de ${insc.jeune_prenom} ${insc.jeune_nom} ?`)) return;
-    await fetch(`/api/admin/inscriptions/${inscriptionId}`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-    });
-    router.replace('/admin/demandes');
+    if (!window.confirm(`Supprimer definitivement l'inscription de ${insc.jeune_prenom} ${insc.jeune_nom} ?`)) return;
+    try {
+      const res = await fetch(`/api/admin/inscriptions/${inscriptionId}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        window.alert(`Erreur: ${err?.error?.message || res.status}`);
+        return;
+      }
+      router.replace('/admin/demandes');
+    } catch {
+      window.alert('Erreur reseau');
+    }
   };
 
   if (loading || !insc) {

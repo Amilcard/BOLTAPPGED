@@ -38,13 +38,13 @@ export async function GET(req: NextRequest) {
       recentRes,
       topSejoursRes,
     ] = await Promise.all([
-      supabase.from('gd_stays').select('id', { count: 'exact', head: true }).eq('published', true),
-      supabase.from('gd_stay_sessions').select('id', { count: 'exact', head: true }),
-      supabase.from('gd_inscriptions').select('id', { count: 'exact', head: true }),
-      supabase.from('gd_inscriptions').select('id', { count: 'exact', head: true }).eq('status', 'en_attente'),
-      supabase.from('gd_inscriptions').select('id', { count: 'exact', head: true }).eq('status', 'validee'),
-      supabase.from('gd_inscriptions').select('id', { count: 'exact', head: true }).eq('status', 'refusee'),
-      supabase.from('gd_inscriptions').select('id', { count: 'exact', head: true }).eq('status', 'annulee'),
+      supabase.from('gd_stays').select('*', { count: 'exact', head: true }).eq('published', true),
+      supabase.from('gd_stay_sessions').select('*', { count: 'exact', head: true }),
+      supabase.from('gd_inscriptions').select('*', { count: 'exact', head: true }),
+      supabase.from('gd_inscriptions').select('*', { count: 'exact', head: true }).eq('status', 'en_attente'),
+      supabase.from('gd_inscriptions').select('*', { count: 'exact', head: true }).eq('status', 'validee'),
+      supabase.from('gd_inscriptions').select('*', { count: 'exact', head: true }).eq('status', 'refusee'),
+      supabase.from('gd_inscriptions').select('*', { count: 'exact', head: true }).eq('status', 'annulee'),
       // Inscriptions des 7 derniers jours avec date pour graph
       supabase.from('gd_inscriptions').select('created_at').gte('created_at', sevenDaysAgo).order('created_at', { ascending: true }),
       // Top séjours (on récupère tous les sejour_slug et on compte côté serveur)

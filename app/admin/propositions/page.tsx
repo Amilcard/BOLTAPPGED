@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { getStoredAuth } from '@/lib/utils';
-import { Plus, FileDown, Check, X, Clock, Send, Loader2, Receipt, Eye, Download } from 'lucide-react';
+import { Plus, FileDown, Check, X, Clock, Send, Loader2, Receipt, Eye, Download, Trash2 } from 'lucide-react';
 
 interface Sejour {
   slug: string;
@@ -185,6 +185,20 @@ export default function PropositionsPage() {
     const nbSemaines = Math.max(1, Math.round(diffDays / 7));
     const encadr = form.encadrement ? nbSemaines * 630 : 0;
     return { base, transport, encadrement: encadr, total: base + transport + encadr };
+  };
+
+  const deleteProposition = async (id: string, enfant: string) => {
+    if (!confirm(`Supprimer la proposition de ${enfant} ?`)) return;
+    try {
+      await fetch('/api/admin/propositions', {
+        method: 'DELETE',
+        headers: authHeaders(),
+        body: JSON.stringify({ id }),
+      });
+      loadPropositions();
+    } catch (err) {
+      console.error('Error deleting proposition:', err);
+    }
   };
 
   const updateStatus = async (id: string, status: string) => {
@@ -544,6 +558,12 @@ export default function PropositionsPage() {
                             <Check size={18} className="text-green-600" />
                           </button>
                         )}
+                        <button
+                          onClick={() => deleteProposition(p.id, `${p.enfant_prenom} ${p.enfant_nom}`)}
+                          className="p-1.5 hover:bg-red-50 rounded-lg transition text-gray-400 hover:text-red-600" title="Supprimer"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                     </td>
                   </tr>

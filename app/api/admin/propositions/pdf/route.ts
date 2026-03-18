@@ -12,241 +12,211 @@ function getSupabase() {
 }
 
 // Couleurs GED
-const ORANGE = rgb(0.878, 0.478, 0.373);      // #e07a5f
-const DARK_TEXT = rgb(0.1, 0.1, 0.18);         // #1a1a2e
-const GRAY_TEXT = rgb(0.35, 0.35, 0.35);
-const LIGHT_GRAY = rgb(0.85, 0.85, 0.85);
+const ORANGE = rgb(0.878, 0.478, 0.373);
+const DARK = rgb(0.12, 0.12, 0.2);
+const GRAY = rgb(0.4, 0.4, 0.4);
+const LIGHT_BG = rgb(0.96, 0.96, 0.96);
+const WHITE = rgb(1, 1, 1);
 
-function formatDate(dateStr: string): string {
+function fmtDate(dateStr: string): string {
   const d = new Date(dateStr);
   return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-function formatPrice(amount: number): string {
-  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount) + ' €';
+function fmtPrice(amount: number): string {
+  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount) + ' EUR';
 }
 
-/**
- * GET /api/admin/propositions/pdf?id=xxx
- * Génère le PDF de la proposition tarifaire (page 1)
- */
 export async function GET(req: NextRequest) {
   try {
     const auth = verifyAuth(req);
-    if (!auth) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
-    }
+    if (!auth) return NextResponse.json({ error: 'Non autorise' }, { status: 401 });
 
-    const propositionId = req.nextUrl.searchParams.get('id');
-    if (!propositionId) {
-      return NextResponse.json({ error: 'ID manquant' }, { status: 400 });
-    }
+    const id = req.nextUrl.searchParams.get('id');
+    if (!id) return NextResponse.json({ error: 'ID manquant' }, { status: 400 });
 
     const supabase = getSupabase();
     const { data: prop } = await supabase
       .from('gd_propositions_tarifaires')
       .select('*')
-      .eq('id', propositionId)
+      .eq('id', id)
       .single();
 
-    if (!prop) {
-      return NextResponse.json({ error: 'Proposition introuvable' }, { status: 404 });
-    }
+    if (!prop) return NextResponse.json({ error: 'Proposition introuvable' }, { status: 404 });
 
     const p = prop as Record<string, any>;
 
-    // Nettoyer les caractères non-WinAnsi (tirets spéciaux, guillemets, etc.)
-    const clean = (str: unknown): string => {
+    // Nettoyer caracteres non-WinAnsi
+    const c = (str: unknown): string => {
       if (!str) return '';
       return String(str)
-        .replace(/[\u2013\u2014]/g, '-')   // tirets longs → tiret simple
-        .replace(/[\u2018\u2019]/g, "'")   // guillemets simples courbes
-        .replace(/[\u201C\u201D]/g, '"')   // guillemets doubles courbes
-        .replace(/\u2026/g, '...')          // points de suspension
-        .replace(/\u00A0/g, ' ')            // espace insécable
-        .replace(/[^\x20-\xFF]/g, '');      // supprimer tout hors WinAnsi
+        .replace(/[\u2011\u2013\u2014]/g, '-')
+        .replace(/[\u2018\u2019]/g, "'")
+        .replace(/[\u201C\u201D]/g, '"')
+        .replace(/\u2026/g, '...')
+        .replace(/\u00A0/g, ' ')
+        .replace(/[^\x20-\xFF]/g, '');
     };
 
-    // Créer un nouveau document PDF A4
     const pdfDoc = await PDFDocument.create();
-    const page = pdfDoc.addPage([595.28, 841.89]); // A4
+    const page = pdfDoc.addPage([595.28, 841.89]);
     const { width, height } = page.getSize();
+    const regular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-    const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const LEFT = 50;
+    const RIGHT = width - 50;
+    const COL_RIGHT = RIGHT; // right edge for price alignment
 
-    // Helper : écriture top-down
-    const write = (x: number, y: number, text: string, opts?: { font?: typeof fontBold; size?: number; color?: typeof ORANGE }) => {
-      const safeText = clean(text);
-      if (!safeText) return;
-      page.drawText(safeText, {
-        x,
-        y: height - y,
-        size: opts?.size || 10,
-        font: opts?.font || fontRegular,
-        color: opts?.color || DARK_TEXT,
-      });
+    // Helper write (top-down Y)
+    const w = (x: number, y: number, text: string, font = regular, size = 10, color = DARK) => {
+      const safe = c(text);
+      if (!safe) return;
+      page.drawText(safe, { x, y: height - y, size, font, color });
     };
 
-    const drawLine = (x1: number, y: number, x2: number, color = ORANGE, thickness = 1) => {
-      page.drawLine({
-        start: { x: x1, y: height - y },
-        end: { x: x2, y: height - y },
-        thickness,
-        color,
-      });
+    // Helper write right-aligned
+    const wr = (xRight: number, y: number, text: string, font = regular, size = 10, color = DARK) => {
+      const safe = c(text);
+      if (!safe) return;
+      const tw = font.widthOfTextAtSize(safe, size);
+      page.drawText(safe, { x: xRight - tw, y: height - y, size, font, color });
     };
 
-    const drawRect = (x: number, y: number, w: number, h: number, color: typeof ORANGE) => {
-      page.drawRectangle({
-        x,
-        y: height - y - h,
-        width: w,
-        height: h,
-        color,
-      });
+    const line = (x1: number, y: number, x2: number, color = ORANGE, thick = 1) => {
+      page.drawLine({ start: { x: x1, y: height - y }, end: { x: x2, y: height - y }, thickness: thick, color });
     };
 
-    // ===================================================
-    // HEADER — Logo + Titre Association
-    // ===================================================
-
-    // Bande orange en haut
-    drawRect(0, 0, width, 4, ORANGE);
-
-    // Titre association (sans logo pour compatibilité Vercel serverless)
-    write(40, 30, 'Association Groupe et Decouverte', { font: fontBold, size: 16, color: ORANGE });
-    write(40, 50, 'Colonies de vacances - Sejours educatifs', { size: 11, color: GRAY_TEXT });
-
-    // ===================================================
-    // DESTINATAIRE — Structure sociale (en haut à droite)
-    // ===================================================
-    const destX = 340;
-    write(destX, 100, p.structure_nom, { font: fontBold, size: 11 });
-    write(destX, 115, p.structure_adresse, { size: 10 });
-    write(destX, 130, `${p.structure_cp} ${p.structure_ville}`, { size: 10 });
-
-    // Date et lieu
-    const today = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-    write(destX, 160, `Saint-Etienne, le ${today}`, { size: 10, color: GRAY_TEXT });
-
-    // ===================================================
-    // TITRE — Proposition Tarifaire
-    // ===================================================
-    write(40, 200, 'Proposition Tarifaire', { font: fontBold, size: 20 });
-    drawLine(40, 210, 555, ORANGE, 2);
-
-    // ===================================================
-    // INFOS INSCRIPTION
-    // ===================================================
-    const labelX = 40;
-    const valueX = 200;
-    let curY = 240;
-
-    const writeRow = (label: string, value: string, bold = false) => {
-      write(labelX, curY, label, { size: 10, color: GRAY_TEXT });
-      write(valueX, curY, value, { font: bold ? fontBold : fontRegular, size: 10 });
-      curY += 20;
+    const rect = (x: number, y: number, w: number, h: number, color: typeof ORANGE) => {
+      page.drawRectangle({ x, y: height - y - h, width: w, height: h, color });
     };
 
-    writeRow('Enfant :', `${(p.enfant_nom || '').toUpperCase()} ${p.enfant_prenom || ''}`, true);
-    writeRow('Sejour :', p.sejour_titre || p.sejour_slug || '', true);
+    let Y = 0;
 
-    // Activités — peut être long, on le met en plus petit
+    // ========== BANDE HEADER ==========
+    rect(0, 0, width, 60, ORANGE);
+    w(LEFT, 22, 'ASSOCIATION GROUPE ET DECOUVERTE', bold, 16, WHITE);
+    w(LEFT, 40, 'Colonies de vacances - Sejours educatifs', regular, 10, WHITE);
+
+    // ========== DESTINATAIRE (droite) ==========
+    Y = 80;
+    w(LEFT, Y, `Saint-Etienne, le ${c(new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }))}`, regular, 9, GRAY);
+
+    Y = 100;
+    wr(RIGHT, Y, c(p.structure_nom) || '', bold, 11);
+    if (p.structure_adresse) { Y += 15; wr(RIGHT, Y, c(p.structure_adresse), regular, 10, GRAY); }
+    Y += 15; wr(RIGHT, Y, `${c(p.structure_cp)} ${c(p.structure_ville)}`, regular, 10, GRAY);
+
+    // ========== TITRE ==========
+    Y = 160;
+    w(LEFT, Y, 'PROPOSITION TARIFAIRE', bold, 22, ORANGE);
+    Y += 14;
+    line(LEFT, Y, RIGHT, ORANGE, 2);
+
+    // ========== INFOS INSCRIPTION ==========
+    Y += 25;
+    const LBL = LEFT;
+    const VAL = 210;
+
+    const infoRow = (label: string, value: string) => {
+      w(LBL, Y, label, regular, 10, GRAY);
+      w(VAL, Y, value, bold, 10);
+      Y += 18;
+    };
+
+    infoRow('Enfant :', `${c((p.enfant_nom || '').toUpperCase())} ${c(p.enfant_prenom || '')}`);
+    infoRow('Sejour :', c(p.sejour_titre || p.sejour_slug || ''));
     if (p.sejour_activites) {
-      write(labelX, curY, 'Activité(s) :', { size: 10, color: GRAY_TEXT });
-      // Tronquer si trop long
-      const activites = String(p.sejour_activites).slice(0, 100);
-      write(valueX, curY, activites, { font: fontBold, size: 9, color: ORANGE });
-      curY += 20;
+      w(LBL, Y, 'Activites :', regular, 10, GRAY);
+      const act = c(p.sejour_activites).slice(0, 90);
+      w(VAL, Y, act, bold, 9, ORANGE);
+      Y += 18;
     }
+    infoRow('Periode :', `Du ${fmtDate(p.session_start)} au ${fmtDate(p.session_end)}`);
+    infoRow('Ville de depart :', c(p.ville_depart || ''));
+    infoRow('N. agrement DSCS :', c(p.agrement_dscs || '069ORG0667'));
 
-    writeRow('Pour la période du :', `${formatDate(p.session_start)} au ${formatDate(p.session_end)}`, true);
-    writeRow('Numéro d\'agrément DSCS:', p.agrement_dscs || '069ORG0667', true);
+    // ========== TABLEAU TARIFICATION ==========
+    Y += 10;
+    const TABLE_LEFT = LEFT;
+    const TABLE_RIGHT = RIGHT;
+    const TABLE_W = TABLE_RIGHT - TABLE_LEFT;
+    const PRICE_COL = TABLE_RIGHT - 10; // right edge of price column
 
-    // ===================================================
-    // TARIFICATION
-    // ===================================================
-    curY += 10;
-    drawLine(40, curY, 555, LIGHT_GRAY, 1);
-    curY += 20;
+    // Header du tableau
+    rect(TABLE_LEFT, Y, TABLE_W, 28, ORANGE);
+    Y += 8;
+    w(TABLE_LEFT + 15, Y, 'DESIGNATION', bold, 10, WHITE);
+    wr(PRICE_COL, Y, 'MONTANT TTC', bold, 10, WHITE);
+    Y += 20;
 
-    const priceValueX = 200;
-
-    const writePriceRow = (label: string, value: string) => {
-      write(labelX, curY, label, { size: 11 });
-      write(priceValueX, curY, value, { font: fontBold, size: 11 });
-      curY += 22;
+    // Lignes du tableau
+    const priceRow = (label: string, value: string, bg = false) => {
+      if (bg) rect(TABLE_LEFT, Y, TABLE_W, 24, LIGHT_BG);
+      Y += 7;
+      w(TABLE_LEFT + 15, Y, label, regular, 10);
+      wr(PRICE_COL, Y, value, bold, 10);
+      Y += 17;
+      line(TABLE_LEFT, Y, TABLE_RIGHT, rgb(0.9, 0.9, 0.9), 0.5);
     };
 
-    writePriceRow('Montant du séjour :', formatPrice(Number(p.prix_sejour)));
-    writePriceRow('Transport :', formatPrice(Number(p.prix_transport)));
-    writePriceRow('Encadrement :', p.encadrement ? formatPrice(Number(p.prix_encadrement)) : '0 €');
-    writePriceRow('Adhésion :', p.adhesion || 'Comprise');
+    priceRow('Sejour', fmtPrice(Number(p.prix_sejour) || 0), false);
+    priceRow('Transport', fmtPrice(Number(p.prix_transport) || 0), true);
+    if (p.encadrement) {
+      priceRow('Encadrement renforce (animateur dedie)', fmtPrice(Number(p.prix_encadrement) || 0), false);
+    }
+    priceRow('Adhesion', c(p.adhesion || 'Comprise'), true);
 
     // Options
-    write(labelX, curY, 'Options :', { size: 10 });
-    const optionsText = p.options || 'Tranquillité : recherche individualisée, veille éducative, informations mise en lien, bilans.';
-    // Wrap options text
-    const maxCharsPerLine = 65;
-    const optLine1 = optionsText.slice(0, maxCharsPerLine);
-    const optLine2 = optionsText.slice(maxCharsPerLine, maxCharsPerLine * 2);
-    write(priceValueX, curY, optLine1, { font: fontBold, size: 9 });
-    if (optLine2) {
-      curY += 14;
-      write(priceValueX, curY, optLine2, { font: fontBold, size: 9 });
-    }
-    curY += 30;
+    const optText = c(p.options || 'Tranquillite : recherche individualisee, veille educative, bilans.');
+    rect(TABLE_LEFT, Y, TABLE_W, 24, false ? LIGHT_BG : WHITE);
+    Y += 7;
+    w(TABLE_LEFT + 15, Y, 'Options', regular, 10);
+    // Truncate options to fit
+    const optShort = optText.length > 50 ? optText.slice(0, 50) + '...' : optText;
+    wr(PRICE_COL, Y, optShort, regular, 8, GRAY);
+    Y += 17;
 
-    // Total
-    drawLine(40, curY - 5, 555, ORANGE, 2);
-    curY += 5;
-    write(labelX, curY, 'Total Séjour :', { font: fontBold, size: 14 });
-    write(priceValueX, curY, formatPrice(Number(p.prix_total)), { font: fontBold, size: 14, color: ORANGE });
-    curY += 15;
-    drawLine(40, curY, 555, ORANGE, 2);
+    // TOTAL
+    Y += 5;
+    rect(TABLE_LEFT, Y, TABLE_W, 32, ORANGE);
+    Y += 10;
+    w(TABLE_LEFT + 15, Y, 'TOTAL SEJOUR TTC', bold, 14, WHITE);
+    wr(PRICE_COL, Y, fmtPrice(Number(p.prix_total) || 0), bold, 14, WHITE);
+    Y += 22;
 
-    // ===================================================
-    // ZONE BON POUR ACCORD
-    // ===================================================
-    curY += 40;
+    // ========== BON POUR ACCORD ==========
+    Y += 30;
+    rect(LEFT, Y, TABLE_W, 110, LIGHT_BG);
 
-    // Cadre gris clair
-    drawRect(40, curY, width - 80, 120, rgb(0.96, 0.96, 0.96));
+    Y += 15;
+    w(LEFT + 20, Y, 'BON POUR ACCORD', bold, 14, ORANGE);
+    Y += 25;
+    w(LEFT + 20, Y, 'Nom et qualite du signataire : ______________________________________', regular, 10);
+    Y += 22;
+    w(LEFT + 20, Y, 'Date : ____/____/________', regular, 10);
+    w(320, Y, 'Signature et cachet :', regular, 10);
 
-    curY += 20;
-    write(60, curY, 'BON POUR ACCORD', { font: fontBold, size: 14, color: ORANGE });
-    curY += 25;
-    write(60, curY, 'Nom et qualité du signataire : ____________________________________', { size: 10 });
-    curY += 25;
-    write(60, curY, 'Date : ____/____/________', { size: 10 });
-    write(300, curY, 'Signature et cachet :', { size: 10 });
+    // ========== PIED DE PAGE ==========
+    const FY = 780;
+    line(LEFT, FY, RIGHT, ORANGE, 1);
+    w(170, FY + 12, 'ASSOCIATION GROUPE ET DECOUVERTE', bold, 8);
+    w(185, FY + 24, '3 rue Flobert 42 000 Saint-Etienne', regular, 7, GRAY);
+    w(140, FY + 34, 'Tel : 04 23 16 16 71 - Mail : contact@groupeetdecouverte.fr', regular, 7, GRAY);
+    w(205, FY + 44, 'www.groupeetdecouverte.fr', regular, 7, ORANGE);
+    w(95, FY + 55, 'Association loi 1901, N. Agrement prefectoral 069ORG0667 - N. Siret 51522565400026', regular, 6, GRAY);
 
-    // ===================================================
-    // PIED DE PAGE
-    // ===================================================
-    const footerY = 790;
-    drawLine(40, footerY, 555, ORANGE, 1);
-
-    write(120, footerY + 12, 'ASSOCIATION GROUPE ET DÉCOUVERTE', { font: fontBold, size: 8 });
-    write(155, footerY + 24, '3 rue Flobert 42 000 Saint-Etienne', { size: 7, color: GRAY_TEXT });
-    write(110, footerY + 34, 'Tél : 04 23 16 16 71 - Mail : contact@groupeetdecouverte.fr', { size: 7, color: GRAY_TEXT });
-    write(175, footerY + 44, 'www.groupeetdecouverte.fr', { size: 7, color: ORANGE });
-    write(65, footerY + 56, 'Association loi 1901, N° Agrément préfectoral 069ORG0667 - N° Siret 51522565400026', { size: 6, color: GRAY_TEXT });
-
-    // Générer le PDF
     const pdfBytes = await pdfDoc.save();
-
-    const filename = `Proposition_Tarifaire_${p.enfant_nom}_${p.enfant_prenom}.pdf`;
+    const filename = `Proposition_${c(p.enfant_nom)}_${c(p.enfant_prenom)}.pdf`;
 
     return new NextResponse(pdfBytes, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Disposition': `inline; filename="${filename}"`,
       },
     });
   } catch (error: any) {
     console.error('PDF generation error:', error);
-    return NextResponse.json({ error: error.message || 'Erreur génération PDF' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Erreur generation PDF' }, { status: 500 });
   }
 }

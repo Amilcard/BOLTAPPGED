@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { getStoredAuth } from '@/lib/utils';
-import { Plus, FileDown, Check, X, Clock, Send, Loader2, Receipt } from 'lucide-react';
+import { Plus, FileDown, Check, X, Clock, Send, Loader2, Receipt, Eye, Download } from 'lucide-react';
 
 interface Sejour {
   slug: string;
@@ -56,6 +56,8 @@ export default function PropositionsPage() {
   const [sessions, setSessions] = useState<SessionPrice[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showPreviewForm, setShowPreviewForm] = useState(false); // Aperçu avant envoi
+  const [preview, setPreview] = useState<Proposition | null>(null); // Aperçu proposition existante
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -133,8 +135,15 @@ export default function PropositionsPage() {
     loadSessions();
   }, [form.sejour_slug]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Étape 1 : le formulaire affiche un aperçu au lieu d'envoyer directement
+  const handlePreview = (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    setShowPreviewForm(true);
+  };
+
+  // Étape 2 : confirmer et enregistrer
+  const handleConfirm = async () => {
     setSubmitting(true);
     setError('');
 
@@ -148,6 +157,7 @@ export default function PropositionsPage() {
       if (!res.ok) throw new Error(data.error);
 
       setShowForm(false);
+      setShowPreviewForm(false);
       setForm({
         structure_nom: '', structure_adresse: '', structure_cp: '', structure_ville: '',
         enfant_nom: '', enfant_prenom: '',
@@ -160,6 +170,21 @@ export default function PropositionsPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Helpers pour l'aperçu du formulaire
+  const getSejourTitle = () => sejours.find(s => s.slug === form.sejour_slug)?.title || form.sejour_slug;
+  const getEstimatedPrice = () => {
+    const session = sessions.find(s => s.start_date === form.session_start && s.city_departure === form.ville_depart);
+    if (!session) return null;
+    const base = Number(session.base_price_eur) || 0;
+    const transport = Number(session.transport_surcharge_ged) || 0;
+    const startDate = new Date(form.session_start);
+    const endDate = new Date(form.session_end);
+    const diffDays = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const nbSemaines = Math.max(1, Math.round(diffDays / 7));
+    const encadr = form.encadrement ? nbSemaines * 630 : 0;
+    return { base, transport, encadrement: encadr, total: base + transport + encadr };
   };
 
   const updateStatus = async (id: string, status: string) => {
@@ -175,8 +200,19 @@ export default function PropositionsPage() {
     }
   };
 
-  const downloadPdf = (id: string, nom: string, prenom: string) => {
-    window.open(`/api/admin/propositions/pdf?id=${id}`, '_blank');
+  const downloadPdf = async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/propositions/pdf?id=${id}`, {
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error('Erreur PDF');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (err) {
+      console.error('Error downloading PDF:', err);
+      alert('Erreur lors de la génération du PDF');
+    }
   };
 
   const formatDate = (d: string) => new Date(d).toLocaleDateString('fr-FR');
@@ -210,8 +246,8 @@ export default function PropositionsPage() {
       </div>
 
       {/* FORMULAIRE DE CRÉATION */}
-      {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow p-6 space-y-6">
+      {showForm && (<>
+        <form onSubmit={handlePreview} className="bg-white rounded-xl shadow p-6 space-y-6">
           <h2 className="text-lg font-semibold border-b pb-3">Nouvelle Proposition Tarifaire</h2>
 
           {error && (
@@ -331,12 +367,102 @@ export default function PropositionsPage() {
               type="submit" disabled={submitting}
               className="flex items-center gap-2 px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition disabled:opacity-50"
             >
-              {submitting ? <Loader2 size={18} className="animate-spin" /> : <Receipt size={18} />}
-              Créer la proposition
+              <Eye size={18} />
+              Aperçu de la proposition
             </button>
           </div>
         </form>
-      )}
+
+        {/* APERÇU AVANT CONFIRMATION */}
+        {showPreviewForm && (
+          <div className="bg-white rounded-xl shadow-lg border-2 border-orange-200 p-6 space-y-6">
+            <div className="bg-orange-500 text-white px-6 py-4 rounded-lg -mx-6 -mt-6">
+              <p className="text-sm opacity-80">Association Groupe et Découverte</p>
+              <h2 className="text-xl font-bold mt-1">Proposition Tarifaire — Aperçu</h2>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6 pt-2">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-xs text-gray-500 uppercase font-medium mb-1">Structure sociale</p>
+                <p className="font-semibold">{form.structure_nom}</p>
+                {form.structure_adresse && <p className="text-sm text-gray-600">{form.structure_adresse}</p>}
+                <p className="text-sm text-gray-600">{form.structure_cp} {form.structure_ville}</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-xs text-gray-500 uppercase font-medium mb-1">Enfant</p>
+                <p className="font-semibold">{form.enfant_nom.toUpperCase()} {form.enfant_prenom}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-medium mb-1">Séjour</p>
+                <p className="font-semibold text-orange-600">{getSejourTitle()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-medium mb-1">Période</p>
+                <p className="font-medium">{form.session_start && form.session_end ? `${formatDate(form.session_start)} → ${formatDate(form.session_end)}` : '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-medium mb-1">Ville de départ</p>
+                <p className="font-medium capitalize">{form.ville_depart}</p>
+              </div>
+              {form.encadrement && (
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-medium mb-1">Encadrement</p>
+                  <p className="font-medium text-orange-600">Animateur dédié (630 €/semaine)</p>
+                </div>
+              )}
+            </div>
+
+            {/* Estimation tarifaire */}
+            {(() => {
+              const prices = getEstimatedPrice();
+              if (!prices) return <p className="text-sm text-gray-500 italic">Prix calculé après enregistrement</p>;
+              return (
+                <div className="border-t-2 border-orange-500 pt-4">
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">Estimation tarifaire</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between"><span className="text-gray-600">Séjour</span><span className="font-medium">{formatPrice(prices.base)}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-600">Transport</span><span className="font-medium">{formatPrice(prices.transport)}</span></div>
+                    {form.encadrement && <div className="flex justify-between"><span className="text-gray-600">Encadrement</span><span className="font-medium">{formatPrice(prices.encadrement)}</span></div>}
+                    <div className="flex justify-between"><span className="text-gray-600">Adhésion</span><span className="font-medium">Comprise</span></div>
+                    <div className="flex justify-between pt-3 mt-2 border-t-2 border-orange-500">
+                      <span className="text-lg font-bold">Total estimé</span>
+                      <span className="text-lg font-bold text-orange-600">{formatPrice(prices.total)}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* BON POUR ACCORD */}
+            <div className="bg-gray-50 rounded-lg p-5 border-2 border-dashed border-gray-300 text-center">
+              <p className="font-bold text-orange-600 text-lg mb-2">BON POUR ACCORD</p>
+              <p className="text-sm text-gray-500">Nom et qualité du signataire : _______________________</p>
+              <p className="text-sm text-gray-500 mt-1">Date : ____/____/________&nbsp;&nbsp;&nbsp;&nbsp;Signature et cachet :</p>
+            </div>
+
+            {error && <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">{error}</div>}
+
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <button
+                type="button" onClick={() => setShowPreviewForm(false)}
+                className="px-4 py-2 border rounded-lg hover:bg-gray-50 transition"
+              >
+                Modifier
+              </button>
+              <button
+                onClick={handleConfirm} disabled={submitting}
+                className="flex items-center gap-2 px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition disabled:opacity-50"
+              >
+                {submitting ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
+                Confirmer et enregistrer
+              </button>
+            </div>
+          </div>
+        )}
+      </>)}
 
       {/* LISTE DES PROPOSITIONS */}
       {loading ? (
@@ -388,7 +514,13 @@ export default function PropositionsPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-2">
                         <button
-                          onClick={() => downloadPdf(p.id, p.enfant_nom, p.enfant_prenom)}
+                          onClick={() => setPreview(p)}
+                          className="p-1.5 hover:bg-orange-50 rounded-lg transition" title="Aperçu"
+                        >
+                          <Eye size={18} className="text-orange-600" />
+                        </button>
+                        <button
+                          onClick={() => downloadPdf(p.id)}
                           className="p-1.5 hover:bg-gray-100 rounded-lg transition" title="Télécharger PDF"
                         >
                           <FileDown size={18} className="text-gray-600" />
@@ -416,6 +548,106 @@ export default function PropositionsPage() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* APERÇU VISUEL */}
+      {preview && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setPreview(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
+            {/* Header orange */}
+            <div className="bg-orange-500 text-white px-8 py-5 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm opacity-80">Association Groupe et Découverte</p>
+                  <h2 className="text-xl font-bold mt-1">Proposition Tarifaire</h2>
+                </div>
+                <button onClick={() => setPreview(null)} className="p-2 hover:bg-white/20 rounded-full transition">
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div className="px-8 py-6 space-y-6">
+              {/* Destinataire */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-xs text-gray-500 uppercase font-medium mb-1">Structure sociale</p>
+                <p className="font-semibold">{preview.structure_nom}</p>
+                {preview.structure_adresse && <p className="text-sm text-gray-600">{preview.structure_adresse}</p>}
+                <p className="text-sm text-gray-600">{preview.structure_cp} {preview.structure_ville}</p>
+              </div>
+
+              {/* Infos inscription */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-medium mb-1">Enfant</p>
+                  <p className="font-semibold">{preview.enfant_nom.toUpperCase()} {preview.enfant_prenom}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-medium mb-1">Séjour</p>
+                  <p className="font-semibold text-orange-600">{preview.sejour_titre}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-medium mb-1">Période</p>
+                  <p className="font-medium">{formatDate(preview.session_start)} → {formatDate(preview.session_end)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-medium mb-1">Ville de départ</p>
+                  <p className="font-medium capitalize">{preview.ville_depart}</p>
+                </div>
+              </div>
+
+              {/* Tarification */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3 border-b pb-2">Tarification</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-600">Montant du séjour</span>
+                    <span className="font-medium">{formatPrice(preview.prix_sejour)}</span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-600">Transport</span>
+                    <span className="font-medium">{formatPrice(preview.prix_transport)}</span>
+                  </div>
+                  {preview.encadrement && (
+                    <div className="flex justify-between py-1">
+                      <span className="text-gray-600">Encadrement renforcé</span>
+                      <span className="font-medium">{formatPrice(preview.prix_encadrement)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-600">Adhésion</span>
+                    <span className="font-medium">Comprise</span>
+                  </div>
+                  <div className="flex justify-between pt-3 mt-2 border-t-2 border-orange-500">
+                    <span className="text-lg font-bold">Total</span>
+                    <span className="text-lg font-bold text-orange-600">{formatPrice(preview.prix_total)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* BON POUR ACCORD */}
+              <div className="bg-gray-50 rounded-lg p-5 border-2 border-dashed border-gray-300 text-center">
+                <p className="font-bold text-orange-600 text-lg mb-2">BON POUR ACCORD</p>
+                <p className="text-sm text-gray-500">Nom et qualité du signataire : _______________________</p>
+                <p className="text-sm text-gray-500 mt-1">Date : ____/____/________&nbsp;&nbsp;&nbsp;&nbsp;Signature et cachet :</p>
+              </div>
+
+              {/* Statut */}
+              <div className="flex items-center justify-between pt-2">
+                <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium ${(STATUS_LABELS[preview.status] || STATUS_LABELS.brouillon).color}`}>
+                  {(STATUS_LABELS[preview.status] || STATUS_LABELS.brouillon).label}
+                </span>
+                <button
+                  onClick={() => { downloadPdf(preview.id); }}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition"
+                >
+                  <Download size={18} />
+                  Télécharger le PDF
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -159,8 +159,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
  * DELETE /api/admin/inscriptions/[id]
  * Supprime une inscription et ses donnees liees (dossier enfant, propositions).
  */
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id: inscriptionId } = await params;
     const supabase = getSupabase();
     const auth = await verifyAuth(req);
     if (!auth || auth.role !== 'ADMIN') {
@@ -169,8 +170,6 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
         { status: 401 }
       );
     }
-
-    const inscriptionId = params.id;
 
     // Supprimer le dossier enfant lie
     await supabase.from('gd_dossier_enfant').delete().eq('inscription_id', inscriptionId);

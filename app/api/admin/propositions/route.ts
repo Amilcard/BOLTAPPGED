@@ -173,3 +173,33 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+
+/**
+ * DELETE /api/admin/propositions — Supprimer une proposition
+ * Body: { id }
+ */
+export async function DELETE(req: NextRequest) {
+  try {
+    const auth = verifyAuth(req);
+    if (!auth) {
+      return NextResponse.json({ error: 'Non autorise' }, { status: 401 });
+    }
+
+    const supabase = getSupabase();
+    const { id } = await req.json();
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID manquant.' }, { status: 400 });
+    }
+
+    const { error } = await supabase
+      .from('gd_propositions_tarifaires')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}

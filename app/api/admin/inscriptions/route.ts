@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 
     let query = supabase
       .from('gd_inscriptions')
-      .select('*, gd_dossier_enfant(bulletin_completed, sanitaire_completed, liaison_completed, renseignements_completed, documents_joints)')
+      .select('*, gd_dossier_enfant(bulletin_completed, sanitaire_completed, liaison_completed, renseignements_completed, documents_joints), gd_stays!fk_inscriptions_stay(marketing_title, title)')
       .order('created_at', { ascending: false })
       .limit(limit);
 
@@ -49,14 +49,17 @@ export async function GET(req: NextRequest) {
       throw error;
     }
 
-    // Enrichir avec les infos de completude dossier
+    // Enrichir avec les infos de completude dossier + titre sejour
     const enriched = (data || []).map((insc: any) => {
       const dossier = insc.gd_dossier_enfant?.[0] || null;
       const docs = Array.isArray(dossier?.documents_joints) ? dossier.documents_joints : [];
+      const stay = insc.gd_stays;
 
       return {
         ...insc,
-        gd_dossier_enfant: undefined, // Supprimer la relation brute
+        gd_dossier_enfant: undefined,
+        gd_stays: undefined,
+        sejour_titre: stay?.marketing_title || stay?.title || insc.sejour_slug,
         dossier_completude: dossier ? {
           bulletin: !!dossier.bulletin_completed,
           sanitaire: !!dossier.sanitaire_completed,

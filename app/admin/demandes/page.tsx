@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import { STORAGE_KEYS, formatDate } from '@/lib/utils';
-import { Eye, ClipboardCopy, Download, FileCheck, FileClock } from 'lucide-react';
+import { Eye, ClipboardCopy, Download, FileCheck, FileClock, Trash2 } from 'lucide-react';
 import { InscriptionSupabase } from '@/lib/types';
 
 // Types dossier enfant (lecture admin)
@@ -102,6 +102,17 @@ export default function AdminDemandes() {
     fetchInscriptions();
   };
 
+  const handleDelete = async (id: string, jeune: string) => {
+    if (!confirm(`Supprimer definitivement l'inscription de ${jeune} ? Cette action est irreversible.`)) return;
+    const token = localStorage.getItem(STORAGE_KEYS.AUTH);
+    await fetch(`/api/admin/inscriptions/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setSelectedInscription(null);
+    fetchInscriptions();
+  };
+
   const getStatusStyle = (status: string) =>
     STATUS_OPTIONS.find(s => s.value === status) || STATUS_OPTIONS[0];
 
@@ -129,13 +140,13 @@ export default function AdminDemandes() {
           onClose={() => setSelectedInscription(null)}
           onUpdate={() => {
             fetchInscriptions();
-            // Rafraîchir aussi l'inscription sélectionnée
             fetch(`/api/admin/inscriptions/${selectedInscription.id}`, {
               headers: { Authorization: `Bearer ${localStorage.getItem(STORAGE_KEYS.AUTH)}` },
             })
               .then(r => r.ok ? r.json() : null)
               .then(d => { if (d) setSelectedInscription(d); });
           }}
+          onDelete={handleDelete}
         />
       )}
 
@@ -205,13 +216,20 @@ export default function AdminDemandes() {
                         </select>
                       </td>
                       <td className="px-4 py-4" onClick={e => e.stopPropagation()}>
-                        <div className="flex justify-end">
+                        <div className="flex justify-end gap-1">
                           <button
                             onClick={() => setSelectedInscription(insc)}
                             className="p-2 hover:bg-gray-100 rounded"
                             title="Détails"
                           >
                             <Eye size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(insc.id, `${insc.jeune_prenom} ${insc.jeune_nom}`)}
+                            className="p-2 hover:bg-red-50 rounded text-gray-400 hover:text-red-600 transition"
+                            title="Supprimer"
+                          >
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       </td>
@@ -237,10 +255,12 @@ function InscriptionDetail({
   inscription,
   onClose,
   onUpdate,
+  onDelete,
 }: {
   inscription: InscriptionSupabase;
   onClose: () => void;
   onUpdate: () => void;
+  onDelete: (id: string, jeune: string) => void;
 }) {
   const paymentStyle = PAYMENT_STATUS_LABELS[inscription.payment_status || 'pending_payment']
     || PAYMENT_STATUS_LABELS.pending_payment;
@@ -277,7 +297,16 @@ function InscriptionDetail({
               <p className="text-sm text-gray-500 font-mono">{inscription.dossier_ref}</p>
             )}
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onDelete(inscription.id, `${inscription.jeune_prenom} ${inscription.jeune_nom}`)}
+              className="p-2 hover:bg-red-50 rounded text-gray-400 hover:text-red-600 transition"
+              title="Supprimer"
+            >
+              <Trash2 size={18} />
+            </button>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+          </div>
         </div>
         <div className="p-6 space-y-4">
           {/* Séjour */}

@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 
     let query = supabase
       .from('gd_inscriptions')
-      .select('*')
+      .select('*, gd_dossier_enfant(bulletin_completed, sanitaire_completed, liaison_completed, renseignements_completed, documents_joints)')
       .order('created_at', { ascending: false })
       .limit(limit);
 
@@ -49,7 +49,26 @@ export async function GET(req: NextRequest) {
       throw error;
     }
 
-    return NextResponse.json(data || []);
+    // Enrichir avec les infos de completude dossier
+    const enriched = (data || []).map((insc: any) => {
+      const dossier = insc.gd_dossier_enfant?.[0] || null;
+      const docs = Array.isArray(dossier?.documents_joints) ? dossier.documents_joints : [];
+
+      return {
+        ...insc,
+        gd_dossier_enfant: undefined, // Supprimer la relation brute
+        dossier_completude: dossier ? {
+          bulletin: !!dossier.bulletin_completed,
+          sanitaire: !!dossier.sanitaire_completed,
+          liaison: !!dossier.liaison_completed,
+          renseignements: !!dossier.renseignements_completed,
+          pj_count: docs.length,
+          pj_vaccins: docs.some((d: any) => d.type === 'vaccins'),
+        } : null,
+      };
+    });
+
+    return NextResponse.json(enriched);
   } catch (error) {
     console.error('GET /api/admin/inscriptions error:', error);
     return NextResponse.json(

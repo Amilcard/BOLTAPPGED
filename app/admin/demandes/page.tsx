@@ -31,6 +31,44 @@ const PAYMENT_STATUS_LABELS: Record<string, { label: string; color: string }> = 
   failed: { label: 'Échoué', color: 'bg-red-100 text-red-700' },
 };
 
+function DossierBadge({ completude }: { completude: any }) {
+  if (!completude) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+        <FileClock size={12} /> Non commence
+      </span>
+    );
+  }
+
+  const fiches = [completude.bulletin, completude.sanitaire, completude.liaison].filter(Boolean).length;
+  const total = 3;
+  const hasPJ = completude.pj_count > 0;
+  const hasVaccins = completude.pj_vaccins;
+
+  if (fiches === total && hasPJ && hasVaccins) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+        <FileCheck size={12} /> Complet
+      </span>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+        {fiches}/{total} fiches
+      </span>
+      <div className="flex gap-0.5">
+        <span className={`w-2 h-2 rounded-full ${completude.bulletin ? 'bg-green-500' : 'bg-gray-300'}`} title="Bulletin" />
+        <span className={`w-2 h-2 rounded-full ${completude.sanitaire ? 'bg-green-500' : 'bg-gray-300'}`} title="Sanitaire" />
+        <span className={`w-2 h-2 rounded-full ${completude.liaison ? 'bg-green-500' : 'bg-gray-300'}`} title="Liaison" />
+        <span className={`w-2 h-2 rounded-full ${hasVaccins ? 'bg-green-500' : 'bg-gray-300'}`} title="Vaccins" />
+        <span className={`w-2 h-2 rounded-full ${hasPJ ? 'bg-blue-500' : 'bg-gray-300'}`} title="PJ" />
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDemandes() {
   const [inscriptions, setInscriptions] = useState<InscriptionSupabase[]>([]);
   const [selectedInscription, setSelectedInscription] = useState<InscriptionSupabase | null>(null);
@@ -112,10 +150,11 @@ export default function AdminDemandes() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Date</th>
-                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Dossier</th>
+                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Ref.</th>
                   <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Jeune</th>
                   <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Séjour</th>
                   <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Référent</th>
+                  <th className="px-4 py-4 text-center text-sm font-semibold text-gray-600">Dossier</th>
                   <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Prix</th>
                   <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Paiement</th>
                   <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Statut</th>
@@ -142,6 +181,9 @@ export default function AdminDemandes() {
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-600">
                         {insc.organisation ? `${insc.referent_nom} (${insc.organisation})` : insc.referent_nom}
+                      </td>
+                      <td className="px-4 py-4">
+                        <DossierBadge completude={(insc as any).dossier_completude} />
                       </td>
                       <td className="px-4 py-4 text-sm font-medium">
                         {insc.price_total} €

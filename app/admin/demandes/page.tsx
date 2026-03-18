@@ -193,9 +193,9 @@ export default function AdminDemandes() {
                           {paymentStyle.label}
                         </span>
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-4" onClick={e => e.stopPropagation()}>
                         <select
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${statusStyle.color}`}
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${statusStyle.color} cursor-pointer`}
                           value={insc.status}
                           onChange={(e) => handleStatusChange(insc.id, e.target.value)}
                         >
@@ -204,7 +204,7 @@ export default function AdminDemandes() {
                           ))}
                         </select>
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-4" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-end">
                           <button
                             onClick={() => setSelectedInscription(insc)}

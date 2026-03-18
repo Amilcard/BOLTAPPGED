@@ -154,3 +154,44 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     );
   }
 }
+
+/**
+ * DELETE /api/admin/inscriptions/[id]
+ * Supprime une inscription et ses donnees liees (dossier enfant, propositions).
+ */
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const supabase = getSupabase();
+    const auth = await verifyAuth(req);
+    if (!auth || auth.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: { code: 'unauthorized', message: 'Seul un admin peut supprimer.' } },
+        { status: 401 }
+      );
+    }
+
+    const inscriptionId = params.id;
+
+    // Supprimer le dossier enfant lie
+    await supabase.from('gd_dossier_enfant').delete().eq('inscription_id', inscriptionId);
+
+    // Supprimer les propositions tarifaires liees
+    await supabase.from('gd_propositions_tarifaires').delete().eq('inscription_id', inscriptionId);
+
+    // Supprimer l'inscription
+    const { error } = await supabase.from('gd_inscriptions').delete().eq('id', inscriptionId);
+
+    if (error) {
+      console.error('DELETE /api/admin/inscriptions/[id] error:', error);
+      throw error;
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('DELETE /api/admin/inscriptions/[id] error:', error);
+    return NextResponse.json(
+      { error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur' } },
+      { status: 500 }
+    );
+  }
+}

@@ -5,6 +5,7 @@ import { useDossierEnfant } from './useDossierEnfant';
 import { BulletinComplementForm } from './BulletinComplementForm';
 import { FicheSanitaireForm } from './FicheSanitaireForm';
 import { FicheLiaisonJeuneForm } from './FicheLiaisonJeuneForm';
+import { DocumentsJointsUpload } from './DocumentsJointsUpload';
 
 interface DossierInfo {
   id: string;
@@ -24,6 +25,7 @@ const TABS = [
   { key: 'bulletin', label: 'Bulletin', icon: '📋', color: 'orange' },
   { key: 'sanitaire', label: 'Fiche sanitaire', icon: '🏥', color: 'blue' },
   { key: 'liaison', label: 'Fiche de liaison', icon: '🤝', color: 'red' },
+  { key: 'pj', label: 'Pieces jointes', icon: '📎', color: 'green' },
 ] as const;
 
 type TabKey = typeof TABS[number]['key'];
@@ -241,6 +243,13 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                   jeuneNom={inscription.jeuneNom}
                   sejourNom={inscription.sejourNom}
                   sessionDate={inscription.sessionDate}
+                />
+              )}
+
+              {activeTab === 'pj' && (
+                <DocumentsJointsUpload
+                  inscriptionId={inscription.id}
+                  token={token}
                 />
               )}
             </>

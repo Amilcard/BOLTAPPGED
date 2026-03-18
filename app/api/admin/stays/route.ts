@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const stays = (data || []).map((s: Record<string, unknown>) => ({
       id: s.slug, // slug comme identifiant unique
       slug: s.slug,
-      title: s.title,
+      title: (s.marketing_title as string) || (s.title as string),
       descriptionShort: s.description_short || '',
       programme: s.programme || [],
       geography: s.location_region || '',

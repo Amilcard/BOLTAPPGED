@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     // Récupérer les infos du séjour
     const { data: sejour } = await supabase
       .from('gd_stays')
-      .select('slug, title, description_pro')
+      .select('slug, title, marketing_title, description_pro')
       .eq('slug', sejour_slug)
       .single();
 
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
         enfant_nom,
         enfant_prenom,
         sejour_slug,
-        sejour_titre: (sejour as any).title,
+        sejour_titre: (sejour as any).marketing_title || (sejour as any).title,
         sejour_activites: sejourActivites,
         session_start,
         session_end,

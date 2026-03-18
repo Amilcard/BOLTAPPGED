@@ -56,9 +56,14 @@ export default function AdminDashboard() {
           setIsAuthenticated(true);
           return res.json();
         }
-        throw new Error('Unauthorized');
+        if (res.status === 401) {
+          throw new Error('Unauthorized');
+        }
+        // Erreur serveur (500) : afficher le dashboard quand même
+        setIsAuthenticated(true);
+        return null;
       })
-      .then((data) => setStats(data))
+      .then((data) => { if (data) setStats(data); })
       .catch(() => {
         router.replace('/login');
       })

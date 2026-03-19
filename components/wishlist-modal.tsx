@@ -132,7 +132,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
         </div>
 
         <h2 className="text-lg font-bold text-primary text-center mb-1">
-          {saved ? "C'est noté !" : "Ce séjour te plaît ?"}
+          {saved ? "C'est noté !" : "Mon souhait"}
         </h2>
         <p className="text-sm text-primary-500 text-center mb-6">{stayTitle}</p>
 
@@ -194,6 +194,11 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
         </div>
 
         {/* Email structure field */}
+        {emailLocked && !defaultEmail && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+            <p className="text-sm text-red-700">Configuration manquante : l'email référent n'est pas défini. Contactez l'administrateur.</p>
+          </div>
+        )}
         {!emailLocked && (
           <div className="mb-4">
             <label className="block text-sm font-medium text-primary mb-2">
@@ -205,7 +210,9 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
               onChange={(e) => setEmailStructure(e.target.value)}
               onBlur={() => {
                 const finalEmail = emailLocked ? defaultEmail : emailStructure;
-                if (finalEmail.trim().length > 0 && !validateEmail(finalEmail)) {
+                if (!finalEmail.trim()) {
+                  setErrors(prev => ({ ...prev, email: 'L\'email de ton éducateur est requis.' }));
+                } else if (!validateEmail(finalEmail)) {
                   setErrors(prev => ({ ...prev, email: 'Il manque le @ ou le domaine dans l\'email.' }));
                 } else {
                   setErrors(prev => { const { email, ...rest } = prev; return rest; });

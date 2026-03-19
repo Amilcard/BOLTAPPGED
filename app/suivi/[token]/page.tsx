@@ -390,6 +390,8 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
   const [prefNouvelles, setPrefNouvelles] = useState(dossier.prefNouvellesSejour || 'si_besoin');
   const [prefCanal, setPrefCanal] = useState(dossier.prefCanalContact || 'email');
   const [prefBilan, setPrefBilan] = useState(dossier.prefBilanFinSejour || false);
+  const [consignes, setConsignes] = useState(dossier.consignesCommunication || '');
+  const [besoins, setBesoins] = useState(dossier.besoinsSpecifiques || '');
 
   const patchField = async (field: string, value: unknown) => {
     setSaving(true);
@@ -497,9 +499,10 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
               className="w-full border rounded-lg px-3 py-2 text-sm resize-none"
               rows={2}
               maxLength={500}
-              defaultValue={dossier.consignesCommunication || ''}
+              value={consignes}
               disabled={saving}
               placeholder="Ex : ne pas appeler entre 12h et 14h, contacter plutôt la directrice de l'établissement..."
+              onChange={(e) => setConsignes(e.target.value)}
               onBlur={(e) => {
                 const v = e.target.value.trim();
                 if (v !== (dossier.consignesCommunication || '')) {
@@ -518,9 +521,10 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
               className="w-full border rounded-lg px-3 py-2 text-sm resize-none"
               rows={3}
               maxLength={1000}
-              defaultValue={dossier.besoinsSpecifiques || ''}
+              value={besoins}
               disabled={saving}
               placeholder="Ex : attention renforcée nécessaire, repères utiles pour l'équipe, modalités facilitant l'intégration, éléments à anticiper avant le départ..."
+              onChange={(e) => setBesoins(e.target.value)}
               onBlur={(e) => {
                 const v = e.target.value.trim();
                 if (v !== (dossier.besoinsSpecifiques || '')) {

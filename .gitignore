@@ -3,6 +3,12 @@ node_modules/
 .DS_Store
 *.log
 
+# archives sessions IA - ne pas pousser sur git
+_archives/
+stay.ageMax
+FICHIERS_CREES.txt
+01_UFOVAL_IS_FULL_SESSIONS_v4.json
+
 # local/build artifacts
 .metadata_never_index
 tsconfig.tsbuildinfo
@@ -47,3 +53,14 @@ app/debug-db/
 # local editor
 .vscode/
 .env
+.vercel
+.env*.local
+
+# fichiers temporaires de dev
+deploy-fixes.patch
+generate_clean_logo.js
+supabase_functions_search_path_fix.sql
+supabase_security_fix.sql
+
+# documents légaux (données sensibles)
+Documents_Legaux/

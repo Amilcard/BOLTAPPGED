@@ -1,25 +1,39 @@
 const path = require('path');
 
+const securityHeaders = [
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'X-XSS-Protection', value: '1; mode=block' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  distDir: process.env.NEXT_DIST_DIR || '.next',
-  output: process.env.NEXT_OUTPUT_MODE,
+  output: 'standalone',
   experimental: {
-    // LOT 1: Fix module resolution - remove parent directory tracing
     outputFileTracingRoot: path.join(__dirname),
+    outputFileTracingExcludes: {
+      '*': ['supabase/**/*'],
+    },
   },
   eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
+    // TS strict activé — requis pour build Vercel zero-error
     ignoreBuildErrors: false,
   },
   images: { unoptimized: true },
-  // FIX Docker build: skip static generation for data-dependent pages
   skipTrailingSlashRedirect: true,
-  // Force all routes to be dynamic (no static generation during build)
-  generateBuildId: async () => {
-    return 'docker-build-' + Date.now();
+  // generateBuildId retiré — spécifique Docker, inutile sur Vercel
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: securityHeaders,
+      },
+    ];
   },
 };
 

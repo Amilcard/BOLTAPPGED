@@ -34,9 +34,10 @@ Si `marketingTitle` existe, les titres suivants **NE DOIVENT JAMAIS** apparaîtr
 | Les Robinson des Glières | **SURVIVOR CAMP 74** | les-robinson-des-glieres |
 | Survie Beaufortain | **INTO THE WILD** | survie-dans-le-beaufortain |
 | Breizh Equit' | **BRETAGNE OCEAN RIDE** | breizh-equit-kids-8-11-ans |
-| Yamakasi Parkour | **URBAN MOVE ACADEMY** | yamakasi |
+| Yamakasi Parkour | **PARKOUR** | yamakasi |
 | Destination Bassin | **DUNE & OCEAN KIDS** | destination-bassin-darcachon-1 |
-| Glièr'Aventures | **DUAL CAMP : LAC & MONTAGNE** | glieraventures |
+| Glièr'Aventures | **DUAL CAMP** | glieraventures |
+| Aqua'Mix | **BLUE EXPERIENCE** | aqua-mix |
 | Nature Picture | **WILDLIFE REPORTER** | nature-picture |
 | Mountain & Chill | **ADRENALINE & CHILL** | mountain-and-chill |
 | Explore Mountain | **ALPINE TREK JUNIOR** | explore-mountain |

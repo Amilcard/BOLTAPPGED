@@ -143,7 +143,7 @@ export function canAddRequest(prenom: string, emailStructure: string): { allowed
   if (recentRequests.length >= 3) {
     return {
       allowed: false,
-      message: 'Tu as déjà envoyé 3 demandes. Demande à ton référent.'
+      message: 'Tu as déjà 3 demandes enregistrées ce mois-ci. Parles-en avec ton·ta référent·e pour en ajouter une autre.'
     };
   }
 

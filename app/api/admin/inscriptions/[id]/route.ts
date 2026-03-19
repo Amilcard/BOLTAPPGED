@@ -19,7 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     const supabase = getSupabase();
-    const auth = await verifyAuth(req);
+    const auth = verifyAuth(req);
     if (!auth) {
       return NextResponse.json(
         { error: { code: 'unauthorized', message: 'Non autorisé' } },
@@ -59,7 +59,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     const supabase = getSupabase();
-    const auth = await verifyAuth(req);
+    const auth = verifyAuth(req);
     if (!auth || !['ADMIN', 'EDITOR'].includes(auth.role)) {
       return NextResponse.json(
         { error: { code: 'unauthorized', message: 'Non autorisé' } },
@@ -165,7 +165,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try {
     const { id: inscriptionId } = await params;
     const supabase = getSupabase();
-    const auth = await verifyAuth(req);
+    const auth = verifyAuth(req);
     if (!auth || auth.role !== 'ADMIN') {
       return NextResponse.json(
         { error: { code: 'unauthorized', message: 'Seul un admin peut supprimer.' } },

@@ -80,12 +80,21 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
     dossier, loading, saving, saved, error, saveBloc,
   } = useDossierEnfant(inscription.id, token);
 
-  // Progression
+  // Progression — 4 items : Bulletin, Sanitaire, Liaison, Pièces jointes
+  const hasPJ = (dossier?.documents_joints?.length ?? 0) > 0;
   const completedCount = dossier
-    ? [dossier.bulletin_completed, dossier.sanitaire_completed, dossier.liaison_completed].filter(Boolean).length
+    ? [dossier.bulletin_completed, dossier.sanitaire_completed, dossier.liaison_completed, hasPJ].filter(Boolean).length
     : 0;
-  const totalDocs = 3;
+  const totalDocs = 4;
   const progressPct = Math.round((completedCount / totalDocs) * 100);
+  const isComplete = completedCount === totalDocs;
+
+  // Documents manquants pour l'alerte
+  const missing: string[] = [];
+  if (dossier && !dossier.bulletin_completed) missing.push('Bulletin');
+  if (dossier && !dossier.sanitaire_completed) missing.push('Fiche sanitaire');
+  if (dossier && !dossier.liaison_completed) missing.push('Fiche de liaison');
+  if (dossier && !hasPJ) missing.push('Pièces jointes');
 
   return (
     <div className="border-t border-gray-100 print:hidden">
@@ -93,26 +102,63 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
         onClick={() => setOpen(!open)}
         className="w-full px-6 py-3 flex items-center justify-between text-sm text-gray-600 hover:bg-gray-50 transition"
       >
-        <span className="font-medium flex items-center gap-2">
-          📄 Dossier enfant — Documents officiels
-          {completedCount > 0 && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">
-              {completedCount}/{totalDocs} validé{completedCount > 1 ? 's' : ''}
-            </span>
+        <span className="font-medium flex flex-wrap items-center gap-2">
+          📄 Dossier enfant
+          {/* Badges par document — toujours visibles */}
+          {dossier && (
+            <>
+              {[
+                { label: 'B', done: dossier.bulletin_completed, title: 'Bulletin' },
+                { label: 'S', done: dossier.sanitaire_completed, title: 'Fiche sanitaire' },
+                { label: 'L', done: dossier.liaison_completed, title: 'Fiche de liaison' },
+                { label: 'PJ', done: hasPJ, title: 'Pièces jointes' },
+              ].map(({ label, done, title }) => (
+                <span
+                  key={label}
+                  title={title}
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                    done ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                  }`}
+                >
+                  {done ? '✓' : '!'} {label}
+                </span>
+              ))}
+              {isComplete && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+                  Dossier complet ✓
+                </span>
+              )}
+            </>
           )}
-          {completedCount === 0 && dossier?.exists && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">
-              En cours
-            </span>
-          )}
-          {!dossier?.exists && !loading && (
+          {!dossier && !loading && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
               À compléter
             </span>
           )}
         </span>
-        <span className="text-gray-400">{open ? '▲' : '▼'}</span>
+        <span className="text-gray-400 text-xs">{open ? '▲' : '▼'}</span>
       </button>
+
+      {/* Alerte documents manquants — visible SANS ouvrir le panel */}
+      {dossier && !isComplete && missing.length > 0 && (
+        <div className="mx-6 mb-3 p-3 bg-orange-50 border border-orange-200 rounded-xl text-sm">
+          <p className="font-medium text-orange-800">
+            {missing.length} document{missing.length > 1 ? 's' : ''} manquant{missing.length > 1 ? 's' : ''} :
+            {' '}<span className="font-normal">{missing.join(', ')}</span>
+          </p>
+          {inscription.sessionDate && (
+            <p className="text-xs text-orange-600 mt-1">
+              Séjour prévu le {new Date(inscription.sessionDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} — pensez à compléter votre dossier avant le départ.
+            </p>
+          )}
+          <button
+            onClick={() => setOpen(true)}
+            className="mt-2 text-xs font-medium text-orange-700 underline hover:text-orange-900"
+          >
+            Compléter le dossier →
+          </button>
+        </div>
+      )}
 
       {open && (
         <div className="px-6 pb-6">

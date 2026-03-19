@@ -292,6 +292,35 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
       return;
     }
 
+    // SÉCURITÉ: Ne pas recréer une inscription si elle existe déjà (retour step 6→4)
+    if (bookingId) {
+      if (paymentMethod === 'card') {
+        // Réutiliser l'inscription existante pour créer un nouveau PaymentIntent
+        setLoading(true);
+        setError('');
+        try {
+          const piRes = await fetch('/api/payment/create-intent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ inscriptionId: bookingId }),
+          });
+          const piData = await piRes.json();
+          if (!piRes.ok) throw new Error(piData?.error?.message || piData?.error || 'Erreur création paiement');
+          setStripeClientSecret(piData.clientSecret);
+          setStep(6);
+        } catch (err: unknown) {
+          setError(err instanceof Error ? err.message : 'Erreur inconnue');
+        } finally {
+          setLoading(false);
+        }
+        return;
+      } else {
+        // Mode changé en virement/chèque : passer directement à step 5 sans recréer
+        setStep(5);
+        return;
+      }
+    }
+
     setLoading(true);
     setError('');
 
@@ -815,7 +844,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               <p><span className="font-medium text-primary-500">Session :</span> {formatDateLong(selectedSession?.startDate ?? '')} - {formatDateLong(selectedSession?.endDate ?? '')}</p>
               <p><span className="font-medium text-primary-500">Ville de départ :</span> {selectedCity === 'sans_transport' ? 'Sans transport' : selectedCity} {extraVille > 0 ? `(+${extraVille}€)` : '(Inclus)'}</p>
               <div className="border-t border-primary-200 my-2 pt-2">
-                <p><span className="font-medium text-primary-500">Enfant :</span> {step2.childFirstName} ({calculateAge(step2.childBirthDate)} ans)</p>
+                <p><span className="font-medium text-primary-500">Enfant :</span> {step2.childFirstName} ({calculateAge(step2.childBirthDate, selectedSession?.startDate ? new Date(selectedSession.startDate) : undefined)} ans)</p>
                 <p><span className="font-medium text-primary-500">Structure :</span> {step1.organisation} ({step1.socialWorkerName})</p>
               </div>
             </div>
@@ -940,6 +969,20 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
           >
             ← Choisir un autre mode de paiement
           </button>
+        </div>
+      )}
+      {step === 6 && stripeClientSecret && !stripePromise && (
+        <div className="space-y-4">
+          <h3 className="font-medium text-primary text-lg">Paiement sécurisé</h3>
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+            Paiement par carte non disponible.{' '}
+            <button
+              onClick={() => { setStep(4); setStripeClientSecret(null); }}
+              className="underline font-medium hover:text-amber-900"
+            >
+              Choisir un autre mode
+            </button>
+          </div>
         </div>
       )}
 

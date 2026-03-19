@@ -98,7 +98,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     }
   }
 
-  const selectedCityData = departureCities.find(dc => dc.city === selectedCity);
+  const selectedCityData = departureCities.find((dc: DepartureCity) => dc.city === selectedCity);
   const extraVille = selectedCityData?.extra_eur ?? 0;
   const totalPrice = sessionBasePrice !== null ? sessionBasePrice + extraVille : null;
 
@@ -126,7 +126,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     return idx === arr.findIndex(x => `${x.startDate}-${x.endDate}` === key);
   });
 
-  const standardDepartureCities = departureCities.filter(dc =>
+  const standardDepartureCities = departureCities.filter((dc: DepartureCity) =>
     STANDARD_CITIES.some(std =>
       dc.city.toLowerCase().includes(std.toLowerCase())
     ) || dc.city === 'Sans transport'

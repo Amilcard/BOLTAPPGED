@@ -13,22 +13,27 @@ function getSupabase() {
 /**
  * POST /api/souhaits
  * Crée un souhait côté serveur et envoie un email à l'éducateur.
+ *
+ * Schéma réel gd_souhaits :
+ * kid_prenom, kid_prenom_referent, sejour_slug, sejour_titre, motivation,
+ * educateur_email, structure_domain, kid_session_token, educateur_token,
+ * educateur_prenom, status ('emis'), suivi_token_kid (auto)
  */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
-      kidToken,
+      kidSessionToken,   // UUID localStorage du kid
       kidPrenom,
+      kidPrenomReferent, // prénom de l'accompagnant (optionnel)
       sejourSlug,
       sejourTitre,
-      sejourUrl,
       motivation,
       educateurEmail,
       educateurPrenom,
     } = body;
 
-    if (!kidToken || !kidPrenom || !sejourSlug || !motivation || !educateurEmail) {
+    if (!kidSessionToken || !kidPrenom || !sejourSlug || !motivation || !educateurEmail) {
       return NextResponse.json({ error: 'Champs obligatoires manquants.' }, { status: 400 });
     }
 
@@ -39,41 +44,56 @@ export async function POST(req: NextRequest) {
 
     const supabase = getSupabase();
 
-    // Vérifier si le kid a déjà un souhait pour ce séjour (pas de doublon)
+    // Extraire le domaine pour gd_structures
+    const domain = educateurEmail.split('@')[1]?.toLowerCase();
+    const genericDomains = ['gmail.com','outlook.fr','outlook.com','hotmail.com','hotmail.fr','yahoo.fr','yahoo.com','live.fr','live.com','orange.fr','free.fr','sfr.fr','laposte.net','icloud.com','protonmail.com'];
+    const structureDomain = domain && !genericDomains.includes(domain) ? domain : null;
+
+    // Chercher structure si domaine non-générique
+    let structureId: string | null = null;
+    if (structureDomain) {
+      const { data: struct } = await supabase
+        .from('gd_structures')
+        .select('id')
+        .eq('domain', structureDomain)
+        .single();
+      structureId = struct?.id ?? null;
+    }
+
+    // Vérifier doublon pour ce kid + séjour
     const { data: existing } = await supabase
       .from('gd_souhaits')
-      .select('id, statut')
-      .eq('kid_token', kidToken)
+      .select('id, status, educateur_token')
+      .eq('kid_session_token', kidSessionToken)
       .eq('sejour_slug', sejourSlug)
       .single();
 
+    if (existing && !['valide', 'refuse'].includes(existing.status)) {
+      // Mettre à jour le souhait existant
+      await supabase.from('gd_souhaits').update({
+        motivation,
+        educateur_email: educateurEmail,
+        educateur_prenom: educateurPrenom || null,
+        kid_prenom_referent: kidPrenomReferent || null,
+        status: 'emis',
+        reponse_educateur: null,
+        reponse_date: null,
+      }).eq('id', existing.id);
+
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.groupeetdecouverte.fr';
+      sendSouhaitNotificationEducateur({
+        educateurEmail,
+        educateurPrenom: educateurPrenom || undefined,
+        kidPrenom,
+        sejourTitre: sejourTitre || sejourSlug,
+        motivation,
+        lienReponse: `${baseUrl}/educateur/souhait/${existing.educateur_token}`,
+      }).catch(() => {});
+
+      return NextResponse.json({ id: existing.id, updated: true });
+    }
+
     if (existing) {
-      // Mettre à jour le souhait existant si pas encore validé/refusé
-      if (!['valide', 'refuse'].includes(existing.statut)) {
-        await supabase
-          .from('gd_souhaits')
-          .update({ motivation, educateur_email: educateurEmail, educateur_prenom: educateurPrenom || null, statut: 'emis' })
-          .eq('id', existing.id);
-
-        const { data: updated } = await supabase
-          .from('gd_souhaits')
-          .select('id, educateur_token')
-          .eq('id', existing.id)
-          .single();
-
-        if (updated) {
-          const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.groupeetdecouverte.fr';
-          await sendSouhaitNotificationEducateur({
-            educateurEmail,
-            educateurPrenom: educateurPrenom || undefined,
-            kidPrenom,
-            sejourTitre: sejourTitre || sejourSlug,
-            motivation,
-            lienReponse: `${baseUrl}/educateur/souhait/${updated.educateur_token}`,
-          }).catch(() => {});
-        }
-        return NextResponse.json({ id: existing.id, updated: true });
-      }
       return NextResponse.json({ id: existing.id, updated: false, message: 'Souhait déjà traité.' });
     }
 
@@ -81,16 +101,19 @@ export async function POST(req: NextRequest) {
     const { data: souhait, error } = await supabase
       .from('gd_souhaits')
       .insert({
-        kid_token: kidToken,
+        kid_session_token: kidSessionToken,
         kid_prenom: kidPrenom,
+        kid_prenom_referent: kidPrenomReferent || null,
         sejour_slug: sejourSlug,
         sejour_titre: sejourTitre || null,
-        sejour_url: sejourUrl || null,
         motivation,
         educateur_email: educateurEmail,
         educateur_prenom: educateurPrenom || null,
+        structure_domain: structureDomain,
+        structure_id: structureId,
+        status: 'emis',
       })
-      .select('id, educateur_token')
+      .select('id, educateur_token, suivi_token_kid')
       .single();
 
     if (error || !souhait) {
@@ -98,7 +121,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Erreur création souhait.' }, { status: 500 });
     }
 
-    // Envoyer email éducateur (non-bloquant)
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.groupeetdecouverte.fr';
     sendSouhaitNotificationEducateur({
       educateurEmail,
@@ -109,7 +131,11 @@ export async function POST(req: NextRequest) {
       lienReponse: `${baseUrl}/educateur/souhait/${souhait.educateur_token}`,
     }).catch(() => {});
 
-    return NextResponse.json({ id: souhait.id }, { status: 201 });
+    return NextResponse.json({
+      id: souhait.id,
+      suiviTokenKid: souhait.suivi_token_kid,
+    }, { status: 201 });
+
   } catch (err) {
     console.error('POST /api/souhaits error:', err);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });

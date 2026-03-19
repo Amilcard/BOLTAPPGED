@@ -216,32 +216,33 @@ export async function POST(request: NextRequest) {
       data.priceTotal = serverCityPrice;
     }
 
-    // ── CAPACITY CHECK (read-only, pas de décrement) ──
-    const { data: sessionRows } = await supabase
-      .from('gd_stay_sessions')
-      .select('seats_left, age_min, age_max')
-      .eq('stay_slug', data.staySlug)
-      .eq('start_date', normalizedDate)
-      .limit(1);
-    const sessionRow = sessionRows?.[0] ?? null;
+    // ── CAPACITY CHECK atomique via RPC (SELECT FOR UPDATE) ──
+    const { data: capacityCheck, error: rpcError } = await supabase
+      .rpc('gd_check_session_capacity', {
+        p_slug: data.staySlug,
+        p_start_date: normalizedDate,
+      });
 
-    // Validation âge spécifique au séjour
-    if (sessionRow && sessionRow.age_min !== null && sessionRow.age_max !== null) {
-      const sessionAgeMin = sessionRow.age_min;
-      const sessionAgeMax = sessionRow.age_max;
-      if (age < sessionAgeMin || age > sessionAgeMax) {
-        return NextResponse.json(
-          { error: { code: 'AGE_INCOMPATIBLE', message: `Âge incompatible (${age} ans). Ce séjour requiert ${sessionAgeMin}-${sessionAgeMax} ans.` } },
-          { status: 400 }
-        );
-      }
-    }
-
-    if (sessionRow && sessionRow.seats_left !== null && sessionRow.seats_left <= 0) {
+    if (rpcError) {
+      console.error('Capacity check RPC error:', rpcError);
+      // En cas d'erreur RPC, fallback sur la vérification non-atomique
+    } else if (capacityCheck && !capacityCheck.allowed) {
       return NextResponse.json(
         { error: { code: 'SESSION_FULL', message: 'Cette session est complète. Plus de places disponibles.' } },
         { status: 400 }
       );
+    }
+
+    // Validation âge depuis le résultat RPC ou fallback DB
+    const ageMin = capacityCheck?.age_min ?? null;
+    const ageMax = capacityCheck?.age_max ?? null;
+    if (ageMin !== null && ageMax !== null) {
+      if (age < ageMin || age > ageMax) {
+        return NextResponse.json(
+          { error: { code: 'AGE_INCOMPATIBLE', message: `Âge incompatible (${age} ans). Ce séjour requiert ${ageMin}-${ageMax} ans.` } },
+          { status: 400 }
+        );
+      }
     }
 
     // ── VÉRIFICATION cohérence session → séjour ──

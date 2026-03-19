@@ -74,9 +74,12 @@ export default function AdminDemandes() {
       });
       if (res.ok) {
         setInscriptions(await res.json());
+      } else {
+        toast('Erreur de chargement des demandes. Rechargez la page.');
       }
     } catch (err) {
       console.error('Erreur chargement inscriptions:', err);
+      toast('Erreur réseau. Vérifiez votre connexion.');
     } finally {
       setLoading(false);
     }

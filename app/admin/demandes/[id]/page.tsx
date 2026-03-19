@@ -12,15 +12,15 @@ import { useAdminUI } from '@/components/admin/admin-ui';
 
 const STATUS_OPTIONS = [
   { value: 'en_attente', label: 'En attente', color: 'bg-blue-100 text-blue-700' },
-  { value: 'validee', label: 'Validee', color: 'bg-green-100 text-green-700' },
-  { value: 'refusee', label: 'Refusee', color: 'bg-red-100 text-red-700' },
-  { value: 'annulee', label: 'Annulee', color: 'bg-gray-100 text-gray-500' },
+  { value: 'validee', label: 'Validée', color: 'bg-green-100 text-green-700' },
+  { value: 'refusee', label: 'Refusée', color: 'bg-red-100 text-red-700' },
+  { value: 'annulee', label: 'Annulée', color: 'bg-gray-100 text-gray-500' },
 ];
 
 const PAYMENT_STATUS_LABELS: Record<string, { label: string; color: string }> = {
   pending_payment: { label: 'En attente', color: 'bg-orange-100 text-orange-700' },
-  paid: { label: 'Paye', color: 'bg-green-100 text-green-700' },
-  failed: { label: 'Echoue', color: 'bg-red-100 text-red-700' },
+  paid: { label: 'Payé', color: 'bg-green-100 text-green-700' },
+  failed: { label: 'Échoué', color: 'bg-red-100 text-red-700' },
 };
 
 const DOC_STATUS_OPTIONS = [
@@ -104,6 +104,7 @@ export default function InscriptionDetailPage() {
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
       console.error('Erreur mise a jour:', err);
+      toast('Erreur lors de l\'enregistrement');
     } finally {
       setSaving(false);
     }
@@ -150,7 +151,7 @@ export default function InscriptionDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-lg transition">
+          <button onClick={() => router.replace('/admin/demandes')} className="p-2 hover:bg-gray-100 rounded-lg transition">
             <ArrowLeft size={20} />
           </button>
           <div>

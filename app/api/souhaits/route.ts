@@ -37,6 +37,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Champs obligatoires manquants.' }, { status: 400 });
     }
 
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(kidSessionToken)) {
+      return NextResponse.json({ error: 'Token invalide.' }, { status: 400 });
+    }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(educateurEmail)) {
       return NextResponse.json({ error: 'Email éducateur invalide.' }, { status: 400 });
@@ -121,6 +126,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Erreur création souhait.' }, { status: 500 });
     }
 
+    if (!souhait.educateur_token) {
+      console.error('POST /api/souhaits: educateur_token null après INSERT', souhait.id);
+      return NextResponse.json({ error: 'Erreur configuration souhait.' }, { status: 500 });
+    }
+
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.groupeetdecouverte.fr';
     sendSouhaitNotificationEducateur({
       educateurEmail,
@@ -129,7 +139,7 @@ export async function POST(req: NextRequest) {
       sejourTitre: sejourTitre || sejourSlug,
       motivation,
       lienReponse: `${baseUrl}/educateur/souhait/${souhait.educateur_token}`,
-    }).catch(() => {});
+    }).catch((e) => console.error('[EMAIL] Souhait non envoyé:', e?.message));
 
     return NextResponse.json({
       id: souhait.id,

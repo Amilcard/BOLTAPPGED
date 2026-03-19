@@ -261,7 +261,7 @@ export default function SuiviProPage() {
                     <p className="font-medium">{d.cityDeparture === 'sans_transport' ? 'Sans transport' : d.cityDeparture}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500">Date de naissance</p>
+                    <p className="text-gray-500">Tarif</p>
                     <p className="font-bold">{d.priceTotal} €</p>
                   </div>
                   {d.paymentMethod && (

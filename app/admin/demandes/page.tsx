@@ -208,6 +208,7 @@ export default function AdminDemandes() {
                             onClick={() => router.push(`/admin/demandes/${insc.id}`)}
                             className="p-2 hover:bg-gray-100 rounded"
                             title="Détails"
+                            aria-label={`Voir le dossier de ${insc.jeune_prenom} ${insc.jeune_nom}`}
                           >
                             <Eye size={18} />
                           </button>
@@ -215,6 +216,7 @@ export default function AdminDemandes() {
                             onClick={(e) => handleDelete(e, insc.id, `${insc.jeune_prenom} ${insc.jeune_nom}`)}
                             className="p-2 hover:bg-red-50 rounded text-gray-400 hover:text-red-600 transition"
                             title="Supprimer"
+                            aria-label={`Supprimer l'inscription de ${insc.jeune_prenom} ${insc.jeune_nom}`}
                           >
                             <Trash2 size={16} />
                           </button>

@@ -1,7 +1,7 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
-import { getSejourBySlug, getStaySessions, getDepartureCitiesFormatted, getSessionPricesFormatted } from '@/lib/supabaseGed';
+import { getSejourBySlug, getStaySessions, getDepartureCitiesFormatted, getSessionPricesFormatted, getSessionPrices, supabaseGed } from '@/lib/supabaseGed';
 import { BookingFlow } from '@/components/booking-flow';
 
 export const dynamic = 'force-dynamic';
@@ -15,29 +15,105 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
   const stay = await getSejourBySlug(params.id);
   if (!stay) notFound();
 
-  // Récupérer sessions + villes + prix
-  const [sessionsRaw, departureCities, enrichmentSessions] = await Promise.all([
+  // Récupérer sessions + villes + prix + is_full UFOVAL (source de vérité)
+  const [sessionsRaw, departureCities, enrichmentSessions, sessionPrices] = await Promise.all([
     getStaySessions(params.id),
     getDepartureCitiesFormatted(params.id),
     getSessionPricesFormatted(params.id),
+    getSessionPrices(params.id), // is_full mis à jour par n8n UFOVAL toutes les 6h
   ]);
 
-  // Places limitées  dispatcher selon séjours pour urgence (12, 5, 11, 7)
-  const seatsOptions = [12, 5, 11, 7];
-  const seatsForThisStay = seatsOptions[params.id.length % seatsOptions.length];
+  // Index is_full par clé start_date|end_date pour lookup rapide
+  const isFullMap = new Map<string, boolean>(
+    sessionPrices.map((p: any) => [`${p.start_date}|${p.end_date}`, p.is_full === true])
+  );
+
+  // Filtrer sessions sans dates valides (guard null DB)
+  const validSessions = sessionsRaw.filter((s: any) => s.start_date && s.end_date);
 
   // Map snake_case DB → camelCase frontend
-  const sessions = sessionsRaw.map((s: any, idx: number) => ({
+  // IMPORTANT: l'ID = slug__start__end — identique au format de sejour/[id]/page.tsx
+  const sessions = validSessions.map((s: any) => ({
     ...s,
+    id: `${params.id}__${s.start_date}__${s.end_date}`,
+    stayId: params.id,
     startDate: s.start_date,
     endDate: s.end_date,
-    // Alterner places entre sessions d'un même séjour
-    seatsLeft: seatsOptions[idx % seatsOptions.length],
+    // is_full UFOVAL — source de vérité Supabase — 0 = complet, -1 = dispo
+    seatsLeft: isFullMap.get(`${s.start_date}|${s.end_date}`) ? 0 : -1,
   }));
+
+  // FIX_1 — Guard : session manquante ou invalide → redirect fiche séjour
+  if (!searchParams.session) {
+    redirect(`/sejour/${params.id}`);
+  }
+  const sessionExists = sessions.some(s => s.id === searchParams.session);
+  if (!sessionExists) {
+    redirect(`/sejour/${params.id}`);
+  }
+
+  // FIX_2 — Guard : toutes sessions complètes → pas de BookingFlow
+  const availableSessions = sessions.filter(s => s.seatsLeft === -1 || s.seatsLeft > 0);
+  const allFull = availableSessions.length === 0;
+
+  // Séjours alternatifs — uniquement si allFull, 2 requêtes légères, lecture seule
+  let alternativeStays: { slug: string; marketing_title: string | null; punchline: string | null; images: any }[] = [];
+  if (allFull && stay.carousel_group) {
+    // Requête 1 : candidats même carousel_group (max 10 pour avoir de la marge au tri)
+    const { data: candidates } = await supabaseGed
+      .from('gd_stays')
+      .select('slug, marketing_title, punchline, images, age_min, age_max')
+      .eq('published', true)
+      .eq('carousel_group', stay.carousel_group)
+      .neq('slug', params.id)
+      .limit(10);
+
+    if (candidates && candidates.length > 0) {
+      const candidateSlugs = candidates.map((c: any) => c.slug);
+
+      // Requête 2 : slugs ayant au moins une session disponible (is_full != true)
+      const { data: availableRows } = await supabaseGed
+        .from('gd_session_prices')
+        .select('stay_slug')
+        .in('stay_slug', candidateSlugs)
+        .or('is_full.is.null,is_full.eq.false');
+
+      const availableSlugsSet = new Set((availableRows ?? []).map((r: any) => r.stay_slug));
+
+      // Filtrer uniquement séjours avec sessions dispo — jamais un séjour complet
+      const filtered = candidates.filter((c: any) => availableSlugsSet.has(c.slug));
+
+      // Tri : même tranche d'âge > durée proche > prix croissant
+      const currentAgeMin = stay.age_min ?? 0;
+      const currentAgeMax = stay.age_max ?? 99;
+      filtered.sort((a: any, b: any) => {
+        const aAgeMatch = a.age_min === currentAgeMin && a.age_max === currentAgeMax ? 0 : 1;
+        const bAgeMatch = b.age_min === currentAgeMin && b.age_max === currentAgeMax ? 0 : 1;
+        return aAgeMatch - bAgeMatch;
+      });
+
+      alternativeStays = filtered.slice(0, 3);
+    }
+  }
 
   // Enrichir stay avec les données attendues par BookingFlow
   const enrichedStay = {
     ...stay,
+    // Champs Stay requis par BookingFlow
+    id: stay.slug,
+    title: stay.marketingTitle || stay.title || 'Séjour',
+    descriptionShort: stay.punchline || stay.expertPitch || '',
+    geography: stay.location_region || stay.location_city || '',
+    accommodation: stay.centre_name || '',
+    supervision: 'Équipe Groupe & Découverte',
+    imageCover: Array.isArray(stay.images) ? (stay.images as string[])[0] || '' : '',
+    images: Array.isArray(stay.images) ? (stay.images as string[]) : [],
+    published: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    durationDays: undefined,
+    period: undefined,
+    themes: [],
     departureCities,
     enrichmentSessions,
   };
@@ -56,13 +132,13 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
               href={`/sejour/${params.id}`}
               className="hover:text-primary-700 transition-colors"
             >
-              {stay.marketingTitle || stay.title}
+              {stay.marketingTitle || 'Séjour'}
             </Link>
             <ChevronRight className="w-3 h-3" />
             <span className="text-primary font-medium">Réserver</span>
           </nav>
           <h1 className="text-2xl font-bold text-primary">
-            Réserver {stay.marketingTitle || stay.title}
+            Réserver {stay.marketingTitle || 'Séjour'}
           </h1>
         </div>
       </div>
@@ -70,12 +146,77 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
       {/* Contenu principal */}
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-white rounded-2xl shadow-lg border border-primary-100 overflow-hidden">
-          <BookingFlow
-            stay={enrichedStay}
-            sessions={sessions}
-            initialSessionId={searchParams.session}
-            initialCity={searchParams.ville}
-          />
+          {allFull ? (
+            <div className="flex flex-col items-center py-12 px-8 gap-8">
+              {/* Header complet */}
+              <div className="text-center flex flex-col items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
+                  <span className="text-2xl">😔</span>
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-1">Séjour complet</h2>
+                  <p className="text-gray-500 text-sm max-w-sm">
+                    Toutes les sessions de ce séjour sont actuellement complètes.
+                  </p>
+                </div>
+              </div>
+
+              {/* Carrousel alternatifs */}
+              {alternativeStays.length > 0 && (
+                <div className="w-full">
+                  <p className="text-sm font-semibold text-gray-700 mb-3">
+                    Ces séjours similaires ont encore des places :
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {alternativeStays.map(alt => {
+                      const img = Array.isArray(alt.images) ? alt.images[0] : null;
+                      return (
+                        <Link
+                          key={alt.slug}
+                          href={`/sejour/${alt.slug}`}
+                          className="group rounded-xl border border-gray-100 overflow-hidden hover:border-primary/30 hover:shadow-md transition-all"
+                        >
+                          {img && (
+                            <div className="h-28 overflow-hidden bg-gray-50">
+                              <img src={img} alt={alt.marketing_title || ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            </div>
+                          )}
+                          <div className="p-3">
+                            <p className="font-semibold text-sm text-gray-900 line-clamp-1">{alt.marketing_title || alt.slug}</p>
+                            {alt.punchline && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{alt.punchline}</p>}
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* CTAs */}
+              <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
+                <Link
+                  href="/sejours"
+                  className="flex-1 text-center bg-primary text-white rounded-xl py-3 px-4 font-medium text-sm hover:bg-primary/90 transition-colors"
+                >
+                  Voir autres séjours
+                </Link>
+                <Link
+                  href={`/sejour/${params.id}`}
+                  className="flex-1 text-center border border-primary text-primary rounded-xl py-3 px-4 font-medium text-sm hover:bg-primary/5 transition-colors"
+                >
+                  Retour fiche
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <BookingFlow
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              stay={enrichedStay as any}
+              sessions={availableSessions}
+              initialSessionId={searchParams.session}
+              initialCity={searchParams.ville}
+            />
+          )}
         </div>
       </div>
     </div>

@@ -141,8 +141,8 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
           <p className="text-sm text-primary">
             <span className="font-medium">
               {saved
-                ? `Ta demande sera envoyée à ${prenomReferent.trim() || 'ton référent'}.`
-                : 'Complète ce formulaire pour retrouver ce séjour dans "Mes souhaits".'
+                ? `C'est noté ! Pour que ton·ta référent·e le sache, clique sur "Envoyer à mon·ma référent·e".`
+                : 'Note ce séjour dans tes souhaits pour en parler avec ton·ta référent·e.'
               }
             </span>
           </p>
@@ -181,7 +181,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
         {/* Prénom référent field (P0: Personnalisation) */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-primary mb-2">
-            Prénom de ton éducateur <span className="text-primary-400 font-normal">(optionnel)</span>
+            Prénom de ton·ta référent·e <span className="text-primary-400 font-normal">(optionnel)</span>
           </label>
           <input
             type="text"
@@ -202,7 +202,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
         {!emailLocked && (
           <div className="mb-4">
             <label className="block text-sm font-medium text-primary mb-2">
-              Email de ton éducateur <span className="text-red-500">*</span>
+              Email de ton·ta référent·e <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
@@ -235,7 +235,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
         {/* Motivation field */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-primary mb-2">
-            Pourquoi ce séjour t'intéresse ? <span className="text-red-500">*</span>
+            Qu'est-ce qui t'attire dans ce séjour ? <span className="text-red-500">*</span>
           </label>
           <textarea
             value={motivation}
@@ -283,7 +283,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
             {isSubmitting ? (
               <>Enregistrement...</>
             ) : (
-              'Enregistrer ma demande'
+              'Enregistrer ce souhait'
             )}
           </button>
         )}
@@ -295,7 +295,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
               onClick={handleShare}
               className="w-full py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary/90 transition"
             >
-              <Share2 className="w-4 h-4" /> Partager à mon éducateur
+              <Share2 className="w-4 h-4" /> Envoyer à mon·ma référent·e
             </button>
             <Link
               href="/envies"
@@ -342,7 +342,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
                 <h3 className="font-semibold text-primary">Ouverture de l'app mail</h3>
               </div>
               <p className="text-sm text-primary-600 mb-6">
-                Ton téléphone va ouvrir ton application mail pour envoyer ce séjour à ton éducateur.
+                Ton téléphone va ouvrir ton application mail pour envoyer ce séjour à ton·ta référent·e.
               </p>
               <div className="flex gap-3">
                 <button

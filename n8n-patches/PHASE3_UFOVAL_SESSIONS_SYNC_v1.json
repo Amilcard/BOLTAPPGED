@@ -1,0 +1,235 @@
+{
+  "name": "GED — UFOVAL Sessions & Prices Sync — Phase 3 v1",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "node-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://iirfvndgzutbxwfdwawu.supabase.co/rest/v1/gd_stays?select=slug,source_url,ufoval_stay_id&published=eq.true",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_ANON_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_ANON_KEY }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-get-stays",
+      "name": "Get 24 Séjours",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// PHASE 3 — Générer la liste (slug, source_url, durée) à scraper\n// Durées UFOVAL valides : 7, 12, 14, 19, 21 jours\n// Règle : simuler le clic dropdown pour chaque durée\n// Token economy : on ne scrape que les durées existantes\n// ============================================================\n\n// Mapping durées → paramètre URL UFOVAL\n// Adapter selon la structure réelle des URLs UFOVAL\nconst DUREES_UFOVAL = [\n  { jours: 7,  param: '7' },\n  { jours: 12, param: '12' },\n  { jours: 14, param: '14' },\n  { jours: 19, param: '19' },\n  { jours: 21, param: '21' }\n];\n\nconst output = [];\n\nfor (const item of $input.all()) {\n  const { slug, source_url, ufoval_stay_id } = item.json;\n  if (!source_url || !slug) continue;\n\n  for (const duree of DUREES_UFOVAL) {\n    // Construction URL avec paramètre durée\n    // Pattern UFOVAL : ?nb_jours=7 ou &nb_jours=7 selon URL\n    const separator = source_url.includes('?') ? '&' : '?';\n    const url_duree = `${source_url}${separator}nb_jours=${duree.param}`;\n\n    output.push({\n      json: {\n        slug,\n        source_url_base: source_url,\n        url_duree,\n        duree_jours: duree.jours,\n        duree_param: duree.param\n      }\n    });\n  }\n}\n\nreturn output;\n// Attendu : 24 séjours × 5 durées = 120 requêtes maximum\n// (Les durées absentes renverront 0 session — ignorées en aval)"
+      },
+      "id": "node-expand-durees",
+      "name": "Expand Durées UFOVAL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url_duree }}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "node-fetch-ufoval",
+      "name": "Fetch Page UFOVAL par Durée",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [640, 300],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// PHASE 3 — Extraction sessions + prix depuis HTML UFOVAL\n// Règles gelées :\n//   - end_date = start_date + duree_jours - 1 (inclusif)\n//   - Jamais Dim→Dim : forcer Samedi si end_date est Dimanche\n//   - Clé composite : stay_slug + start_date + end_date + city_departure\n//   - Ghost detection : 8j = toujours une erreur\n// Norme villes : 19 (national), 18 (Corse), 5-6 (centres régionaux)\n// ============================================================\n\n// Séjours avec nombre de villes réduit (centres régionaux)\nconst VILLES_EXCEPTIONS = {\n  'les-ptits-puisotins-1': { min: 3, max: 8, label: 'Centre régional' },\n  'yamakasi': { min: 3, max: 8, label: 'Centre régional' },\n  'croc-marmotte': { min: 3, max: 8, label: 'Centre régional' },\n  'e-sport-and-sport': { min: 3, max: 8, label: 'Centre régional' },\n  'explore-mountain': { min: 3, max: 8, label: 'Centre régional' },\n  'survie-dans-le-beaufortain': { min: 3, max: 8, label: 'Centre régional' },\n  'sperienza-in-corsica-1': { min: 18, max: 18, label: 'Corse (exception 18v)' }\n};\n\nconst VALID_DUREES = [7, 12, 14, 19, 21];\n\nfunction toISODate(dateStr) {\n  // Convertir format UFOVAL (ex: '05/07/2026' ou '2026-07-05') en ISO\n  if (!dateStr) return null;\n  if (dateStr.match(/^\\d{4}-\\d{2}-\\d{2}$/)) return dateStr;\n  // Format DD/MM/YYYY\n  const m = dateStr.match(/(\\d{2})\\/(\\d{2})\\/(\\d{4})/);\n  if (m) return `${m[3]}-${m[2]}-${m[1]}`;\n  return null;\n}\n\nfunction addDays(isoDate, days) {\n  const d = new Date(isoDate);\n  d.setDate(d.getDate() + days);\n  return d.toISOString().split('T')[0];\n}\n\nfunction dayOfWeek(isoDate) {\n  return new Date(isoDate).getDay(); // 0=Dim, 6=Sam\n}\n\nfunction calcEndDate(startIso, dureeJours) {\n  // Règle UFOVAL : fin = début + durée - 1 (inclusif)\n  let end = addDays(startIso, dureeJours - 1);\n  // Sécurité ghost : si 8j (Dim→Dim) → forcer 7j (Dim→Sam)\n  if (dureeJours === 8 || (dureeJours === 7 && dayOfWeek(end) === 0)) {\n    // end_date est Dimanche → reculer d'1 jour → Samedi\n    end = addDays(end, -1);\n  }\n  return end;\n}\n\nfunction isGhostDuration(startIso, endIso) {\n  const d = new Date(endIso) - new Date(startIso);\n  const jours = Math.round(d / 86400000) + 1;\n  return jours === 8; // Ghost signature\n}\n\nconst output = [];\n\nfor (const item of $input.all()) {\n  const { slug, duree_jours, url_duree } = item.json;\n  const html = item.json.body || item.json.data || '';\n\n  if (!html || html.length < 100) {\n    // Page vide ou erreur → durée absente pour ce séjour → skip silencieux\n    continue;\n  }\n\n  // ─── EXTRACTION DATES DE DÉPART ───\n  // Pattern UFOVAL : adapter selon structure HTML réelle\n  // Chercher les dates dans les options du dropdown ou tableau des sessions\n  const datePattern = /(\\d{2})\\/(\\d{2})\\/(\\d{4})/g;\n  const isFullPattern = /complet|sold.?out|indisponible/gi;\n  const pricePattern = /([0-9]{3,4})\\s*€/g;\n\n  // Extraction brute des dates trouvées dans la page pour cette durée\n  const dates = [];\n  let m;\n  while ((m = datePattern.exec(html)) !== null) {\n    const iso = toISODate(m[0]);\n    if (iso && iso >= '2026-07-01' && iso <= '2026-09-30') {\n      dates.push(iso);\n    }\n  }\n\n  // Dédupliquer\n  const uniqueDates = [...new Set(dates)];\n\n  for (const startIso of uniqueDates) {\n    const endIso = calcEndDate(startIso, duree_jours);\n    const dureeReelle = Math.round((new Date(endIso) - new Date(startIso)) / 86400000) + 1;\n\n    // Vérification ghost\n    if (!VALID_DUREES.includes(dureeReelle)) {\n      console.log(`GHOST IGNORÉ: ${slug} ${startIso}→${endIso} (${dureeReelle}j)`);\n      continue;\n    }\n\n    // Détection is_full (simplifiée — à affiner selon HTML UFOVAL)\n    const contextWindow = html.substring(\n      Math.max(0, html.indexOf(startIso.replace(/-/g, '/')) - 200),\n      Math.min(html.length, html.indexOf(startIso.replace(/-/g, '/')) + 500)\n    );\n    const is_full = isFullPattern.test(contextWindow);\n\n    output.push({\n      json: {\n        slug,\n        start_date: startIso,\n        end_date: endIso,\n        duree_jours: dureeReelle,\n        is_full,\n        seats_left: is_full ? 0 : null,\n        url_source: url_duree,\n        extracted_at: new Date().toISOString()\n      }\n    });\n  }\n}\n\nreturn output.length > 0 ? output : [{ json: { skip: true, reason: 'Aucune session extraite' } }];"
+      },
+      "id": "node-extract-sessions",
+      "name": "Extract Sessions + Dates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-skip",
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-filter-skip",
+      "name": "Filtrer sessions vides",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [1080, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://iirfvndgzutbxwfdwawu.supabase.co/rest/v1/gd_stay_sessions",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "resolution=merge-duplicates,return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"stay_slug\": \"{{ $json.slug }}\",\n  \"start_date\": \"{{ $json.start_date }}\",\n  \"end_date\": \"{{ $json.end_date }}\",\n  \"is_full\": {{ $json.is_full }},\n  \"seats_left\": {{ $json.seats_left === null ? 'null' : $json.seats_left }}\n}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "node-upsert-sessions",
+      "name": "UPSERT gd_stay_sessions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1300, 200],
+      "notes": "Prefer: resolution=merge-duplicates → ON CONFLICT (stay_slug, start_date) DO UPDATE\nNE PAS toucher les timestamps créés manuellement"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// PHASE 3 — Préparer les upserts prix (gd_session_prices)\n// Règle : 1 ligne par ville de départ\n// Les villes et prix sont extraits séparément par le scraper réel\n// Ce node est un placeholder — à connecter au node d'extraction prix\n// ============================================================\n\n// Structure attendue depuis l'extraction UFOVAL :\n// { slug, start_date, end_date, city_departure, base_price_eur,\n//   transport_surcharge_ufoval, price_ged_total, transport_surcharge_ged,\n//   is_full, currency }\n\n// Validation ghost avant upsert\nconst VALID_DUREES = [7, 12, 14, 19, 21];\n\nconst output = [];\n\nfor (const item of $input.all()) {\n  const p = item.json;\n  if (!p.slug || !p.start_date || !p.end_date || !p.city_departure) continue;\n\n  // Calcul durée pour validation\n  const duree = Math.round(\n    (new Date(p.end_date) - new Date(p.start_date)) / 86400000\n  ) + 1;\n\n  if (!VALID_DUREES.includes(duree)) {\n    console.log(`PRIX GHOST IGNORÉ: ${p.slug} ${p.start_date}→${p.end_date} (${duree}j)`);\n    continue;\n  }\n\n  // Calcul markup selon durée\n  let markup = 0;\n  if (duree >= 5 && duree <= 8)   markup = 180;\n  if (duree >= 11 && duree <= 15) markup = 240;\n  if (duree >= 18 && duree <= 22) markup = 410;\n\n  // Transport GED = transport UFOVAL + 18€ (sauf sans_transport)\n  const transport_ged = p.city_departure === 'sans_transport'\n    ? 0\n    : (p.transport_surcharge_ufoval || 0) + 18;\n\n  // Prix GED total\n  const price_ged_total = (p.base_price_eur || 0) + markup + transport_ged;\n\n  output.push({\n    json: {\n      stay_slug: p.slug,\n      start_date: p.start_date,\n      end_date: p.end_date,\n      base_price_eur: p.base_price_eur || 0,\n      currency: p.currency || 'EUR',\n      city_departure: p.city_departure,\n      transport_surcharge_ufoval: p.transport_surcharge_ufoval || 0,\n      price_ged_total,\n      transport_surcharge_ged: transport_ged,\n      is_full: p.is_full || false\n    }\n  });\n}\n\nreturn output;"
+      },
+      "id": "node-prepare-prices",
+      "name": "Préparer Prix par Ville",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1300, 420]
+    },
+    {
+      "parameters": {
+        "url": "=https://iirfvndgzutbxwfdwawu.supabase.co/rest/v1/gd_session_prices",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "resolution=merge-duplicates,return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "node-upsert-prices",
+      "name": "UPSERT gd_session_prices",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1520, 420],
+      "notes": "ON CONFLICT (stay_slug, start_date, end_date, city_departure) DO UPDATE\nMet à jour : is_full, price_ged_total, transport_surcharge_ged\nNE PAS écraser : base_price_eur si déjà correct"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// PHASE 3 — Validation post-upsert\n// Détecte les anomalies résiduelles après sync\n// ============================================================\n\nconst items = $input.all();\nlet success = 0;\nlet errors = [];\nlet ghostDetected = [];\n\nfor (const item of items) {\n  const r = item.json;\n\n  // Erreur HTTP\n  if (r.statusCode && r.statusCode >= 400) {\n    errors.push({\n      slug: r.stay_slug || '?',\n      start_date: r.start_date || '?',\n      error: r.message || `HTTP ${r.statusCode}`\n    });\n    continue;\n  }\n\n  // Détection ghost résiduelle (ne devrait jamais arriver)\n  if (r.start_date && r.end_date) {\n    const duree = Math.round(\n      (new Date(r.end_date) - new Date(r.start_date)) / 86400000\n    ) + 1;\n    if (duree === 8) {\n      ghostDetected.push(`${r.stay_slug} ${r.start_date}→${r.end_date}`);\n    }\n  }\n\n  success++;\n}\n\nreturn [{\n  json: {\n    phase: 'PHASE_3_SESSIONS_SYNC',\n    timestamp: new Date().toISOString(),\n    status: errors.length === 0 && ghostDetected.length === 0 ? 'SUCCESS' : 'WARNINGS',\n    upserts_ok: success,\n    errors_count: errors.length,\n    ghost_residuel: ghostDetected.length,\n    errors,\n    ghost_sessions_detectees: ghostDetected,\n    next_step: errors.length > 0\n      ? 'Analyser les erreurs et relancer pour les séjours en échec'\n      : 'Phase 3 validée — Passer à la configuration .env VPS pour Go-Live'\n  }\n}];"
+      },
+      "id": "node-summary",
+      "name": "Rapport Phase 3",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1740, 300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "Get 24 Séjours", "type": "main", "index": 0 }]]
+    },
+    "Get 24 Séjours": {
+      "main": [[{ "node": "Expand Durées UFOVAL", "type": "main", "index": 0 }]]
+    },
+    "Expand Durées UFOVAL": {
+      "main": [[{ "node": "Fetch Page UFOVAL par Durée", "type": "main", "index": 0 }]]
+    },
+    "Fetch Page UFOVAL par Durée": {
+      "main": [[{ "node": "Extract Sessions + Dates", "type": "main", "index": 0 }]]
+    },
+    "Extract Sessions + Dates": {
+      "main": [[{ "node": "Filtrer sessions vides", "type": "main", "index": 0 }]]
+    },
+    "Filtrer sessions vides": {
+      "main": [
+        [
+          { "node": "UPSERT gd_stay_sessions", "type": "main", "index": 0 },
+          { "node": "Préparer Prix par Ville", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Préparer Prix par Ville": {
+      "main": [[{ "node": "UPSERT gd_session_prices", "type": "main", "index": 0 }]]
+    },
+    "UPSERT gd_stay_sessions": {
+      "main": [[{ "node": "Rapport Phase 3", "type": "main", "index": 0 }]]
+    },
+    "UPSERT gd_session_prices": {
+      "main": [[{ "node": "Rapport Phase 3", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "errorWorkflow": ""
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "ged-app-phase3"
+  },
+  "tags": [
+    { "createdAt": "2026-02-18", "updatedAt": "2026-02-18", "id": "phase3", "name": "Phase 3 — Sessions Sync" }
+  ]
+}

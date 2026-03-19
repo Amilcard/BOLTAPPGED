@@ -78,6 +78,44 @@ export interface User {
   role: 'ADMIN' | 'EDITOR' | 'VIEWER';
 }
 
+// === INSCRIPTION SUPABASE (source de vérité) ===
+export interface InscriptionSupabase {
+  id: string;
+  sejour_slug: string;
+  session_date: string;
+  city_departure: string;
+  jeune_prenom: string;
+  jeune_nom: string;
+  jeune_date_naissance: string;
+  organisation?: string;
+  referent_nom: string;
+  referent_email: string;
+  referent_tel: string;
+  options_educatives?: string;
+  remarques?: string;
+  price_total: number;
+  status: string; // en_attente, validee, refusee, annulee
+  payment_reference?: string;
+  payment_status?: string; // pending_payment, paid, failed
+  payment_method?: string;
+  created_at: string;
+  updated_at?: string;
+  // Phase 1 — parcours pro
+  dossier_ref?: string;
+  suivi_token?: string;
+  // Phase 2 — suivi séjour
+  documents_status?: string; // en_attente, partiellement_recus, complets
+  besoins_pris_en_compte?: boolean;
+  equipe_informee?: boolean;
+  note_pro?: string;
+  // Phase 3 — préférences + besoins spécifiques
+  pref_nouvelles_sejour?: string; // oui, non, si_besoin
+  pref_canal_contact?: string; // email, telephone, les_deux
+  pref_bilan_fin_sejour?: boolean;
+  consignes_communication?: string;
+  besoins_specifiques?: string;
+}
+
 export type ViewMode = 'pro' | 'kids';
 // LOT 1: Updated period filter with all seasons
 // Period filter values for LOT 1 (multi-choice)

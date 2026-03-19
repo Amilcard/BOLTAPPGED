@@ -1,0 +1,205 @@
+export const dynamic = 'force-dynamic';
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { verifyAuth } from '@/lib/auth-middleware';
+
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
+
+/**
+ * GET /api/admin/propositions — Liste toutes les propositions tarifaires
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const auth = verifyAuth(request);
+    if (!auth) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('gd_propositions_tarifaires')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Supabase error (GET propositions):', error);
+      throw error;
+    }
+    return NextResponse.json({ propositions: data || [] });
+  } catch (err: any) {
+    console.error('Error in GET /api/admin/propositions:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+/**
+ * POST /api/admin/propositions — Créer une nouvelle proposition tarifaire
+ * Body: { structure_nom, structure_adresse, structure_cp, structure_ville,
+ *         enfant_nom, enfant_prenom, sejour_slug, session_start, session_end,
+ *         ville_depart, encadrement }
+ */
+export async function POST(req: NextRequest) {
+  try {
+    const auth = verifyAuth(req);
+    if (!auth) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const supabase = getSupabase();
+    const body = await req.json();
+
+    const {
+      structure_nom, structure_adresse, structure_cp, structure_ville,
+      enfant_nom, enfant_prenom,
+      sejour_slug, session_start, session_end,
+      ville_depart, encadrement,
+    } = body;
+
+    // Validation basique
+    if (!structure_nom || !enfant_nom || !enfant_prenom || !sejour_slug || !session_start || !session_end || !ville_depart) {
+      return NextResponse.json({ error: 'Champs obligatoires manquants.' }, { status: 400 });
+    }
+
+    // Récupérer les infos du séjour
+    const { data: sejour } = await supabase
+      .from('gd_stays')
+      .select('slug, title, marketing_title, description_pro')
+      .eq('slug', sejour_slug)
+      .single();
+
+    if (!sejour) {
+      return NextResponse.json({ error: 'Séjour introuvable.' }, { status: 404 });
+    }
+
+    // Récupérer le prix depuis gd_session_prices
+    const { data: pricing } = await supabase
+      .from('gd_session_prices')
+      .select('base_price_eur, transport_surcharge_ged, price_ged_total')
+      .eq('stay_slug', sejour_slug)
+      .eq('start_date', session_start)
+      .eq('city_departure', ville_depart)
+      .single();
+
+    // Calculer les prix
+    const prixSejour = pricing?.base_price_eur || 0;
+    const prixTransport = pricing?.transport_surcharge_ged || 0;
+
+    // Calculer encadrement : 630€ par semaine
+    const startDate = new Date(session_start);
+    const endDate = new Date(session_end);
+    const diffDays = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const nbSemaines = Math.max(1, Math.round(diffDays / 7));
+    const prixEncadrement = encadrement ? nbSemaines * 630 : 0;
+
+    const prixTotal = Number(prixSejour) + Number(prixTransport) + prixEncadrement;
+
+    // Récupérer les activités du séjour
+    const sejourActivites = (sejour as any).description_pro || '';
+
+    // Créer la proposition
+    const { data: proposition, error } = await supabase
+      .from('gd_propositions_tarifaires')
+      .insert({
+        structure_nom,
+        structure_adresse: structure_adresse || '',
+        structure_cp: structure_cp || '',
+        structure_ville: structure_ville || '',
+        enfant_nom,
+        enfant_prenom,
+        sejour_slug,
+        sejour_titre: (sejour as any).marketing_title || (sejour as any).title,
+        sejour_activites: sejourActivites,
+        session_start,
+        session_end,
+        ville_depart,
+        prix_sejour: prixSejour,
+        prix_transport: prixTransport,
+        encadrement: !!encadrement,
+        prix_encadrement: prixEncadrement,
+        prix_total: prixTotal,
+        status: 'brouillon',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json({ proposition }, { status: 201 });
+  } catch (err: any) {
+    console.error('Error creating proposition:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+/**
+ * PATCH /api/admin/propositions — Mettre à jour le statut d'une proposition
+ * Body: { id, status, ... }
+ */
+export async function PATCH(req: NextRequest) {
+  try {
+    const auth = verifyAuth(req);
+    if (!auth) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const supabase = getSupabase();
+    const body = await req.json();
+    const { id, ...updates } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID manquant.' }, { status: 400 });
+    }
+
+    // Si validation, ajouter la date
+    if (updates.status === 'validee') {
+      updates.validated_at = new Date().toISOString();
+    }
+
+    const { data, error } = await supabase
+      .from('gd_propositions_tarifaires')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return NextResponse.json({ proposition: data });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+/**
+ * DELETE /api/admin/propositions — Supprimer une proposition
+ * Body: { id }
+ */
+export async function DELETE(req: NextRequest) {
+  try {
+    const auth = verifyAuth(req);
+    if (!auth) {
+      return NextResponse.json({ error: 'Non autorise' }, { status: 401 });
+    }
+
+    const supabase = getSupabase();
+    const { id } = await req.json();
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID manquant.' }, { status: 400 });
+    }
+
+    const { error } = await supabase
+      .from('gd_propositions_tarifaires')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}

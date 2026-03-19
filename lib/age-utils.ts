@@ -83,12 +83,16 @@ export function getStayPeriod(sessions: SessionDateData[], fallback: string = 'Ã
  * Computes all age-related display data for a stay from its sessions.
  * Single call replaces separate calculateGlobalAgeRange + getUniqueAgeRanges + format.
  */
-export function getStayAgeData(sessions: SessionAgeData[]): {
+export function getStayAgeData(
+  sessions: SessionAgeData[],
+  fallbackMin: number = 0,
+  fallbackMax: number = 0
+): {
   ageMin: number;
   ageMax: number;
   ageRangesDisplay: string | undefined;
 } {
-  const { ageMin, ageMax } = calculateGlobalAgeRange(sessions);
+  const { ageMin, ageMax } = calculateGlobalAgeRange(sessions, fallbackMin, fallbackMax);
   const ranges = getUniqueAgeRanges(sessions);
   const ageRangesDisplay = ranges.length > 0 ? formatAgeRangesDisplay(ranges) : undefined;
   return { ageMin, ageMax, ageRangesDisplay };
@@ -151,8 +155,8 @@ export function formatAgeRangesDisplay(ranges: string[]): string {
  */
 export function calculateGlobalAgeRange(
   sessions: SessionAgeData[],
-  defaultMin: number = 6,
-  defaultMax: number = 17
+  defaultMin: number = 0,
+  defaultMax: number = 0
 ): { ageMin: number; ageMax: number } {
   if (!sessions || sessions.length === 0) {
     return { ageMin: defaultMin, ageMax: defaultMax };

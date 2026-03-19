@@ -2,9 +2,15 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, ChevronRight, ChevronLeft, Loader2, Info, AlertCircle, Calendar, MapPin } from 'lucide-react';
+import { Check, ChevronRight, ChevronLeft, Loader2, Info, AlertCircle, Calendar, MapPin, CreditCard } from 'lucide-react';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import type { Stay, StaySession } from '@/lib/types';
 import { formatDate, formatDateLong, validateChildAge } from '@/lib/utils';
+
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+  : null;
 
 interface DepartureCity {
   city: string;
@@ -43,40 +49,128 @@ const STANDARD_CITIES = [
   'Paris', 'Lyon', 'Lille', 'Marseille', 'Bordeaux', 'Rennes'
 ];
 
+// Style du CardElement Stripe
+const CARD_ELEMENT_OPTIONS = {
+  style: {
+    base: {
+      fontSize: '16px',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      color: '#1a1a2e',
+      '::placeholder': { color: '#9ca3af' },
+      iconColor: '#e07a5f',
+    },
+    invalid: {
+      color: '#dc2626',
+      iconColor: '#dc2626',
+    },
+  },
+  hidePostalCode: true,
+};
+
+// Composant interne pour le formulaire de paiement Stripe
+function StripePaymentForm({ clientSecret, onSuccess, onError }: { clientSecret: string; onSuccess: () => void; onError: (msg: string) => void }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [processing, setProcessing] = useState(false);
+  const [cardReady, setCardReady] = useState(false);
+
+  const handlePayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    const cardElement = elements.getElement(CardElement);
+    if (!cardElement) {
+      onError('Impossible de charger le formulaire de paiement.');
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: { card: cardElement },
+      });
+
+      if (error) {
+        onError(error.message || 'Erreur lors du paiement.');
+      } else if (paymentIntent?.status === 'succeeded') {
+        onSuccess();
+      } else {
+        onError('Le paiement n\'a pas abouti. Veuillez réessayer.');
+      }
+    } catch (err: any) {
+      onError(err.message || 'Erreur inattendue.');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handlePayment} className="space-y-4">
+      <div className="p-4 bg-white border border-primary-200 rounded-xl">
+        <CardElement
+          options={CARD_ELEMENT_OPTIONS}
+          onReady={() => setCardReady(true)}
+          onChange={(event) => {
+            if (event.error) onError(event.error.message);
+            else onError('');
+          }}
+        />
+      </div>
+      <button
+        type="submit"
+        disabled={!stripe || !cardReady || processing}
+        className="w-full py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
+        {processing ? 'Paiement en cours...' : 'Payer maintenant'}
+      </button>
+    </form>
+  );
+}
+
 export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity = '' }: BookingFlowProps) {
   const router = useRouter();
   const departureCities = (stay as any).departureCities || [];
   const enrichmentSessions = (stay as any).enrichmentSessions || [];
 
+  // Normaliser la ville depuis l'URL vers le format DB
+  // "Sans transport" ou "Sans+transport" → "sans_transport"
+  const normalizedInitialCity = initialCity.toLowerCase().replace(/\s+/g, '_') === 'sans_transport'
+    ? 'sans_transport'
+    : initialCity;
+
   const getInitialStep = () => {
-    if (initialSessionId && initialCity) return 2;
+    if (initialSessionId && normalizedInitialCity) return 2;
     if (initialSessionId) return 1;
     return 0;
   };
 
-  const [step, setStep] = useState(getInitialStep);
+  const [stepRaw, setStepRaw] = useState(getInitialStep);
   const [selectedSessionId, setSelectedSessionId] = useState<string>(initialSessionId);
-  const [selectedCity, setSelectedCity] = useState<string>(initialCity);
+  const [selectedCity, setSelectedCity] = useState<string>(normalizedInitialCity);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'bank_transfer' | 'cheque' | null>(null);
+  const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
+
+  // Wrapper setStep qui reset l'erreur à chaque changement d'étape
+  const setStep = (s: number | ((prev: number) => number)) => {
+    setError('');
+    setStepRaw(s);
+  };
+  const step = stepRaw;
   const [bookingId, setBookingId] = useState('');
   const [showAllSessions, setShowAllSessions] = useState(false);
 
   const firstInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (step < 5) {
-      setTimeout(() => firstInputRef.current?.focus(), 100);
-    }
-  }, [step]);
-
-  const calculateAge = (birthDate: string): number | null => {
+  const calculateAge = (birthDate: string, referenceDate?: Date): number | null => {
     if (!birthDate) return null;
     const birth = new Date(birthDate);
-    const today = new Date();
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    const ref = referenceDate ?? new Date();
+    let age = ref.getFullYear() - birth.getFullYear();
+    const monthDiff = ref.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && ref.getDate() < birth.getDate())) {
       age--;
     }
     return age;
@@ -98,9 +192,10 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     }
   }
 
-  const selectedCityData = departureCities.find(dc => dc.city === selectedCity);
+  const selectedCityData = departureCities.find((dc: any) => dc.city === selectedCity);
   const extraVille = selectedCityData?.extra_eur ?? 0;
-  const totalPrice = sessionBasePrice !== null ? sessionBasePrice + extraVille : null;
+  // Fallback: utiliser stay.priceFrom si enrichmentSessions vide (données manquantes)
+  const totalPrice = sessionBasePrice !== null ? sessionBasePrice + extraVille : (stay.priceFrom ? stay.priceFrom + extraVille : null);
 
   const [step1, setStep1] = useState<Step1Data>({
     organisation: '',
@@ -115,63 +210,136 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     consent: false,
   });
 
-  // Validation d'âge à la date du départ (même logique que booking-modal.tsx)
-  const ageValidation = step2.childBirthDate && selectedSession
-    ? validateChildAge(step2.childBirthDate, selectedSession.startDate, stay.ageMin, stay.ageMax)
-    : { valid: false, age: null, message: null };
+  const [ageError, setAgeError] = useState('');
 
-  const validSessions = sessions?.filter(s => (s?.seatsLeft ?? 0) > 0) ?? [];
+  // useEffect hooks APRÈS déclaration des states
+  useEffect(() => {
+    if (step < 5) {
+      setTimeout(() => firstInputRef.current?.focus(), 100);
+    }
+  }, [step]);
+
+  // Validation âge enfant vs tranche séjour — référence : date de début de session
+  useEffect(() => {
+    if (!step2.childBirthDate || !stay.ageMin || !stay.ageMax) {
+      setAgeError('');
+      return;
+    }
+    const sessionRef = selectedSession?.startDate ? new Date(selectedSession.startDate) : undefined;
+    const age = calculateAge(step2.childBirthDate, sessionRef);
+    if (age === null) {
+      setAgeError('');
+      return;
+    }
+    if (age < stay.ageMin || age > stay.ageMax) {
+      setAgeError(`Âge requis pour ce séjour : ${stay.ageMin}-${stay.ageMax} ans`);
+    } else {
+      setAgeError('');
+    }
+  }, [step2.childBirthDate, stay.ageMin, stay.ageMax, selectedSession]);
+
+  // -1 = dispo illimité (UFOVAL source de vérité), 0 = complet
+  const validSessions = sessions?.filter(s => s?.seatsLeft === -1 || (s?.seatsLeft ?? 0) > 0) ?? [];
   const sessionsUnique = (sessions || []).filter((s, idx, arr) => {
     const key = `${s.startDate}-${s.endDate}`;
     return idx === arr.findIndex(x => `${x.startDate}-${x.endDate}` === key);
   });
 
-  const standardDepartureCities = departureCities.filter(dc =>
-    STANDARD_CITIES.some(std =>
+  const standardDepartureCities = departureCities.filter((dc: any) =>
+    STANDARD_CITIES.some((std: string) =>
       dc.city.toLowerCase().includes(std.toLowerCase())
-    ) || dc.city === 'Sans transport'
+    ) || dc.city === 'sans_transport'
   );
 
-  const isStep1Valid = step1.addresseStructure && step1.addresseStructure.trim().length >= 10 && step1.organisation && step1.socialWorkerName && step1.email && step1.phone;
-  const isStep2Valid = step2.childSex && step2.childFirstName && step2.childBirthDate && ageValidation.valid && step2.consent;
+  // Validations renforcées
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRegex = /^[\d\s\+\-\.()]{10,}$/; // Min 10 chiffres/espaces
+  const isEmailValid = emailRegex.test(step1.email);
+  const isPhoneValid = phoneRegex.test(step1.phone);
+  const isCodePostalValid = ((step1 as any).codePostal || '').length === 5;
+  const isVilleValid = ((step1 as any).ville || '').trim().length >= 2;
+  const isStep1Valid = step1.organisation?.trim().length >= 2
+    && step1.addresseStructure && step1.addresseStructure.trim().length >= 5
+    && isCodePostalValid
+    && isVilleValid
+    && step1.socialWorkerName?.trim().length >= 2
+    && isEmailValid
+    && isPhoneValid;
+  const isStep2Valid = step2.childSex && step2.childFirstName?.trim().length >= 2 && step2.childBirthDate && step2.consent && ageError === '';
 
   const currentYear = new Date().getFullYear();
 
   const handleSubmit = async () => {
-    if (!selectedSessionId) return;
+    if (!selectedSessionId || !selectedSession) return;
+
+    // SÉCURITÉ: Bloquer si mode de paiement non choisi
+    if (!paymentMethod) {
+      setError('Veuillez choisir un mode de paiement.');
+      return;
+    }
+
+    // SÉCURITÉ: Bloquer si prix non calculé
+    if (totalPrice === null) {
+      setError('Impossible de finaliser : tarif indisponible.');
+      return;
+    }
+
+    // SÉCURITÉ: Double validation âge avant envoi
+    if (ageError) {
+      setError(ageError);
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
-      const birthDate = step2.childBirthDate;
-      const addressNote = step1.addresseStructure ? `[ADRESSE]: ${step1.addresseStructure}` : '';
-      const cityNote = selectedCity ? `[VILLE DEPART]: ${selectedCity}` : '';
-      const finalNotes = [addressNote, cityNote].filter(Boolean).join('\n');
+      const fullAddress = [step1.addresseStructure, (step1 as any).codePostal, (step1 as any).ville].filter(Boolean).join(', ');
+      const addressNote = fullAddress ? `[ADRESSE]: ${fullAddress}` : '';
       const sexNote = step2.childSex ? `[SEXE]: ${step2.childSex}` : '';
+      const remarques = [addressNote, sexNote].filter(Boolean).join('\n');
 
-      const res = await fetch('/api/bookings', {
+      const res = await fetch('/api/inscriptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          stayId: stay?.id,
-          sessionId: selectedSessionId,
+          staySlug: stay?.slug,
+          sessionDate: selectedSession.startDate,
+          cityDeparture: selectedCity || 'sans_transport',
           organisation: step1.organisation,
           socialWorkerName: step1.socialWorkerName,
           email: step1.email,
           phone: step1.phone,
           childFirstName: step2.childFirstName,
           childLastName: '',
-          childBirthDate: birthDate,
-          notes: finalNotes,
-          childNotes: sexNote,
+          childBirthDate: step2.childBirthDate,
+          remarques,
+          priceTotal: totalPrice ?? 0,
           consent: step2.consent,
+          paymentMethod,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error?.message ?? 'Erreur lors de la réservation');
 
-      setBookingId(data?.id ?? '');
+      const inscriptionId = data?.id ?? '';
+      setBookingId(inscriptionId);
+
+      // Si paiement CB, créer le PaymentIntent et afficher le formulaire Stripe
+      if (paymentMethod === 'card' && inscriptionId) {
+        const piRes = await fetch('/api/payment/create-intent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inscriptionId }),
+        });
+        const piData = await piRes.json();
+        if (!piRes.ok) throw new Error(piData?.error?.message || piData?.error || 'Erreur création paiement');
+        setStripeClientSecret(piData.clientSecret);
+        setStep(6); // Step 6 = formulaire Stripe
+        return;
+      }
+
       setStep(5);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
@@ -183,7 +351,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   return (
     <div className="p-6">
       {/* Progress */}
-      {step < 5 && (
+      {step < 5 && step !== 6 && (
         <div className="flex gap-2 mb-6">
           {[0, 1, 2, 3, 4].map(i => (
             <div
@@ -195,9 +363,16 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
           ))}
         </div>
       )}
+      {step === 6 && (
+        <div className="flex gap-2 mb-6">
+          {[0, 1, 2, 3, 4].map(i => (
+            <div key={i} className="h-1 flex-1 rounded-full bg-secondary" />
+          ))}
+        </div>
+      )}
 
       {/* Sticky recap */}
-      {(step === 2 || step === 3 || step === 4) && selectedSession && totalPrice !== null && (
+      {(step >= 2 && step <= 4) && selectedSession && totalPrice !== null && (
         <div className="mb-6 p-4 bg-primary-50 rounded-xl border border-primary-200">
           <div className="flex items-center justify-between">
             <div className="flex-1">
@@ -207,7 +382,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               </div>
               <div className="flex items-center gap-2 text-xs text-primary-500">
                 <MapPin className="w-3 h-3" />
-                <span>{selectedCity}</span>
+                <span>{selectedCity === 'sans_transport' ? 'Sans transport' : selectedCity}</span>
                 {extraVille > 0 && <span className="text-primary-400">+{extraVille}€ transport</span>}
               </div>
             </div>
@@ -222,7 +397,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
       {/* Step 0: Session */}
       {step === 0 && (
         <div className="space-y-4">
-          <h3 className="font-medium text-primary text-lg">Étape 1/5 : Choisir une session</h3>
+          <h3 className="font-medium text-primary text-lg">Étape 1/5 : Choisir une session — demande d&apos;inscription</h3>
           <div className="space-y-2">
             {sessionsUnique.slice(0, showAllSessions ? undefined : 4).map(session => {
               const isFull = (session?.seatsLeft ?? 0) === 0;
@@ -274,7 +449,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                         {formatDateLong(session?.startDate ?? '')} - {formatDateLong(session?.endDate ?? '')}
                       </div>
                       <div className={`text-xs ${isFull ? 'text-red-500' : 'text-primary-500'}`}>
-                        {isFull ? 'Complet' : `${session?.seatsLeft ?? 0} places restantes`}
+                        {isFull ? 'Complet' : session?.seatsLeft === -1 ? 'Places disponibles' : `${session?.seatsLeft} places restantes`}
                       </div>
                     </div>
                     {displayPrice && !isFull && (
@@ -314,9 +489,9 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             <div className="space-y-2 max-h-[50vh] overflow-y-auto">
               {standardDepartureCities
                 .slice()
-                .sort((a, b) => {
-                  if (a.city === 'Sans transport') return -1;
-                  if (b.city === 'Sans transport') return 1;
+                .sort((a: any, b: any) => {
+                  if (a.city === 'sans_transport') return -1;
+                  if (b.city === 'sans_transport') return 1;
                   const aIndex = STANDARD_CITIES.findIndex(std => a.city.toLowerCase().includes(std.toLowerCase()));
                   const bIndex = STANDARD_CITIES.findIndex(std => b.city.toLowerCase().includes(std.toLowerCase()));
                   if (aIndex >= 0 && bIndex >= 0) return aIndex - bIndex;
@@ -324,7 +499,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                   if (bIndex >= 0) return 1;
                   return a.city.localeCompare(b.city);
                 })
-                .map((city, idx) => {
+                .map((city: any, idx: number) => {
                   const isCitySelected = selectedCity === city.city;
                   return (
                     <label
@@ -351,7 +526,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                         className="sr-only"
                       />
                       <span className="flex-1 text-sm font-medium text-primary-700 capitalize">
-                        {city.city === 'Sans transport' ? 'Sans transport' : city.city}
+                        {city.city === 'sans_transport' ? 'Sans transport (inclus)' : city.city}
                       </span>
                       <span className={`text-sm font-semibold ${isCitySelected ? 'text-secondary' : 'text-primary-600'}`}>
                         {city.extra_eur === 0 ? 'Inclus' : `+${city.extra_eur}€`}
@@ -386,42 +561,86 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
         <div className="space-y-4">
           <h3 className="font-medium text-primary text-lg">Étape 3/5 : Informations de la structure</h3>
           <div className="space-y-3">
-            <input
-              ref={firstInputRef}
-              type="text"
-              placeholder="Organisation *"
-              value={step1.organisation}
-              onChange={e => setStep1({ ...step1, organisation: e.target.value })}
-              className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
-            />
-            <input
-              type="text"
-              placeholder="Adresse postale de la structure *"
-              value={step1.addresseStructure || ''}
-              onChange={e => setStep1({ ...step1, addresseStructure: e.target.value })}
-              className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
-            />
-            <input
-              type="text"
-              placeholder="Nom complet *"
-              value={step1.socialWorkerName}
-              onChange={e => setStep1({ ...step1, socialWorkerName: e.target.value })}
-              className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
-            />
-            <input
-              type="email"
-              placeholder="Email *"
-              value={step1.email}
-              onChange={e => setStep1({ ...step1, email: e.target.value })}
-              className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
-            />
-            <input
-              type="tel"
-              placeholder="Téléphone (portable de préférence) *"
-              value={step1.phone}
-              onChange={e => setStep1({ ...step1, phone: e.target.value })}
-              className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
-            />
+            <div>
+              <label className="text-sm text-primary-600 mb-1 block">Organisation *</label>
+              <input
+                ref={firstInputRef}
+                type="text"
+                placeholder="Nom de la structure"
+                value={step1.organisation}
+                onChange={e => setStep1({ ...step1, organisation: e.target.value })}
+                className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-primary-600 mb-1 block">Adresse *</label>
+              <input
+                type="text"
+                placeholder="N° et rue"
+                value={step1.addresseStructure || ''}
+                onChange={e => setStep1({ ...step1, addresseStructure: e.target.value })}
+                className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="text-sm text-primary-600 mb-1 block">Code postal *</label>
+                <input
+                  type="text"
+                  placeholder="42000"
+                  value={(step1 as any).codePostal || ''}
+                  onChange={e => setStep1({ ...step1, codePostal: e.target.value.replace(/\D/g, '').slice(0, 5) } as any)}
+                  maxLength={5}
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${(step1 as any).codePostal && (step1 as any).codePostal.length !== 5 ? 'border-red-400' : 'border-primary-200'}`}
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm text-primary-600 mb-1 block">Ville *</label>
+                <input
+                  type="text"
+                  placeholder="Saint-Étienne"
+                  value={(step1 as any).ville || ''}
+                  onChange={e => setStep1({ ...step1, ville: e.target.value } as any)}
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${(step1 as any).ville && (step1 as any).ville.trim().length < 2 ? 'border-red-400' : 'border-primary-200'}`}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm text-primary-600 mb-1 block">Nom du référent *</label>
+              <input
+                type="text"
+                placeholder="Prénom et nom"
+                value={step1.socialWorkerName}
+                onChange={e => setStep1({ ...step1, socialWorkerName: e.target.value })}
+                className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-primary-600 mb-1 block">Email *</label>
+              <input
+                type="email"
+                placeholder="nom@structure.fr"
+                value={step1.email}
+                onChange={e => setStep1({ ...step1, email: e.target.value })}
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.email && !isEmailValid ? 'border-red-400' : 'border-primary-200'}`}
+              />
+              {step1.email && !isEmailValid && (
+                <p className="mt-1 text-xs text-red-500">Adresse email invalide (ex: nom@domaine.fr)</p>
+              )}
+            </div>
+            <div>
+              <label className="text-sm text-primary-600 mb-1 block">Téléphone *</label>
+              <input
+                type="tel"
+                placeholder="06 12 34 56 78"
+                value={step1.phone}
+                onChange={e => setStep1({ ...step1, phone: e.target.value })}
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.phone && !isPhoneValid ? 'border-red-400' : 'border-primary-200'}`}
+              />
+              {step1.phone && !isPhoneValid && (
+                <p className="mt-1 text-xs text-red-500">Numéro invalide (minimum 10 chiffres)</p>
+              )}
+            </div>
           </div>
           <div className="flex gap-3">
             <button
@@ -465,14 +684,10 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                 className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
                 required
               />
-              {step2.childBirthDate && ageValidation.age !== null && ageValidation.valid && (
-                <p className="mt-1 text-xs text-green-600">
-                  ✓ L&apos;enfant aura {ageValidation.age} ans au départ ({stay.ageMin}–{stay.ageMax} ans requis)
-                </p>
-              )}
-              {step2.childBirthDate && !ageValidation.valid && ageValidation.message && (
-                <p className="mt-1 text-xs text-orange-600 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" /> {ageValidation.message}
+              {step2.childBirthDate && calculateAge(step2.childBirthDate, selectedSession?.startDate ? new Date(selectedSession.startDate) : undefined) !== null && (
+                <p className={`mt-1 text-xs ${ageError ? 'text-red-500 font-medium' : 'text-primary-500'}`}>
+                  Âge au départ : {calculateAge(step2.childBirthDate, selectedSession?.startDate ? new Date(selectedSession.startDate) : undefined)} ans
+                  {ageError && ` • ${ageError}`}
                 </p>
               )}
             </div>
@@ -495,14 +710,30 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                 type="checkbox"
                 checked={step2.consent}
                 onChange={e => setStep2({ ...step2, consent: e.target.checked })}
-                className="w-5 h-5 mt-0.5 text-secondary rounded"
+                className="w-5 h-5 mt-0.5 text-secondary rounded shrink-0"
               />
               <span className="text-sm text-primary-600">
-                J&apos;accepte les conditions générales et autorise le traitement des données *
+                J&apos;ai lu et j&apos;accepte les{' '}
+                <a href="/cgv" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-primary" onClick={e => e.stopPropagation()}>
+                  Conditions Générales de Vente
+                </a>{' '}
+                et les{' '}
+                <a href="/cgu" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-primary" onClick={e => e.stopPropagation()}>
+                  CGU
+                </a>. Je confirme que les données de l&apos;enfant sont saisies dans le cadre de mes fonctions et avec l&apos;accord des responsables légaux. *
               </span>
             </label>
           </div>
-          {error && (
+          {ageError && (
+            <div className="p-4 bg-red-50 text-red-700 rounded-xl text-sm border border-red-200 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold">Âge incompatible avec ce séjour</p>
+                <p className="mt-1">{ageError}. Veuillez vérifier la date de naissance ou choisir un autre séjour adapté à l&apos;âge de l&apos;enfant.</p>
+              </div>
+            </div>
+          )}
+          {error && !ageError && (
             <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm">{error}</div>
           )}
           <div className="flex gap-3">
@@ -526,15 +757,15 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
       {/* Step 4: Validation */}
       {step === 4 && (
         <div className="space-y-4">
-          <h3 className="font-medium text-primary text-lg">Étape 5/5 : Validation de la réservation</h3>
+          <h3 className="font-medium text-primary text-lg">Étape 5/5 : Récapitulatif et envoi de la demande</h3>
           <div className="bg-primary-50 p-4 rounded-xl space-y-2 border border-primary-100">
             <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
               <Check className="w-4 h-4 text-green-600" /> Récapitulatif de la demande
             </h4>
             <div className="space-y-1 text-sm text-primary-700">
-              <p><span className="font-medium text-primary-500">Séjour :</span> {stay?.marketingTitle || stay?.title}</p>
+              <p><span className="font-medium text-primary-500">Séjour :</span> {stay?.marketingTitle || 'Séjour'}</p>
               <p><span className="font-medium text-primary-500">Session :</span> {formatDateLong(selectedSession?.startDate ?? '')} - {formatDateLong(selectedSession?.endDate ?? '')}</p>
-              <p><span className="font-medium text-primary-500">Ville de départ :</span> {selectedCity} {extraVille > 0 ? `(+${extraVille}€)` : '(Inclus)'}</p>
+              <p><span className="font-medium text-primary-500">Ville de départ :</span> {selectedCity === 'sans_transport' ? 'Sans transport' : selectedCity} {extraVille > 0 ? `(+${extraVille}€)` : '(Inclus)'}</p>
               <div className="border-t border-primary-200 my-2 pt-2">
                 <p><span className="font-medium text-primary-500">Enfant :</span> {step2.childFirstName} ({calculateAge(step2.childBirthDate)} ans)</p>
                 <p><span className="font-medium text-primary-500">Structure :</span> {step1.organisation} ({step1.socialWorkerName})</p>
@@ -542,10 +773,67 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             </div>
             <div className="mt-4 pt-3 border-t border-primary-200 flex items-center justify-between">
               <span className="font-bold text-primary">Total estimé</span>
-              <span className="text-xl font-bold text-secondary">{totalPrice} €</span>
+              {totalPrice !== null ? (
+                <span className="text-xl font-bold text-secondary">{totalPrice} €</span>
+              ) : (
+                <span className="text-sm text-red-500 font-medium">Prix indisponible</span>
+              )}
             </div>
           </div>
-          {error && (
+          {/* Choix mode de paiement — sélection obligatoire */}
+          <div className="space-y-2">
+            <h4 className="font-semibold text-primary text-sm">Mode de paiement *</h4>
+            {[
+              { value: 'bank_transfer', label: 'Virement bancaire', desc: 'Coordonnées IBAN communiquées par email', disabled: false },
+              { value: 'cheque', label: 'Chèque', desc: 'À l\'ordre de Groupe & Découverte', disabled: false },
+              { value: 'card', label: 'Carte bancaire', desc: 'Paiement sécurisé en ligne via Stripe', disabled: false },
+            ].map(opt => {
+              const isSelected = paymentMethod === opt.value;
+              return (
+                <label
+                  key={opt.value}
+                  className={`flex items-start gap-3 p-3 rounded-xl border-2 transition-all ${
+                    opt.disabled
+                      ? 'border-primary-100 bg-primary-50 opacity-50 cursor-not-allowed'
+                      : isSelected
+                      ? 'border-secondary bg-secondary/5 ring-2 ring-secondary/20 cursor-pointer'
+                      : 'border-primary-200 hover:border-primary-300 cursor-pointer'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
+                    isSelected ? 'border-secondary bg-secondary' : 'border-primary-300'
+                  }`}>
+                    {isSelected && <Check className="w-3 h-3 text-white" />}
+                  </div>
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value={opt.value}
+                    checked={isSelected}
+                    disabled={opt.disabled}
+                    onChange={() => !opt.disabled && setPaymentMethod(opt.value as 'card' | 'bank_transfer' | 'cheque')}
+                    className="sr-only"
+                  />
+                  <div>
+                    <div className="font-medium text-sm text-primary-800">{opt.label}</div>
+                    <div className="text-xs text-primary-500">{opt.desc}</div>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+
+          {totalPrice === null && (
+            <div className="p-3 bg-amber-50 text-amber-700 rounded-xl text-sm border border-amber-200 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" /> Le tarif n'a pas pu être calculé. Veuillez réessayer ou contacter l'équipe.
+            </div>
+          )}
+          {ageError && (
+            <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" /> {ageError}
+            </div>
+          )}
+          {error && !ageError && (
             <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100 flex items-center gap-2">
               <AlertCircle className="w-4 h-4" /> {error}
             </div>
@@ -559,13 +847,42 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             </button>
             <button
               onClick={handleSubmit}
-              disabled={loading}
+              disabled={loading || totalPrice === null || ageError !== '' || !paymentMethod}
               className="flex-1 py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-              {loading ? 'Envoi...' : 'Confirmer'}
+              {loading ? 'Envoi...' : paymentMethod === 'card' ? 'Payer maintenant' : 'Envoyer la demande'}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Step 6: Stripe Payment Form (CardElement) */}
+      {step === 6 && stripeClientSecret && stripePromise && (
+        <div className="space-y-4">
+          <h3 className="font-medium text-primary text-lg">Paiement sécurisé</h3>
+          <div className="bg-primary-50 p-3 rounded-xl text-sm text-primary-600 flex items-center gap-2">
+            <CreditCard className="w-4 h-4" />
+            <span>Montant : <strong>{totalPrice} €</strong> — Référence : <strong>{bookingId?.slice(0, 8)?.toUpperCase()}</strong></span>
+          </div>
+          <Elements stripe={stripePromise}>
+            <StripePaymentForm
+              clientSecret={stripeClientSecret}
+              onSuccess={() => setStep(5)}
+              onError={(msg) => setError(msg)}
+            />
+          </Elements>
+          {error && (
+            <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" /> {error}
+            </div>
+          )}
+          <button
+            onClick={() => { setStep(4); setStripeClientSecret(null); }}
+            className="w-full py-2 text-sm text-primary-500 hover:text-primary hover:underline"
+          >
+            ← Choisir un autre mode de paiement
+          </button>
         </div>
       )}
 
@@ -575,17 +892,46 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Check className="w-8 h-8 text-green-600" />
           </div>
-          <h3 className="text-xl font-semibold text-primary mb-2">Réservation confirmée !</h3>
+          <h3 className="text-xl font-semibold text-primary mb-2">
+            {paymentMethod === 'card' ? 'Réservation confirmée !' : 'Demande enregistrée'}
+          </h3>
           <p className="text-primary-600 mb-4">
-            Votre demande pour <strong>{stay?.marketingTitle || stay?.title}</strong> a été enregistrée.
+            Votre demande pour <strong>{stay?.marketingTitle || 'Séjour'}</strong> a bien été enregistrée.
+            {paymentMethod !== 'card' && (
+              <span className="block mt-1 text-sm text-primary-500">Elle sera confirmée dès réception de votre règlement.</span>
+            )}
           </p>
           <div className="bg-primary-50 p-4 rounded-xl text-left text-sm space-y-1">
-            <p><strong>Référence :</strong> {bookingId}</p>
+            <p><strong>Référence :</strong> {bookingId?.slice(0, 8)?.toUpperCase() || bookingId}</p>
             <p><strong>Session :</strong> {formatDateLong(selectedSession?.startDate ?? '')} - {formatDateLong(selectedSession?.endDate ?? '')}</p>
-            <p><strong>Ville :</strong> {selectedCity}</p>
+            <p><strong>Ville :</strong> {selectedCity === 'sans_transport' ? 'Sans transport (par vos soins)' : selectedCity}</p>
             <p><strong>Enfant :</strong> {step2.childFirstName} (né le {new Date(step2.childBirthDate).toLocaleDateString('fr-FR')})</p>
             <p><strong>Contact :</strong> {step1.email}</p>
+            <p><strong>Mode de paiement :</strong> {paymentMethod === 'bank_transfer' ? 'Virement bancaire' : paymentMethod === 'cheque' ? 'Chèque' : 'Carte bancaire'}</p>
           </div>
+
+          {/* Instructions paiement selon mode choisi */}
+          {paymentMethod === 'bank_transfer' && (
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-left text-sm">
+              <h4 className="font-semibold text-blue-800 mb-2">Instructions de virement</h4>
+              <p className="text-blue-700 text-xs">Les coordonnées bancaires (IBAN) vous ont été envoyées par email. Veuillez effectuer le virement en indiquant votre référence <strong>{bookingId?.slice(0, 8)?.toUpperCase()}</strong> en libellé.</p>
+              <p className="text-blue-600 text-xs mt-2 font-medium">Notre équipe vous contactera par email pour valider l&apos;inscription après réception du règlement.</p>
+            </div>
+          )}
+          {paymentMethod === 'cheque' && (
+            <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-left text-sm">
+              <h4 className="font-semibold text-amber-800 mb-2">Instructions chèque</h4>
+              <p className="text-amber-700 text-xs">Merci d&apos;adresser votre chèque à l&apos;ordre de <strong>Groupe &amp; Découverte</strong>, en indiquant la référence <strong>{bookingId?.slice(0, 8)?.toUpperCase()}</strong> au dos. L&apos;adresse d&apos;envoi vous a été communiquée par email.</p>
+              <p className="text-amber-700 text-xs mt-2 font-medium">Notre équipe vous contactera par email pour valider l&apos;inscription après réception du règlement.</p>
+            </div>
+          )}
+          {paymentMethod === 'card' && (
+            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl text-left text-sm">
+              <h4 className="font-semibold text-green-800 mb-2">Paiement confirmé</h4>
+              <p className="text-green-700 text-xs">Votre paiement par carte bancaire a bien été accepté. Un email de confirmation vous a été envoyé avec tous les détails.</p>
+            </div>
+          )}
+
           <button
             onClick={() => router.push(`/sejour/${stay.slug}`)}
             className="mt-6 px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary-600 transition-colors"

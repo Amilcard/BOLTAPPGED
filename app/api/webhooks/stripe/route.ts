@@ -1,19 +1,27 @@
+export const dynamic = 'force-dynamic';
 import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { headers } from 'next/headers';
+import { sendPaymentConfirmedAdminNotification } from '@/lib/email';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-01-28.clover',
-});
+function getStripe() {
+  return new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: '2026-01-28.clover',
+  });
+}
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 export async function POST(req: NextRequest) {
   try {
+    const stripe = getStripe();
+    const supabase = getSupabase();
     const body = await req.text();
     const headersList = await headers();
     const sig = headersList.get('stripe-signature');
@@ -25,12 +33,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ✅ CRITIQUE : Vérifier la signature Stripe
+    // Vérifier la signature Stripe
     let event: Stripe.Event;
     try {
       event = stripe.webhooks.constructEvent(
         body,
-        sig,
+        sig as string,
         process.env.STRIPE_WEBHOOK_SECRET!
       );
     } catch (err: any) {
@@ -39,6 +47,18 @@ export async function POST(req: NextRequest) {
         { error: `Webhook Error: ${err.message}` },
         { status: 400 }
       );
+    }
+
+    // IDEMPOTENCY : vérifier si cet event a déjà été traité
+    const { data: existingEvent } = await supabase
+      .from('gd_processed_events')
+      .select('id')
+      .eq('event_id', event.id)
+      .single();
+
+    if (existingEvent) {
+      console.log(`Event ${event.id} already processed, skipping`);
+      return NextResponse.json({ received: true, skipped: true });
     }
 
     // Traiter les événements
@@ -52,7 +72,32 @@ export async function POST(req: NextRequest) {
           break;
         }
 
-        // ✅ SEUL endroit où payment_status devient 'paid'
+        // VÉRIFICATION MONTANT : comparer Stripe vs DB
+        const { data: inscription } = await supabase
+          .from('gd_inscriptions')
+          .select('price_total, referent_nom, referent_email, jeune_prenom, jeune_nom, sejour_slug, dossier_ref')
+          .eq('id', inscriptionId)
+          .single();
+
+        if (inscription != null) {
+          const stripeAmountEur = paymentIntent.amount / 100;
+          const dbAmount = (inscription as NonNullable<typeof inscription>).price_total ?? 0;
+          if (Math.abs(stripeAmountEur - dbAmount) > 1) {
+            console.error('AMOUNT_MISMATCH in webhook:', {
+              stripe: stripeAmountEur,
+              db: dbAmount,
+              inscriptionId,
+              eventId: event.id,
+            });
+            await supabase
+              .from('gd_inscriptions')
+              .update({ payment_status: 'amount_mismatch' })
+              .eq('id', inscriptionId);
+            break;
+          }
+        }
+
+        // Montant vérifié, marquer comme payé
         const { error } = await supabase
           .from('gd_inscriptions')
           .update({
@@ -64,10 +109,20 @@ export async function POST(req: NextRequest) {
         if (error) {
           console.error('Error updating payment status:', error);
         } else {
-          console.log(`✅ Payment succeeded for inscription ${inscriptionId}`);
-
-          // TODO: Trigger email confirmation
-          // await sendPaymentSuccessEmail(inscriptionId);
+          console.log(`Payment succeeded for inscription ${inscriptionId}`);
+          // Notification admin non-bloquante
+          if (inscription) {
+            const rec = inscription as Record<string, unknown>;
+            sendPaymentConfirmedAdminNotification({
+              inscriptionId,
+              referentNom: (rec.referent_nom as string) || '',
+              jeunePrenom: (rec.jeune_prenom as string) || '',
+              jeuneNom: (rec.jeune_nom as string) || '',
+              sejourSlug: (rec.sejour_slug as string) || '',
+              dossierRef: (rec.dossier_ref as string) || '',
+              amount: paymentIntent.amount / 100,
+            }).catch(() => {});
+          }
         }
         break;
       }
@@ -88,7 +143,7 @@ export async function POST(req: NextRequest) {
         if (error) {
           console.error('Error updating failed payment status:', error);
         } else {
-          console.log(`❌ Payment failed for inscription ${inscriptionId}`);
+          console.log(`Payment failed for inscription ${inscriptionId}`);
         }
         break;
       }
@@ -96,6 +151,16 @@ export async function POST(req: NextRequest) {
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
+
+    // IDEMPOTENCY : enregistrer l'event comme traité
+    await supabase
+      .from('gd_processed_events')
+      .insert({
+        event_id: event.id,
+        event_type: event.type,
+        processed_at: new Date().toISOString(),
+      })
+      .single();
 
     return NextResponse.json({ received: true });
   } catch (error: any) {

@@ -104,6 +104,7 @@ export default function InscriptionDetailPage() {
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
       console.error('Erreur mise a jour:', err);
+      toast('Erreur lors de l\'enregistrement');
     } finally {
       setSaving(false);
     }

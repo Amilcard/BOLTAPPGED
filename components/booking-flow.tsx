@@ -84,11 +84,6 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
 
   const selectedSession = sessions?.find(s => s?.id === selectedSessionId);
 
-  // Validation d'âge à la date du départ (même logique que booking-modal.tsx)
-  const ageValidation = step2.childBirthDate && selectedSession
-    ? validateChildAge(step2.childBirthDate, selectedSession.startDate, stay.ageMin, stay.ageMax)
-    : { valid: false, age: null, message: null };
-
   let sessionBasePrice: number | null = null;
   if (selectedSession && enrichmentSessions && enrichmentSessions.length > 0) {
     const start = new Date(selectedSession.startDate);
@@ -119,6 +114,11 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     childBirthDate: '',
     consent: false,
   });
+
+  // Validation d'âge à la date du départ (même logique que booking-modal.tsx)
+  const ageValidation = step2.childBirthDate && selectedSession
+    ? validateChildAge(step2.childBirthDate, selectedSession.startDate, stay.ageMin, stay.ageMax)
+    : { valid: false, age: null, message: null };
 
   const validSessions = sessions?.filter(s => (s?.seatsLeft ?? 0) > 0) ?? [];
   const sessionsUnique = (sessions || []).filter((s, idx, arr) => {

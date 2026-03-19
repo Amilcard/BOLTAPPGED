@@ -11,7 +11,7 @@ interface DossierInfo {
   id: string;
   jeunePrenom: string;
   jeuneNom: string;
-  jeuneDateNaissance: string;
+  jeuneDateNaissance?: string;
   sejourNom: string;
   sessionDate: string;
 }
@@ -230,7 +230,7 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                   onSave={(data, completed) => saveBloc('fiche_sanitaire', data, completed)}
                   jeunePrenom={inscription.jeunePrenom}
                   jeuneNom={inscription.jeuneNom}
-                  jeuneDateNaissance={inscription.jeuneDateNaissance}
+                  jeuneDateNaissance={inscription.jeuneDateNaissance ?? ''}
                 />
               )}
 

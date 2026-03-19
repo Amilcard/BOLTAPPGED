@@ -8,6 +8,7 @@ import {
   FileCheck, FileClock, Download, Save, Loader2,
 } from 'lucide-react';
 import { InscriptionSupabase } from '@/lib/types';
+import { useAdminUI } from '@/components/admin/admin-ui';
 
 const STATUS_OPTIONS = [
   { value: 'en_attente', label: 'En attente', color: 'bg-blue-100 text-blue-700' },
@@ -30,6 +31,7 @@ const DOC_STATUS_OPTIONS = [
 
 export default function InscriptionDetailPage() {
   const router = useRouter();
+  const { confirm, toast } = useAdminUI();
   const params = useParams();
   const inscriptionId = params.id as string;
 
@@ -97,23 +99,24 @@ export default function InscriptionDetailPage() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!insc) return;
-    if (!window.confirm(`Supprimer definitivement l'inscription de ${insc.jeune_prenom} ${insc.jeune_nom} ?`)) return;
-    try {
-      const res = await fetch(`/api/admin/inscriptions/${inscriptionId}`, {
-        method: 'DELETE',
-        headers: authHeaders(),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        window.alert(`Erreur: ${err?.error?.message || res.status}`);
-        return;
+    confirm(`Supprimer définitivement l'inscription de ${insc.jeune_prenom} ${insc.jeune_nom} ? Cette action est irréversible.`, async () => {
+      try {
+        const res = await fetch(`/api/admin/inscriptions/${inscriptionId}`, {
+          method: 'DELETE',
+          headers: authHeaders(),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          toast(`Erreur : ${err?.error?.message || res.status}`);
+          return;
+        }
+        router.replace('/admin/demandes');
+      } catch {
+        toast('Erreur réseau');
       }
-      router.replace('/admin/demandes');
-    } catch {
-      window.alert('Erreur reseau');
-    }
+    });
   };
 
   if (loading || !insc) {

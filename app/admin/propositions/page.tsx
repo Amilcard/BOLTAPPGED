@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { getStoredAuth } from '@/lib/utils';
 import { Plus, FileDown, Check, X, Clock, Send, Loader2, Receipt, Eye, Download, Trash2 } from 'lucide-react';
+import { useAdminUI } from '@/components/admin/admin-ui';
 
 interface Sejour {
   slug: string;
@@ -51,6 +52,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string; icon: typeof
 };
 
 export default function PropositionsPage() {
+  const { confirm, toast } = useAdminUI();
   const [propositions, setPropositions] = useState<Proposition[]>([]);
   const [sejours, setSejours] = useState<Sejour[]>([]);
   const [sessions, setSessions] = useState<SessionPrice[]>([]);
@@ -187,25 +189,26 @@ export default function PropositionsPage() {
     return { base, transport, encadrement: encadr, total: base + transport + encadr };
   };
 
-  const deleteProposition = async (e: React.MouseEvent, id: string, enfant: string) => {
+  const deleteProposition = (e: React.MouseEvent, id: string, enfant: string) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!window.confirm(`Supprimer la proposition de ${enfant} ?`)) return;
-    try {
-      const res = await fetch('/api/admin/propositions', {
-        method: 'DELETE',
-        headers: authHeaders(),
-        body: JSON.stringify({ id }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        window.alert(`Erreur: ${err?.error || res.status}`);
-        return;
+    confirm(`Supprimer la proposition de ${enfant} ? Cette action est irréversible.`, async () => {
+      try {
+        const res = await fetch('/api/admin/propositions', {
+          method: 'DELETE',
+          headers: authHeaders(),
+          body: JSON.stringify({ id }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          toast(`Erreur : ${err?.error || res.status}`);
+          return;
+        }
+        loadPropositions();
+      } catch {
+        toast('Erreur réseau');
       }
-      loadPropositions();
-    } catch (err) {
-      window.alert('Erreur reseau');
-    }
+    });
   };
 
   const updateStatus = async (id: string, status: string) => {

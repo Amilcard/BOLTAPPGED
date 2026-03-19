@@ -24,7 +24,7 @@ function DossierBadge({ completude }: { completude: any }) {
   if (!completude) {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
-        <FileClock size={12} /> Non commence
+        <FileClock size={12} /> Non commencé
       </span>
     );
   }
@@ -134,7 +134,7 @@ export default function AdminDemandes() {
   return (
     <div>
       <h1 className="text-3xl font-bold text-primary mb-8">
-        Inscriptions ({inscriptions.length})
+        Demandes ({inscriptions.length})
       </h1>
 
       {inscriptions.length === 0 ? (

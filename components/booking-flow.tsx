@@ -989,12 +989,23 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             </div>
           )}
 
-          <button
-            onClick={() => router.push(`/sejour/${stay.slug}`)}
-            className="mt-6 px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary-600 transition-colors"
-          >
-            Retour au séjour
-          </button>
+          <div className="mt-6 flex flex-col gap-3">
+            <p className="text-xs text-primary-500 text-center">
+              Un email avec le lien de votre espace de suivi vous a été envoyé à <strong>{step1.email}</strong>.
+            </p>
+            <button
+              onClick={() => router.push(`/sejour/${stay.slug}`)}
+              className="px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary-600 transition-colors"
+            >
+              Retour au séjour
+            </button>
+            <button
+              onClick={() => router.push('/')}
+              className="px-6 py-3 border border-primary-200 text-primary rounded-full font-medium hover:bg-primary-50 transition-colors"
+            >
+              Découvrir d'autres séjours
+            </button>
+          </div>
         </div>
       )}
     </div>

@@ -64,6 +64,7 @@ export default function AdminDemandes() {
   const { confirm, toast } = useAdminUI();
   const [inscriptions, setInscriptions] = useState<InscriptionSupabase[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   const fetchInscriptions = async () => {
     try {
@@ -144,13 +145,30 @@ export default function AdminDemandes() {
     );
   }
 
+  const filtered = search.trim()
+    ? inscriptions.filter(i =>
+        `${i.referent_nom} ${i.organisation} ${i.referent_email} ${i.jeune_prenom} ${i.jeune_nom}`
+          .toLowerCase()
+          .includes(search.toLowerCase())
+      )
+    : inscriptions;
+
   return (
     <div>
-      <h1 className="text-3xl font-bold text-primary mb-8">
-        Demandes ({inscriptions.length})
-      </h1>
+      <div className="flex items-center justify-between mb-8 gap-4">
+        <h1 className="text-3xl font-bold text-primary">
+          Demandes ({filtered.length}{search ? ` / ${inscriptions.length}` : ''})
+        </h1>
+        <input
+          type="text"
+          placeholder="Rechercher un référent, enfant, structure…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="px-4 py-2 border border-gray-200 rounded-xl text-sm w-72 focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
+      </div>
 
-      {inscriptions.length === 0 ? (
+      {filtered.length === 0 ? (
         <div className="bg-white rounded-xl shadow p-8 text-center text-gray-500">
           Aucune inscription pour le moment.
         </div>
@@ -173,7 +191,7 @@ export default function AdminDemandes() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {inscriptions.map((insc) => {
+                {filtered.map((insc) => {
                   const statusStyle = getStatusStyle(insc.status);
                   const paymentStyle = getPaymentStyle(insc.payment_status);
                   return (

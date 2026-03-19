@@ -50,7 +50,15 @@ export async function POST(req: NextRequest) {
       { expiresIn: '8h' }
     );
 
-    return NextResponse.json({ token });
+    const response = NextResponse.json({ token });
+    response.cookies.set('gd_session', token, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 60 * 60 * 8,
+    });
+    return response;
   } catch (error) {
     console.error('[auth/login] Erreur:', error);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });

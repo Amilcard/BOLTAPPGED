@@ -97,6 +97,7 @@ export async function GET(
         id: d.id,
         dossierRef: d.dossier_ref,
         sejourNom: stayNames[slug] || slug.replace(/-/g, ' '),
+        sejourSlug: slug,
         sessionDate: d.session_date,
         cityDeparture: d.city_departure,
         jeunePrenom: d.jeune_prenom,

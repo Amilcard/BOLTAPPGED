@@ -10,6 +10,7 @@ interface DossierSuivi {
   id: string;
   dossierRef?: string;
   sejourNom: string;
+  sejourSlug: string;
   sessionDate: string;
   cityDeparture: string;
   jeunePrenom: string;
@@ -149,12 +150,20 @@ export default function SuiviProPage() {
               {data?.referent?.nom ? `Mon espace de suivi — ${data.referent.nom}` : 'Mon espace de suivi'}
             </p>
           </div>
-          <button
-            onClick={() => window.print()}
-            className="print:hidden px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition"
-          >
-            Imprimer le récapitulatif
-          </button>
+          <div className="print:hidden flex items-center gap-2">
+            <a
+              href="/"
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition"
+            >
+              Découvrir des séjours
+            </a>
+            <button
+              onClick={() => window.print()}
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition"
+            >
+              Imprimer
+            </button>
+          </div>
         </div>
       </header>
 
@@ -220,9 +229,17 @@ export default function SuiviProPage() {
                     </h2>
                     <p className="text-sm text-gray-500">{d.sejourNom}</p>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Badge {...st} />
                     <Badge {...ps} />
+                    {d.sejourSlug && (
+                      <a
+                        href={`/sejour/${d.sejourSlug}`}
+                        className="print:hidden text-xs text-primary hover:underline font-medium"
+                      >
+                        Voir ce séjour →
+                      </a>
+                    )}
                   </div>
                 </div>
 

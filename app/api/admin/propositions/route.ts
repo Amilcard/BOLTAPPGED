@@ -149,15 +149,25 @@ export async function PATCH(req: NextRequest) {
 
     const supabase = getSupabase();
     const body = await req.json();
-    const { id, ...updates } = body;
+    const { id, status, note } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'ID manquant.' }, { status: 400 });
     }
 
-    // Si validation, ajouter la date
-    if (updates.status === 'validee') {
-      updates.validated_at = new Date().toISOString();
+    const validStatuses = ['brouillon', 'envoyee', 'validee', 'refusee'];
+    if (status !== undefined && !validStatuses.includes(status)) {
+      return NextResponse.json({ error: `Statut invalide. Valeurs : ${validStatuses.join(', ')}` }, { status: 400 });
+    }
+
+    // Whitelist stricte des champs modifiables
+    const updates: Record<string, unknown> = {};
+    if (status !== undefined) updates.status = status;
+    if (note !== undefined) updates.note = typeof note === 'string' ? note : null;
+    if (status === 'validee') updates.validated_at = new Date().toISOString();
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'Aucun champ à mettre à jour.' }, { status: 400 });
     }
 
     const { data, error } = await supabase

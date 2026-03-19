@@ -138,8 +138,8 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
           <p className="text-sm text-primary">
             <span className="font-medium">
               {saved
-                ? `C'est noté ! Pour que ton·ta référent·e le sache, clique sur "Envoyer à mon·ma référent·e".`
-                : 'Note ce séjour dans tes souhaits pour en parler avec ton·ta référent·e.'
+                ? `C'est noté ! Pour que ton accompagnant·e le sache, clique sur "Envoyer à mon accompagnant·e".`
+                : 'Note ce séjour dans tes souhaits pour en parler avec ton accompagnant·e.'
               }
             </span>
           </p>
@@ -178,7 +178,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
         {/* Prénom référent field (P0: Personnalisation) */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-primary mb-2">
-            Prénom de ton·ta référent·e <span className="text-primary-400 font-normal">(optionnel)</span>
+            Prénom de ton accompagnant·e <span className="text-primary-400 font-normal">(optionnel)</span>
           </label>
           <input
             type="text"
@@ -199,7 +199,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
         {!emailLocked && (
           <div className="mb-4">
             <label className="block text-sm font-medium text-primary mb-2">
-              Email de ton·ta référent·e <span className="text-red-500">*</span>
+              Email de ton accompagnant·e (éducateur·trice, animateur·trice…) <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
@@ -292,7 +292,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
               onClick={handleShare}
               className="w-full py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary/90 transition"
             >
-              <Share2 className="w-4 h-4" /> Envoyer à mon·ma référent·e
+              <Share2 className="w-4 h-4" /> Envoyer à mon accompagnant·e
             </button>
             <Link
               href="/envies"
@@ -339,7 +339,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
                 <h3 className="font-semibold text-primary">Ouverture de l'app mail</h3>
               </div>
               <p className="text-sm text-primary-600 mb-6">
-                Ton téléphone va ouvrir ton application mail pour envoyer ce séjour à ton·ta référent·e.
+                Ton téléphone va ouvrir ton application mail pour envoyer ce séjour à ton accompagnant·e.
               </p>
               <div className="flex gap-3">
                 <button

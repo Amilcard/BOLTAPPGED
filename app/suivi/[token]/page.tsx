@@ -366,6 +366,10 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  // State contrôlé pour éviter la désynchronisation UI/DB (defaultValue non réactif)
+  const [prefNouvelles, setPrefNouvelles] = useState(dossier.prefNouvellesSejour || 'si_besoin');
+  const [prefCanal, setPrefCanal] = useState(dossier.prefCanalContact || 'email');
+  const [prefBilan, setPrefBilan] = useState(dossier.prefBilanFinSejour || false);
 
   const patchField = async (field: string, value: unknown) => {
     setSaving(true);
@@ -423,9 +427,9 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
             </label>
             <select
               className="text-sm border rounded-lg px-3 py-1.5 w-full sm:w-auto"
-              defaultValue={dossier.prefNouvellesSejour || 'si_besoin'}
+              value={prefNouvelles}
               disabled={saving}
-              onChange={(e) => patchField('pref_nouvelles_sejour', e.target.value)}
+              onChange={(e) => { setPrefNouvelles(e.target.value); patchField('pref_nouvelles_sejour', e.target.value); }}
             >
               <option value="oui">Oui, je souhaite être tenu informé</option>
               <option value="si_besoin">Uniquement si nécessaire</option>
@@ -440,9 +444,9 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
             </label>
             <select
               className="text-sm border rounded-lg px-3 py-1.5 w-full sm:w-auto"
-              defaultValue={dossier.prefCanalContact || 'email'}
+              value={prefCanal}
               disabled={saving}
-              onChange={(e) => patchField('pref_canal_contact', e.target.value)}
+              onChange={(e) => { setPrefCanal(e.target.value); patchField('pref_canal_contact', e.target.value); }}
             >
               <option value="email">Email</option>
               <option value="telephone">Téléphone</option>
@@ -454,9 +458,9 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
-              defaultChecked={dossier.prefBilanFinSejour || false}
+              checked={prefBilan}
               disabled={saving}
-              onChange={(e) => patchField('pref_bilan_fin_sejour', e.target.checked)}
+              onChange={(e) => { setPrefBilan(e.target.checked); patchField('pref_bilan_fin_sejour', e.target.checked); }}
               className="w-4 h-4 rounded border-gray-300"
             />
             <span className="text-sm text-gray-700">Je souhaite un bilan écrit en fin de séjour</span>

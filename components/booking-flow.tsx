@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, ChevronRight, ChevronLeft, Loader2, Info, AlertCircle, Calendar, MapPin } from 'lucide-react';
 import type { Stay, StaySession } from '@/lib/types';
-import { formatDate, formatDateLong } from '@/lib/utils';
+import { formatDate, formatDateLong, validateChildAge } from '@/lib/utils';
 
 interface DepartureCity {
   city: string;
@@ -84,6 +84,11 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
 
   const selectedSession = sessions?.find(s => s?.id === selectedSessionId);
 
+  // Validation d'âge à la date du départ (même logique que booking-modal.tsx)
+  const ageValidation = step2.childBirthDate && selectedSession
+    ? validateChildAge(step2.childBirthDate, selectedSession.startDate, stay.ageMin, stay.ageMax)
+    : { valid: false, age: null, message: null };
+
   let sessionBasePrice: number | null = null;
   if (selectedSession && enrichmentSessions && enrichmentSessions.length > 0) {
     const start = new Date(selectedSession.startDate);
@@ -128,7 +133,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   );
 
   const isStep1Valid = step1.addresseStructure && step1.addresseStructure.trim().length >= 10 && step1.organisation && step1.socialWorkerName && step1.email && step1.phone;
-  const isStep2Valid = step2.childSex && step2.childFirstName && step2.childBirthDate && step2.consent;
+  const isStep2Valid = step2.childSex && step2.childFirstName && step2.childBirthDate && ageValidation.valid && step2.consent;
 
   const currentYear = new Date().getFullYear();
 
@@ -460,9 +465,14 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                 className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
                 required
               />
-              {step2.childBirthDate && calculateAge(step2.childBirthDate) !== null && (
-                <p className="mt-1 text-xs text-primary-500">
-                  Âge : {calculateAge(step2.childBirthDate)} ans
+              {step2.childBirthDate && ageValidation.age !== null && ageValidation.valid && (
+                <p className="mt-1 text-xs text-green-600">
+                  ✓ L&apos;enfant aura {ageValidation.age} ans au départ ({stay.ageMin}–{stay.ageMax} ans requis)
+                </p>
+              )}
+              {step2.childBirthDate && !ageValidation.valid && ageValidation.message && (
+                <p className="mt-1 text-xs text-orange-600 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" /> {ageValidation.message}
                 </p>
               )}
             </div>

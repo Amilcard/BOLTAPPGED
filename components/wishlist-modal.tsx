@@ -66,22 +66,50 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
   if (!isOpen) return null;
 
   const handleSaveMotivation = async () => {
-    if (isSubmitting) return; // P0: Anti-double-submit
+    if (isSubmitting) return;
 
     const finalEmail = emailLocked ? defaultEmail : emailStructure;
 
-    // Vérifier la limite de 3 demandes
-    const check = canAddRequest(prenom.trim(), finalEmail);
-    if (!check.allowed) {
-      setError(check.message || 'Limite atteinte');
-      return;
-    }
-
     setIsSubmitting(true);
-    updateWishlistMotivation(staySlug, motivation.trim() || null, prenom.trim(), finalEmail);
-    setSaved(true);
     setError('');
-    setIsSubmitting(false);
+
+    try {
+      // Récupérer ou générer le kid_token (UUID anonyme persistant)
+      let kidToken = localStorage.getItem('gd_kid_token');
+      if (!kidToken) {
+        kidToken = crypto.randomUUID();
+        localStorage.setItem('gd_kid_token', kidToken);
+      }
+
+      // Enregistrer côté serveur
+      const res = await fetch('/api/souhaits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kidToken,
+          kidPrenom: prenom.trim(),
+          sejourSlug: staySlug,
+          sejourTitre: stayTitle,
+          sejourUrl: stayUrl,
+          motivation: motivation.trim(),
+          educateurEmail: finalEmail,
+          educateurPrenom: prenomReferent.trim() || undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || 'Erreur serveur');
+      }
+
+      // Garder aussi le localStorage pour compatibilité /envies
+      updateWishlistMotivation(staySlug, motivation.trim() || null, prenom.trim(), finalEmail);
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleShare = async () => {

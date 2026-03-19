@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Heart, Share2, X, Compass, Check, AlertCircle, Info } from 'lucide-react';
+import { Heart, Share2, X, Compass, Check, AlertCircle, Info, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { updateWishlistMotivation, canAddRequest } from '@/lib/utils';
 
@@ -278,7 +278,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
             className="w-full mb-4 py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
-              <>Enregistrement...</>
+              <><Loader2 className="w-4 h-4 animate-spin" /> Enregistrement...</>
             ) : (
               'Enregistrer ce souhait'
             )}

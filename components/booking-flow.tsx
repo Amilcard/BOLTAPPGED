@@ -6,7 +6,7 @@ import { Check, ChevronRight, ChevronLeft, Loader2, Info, AlertCircle, Calendar,
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import type { Stay, StaySession } from '@/lib/types';
-import { formatDate, formatDateLong } from '@/lib/utils';
+import { formatDate, formatDateLong, validateChildAge } from '@/lib/utils';
 
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
   ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
@@ -184,7 +184,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     const day = String(start.getDate()).padStart(2, '0');
     const month = String(start.getMonth() + 1).padStart(2, '0');
     const dateStr = `${day}/${month}`;
-    const found = enrichmentSessions.find((s: any) => s.date_text?.includes(dateStr));
+    const found = enrichmentSessions.find((s: SessionPriceData) => s.date_text?.includes(dateStr));
     if (found) {
       sessionBasePrice = found.promo_price_eur || found.base_price_eur;
     } else {
@@ -192,7 +192,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     }
   }
 
-  const selectedCityData = departureCities.find((dc: any) => dc.city === selectedCity);
+  const selectedCityData = departureCities.find((dc: DepartureCity) => dc.city === selectedCity);
   const extraVille = selectedCityData?.extra_eur ?? 0;
   // Fallback: utiliser stay.priceFrom si enrichmentSessions vide (données manquantes)
   const totalPrice = sessionBasePrice !== null ? sessionBasePrice + extraVille : (stay.priceFrom ? stay.priceFrom + extraVille : null);
@@ -245,8 +245,8 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     return idx === arr.findIndex(x => `${x.startDate}-${x.endDate}` === key);
   });
 
-  const standardDepartureCities = departureCities.filter((dc: any) =>
-    STANDARD_CITIES.some((std: string) =>
+  const standardDepartureCities = departureCities.filter((dc: DepartureCity) =>
+    STANDARD_CITIES.some(std =>
       dc.city.toLowerCase().includes(std.toLowerCase())
     ) || dc.city === 'sans_transport'
   );
@@ -408,7 +408,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                 const day = String(start.getDate()).padStart(2, '0');
                 const month = String(start.getMonth() + 1).padStart(2, '0');
                 const dateStr = `${day}/${month}`;
-                const found = enrichmentSessions.find((s: any) => s.date_text?.includes(dateStr));
+                const found = enrichmentSessions.find((s: SessionPriceData) => s.date_text?.includes(dateStr));
                 if (found && (found.base_price_eur || found.promo_price_eur)) {
                   displayPrice = `${found.promo_price_eur || found.base_price_eur}€`;
                 }

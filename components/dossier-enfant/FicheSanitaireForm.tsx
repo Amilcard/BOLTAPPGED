@@ -8,7 +8,7 @@ interface Props {
   onSave: (data: Record<string, unknown>, completed?: boolean) => Promise<boolean>;
   jeunePrenom: string;
   jeuneNom: string;
-  jeuneDateNaissance: string;
+  jeuneDateNaissance?: string;
 }
 
 const VACCINS = [

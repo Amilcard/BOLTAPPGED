@@ -14,7 +14,7 @@ import {
   Star,
   Calendar,
   Users,
-  Ruler, // Ensure Ruler is imported if used, otherwise remove it based on usage
+  Ruler,
   ChevronRight,
   ChevronDown,
   Home,
@@ -23,7 +23,8 @@ import {
   ArrowLeft,
   X,
   Clock,
-  FileText,   // Icône consultation PDF (remplace Download)
+  FileText,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { getReassurancePoints, getThemeStyle } from '@/config/premium-themes';
 import type { Stay, StaySession } from '@/lib/types';
@@ -48,6 +49,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
   const router = useRouter();
   const [showWishlistModal, setShowWishlistModal] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
+  const isAlreadyInWishlist = mounted && !!getWishlistMotivation(slug);
   const [showDepartures, setShowDepartures] = useState(false);
   const [showFullProgramme, setShowFullProgramme] = useState(false);
 
@@ -248,7 +250,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   />
                 ) : (
                    <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
-                     <Users className="w-8 h-8 opacity-20" />
+                     <ImageIcon className="w-8 h-8 opacity-20" />
                    </div>
                 )}
               </div>
@@ -262,7 +264,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   />
                 ) : (
                    <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
-                      <Home className="w-8 h-8 opacity-20" />
+                      <ImageIcon className="w-8 h-8 opacity-20" />
                    </div>
                 )}
               </div>
@@ -276,7 +278,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   />
                 ) : (
                    <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
-                      <Shield className="w-8 h-8 opacity-20" />
+                      <ImageIcon className="w-8 h-8 opacity-20" />
                    </div>
                 )}
               </div>
@@ -290,7 +292,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   />
                 ) : (
                    <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
-                      <MapPin className="w-8 h-8 opacity-20" />
+                      <ImageIcon className="w-8 h-8 opacity-20" />
                    </div>
                 )}
                 {stay.images.length > 5 && (
@@ -604,6 +606,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                       type="button"
                       onClick={() => setShowDepartures(true)}
                       className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-full hover:bg-gray-200 transition-colors"
+                      aria-label={`Voir toutes les villes de départ (+${enrichment.departures.length - 6} autres)`}
                     >
                       +{enrichment.departures.length - 6}
                     </button>
@@ -627,7 +630,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
           {/* === SIDEBAR: SESSIONS & CTA === */}
           <div className="lg:col-span-1">
             <div className="sticky top-6 bg-white rounded-xl shadow-brand p-5">
-              <h3 className="font-bold text-gray-900 mb-1 text-sm">Sessions disponibles</h3>
+              <h3 className="font-bold text-gray-900 mb-1 text-base">Sessions disponibles</h3>
               {!isKids && (
                 <p className="text-xs text-primary-500 mb-3">Sélectionnez une session et une ville pour accéder à l'inscription.</p>
               )}
@@ -736,7 +739,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   className="w-full"
                   size="lg"
                 >
-                  Ajouter à mes souhaits
+                  {isAlreadyInWishlist ? 'Modifier mon souhait' : 'Ajouter à mes souhaits'}
                 </Button>
               ) : (
                 <Button

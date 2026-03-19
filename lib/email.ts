@@ -248,3 +248,63 @@ export async function sendStatusChangeEmail(
     return null;
   }
 }
+
+// ============================================================
+// Notification souhait kid → éducateur
+// ============================================================
+
+interface SouhaitEmailData {
+  educateurEmail: string;
+  educateurPrenom?: string;
+  kidPrenom: string;
+  sejourTitre: string;
+  motivation: string;
+  lienReponse: string;
+}
+
+export async function sendSouhaitNotificationEducateur(data: SouhaitEmailData) {
+  const apiKey = process.env.EMAIL_SERVICE_API_KEY;
+  if (!apiKey || apiKey === 'YOUR_EMAIL_API_KEY_HERE') return null;
+
+  try {
+    const resend = getResend();
+    const prenom = data.educateurPrenom ? ` ${data.educateurPrenom}` : '';
+    return await resend.emails.send({
+      from: FROM_EMAIL,
+      to: data.educateurEmail,
+      subject: `${data.kidPrenom} souhaite partir en séjour — ${data.sejourTitre}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto;">
+          <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 20px;">Groupe &amp; Découverte</h1>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+            <h2 style="color: #2a383f;">Un souhait de séjour à traiter</h2>
+            <p>Bonjour${prenom},</p>
+            <p><strong>${data.kidPrenom}</strong> a noté un souhait pour le séjour :</p>
+            <div style="background: #f9fafb; border-left: 4px solid #e07a5f; padding: 16px; margin: 16px 0; border-radius: 4px;">
+              <p style="margin: 0 0 8px; font-weight: bold; color: #2a383f;">${data.sejourTitre}</p>
+              <p style="margin: 0; color: #4b5563; font-style: italic;">&laquo; ${data.motivation} &raquo;</p>
+            </div>
+            <p>Cliquez sur le bouton ci-dessous pour consulter ce souhait et y répondre :</p>
+            <div style="text-align: center; margin: 24px 0;">
+              <a href="${data.lienReponse}"
+                 style="display: inline-block; background: #e07a5f; color: white; padding: 14px 28px; border-radius: 9999px; text-decoration: none; font-weight: bold; font-size: 15px;">
+                Voir le souhait et répondre
+              </a>
+            </div>
+            <p style="color: #9ca3af; font-size: 12px; margin-top: 24px;">
+              Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br/>
+              <span style="color: #6b7280;">${data.lienReponse}</span>
+            </p>
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
+            <p style="color: #9ca3af; font-size: 12px;">Groupe &amp; Découverte — Séjours de vacances pour enfants et adolescents</p>
+          </div>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error('[EMAIL] Erreur envoi souhait éducateur:', error);
+    return null;
+  }
+}

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Check, ChevronRight, ChevronLeft, Loader2, Shield, Star, Info, AlertCircle } from 'lucide-react';
 import type { Stay, StaySession } from '@/lib/types';
-import { formatDate, formatDateLong, validateChildAge } from '@/lib/utils';
+import { formatDate, formatDateLong, validateChildAge, calculateAgeAtDate } from '@/lib/utils';
 
 interface DepartureCity {
   city: string;
@@ -166,7 +166,9 @@ export function BookingModal({ stay, sessions, departureCities = [], enrichmentS
     ) || dc.city === 'sans_transport'
   );
 
-  const isStep1Valid = step1.organisation && step1.socialWorkerName && step1.email && step1.phone;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRegex = /^[\d\s\+\-\.()]{10,}$/;
+  const isStep1Valid = step1.organisation && step1.socialWorkerName && emailRegex.test(step1.email) && phoneRegex.test(step1.phone);
   // Step2 valide si: prénom rempli, date de naissance valide, âge OK, consentement
   const isStep2Valid = step2.childFirstName && step2.childBirthDate && ageValidation.valid && step2.consent;
 
@@ -640,7 +642,7 @@ export function BookingModal({ stay, sessions, departureCities = [], enrichmentS
                   <p><span className="font-medium text-primary-500">Session :</span> {formatDateLong(selectedSession?.startDate ?? '')} - {formatDateLong(selectedSession?.endDate ?? '')}</p>
                   <p><span className="font-medium text-primary-500">Ville de départ :</span> {selectedCity} {extraVille > 0 ? `(+${extraVille}€)` : '(Inclus)'}</p>
                   <div className="border-t border-primary-200 my-2 pt-2">
-                    <p><span className="font-medium text-primary-500">Enfant :</span> {step2.childFirstName} ({calculateAge(step2.childBirthDate)} ans)</p>
+                    <p><span className="font-medium text-primary-500">Enfant :</span> {step2.childFirstName} ({calculateAgeAtDate(step2.childBirthDate, selectedSession?.startDate ?? new Date().toISOString())} ans au départ)</p>
                     <p><span className="font-medium text-primary-500">Structure :</span> {step1.organisation} ({step1.socialWorkerName})</p>
                   </div>
                 </div>

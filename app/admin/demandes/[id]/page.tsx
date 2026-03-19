@@ -41,6 +41,7 @@ export default function InscriptionDetailPage() {
   const [saved, setSaved] = useState(false);
   const [dossier, setDossier] = useState<any>(null);
   const [dossierLoading, setDossierLoading] = useState(false);
+  const [autresInscriptions, setAutresInscriptions] = useState<InscriptionSupabase[]>([]);
 
   const authHeaders = () => {
     const token = localStorage.getItem(STORAGE_KEYS.AUTH);
@@ -53,7 +54,16 @@ export default function InscriptionDetailPage() {
         headers: authHeaders(),
       });
       if (res.ok) {
-        setInsc(await res.json());
+        const data = await res.json();
+        setInsc(data);
+        // Charger les autres inscriptions du même référent
+        if (data.referent_email) {
+          const allRes = await fetch('/api/admin/inscriptions', { headers: authHeaders() });
+          if (allRes.ok) {
+            const all: InscriptionSupabase[] = await allRes.json();
+            setAutresInscriptions(all.filter(i => i.referent_email === data.referent_email && i.id !== inscriptionId));
+          }
+        }
       } else {
         router.replace('/admin/demandes');
       }
@@ -381,6 +391,37 @@ export default function InscriptionDetailPage() {
           <div className="space-y-2 text-sm">
             {insc.options_educatives && <p><span className="text-gray-500">Options educatives :</span> {insc.options_educatives}</p>}
             {insc.remarques && <p><span className="text-gray-500">Remarques :</span> {insc.remarques}</p>}
+          </div>
+        </div>
+      )}
+
+      {/* Autres inscriptions du même référent */}
+      {autresInscriptions.length > 0 && (
+        <div className="bg-white rounded-xl shadow p-6 mb-4">
+          <h2 className="text-lg font-semibold mb-4 text-primary">
+            Autres demandes de {insc.referent_nom} ({autresInscriptions.length})
+          </h2>
+          <div className="space-y-2">
+            {autresInscriptions.map(a => (
+              <div
+                key={a.id}
+                onClick={() => router.push(`/admin/demandes/${a.id}`)}
+                className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer transition"
+              >
+                <div>
+                  <span className="font-medium text-sm">{a.jeune_prenom} {a.jeune_nom}</span>
+                  <span className="text-xs text-gray-500 ml-2">{a.sejour_slug}</span>
+                </div>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                  a.status === 'validee' ? 'bg-green-100 text-green-700' :
+                  a.status === 'refusee' ? 'bg-red-100 text-red-700' :
+                  a.status === 'annulee' ? 'bg-gray-100 text-gray-500' :
+                  'bg-orange-100 text-orange-700'
+                }`}>
+                  {a.status === 'validee' ? 'Validée' : a.status === 'refusee' ? 'Refusée' : a.status === 'annulee' ? 'Annulée' : 'En attente'}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       )}

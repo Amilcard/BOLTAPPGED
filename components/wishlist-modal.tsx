@@ -112,7 +112,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 duration-300">
+      <div className="relative bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 duration-300">
         {/* Close button */}
         <button
           onClick={onClose}
@@ -175,20 +175,22 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
           )}
         </div>
 
-        {/* Prénom référent field (P0: Personnalisation) */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-primary mb-2">
-            Prénom de ton accompagnant·e <span className="text-primary-400 font-normal">(optionnel)</span>
-          </label>
-          <input
-            type="text"
-            value={prenomReferent}
-            onChange={(e) => setPrenomReferent(e.target.value.slice(0, 30))}
-            placeholder="Ex: Marie"
-            className="w-full border border-primary-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50 focus:border-secondary"
-          />
-          <p className="mt-1 text-xs text-primary-400">Si tu le connais, ça aide à personnaliser le message.</p>
-        </div>
+        {/* Prénom référent field — optionnel, masqué par défaut */}
+        <details className="mb-4 group">
+          <summary className="text-xs text-primary-400 cursor-pointer hover:text-primary-600 transition list-none flex items-center gap-1">
+            <span>+ Ajouter le prénom de ton accompagnant·e (optionnel)</span>
+          </summary>
+          <div className="mt-2">
+            <input
+              type="text"
+              value={prenomReferent}
+              onChange={(e) => setPrenomReferent(e.target.value.slice(0, 30))}
+              placeholder="Ex: Marie"
+              className="w-full border border-primary-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50 focus:border-secondary"
+            />
+            <p className="mt-1 text-xs text-primary-400">Si tu le connais, ça aide à personnaliser le message.</p>
+          </div>
+        </details>
 
         {/* Email structure field */}
         {emailLocked && !defaultEmail && (

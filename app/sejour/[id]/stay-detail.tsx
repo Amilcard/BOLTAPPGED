@@ -30,7 +30,6 @@ import type { Stay, StaySession } from '@/lib/types';
 import { formatDateLong, getWishlistMotivation, addToWishlist } from '@/lib/utils';
 import { getPriceBreakdown, findSessionPrice, getMinSessionPrice, type EnrichmentSessionData } from '@/lib/pricing';
 import { useApp } from '@/components/providers';
-import { BookingModal } from '@/components/booking-modal';
 import { WishlistModal } from '@/components/wishlist-modal';
 import { Button } from '@/components/ui/button';
 
@@ -47,7 +46,6 @@ const PRIORITY_CITIES = ['paris', 'lyon', 'marseille', 'lille', 'bordeaux', 'ren
 export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], price_base?: number | null, price_unit?: string, pro_price_note?: string, sourceUrl?: string | null, pdfUrl?: string | null, geoLabel?: string | null, geoPrecision?: string | null, accommodationLabel?: string | null, contentKids?: any, rawSessions?: any[], images?: string[] } }) {
   const { mode, mounted, refreshWishlist } = useApp();
   const router = useRouter();
-  const [showBooking, setShowBooking] = useState(false);
   const [showWishlistModal, setShowWishlistModal] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [showDepartures, setShowDepartures] = useState(false);
@@ -759,19 +757,6 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
           </div>
         </div>
       </div>
-
-      {/* Modals */}
-      {showBooking && (
-        <BookingModal
-          stay={stay}
-          sessions={sessions}
-          departureCities={enrichment?.departures}
-          enrichmentSessions={enrichment?.sessions}
-          initialSessionId={preSelectedSessionId}
-          initialCity={preSelectedCity}
-          onClose={() => setShowBooking(false)}
-        />
-      )}
 
       {showWishlistModal && (
         <WishlistModal

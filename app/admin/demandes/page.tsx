@@ -83,11 +83,15 @@ export default function AdminDemandes() {
 
   const handleStatusChange = async (id: string, status: string) => {
     const token = localStorage.getItem(STORAGE_KEYS.AUTH);
-    await fetch(`/api/admin/inscriptions/${id}`, {
+    const res = await fetch(`/api/admin/inscriptions/${id}`, {
       method: 'PUT',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      window.alert(`Erreur mise à jour statut : ${err?.error?.message ?? 'Erreur inconnue'}`);
+    }
     fetchInscriptions();
   };
 

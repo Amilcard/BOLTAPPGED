@@ -11,7 +11,8 @@ function getSupabase() {
 
 /**
  * GET /api/souhaits/kid/[kidToken]
- * Retourne les souhaits d'un kid identifié par son token anonyme.
+ * Retourne les souhaits d'un kid via son kid_session_token (localStorage).
+ * Colonnes retournées : id, sejour_slug, sejour_titre, status, reponse_educateur, kid_prenom_referent, created_at, updated_at
  */
 export async function GET(
   _req: NextRequest,
@@ -28,8 +29,8 @@ export async function GET(
     const supabase = getSupabase();
     const { data, error } = await supabase
       .from('gd_souhaits')
-      .select('id, sejour_slug, sejour_titre, motivation, statut, commentaire, educateur_prenom, created_at, updated_at')
-      .eq('kid_token', kidToken)
+      .select('id, sejour_slug, sejour_titre, status, reponse_educateur, kid_prenom_referent, created_at, updated_at')
+      .eq('kid_session_token', kidToken)
       .order('created_at', { ascending: false });
 
     if (error) throw error;

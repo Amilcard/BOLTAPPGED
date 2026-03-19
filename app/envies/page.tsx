@@ -8,9 +8,9 @@ import { getWishlistItems, type WishlistItem } from '@/lib/utils';
 interface SouhaitServeur {
   id: string;
   sejour_slug: string;
-  statut: string;
-  commentaire: string | null;
-  educateur_prenom: string | null;
+  status: string;
+  reponse_educateur: string | null;
+  kid_prenom_referent: string | null;
 }
 
 const STATUT_BADGE: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -42,7 +42,7 @@ export default function EnviesPage() {
     setItems(getWishlistItems());
 
     // Charger les statuts depuis le serveur
-    const kidToken = localStorage.getItem('gd_kid_token');
+    const kidToken = localStorage.getItem('gd_kid_session_token');
     if (kidToken) {
       fetch(`/api/souhaits/kid/${kidToken}`)
         .then(res => res.ok ? res.json() : [])
@@ -97,7 +97,7 @@ export default function EnviesPage() {
             {items.map((item) => {
               const stayLabel = item.stayId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
               const souhait = souhaits.find(s => s.sejour_slug === item.stayId);
-              const badge = souhait ? STATUT_BADGE[souhait.statut] : null;
+              const badge = souhait ? STATUT_BADGE[souhait.status] : null;
               return (
                 <Link
                   key={item.stayId}
@@ -138,9 +138,9 @@ export default function EnviesPage() {
                           </span>
                         )}
                       </div>
-                      {souhait?.commentaire && (
+                      {souhait?.reponse_educateur && (
                         <p className="text-xs text-gray-500 italic mt-1">
-                          💬 {souhait.commentaire}
+                          💬 {souhait.reponse_educateur}
                         </p>
                       )}
                     </div>

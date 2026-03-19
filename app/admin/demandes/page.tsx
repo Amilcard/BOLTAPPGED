@@ -48,12 +48,12 @@ function DossierBadge({ completude }: { completude: any }) {
       <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
         {fiches}/{total} fiches
       </span>
-      <div className="flex gap-0.5">
-        <span className={`w-2 h-2 rounded-full ${completude.bulletin ? 'bg-green-500' : 'bg-gray-300'}`} title="Bulletin" />
-        <span className={`w-2 h-2 rounded-full ${completude.sanitaire ? 'bg-green-500' : 'bg-gray-300'}`} title="Sanitaire" />
-        <span className={`w-2 h-2 rounded-full ${completude.liaison ? 'bg-green-500' : 'bg-gray-300'}`} title="Liaison" />
-        <span className={`w-2 h-2 rounded-full ${hasVaccins ? 'bg-green-500' : 'bg-gray-300'}`} title="Vaccins" />
-        <span className={`w-2 h-2 rounded-full ${hasPJ ? 'bg-blue-500' : 'bg-gray-300'}`} title="PJ" />
+      <div className="flex gap-1">
+        <span className={`text-[10px] font-bold px-1 rounded ${completude.bulletin ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`} title="Bulletin d'inscription">B</span>
+        <span className={`text-[10px] font-bold px-1 rounded ${completude.sanitaire ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`} title="Fiche sanitaire">S</span>
+        <span className={`text-[10px] font-bold px-1 rounded ${completude.liaison ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`} title="Fiche de liaison">L</span>
+        <span className={`text-[10px] font-bold px-1 rounded ${hasVaccins ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`} title="Carnet de vaccinations">V</span>
+        <span className={`text-[10px] font-bold px-1 rounded ${hasPJ ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-400'}`} title="Pièces jointes">PJ</span>
       </div>
     </div>
   );
@@ -165,7 +165,7 @@ export default function AdminDemandes() {
                   <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Jeune</th>
                   <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Séjour</th>
                   <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Référent</th>
-                  <th className="px-4 py-4 text-center text-sm font-semibold text-gray-600">Dossier</th>
+                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Documents</th>
                   <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Prix</th>
                   <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Paiement</th>
                   <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Statut</th>
@@ -190,8 +190,9 @@ export default function AdminDemandes() {
                       <td className="px-4 py-4 text-sm text-gray-600">
                         {(insc as any).sejour_titre || insc.sejour_slug}
                       </td>
-                      <td className="px-4 py-4 text-sm text-gray-600">
-                        {insc.organisation ? `${insc.referent_nom} (${insc.organisation})` : insc.referent_nom}
+                      <td className="px-4 py-4 text-sm text-gray-600 max-w-[160px]">
+                        <div className="font-medium truncate" title={insc.referent_nom}>{insc.referent_nom}</div>
+                        {insc.organisation && <div className="text-xs text-gray-400 truncate" title={insc.organisation}>{insc.organisation}</div>}
                       </td>
                       <td className="px-4 py-4">
                         <DossierBadge completude={(insc as any).dossier_completude} />

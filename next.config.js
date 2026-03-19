@@ -24,7 +24,15 @@ const nextConfig = {
     // TS strict activé — requis pour build Vercel zero-error
     ignoreBuildErrors: false,
   },
-  images: { unoptimized: true },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'iirfvndgzutbxwfdwawu.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
+  },
   skipTrailingSlashRedirect: true,
   // generateBuildId retiré — spécifique Docker, inutile sur Vercel
   async headers() {

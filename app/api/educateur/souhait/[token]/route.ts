@@ -11,8 +11,8 @@ function getSupabase() {
 
 /**
  * GET /api/educateur/souhait/[token]
- * Retourne le souhait pour la page de réponse éducateur.
- * Marque automatiquement le souhait comme "vu".
+ * Retourne le souhait via educateur_token (magic link).
+ * Passe automatiquement status de 'emis' → 'vu'.
  */
 export async function GET(
   _req: NextRequest,
@@ -29,7 +29,7 @@ export async function GET(
     const supabase = getSupabase();
     const { data, error } = await supabase
       .from('gd_souhaits')
-      .select('id, kid_prenom, sejour_slug, sejour_titre, sejour_url, motivation, statut, commentaire, educateur_prenom, created_at')
+      .select('id, kid_prenom, kid_prenom_referent, sejour_slug, sejour_titre, motivation, status, reponse_educateur, reponse_date, educateur_prenom, created_at')
       .eq('educateur_token', token)
       .single();
 
@@ -37,13 +37,13 @@ export async function GET(
       return NextResponse.json({ error: 'Souhait introuvable.' }, { status: 404 });
     }
 
-    // Marquer comme "vu" si encore "emis"
-    if (data.statut === 'emis') {
+    // Marquer comme vu si encore emis
+    if (data.status === 'emis') {
       await supabase
         .from('gd_souhaits')
-        .update({ statut: 'vu' })
+        .update({ status: 'vu' })
         .eq('educateur_token', token);
-      data.statut = 'vu';
+      data.status = 'vu';
     }
 
     return NextResponse.json(data);
@@ -55,8 +55,8 @@ export async function GET(
 
 /**
  * PATCH /api/educateur/souhait/[token]
- * Permet à l'éducateur de répondre au souhait.
- * Body : { statut: 'en_discussion' | 'valide' | 'refuse', commentaire?: string }
+ * Réponse éducateur : status + reponse_educateur optionnelle.
+ * Valeurs status acceptées : 'en_discussion', 'valide', 'refuse'
  */
 export async function PATCH(
   req: NextRequest,
@@ -64,10 +64,10 @@ export async function PATCH(
 ) {
   try {
     const { token } = await params;
-    const { statut, commentaire } = await req.json();
+    const { status, reponseEducateur } = await req.json();
 
     const validStatuts = ['en_discussion', 'valide', 'refuse'];
-    if (!validStatuts.includes(statut)) {
+    if (!validStatuts.includes(status)) {
       return NextResponse.json({ error: 'Statut invalide.' }, { status: 400 });
     }
 
@@ -75,14 +75,15 @@ export async function PATCH(
     const { error } = await supabase
       .from('gd_souhaits')
       .update({
-        statut,
-        commentaire: typeof commentaire === 'string' ? commentaire.trim() || null : null,
+        status,
+        reponse_educateur: typeof reponseEducateur === 'string' ? reponseEducateur.trim() || null : null,
+        reponse_date: new Date().toISOString(),
       })
       .eq('educateur_token', token);
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, statut });
+    return NextResponse.json({ success: true, status });
   } catch (err) {
     console.error('PATCH /api/educateur/souhait error:', err);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });

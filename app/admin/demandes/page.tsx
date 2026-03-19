@@ -128,8 +128,18 @@ export default function AdminDemandes() {
   if (loading) {
     return (
       <div>
-        <h1 className="text-3xl font-bold text-primary mb-8">Inscriptions</h1>
-        <p className="text-gray-500">Chargement...</p>
+        <h1 className="text-3xl font-bold text-primary mb-8">Demandes</h1>
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-gray-100 animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-24" />
+              <div className="h-4 bg-gray-200 rounded w-32 flex-1" />
+              <div className="h-4 bg-gray-200 rounded w-20" />
+              <div className="h-6 bg-gray-200 rounded-full w-24" />
+              <div className="h-4 bg-gray-200 rounded w-16" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

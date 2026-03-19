@@ -347,7 +347,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
         </div>
 
         {shareSuccess && (
-          <div className="absolute top-16 left-1/2 -translate-x-1/2 px-4 py-2 bg-green-500 text-white rounded-xl text-sm font-medium animate-in slide-in-from-top shadow-lg z-20">
+          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 px-4 py-2 bg-green-500 text-white rounded-xl text-sm font-medium animate-in slide-in-from-bottom shadow-lg z-50">
             Lien copié !
           </div>
         )}
@@ -401,8 +401,8 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                  const emotionTag = (stay as any)?.emotionTag;
                  if (emotionTag) {
                    return (
-                     <span className="px-4 py-1.5 bg-gray-100 text-primary text-xs font-bold tracking-widest uppercase rounded-full">
-                       {emotionTag.replace(/_/g, ' ')}
+                     <span className="px-4 py-1.5 bg-gray-100 text-primary text-xs font-bold rounded-full capitalize">
+                       {emotionTag.replace(/_/g, ' ').toLowerCase()}
                      </span>
                    );
                  }

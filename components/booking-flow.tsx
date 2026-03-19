@@ -559,7 +559,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                         className="sr-only"
                       />
                       <span className="flex-1 text-sm font-medium text-primary-700 capitalize">
-                        {city.city === 'sans_transport' ? 'Sans transport (inclus)' : city.city}
+                        {city.city === 'sans_transport' ? 'Sans transport — prix séjour seul' : city.city}
                       </span>
                       <span className={`text-sm font-semibold ${isCitySelected ? 'text-secondary' : 'text-primary-600'}`}>
                         {city.extra_eur === 0 ? 'Inclus' : `+${city.extra_eur}€`}

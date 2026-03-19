@@ -160,6 +160,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   };
   const step = stepRaw;
   const [bookingId, setBookingId] = useState('');
+  const [stripeFailedInscriptionId, setStripeFailedInscriptionId] = useState('');
   const [showAllSessions, setShowAllSessions] = useState(false);
 
   const firstInputRef = useRef<HTMLInputElement>(null);
@@ -293,6 +294,8 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     setLoading(true);
     setError('');
 
+    let createdInscriptionId = '';
+
     try {
       const fullAddress = [step1.addresseStructure, (step1 as any).codePostal, (step1 as any).ville].filter(Boolean).join(', ');
       const addressNote = fullAddress ? `[ADRESSE]: ${fullAddress}` : '';
@@ -323,24 +326,53 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error?.message ?? 'Erreur lors de la réservation');
 
-      const inscriptionId = data?.id ?? '';
-      setBookingId(inscriptionId);
+      createdInscriptionId = data?.id ?? '';
+      setBookingId(createdInscriptionId);
 
       // Si paiement CB, créer le PaymentIntent et afficher le formulaire Stripe
-      if (paymentMethod === 'card' && inscriptionId) {
+      if (paymentMethod === 'card' && createdInscriptionId) {
         const piRes = await fetch('/api/payment/create-intent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ inscriptionId }),
+          body: JSON.stringify({ inscriptionId: createdInscriptionId }),
         });
         const piData = await piRes.json();
         if (!piRes.ok) throw new Error(piData?.error?.message || piData?.error || 'Erreur création paiement');
         setStripeClientSecret(piData.clientSecret);
-        setStep(6); // Step 6 = formulaire Stripe
+        setStep(6);
         return;
       }
 
       setStep(5);
+    } catch (err: unknown) {
+      if (createdInscriptionId) {
+        // Inscription créée mais Stripe a échoué — permettre retry sans re-créer
+        setStripeFailedInscriptionId(createdInscriptionId);
+        setError('Paiement CB indisponible. Vous pouvez réessayer ou contacter l\'organisateur.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Retry Stripe uniquement — sans re-créer l'inscription
+  const retryStripePayment = async () => {
+    if (!stripeFailedInscriptionId) return;
+    setLoading(true);
+    setError('');
+    try {
+      const piRes = await fetch('/api/payment/create-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inscriptionId: stripeFailedInscriptionId }),
+      });
+      const piData = await piRes.json();
+      if (!piRes.ok) throw new Error(piData?.error?.message || piData?.error || 'Erreur création paiement');
+      setStripeClientSecret(piData.clientSecret);
+      setStripeFailedInscriptionId('');
+      setStep(6);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
     } finally {
@@ -734,7 +766,18 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             </div>
           )}
           {error && !ageError && (
-            <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm">{error}</div>
+            <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm space-y-2">
+              <p>{error}</p>
+              {stripeFailedInscriptionId && (
+                <button
+                  onClick={retryStripePayment}
+                  disabled={loading}
+                  className="text-sm font-medium underline text-red-700 hover:text-red-900 disabled:opacity-50"
+                >
+                  Réessayer le paiement CB
+                </button>
+              )}
+            </div>
           )}
           <div className="flex gap-3">
             <button
@@ -834,8 +877,17 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             </div>
           )}
           {error && !ageError && (
-            <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" /> {error}
+            <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100 space-y-2">
+              <div className="flex items-center gap-2"><AlertCircle className="w-4 h-4 shrink-0" /> {error}</div>
+              {stripeFailedInscriptionId && (
+                <button
+                  onClick={retryStripePayment}
+                  disabled={loading}
+                  className="text-sm font-medium underline text-red-700 hover:text-red-900 disabled:opacity-50"
+                >
+                  Réessayer le paiement CB
+                </button>
+              )}
             </div>
           )}
           <div className="flex gap-3">
@@ -847,7 +899,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             </button>
             <button
               onClick={handleSubmit}
-              disabled={loading || totalPrice === null || ageError !== '' || !paymentMethod}
+              disabled={loading || totalPrice === null || ageError !== '' || !paymentMethod || !!stripeFailedInscriptionId}
               className="flex-1 py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}

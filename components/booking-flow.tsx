@@ -90,7 +90,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     const day = String(start.getDate()).padStart(2, '0');
     const month = String(start.getMonth() + 1).padStart(2, '0');
     const dateStr = `${day}/${month}`;
-    const found = enrichmentSessions.find(s => s.date_text?.includes(dateStr));
+    const found = enrichmentSessions.find((s: SessionPriceData) => s.date_text?.includes(dateStr));
     if (found) {
       sessionBasePrice = found.promo_price_eur || found.base_price_eur;
     } else {
@@ -233,7 +233,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                 const day = String(start.getDate()).padStart(2, '0');
                 const month = String(start.getMonth() + 1).padStart(2, '0');
                 const dateStr = `${day}/${month}`;
-                const found = enrichmentSessions.find(s => s.date_text?.includes(dateStr));
+                const found = enrichmentSessions.find((s: SessionPriceData) => s.date_text?.includes(dateStr));
                 if (found && (found.base_price_eur || found.promo_price_eur)) {
                   displayPrice = `${found.promo_price_eur || found.base_price_eur}€`;
                 }

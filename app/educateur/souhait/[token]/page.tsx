@@ -56,12 +56,14 @@ export default function EducateurSouhaitPage() {
       const res = await fetch(`/api/educateur/souhait/${token}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, reponseEducateur: reponse.trim() }),
+        body: JSON.stringify({ status: statut, reponseEducateur: reponse.trim() }),
       });
       const data = await res.json();
       if (res.ok) {
         setSouhait(s => s ? { ...s, status: data.status, reponse_educateur: reponse.trim() || null } : null);
         setSaved(true);
+      } else {
+        setError(data?.error || 'Erreur lors de l\'enregistrement. Réessayez.');
       }
     } finally {
       setSaving(false);
@@ -117,7 +119,7 @@ export default function EducateurSouhaitPage() {
           <div className="mb-4">
             <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Séjour souhaité</p>
             <p className="font-semibold text-gray-800">{souhait.sejour_titre || souhait.sejour_slug}</p>
-            {souhait.sejour_url && (
+            {souhait.sejour_slug && (
               <a href={`/sejour/${souhait.sejour_slug}`} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1">
                 <ExternalLink className="w-3 h-3" /> Voir la fiche séjour

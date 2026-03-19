@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { STORAGE_KEYS, formatDate } from '@/lib/utils';
 import { Eye, FileCheck, FileClock, Trash2 } from 'lucide-react';
 import { InscriptionSupabase } from '@/lib/types';
+import { useAdminUI } from '@/components/admin/admin-ui';
 
 const STATUS_OPTIONS = [
   { value: 'en_attente', label: 'En attente', color: 'bg-blue-100 text-blue-700' },
@@ -60,6 +61,7 @@ function DossierBadge({ completude }: { completude: any }) {
 
 export default function AdminDemandes() {
   const router = useRouter();
+  const { confirm, toast } = useAdminUI();
   const [inscriptions, setInscriptions] = useState<InscriptionSupabase[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -90,30 +92,31 @@ export default function AdminDemandes() {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      window.alert(`Erreur mise à jour statut : ${err?.error?.message ?? 'Erreur inconnue'}`);
+      toast(`Erreur mise à jour statut : ${err?.error?.message ?? 'Erreur inconnue'}`);
     }
     fetchInscriptions();
   };
 
-  const handleDelete = async (e: React.MouseEvent, id: string, jeune: string) => {
+  const handleDelete = (e: React.MouseEvent, id: string, jeune: string) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!window.confirm(`Supprimer definitivement l'inscription de ${jeune} ? Cette action est irreversible.`)) return;
-    try {
-      const token = localStorage.getItem(STORAGE_KEYS.AUTH);
-      const res = await fetch(`/api/admin/inscriptions/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        window.alert(`Erreur suppression: ${err?.error?.message || res.status}`);
-        return;
+    confirm(`Supprimer définitivement l'inscription de ${jeune} ? Cette action est irréversible.`, async () => {
+      try {
+        const token = localStorage.getItem(STORAGE_KEYS.AUTH);
+        const res = await fetch(`/api/admin/inscriptions/${id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          toast(`Erreur suppression : ${err?.error?.message || res.status}`);
+          return;
+        }
+        fetchInscriptions();
+      } catch {
+        toast('Erreur réseau lors de la suppression');
       }
-      fetchInscriptions();
-    } catch (err) {
-      window.alert('Erreur reseau lors de la suppression');
-    }
+    });
   };
 
   const getStatusStyle = (status: string) =>

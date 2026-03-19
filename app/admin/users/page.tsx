@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState } from 'react';
 import { STORAGE_KEYS } from '@/lib/utils';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { useAdminUI } from '@/components/admin/admin-ui';
 import { Button } from '@/components/ui/button';
 
 interface User {
@@ -17,6 +18,7 @@ interface User {
 const ROLES = ['ADMIN', 'EDITOR', 'VIEWER'];
 
 export default function AdminUsers() {
+  const { confirm } = useAdminUI();
   const [users, setUsers] = useState<User[]>([]);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -31,14 +33,15 @@ export default function AdminUsers() {
 
   useEffect(() => { fetchUsers(); }, []);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer cet utilisateur ?')) return;
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH);
-    await fetch(`/api/admin/users/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
+  const handleDelete = (id: string) => {
+    confirm('Supprimer cet utilisateur ? Cette action est irréversible.', async () => {
+      const token = localStorage.getItem(STORAGE_KEYS.AUTH);
+      await fetch(`/api/admin/users/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchUsers();
     });
-    fetchUsers();
   };
 
   return (

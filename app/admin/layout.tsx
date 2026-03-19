@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { getStoredAuth, clearStoredAuth } from '@/lib/utils';
 import { LayoutDashboard, Map, Calendar, FileText, Users, LogOut, Receipt } from 'lucide-react';
 import { Logo } from '@/components/logo';
+import { AdminUIProvider } from '@/components/admin/admin-ui';
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -98,7 +99,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
         </div>
       </aside>
-      <main className="flex-1 p-8 overflow-auto">{children}</main>
+      <main className="flex-1 p-8 overflow-auto">
+        <AdminUIProvider>{children}</AdminUIProvider>
+      </main>
     </div>
   );
 }

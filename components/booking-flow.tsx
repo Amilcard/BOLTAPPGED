@@ -949,7 +949,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             <Check className="w-8 h-8 text-green-600" />
           </div>
           <h3 className="text-xl font-semibold text-primary mb-2">
-            {paymentMethod === 'card' ? 'Réservation confirmée !' : 'Demande enregistrée'}
+            {paymentMethod === 'card' ? 'Inscription confirmée !' : 'Demande enregistrée'}
           </h3>
           <p className="text-primary-600 mb-4">
             Votre demande pour <strong>{stay?.marketingTitle || 'Séjour'}</strong> a bien été enregistrée.

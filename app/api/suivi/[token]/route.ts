@@ -56,7 +56,7 @@ export async function GET(
       .from('gd_inscriptions')
       .select(
         'id, dossier_ref, sejour_slug, session_date, city_departure, ' +
-        'jeune_prenom, jeune_nom, jeune_date_naissance, ' +
+        'jeune_prenom, jeune_nom, ' +
         'organisation, referent_nom, ' +
         'price_total, status, payment_status, payment_method, payment_reference, ' +
         'options_educatives, ' +
@@ -101,7 +101,6 @@ export async function GET(
         cityDeparture: d.city_departure,
         jeunePrenom: d.jeune_prenom,
         jeuneNom: d.jeune_nom,
-        jeuneDateNaissance: d.jeune_date_naissance,
         organisation: d.organisation,
         referentNom: d.referent_nom,
         priceTotal: d.price_total,

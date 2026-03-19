@@ -53,9 +53,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Réutiliser le PaymentIntent existant si déjà créé — évite les intents orphelins sur retry
+    if (inscription.stripe_payment_intent_id) {
+      const existing = await stripe.paymentIntents.retrieve(inscription.stripe_payment_intent_id);
+      if (existing.status !== 'canceled' && existing.status !== 'succeeded') {
+        return NextResponse.json({
+          clientSecret: existing.client_secret,
+          paymentIntentId: existing.id,
+        });
+      }
+    }
+
     // Créer Payment Intent Stripe avec le montant vérifié
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(verifiedAmount * 100), // Convertir en centimes
+      amount: Math.round(verifiedAmount * 100),
       currency: 'eur',
       payment_method_types: ['card'],
       metadata: {

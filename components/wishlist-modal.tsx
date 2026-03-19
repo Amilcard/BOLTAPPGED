@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Heart, Share2, X, Compass, Check, AlertCircle, Info } from 'lucide-react';
+import { Heart, Share2, X, Compass, Check, AlertCircle, Info, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { updateWishlistMotivation, canAddRequest } from '@/lib/utils';
 
@@ -258,7 +258,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
           )}
           <div className="flex justify-between items-center mt-1">
             <span className="text-xs text-primary-400">N'écris pas de nom de famille, d'adresse ou d'infos perso.</span>
-            <span className="text-xs text-primary-400">{motivation.length}/{maxChars}</span>
+            <span className={`text-xs ${motivation.length >= maxChars ? 'text-red-500 font-medium' : motivation.length >= maxChars * 0.85 ? 'text-orange-500' : 'text-primary-400'}`}>{motivation.length}/{maxChars}</span>
           </div>
         </div>
 
@@ -278,7 +278,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
             className="w-full mb-4 py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
-              <>Enregistrement...</>
+              <><Loader2 className="w-4 h-4 animate-spin" /> Enregistrement...</>
             ) : (
               'Enregistrer ce souhait'
             )}
@@ -336,10 +336,10 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
                 <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                   <Info className="w-5 h-5 text-blue-600" />
                 </div>
-                <h3 className="font-semibold text-primary">Ouverture de l'app mail</h3>
+                <h3 className="font-semibold text-primary">Envoyer par messagerie</h3>
               </div>
               <p className="text-sm text-primary-600 mb-6">
-                Ton téléphone va ouvrir ton application mail pour envoyer ce séjour à ton accompagnant·e.
+                Ton téléphone va ouvrir ton appli de messagerie pour envoyer ce séjour à ton accompagnant·e. C'est normal !
               </p>
               <div className="flex gap-3">
                 <button

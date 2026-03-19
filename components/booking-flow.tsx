@@ -161,6 +161,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   const step = stepRaw;
   const [bookingId, setBookingId] = useState('');
   const [stripeFailedInscriptionId, setStripeFailedInscriptionId] = useState('');
+  const [stripeError, setStripeError] = useState('');
   const [showAllSessions, setShowAllSessions] = useState(false);
 
   const firstInputRef = useRef<HTMLInputElement>(null);
@@ -558,7 +559,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                         className="sr-only"
                       />
                       <span className="flex-1 text-sm font-medium text-primary-700 capitalize">
-                        {city.city === 'sans_transport' ? 'Sans transport (inclus)' : city.city}
+                        {city.city === 'sans_transport' ? 'Sans transport — prix séjour seul' : city.city}
                       </span>
                       <span className={`text-sm font-semibold ${isCitySelected ? 'text-secondary' : 'text-primary-600'}`}>
                         {city.extra_eur === 0 ? 'Inclus' : `+${city.extra_eur}€`}
@@ -925,16 +926,16 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             <StripePaymentForm
               clientSecret={stripeClientSecret}
               onSuccess={() => setStep(5)}
-              onError={(msg) => setError(msg)}
+              onError={(msg) => setStripeError(msg)}
             />
           </Elements>
-          {error && (
+          {stripeError && (
             <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" /> {error}
+              <AlertCircle className="w-4 h-4" /> {stripeError}
             </div>
           )}
           <button
-            onClick={() => { setStep(4); setStripeClientSecret(null); }}
+            onClick={() => { setStripeError(''); setStep(4); setStripeClientSecret(null); }}
             className="w-full py-2 text-sm text-primary-500 hover:text-primary hover:underline"
           >
             ← Choisir un autre mode de paiement

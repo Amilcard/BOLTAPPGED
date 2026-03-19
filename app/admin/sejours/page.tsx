@@ -7,8 +7,10 @@ import { STORAGE_KEYS, formatPrice } from '@/lib/utils';
 import { Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Stay } from '@/lib/types';
+import { useAdminUI } from '@/components/admin/admin-ui';
 
 export default function AdminSejours() {
+  const { confirm } = useAdminUI();
   const [stays, setStays] = useState<Stay[]>([]);
   const [editingStay, setEditingStay] = useState<Stay | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -23,14 +25,15 @@ export default function AdminSejours() {
 
   useEffect(() => { fetchStays(); }, []);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer ce séjour ?')) return;
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH);
-    await fetch(`/api/admin/stays/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
+  const handleDelete = (id: string) => {
+    confirm('Supprimer ce séjour ? Cette action est irréversible.', async () => {
+      const token = localStorage.getItem(STORAGE_KEYS.AUTH);
+      await fetch(`/api/admin/stays/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchStays();
     });
-    fetchStays();
   };
 
   const handleTogglePublish = async (stay: Stay) => {

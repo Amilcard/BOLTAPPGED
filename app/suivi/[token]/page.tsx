@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Check } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { DossierEnfantPanel } from '@/components/dossier-enfant/DossierEnfantPanel';
 
 // === Types locaux (lecture seule, pas besoin d'exporter) ===
@@ -203,27 +203,6 @@ export default function SuiviProPage() {
           })()}
         </div>
 
-        {/* Bloc contacts utiles */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <h3 className="font-semibold text-gray-800 mb-3">Contacts utiles</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-gray-500">Contact Groupe &amp; Découverte</p>
-              <p className="font-medium">contact@groupeetdecouverte.fr</p>
-              <p className="text-gray-500 mt-0.5">04 77 49 54 75</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Adresse</p>
-              <p className="font-medium">3 rue Flobert — 42000 Saint-Étienne</p>
-            </div>
-            <div className="sm:col-span-2">
-              <p className="text-gray-500">Horaires</p>
-              <p className="font-medium">Du lundi au vendredi, 9h-12h / 14h-17h</p>
-              <p className="text-xs text-gray-400 mt-1">Pendant le séjour, l'équipe sur place est joignable aux horaires communiqués dans le courrier de convocation.</p>
-            </div>
-          </div>
-        </div>
-
         {/* Liste des dossiers */}
         <div className="space-y-4">
           {data.dossiers.map((d) => {
@@ -336,10 +315,31 @@ export default function SuiviProPage() {
           })}
         </div>
 
+        {/* Contacts utiles — après les dossiers */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
+          <h3 className="font-semibold text-gray-800 mb-3">Contacts utiles</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-gray-500">Contact Groupe &amp; Découverte</p>
+              <p className="font-medium">contact@groupeetdecouverte.fr</p>
+              <p className="text-gray-500 mt-0.5">04 77 49 54 75</p>
+            </div>
+            <div>
+              <p className="text-gray-500">Adresse</p>
+              <p className="font-medium">3 rue Flobert — 42000 Saint-Étienne</p>
+            </div>
+            <div className="sm:col-span-2">
+              <p className="text-gray-500">Horaires</p>
+              <p className="font-medium">Du lundi au vendredi, 9h-12h / 14h-17h</p>
+              <p className="text-xs text-gray-400 mt-1">Pendant le séjour, l'équipe sur place est joignable aux horaires communiqués dans le courrier de convocation.</p>
+            </div>
+          </div>
+        </div>
+
         {/* Footer page */}
         <div className="mt-8 text-center text-xs text-gray-400 print:mt-4">
           <p>Groupe &amp; Découverte — Séjours de vacances pour enfants et adolescents</p>
-          <p className="mt-1">Ce document a été généré automatiquement. Pour toute question, contactez-nous à contact@groupeetdecouverte.fr</p>
+          <p className="mt-1">Page générée à la demande. Pour toute question, contactez-nous à contact@groupeetdecouverte.fr</p>
         </div>
       </main>
 
@@ -410,7 +410,7 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
             <span className="ml-2 text-xs text-green-600 font-normal">Renseigné</span>
           )}
         </span>
-        <span className="text-gray-400">{open ? '▲' : '▼'}</span>
+        {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
       </button>
 
       {open && (

@@ -9,10 +9,10 @@ interface Souhait {
   kid_prenom: string;
   sejour_slug: string;
   sejour_titre: string;
-  sejour_url: string;
   motivation: string;
-  statut: string;
-  commentaire: string | null;
+  status: string;
+  reponse_educateur: string | null;
+  reponse_date: string | null;
   educateur_prenom: string | null;
   created_at: string;
 }
@@ -33,7 +33,7 @@ export default function EducateurSouhaitPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [commentaire, setCommentaire] = useState('');
+  const [reponse, setReponse] = useState('');
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export default function EducateurSouhaitPage() {
       .then(data => {
         if (data.error) { setError(data.error); return; }
         setSouhait(data);
-        setCommentaire(data.commentaire || '');
+        setReponse(data.reponse_educateur || '');
       })
       .catch(() => setError('Impossible de charger ce souhait.'))
       .finally(() => setLoading(false));
@@ -56,11 +56,11 @@ export default function EducateurSouhaitPage() {
       const res = await fetch(`/api/educateur/souhait/${token}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ statut, commentaire: commentaire.trim() }),
+        body: JSON.stringify({ status, reponseEducateur: reponse.trim() }),
       });
       const data = await res.json();
       if (res.ok) {
-        setSouhait(s => s ? { ...s, statut: data.statut, commentaire: commentaire.trim() || null } : null);
+        setSouhait(s => s ? { ...s, status: data.status, reponse_educateur: reponse.trim() || null } : null);
         setSaved(true);
       }
     } finally {
@@ -87,8 +87,8 @@ export default function EducateurSouhaitPage() {
     </div>
   );
 
-  const statutInfo = STATUT_CONFIG[souhait.statut] || STATUT_CONFIG.vu;
-  const canRespond = !['valide', 'refuse'].includes(souhait.statut);
+  const statutInfo = STATUT_CONFIG[souhait.status] || STATUT_CONFIG.vu;
+  const canRespond = !['valide', 'refuse'].includes(souhait.status);
   const prenom = souhait.educateur_prenom ? ` ${souhait.educateur_prenom}` : '';
 
   return (
@@ -137,10 +137,10 @@ export default function EducateurSouhaitPage() {
         </div>
 
         {/* Réponse existante */}
-        {souhait.commentaire && !canRespond && (
+        {souhait.reponse_educateur && !canRespond && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Votre réponse</p>
-            <p className="text-gray-700 text-sm italic">« {souhait.commentaire} »</p>
+            <p className="text-gray-700 text-sm italic">« {souhait.reponse_educateur} »</p>
           </div>
         )}
 
@@ -150,8 +150,8 @@ export default function EducateurSouhaitPage() {
             <h3 className="font-semibold text-gray-800 mb-4">Votre réponse{prenom}</h3>
 
             <textarea
-              value={commentaire}
-              onChange={e => setCommentaire(e.target.value)}
+              value={reponse}
+              onChange={e => setReponse(e.target.value)}
               placeholder="Commentaire optionnel pour l'équipe ou pour votre dossier…"
               rows={3}
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 mb-4"
@@ -193,7 +193,7 @@ export default function EducateurSouhaitPage() {
         )}
 
         {/* CTA inscription */}
-        {souhait.statut === 'valide' && (
+        {souhait.status === 'valide' && (
           <div className="bg-green-50 border border-green-200 rounded-2xl p-6 text-center">
             <p className="text-green-800 font-semibold mb-2">Souhait validé ✓</p>
             <p className="text-green-700 text-sm mb-4">Vous pouvez maintenant procéder à l'inscription de {souhait.kid_prenom}.</p>

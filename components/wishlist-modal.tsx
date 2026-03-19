@@ -74,11 +74,11 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
     setError('');
 
     try {
-      // Récupérer ou générer le kid_token (UUID anonyme persistant)
-      let kidToken = localStorage.getItem('gd_kid_token');
-      if (!kidToken) {
-        kidToken = crypto.randomUUID();
-        localStorage.setItem('gd_kid_token', kidToken);
+      // Récupérer ou générer le kid_session_token (UUID anonyme persistant)
+      let kidSessionToken = localStorage.getItem('gd_kid_session_token');
+      if (!kidSessionToken) {
+        kidSessionToken = crypto.randomUUID();
+        localStorage.setItem('gd_kid_session_token', kidSessionToken);
       }
 
       // Enregistrer côté serveur
@@ -86,11 +86,11 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          kidToken,
+          kidSessionToken,
           kidPrenom: prenom.trim(),
+          kidPrenomReferent: prenomReferent.trim() || undefined,
           sejourSlug: staySlug,
           sejourTitre: stayTitle,
-          sejourUrl: stayUrl,
           motivation: motivation.trim(),
           educateurEmail: finalEmail,
           educateurPrenom: prenomReferent.trim() || undefined,

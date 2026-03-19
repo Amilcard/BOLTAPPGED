@@ -163,7 +163,7 @@ export function BookingModal({ stay, sessions, departureCities = [], enrichmentS
   const standardDepartureCities = departureCities.filter(dc =>
     STANDARD_CITIES.some(std =>
       dc.city.toLowerCase().includes(std.toLowerCase())
-    ) || dc.city === 'Sans transport'
+    ) || dc.city === 'sans_transport'
   );
 
   const isStep1Valid = step1.organisation && step1.socialWorkerName && step1.email && step1.phone;
@@ -184,7 +184,7 @@ export function BookingModal({ stay, sessions, departureCities = [], enrichmentS
         body: JSON.stringify({
           staySlug: stay?.slug,
           sessionDate: selectedSession.startDate,
-          cityDeparture: selectedCity || 'sans_transport',
+          cityDeparture: selectedCity?.toLowerCase().replace(/\s+/g, '_') || 'sans_transport',
           organisation: step1.organisation,
           socialWorkerName: step1.socialWorkerName,
           email: step1.email,
@@ -389,8 +389,8 @@ export function BookingModal({ stay, sessions, departureCities = [], enrichmentS
                   {standardDepartureCities
                     .slice()
                     .sort((a, b) => {
-                      if (a.city === 'Sans transport') return -1;
-                      if (b.city === 'Sans transport') return 1;
+                      if (a.city === 'sans_transport') return -1;
+                      if (b.city === 'sans_transport') return 1;
                       // Trier selon l'ordre de STANDARD_CITIES
                       const aIndex = STANDARD_CITIES.findIndex(std => a.city.toLowerCase().includes(std.toLowerCase()));
                       const bIndex = STANDARD_CITIES.findIndex(std => b.city.toLowerCase().includes(std.toLowerCase()));
@@ -427,7 +427,7 @@ export function BookingModal({ stay, sessions, departureCities = [], enrichmentS
                             className="sr-only"
                           />
                           <span className="flex-1 text-sm font-medium text-primary-700 capitalize">
-                            {city.city === 'Sans transport' ? 'Sans transport' : city.city}
+                            {city.city === 'sans_transport' ? 'Sans transport' : city.city}
                           </span>
                           <span className={`text-sm font-semibold ${isCitySelected ? 'text-secondary' : 'text-primary-600'}`}>
                             {city.extra_eur === 0 ? 'Inclus' : `+${city.extra_eur}€`}

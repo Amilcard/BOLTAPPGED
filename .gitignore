@@ -1,66 +1,40 @@
+# ── Dépendances & build ──
 node_modules/
 .next/
+tsconfig.tsbuildinfo
+
+# ── Environnement ──
+.env
+.env*.local
+.vercel
+
+# ── OS / éditeurs ──
 .DS_Store
+.vscode/
 *.log
 
-# archives sessions IA - ne pas pousser sur git
+# ── Artifacts locaux dev ──
+_untracked_backup/
+prisma/dev.db
+*.bak
+fix-typing-booking-flow.patch
+
+# ── Archives & audits locaux ──
 _archives/
-stay.ageMax
-FICHIERS_CREES.txt
-01_UFOVAL_IS_FULL_SESSIONS_v4.json
-
-# local/build artifacts
-.metadata_never_index
-tsconfig.tsbuildinfo
-
-# local/build artifacts
-.metadata_never_index
-tsconfig.tsbuildinfo
-
-# local/build artifacts
-.metadata_never_index
-tsconfig.tsbuildinfo
-
-# local artifacts
-.metadata_never_index
-tsconfig.tsbuildinfo
-
-# antigravity rules
-.agent/rules/GED PROJECT RULES
-.agent/rules/PROJECT CONTEXT — GED
-.agent/rules/CORE RULES
-.agent/rules/WORKFLOW — SAFE EDIT
-.agent/rules/AI Prompt Engineer Agent - LLM Expert
-.agent/rules/Code Review Agent - Thorough & Constructive Reviewer
-.agent/rules/DevOps & CI/Debugging Agent - Systematic Bug Hunter
-.agent/rules/DevOps & CI/Performance Optimization Agent - Speed Expert
-.agent/rules/Next.js Database Integration Expert
-.agent/rules/Next.js Real-time Features Expert
-.agent/rules/Web Performance Optimization Expert
-.agent/rules/DevOps & CI/React Performance Optimization
-.agent/rules/DevOps & CI/responsive-design
-
-# local audits
 *.xlsx
 .~lock.*
 app/debug-db/
 
-# local audits
-*.xlsx
-.~lock.*
-app/debug-db/
-
-# local editor
-.vscode/
-.env
-.vercel
-.env*.local
-
-# fichiers temporaires de dev
+# ── Fichiers temporaires ──
 deploy-fixes.patch
 generate_clean_logo.js
 supabase_functions_search_path_fix.sql
 supabase_security_fix.sql
+FICHIERS_CREES.txt
+stay.ageMax
 
-# documents légaux (données sensibles)
+# ── Documents légaux ──
 Documents_Legaux/
+
+# ── Règles agents IA ──
+.agent/rules/

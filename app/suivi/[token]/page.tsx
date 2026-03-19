@@ -140,7 +140,7 @@ export default function SuiviProPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header simplifié (pas de nav vitrine, pas de header complet) */}
-      <header className="bg-[#2a383f] text-white print:bg-white print:text-black">
+      <header className="bg-primary text-white print:bg-white print:text-black">
         <div className="max-w-5xl mx-auto px-4 py-5 flex items-center justify-between">
           <div>
             <h1 className="text-lg font-bold">Groupe &amp; Découverte</h1>

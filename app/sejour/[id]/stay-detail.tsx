@@ -842,7 +842,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                <div className="flex flex-col">
                   <span className="text-xs text-gray-500">À partir de</span>
                   <span className="text-xl font-bold text-primary">{priceBreakdown.minPrice}€</span>
-                  <span className="text-xs text-gray-500">sans transport</span>
+                  <span className="text-xs text-gray-500">prix minimum · sélectionnez une session</span>
                </div>
              ) : (
                 <span className="text-sm font-medium text-gray-500">

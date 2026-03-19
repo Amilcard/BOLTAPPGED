@@ -64,6 +64,12 @@ export async function PATCH(
 ) {
   try {
     const { token } = await params;
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(token)) {
+      return NextResponse.json({ error: 'Lien invalide.' }, { status: 400 });
+    }
+
     const { status, reponseEducateur } = await req.json();
 
     const validStatuts = ['en_discussion', 'valide', 'refuse'];
@@ -72,6 +78,18 @@ export async function PATCH(
     }
 
     const supabase = getSupabase();
+
+    // Bloquer la modification d'un souhait déjà traité
+    const { data: current } = await supabase
+      .from('gd_souhaits')
+      .select('status')
+      .eq('educateur_token', token)
+      .single();
+
+    if (current && ['valide', 'refuse'].includes(current.status)) {
+      return NextResponse.json({ error: 'Ce souhait a déjà été traité.' }, { status: 409 });
+    }
+
     const { error } = await supabase
       .from('gd_souhaits')
       .update({

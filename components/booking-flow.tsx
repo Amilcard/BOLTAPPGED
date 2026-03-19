@@ -697,13 +697,17 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
         <div className="space-y-4">
           <h3 className="font-medium text-primary text-lg">Étape 4/5 : Informations de l'enfant</h3>
           <div className="space-y-3">
-            <input
-              type="text"
-              placeholder="Prénom de l'enfant *"
-              value={step2.childFirstName}
-              onChange={e => setStep2({ ...step2, childFirstName: e.target.value })}
-              className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
-            />
+            <div>
+              <label htmlFor="child-firstname" className="text-sm text-primary-600 mb-1 block">Prénom de l'enfant *</label>
+              <input
+                id="child-firstname"
+                type="text"
+                placeholder="Ex: Léa"
+                value={step2.childFirstName}
+                onChange={e => setStep2({ ...step2, childFirstName: e.target.value })}
+                className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
+              />
+            </div>
             <div>
               <label className="text-sm text-primary-600 mb-1 block">Date de naissance *</label>
               <input

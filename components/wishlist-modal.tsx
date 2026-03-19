@@ -81,10 +81,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
     updateWishlistMotivation(staySlug, motivation.trim() || null, prenom.trim(), finalEmail);
     setSaved(true);
     setError('');
-    setTimeout(() => {
-      setSaved(false);
-      setIsSubmitting(false);
-    }, 1500);
+    setIsSubmitting(false);
   };
 
   const handleShare = async () => {

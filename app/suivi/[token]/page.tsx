@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { Check } from 'lucide-react';
 import { DossierEnfantPanel } from '@/components/dossier-enfant/DossierEnfantPanel';
 
 // === Types locaux (lecture seule, pas besoin d'exporter) ===
@@ -144,7 +145,9 @@ export default function SuiviProPage() {
         <div className="max-w-5xl mx-auto px-4 py-5 flex items-center justify-between">
           <div>
             <h1 className="text-lg font-bold">Groupe &amp; Découverte</h1>
-            <p className="text-sm text-white/70 print:text-gray-500">Espace suivi professionnel</p>
+            <p className="text-sm text-white/70 print:text-gray-500">
+              {data?.referent?.nom ? `Mon espace de suivi — ${data.referent.nom}` : 'Mon espace de suivi'}
+            </p>
           </div>
           <button
             onClick={() => window.print()}
@@ -417,7 +420,9 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
           </p>
 
           {saved && (
-            <div className="text-xs text-green-600 font-medium">Enregistré</div>
+            <div className="flex items-center gap-1.5 text-sm text-green-700 font-medium bg-green-50 px-3 py-1.5 rounded-lg">
+              <Check className="w-3.5 h-3.5" /> Enregistré
+            </div>
           )}
 
           {/* Nouvelles pendant le séjour */}

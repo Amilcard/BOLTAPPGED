@@ -49,7 +49,6 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
   const router = useRouter();
   const [showWishlistModal, setShowWishlistModal] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
-  const isAlreadyInWishlist = mounted && !!getWishlistMotivation(slug);
   const [showDepartures, setShowDepartures] = useState(false);
   const [showFullProgramme, setShowFullProgramme] = useState(false);
 
@@ -78,6 +77,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
   const isKids = mode === 'kids';
   const isPro = !isKids;
   const slug = stay?.slug ?? '';
+  const isAlreadyInWishlist = mounted && !!getWishlistMotivation(slug);
 
   // === HARMONISATION KIDS/PRO ===
   // Règle: le contenu CityCrunch Kids est la RÉFÉRENCE UNIVERSELLE pour les 2 modes.

@@ -221,7 +221,7 @@ export default function AdminDemandes() {
                         <div className="flex flex-col gap-1">
                           <span>{insc.dossier_ref || '—'}</span>
                           {isEnRetard && (
-                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
+                            <span data-testid="badge-retard" className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
                               En retard
                             </span>
                           )}

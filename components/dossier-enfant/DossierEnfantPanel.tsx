@@ -250,6 +250,7 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                   return (
                     <button
                       key={tab.key}
+                      data-testid={`tab-${tab.key}`}
                       onClick={() => setActiveTab(tab.key)}
                       className={`px-4 py-2 text-sm font-medium border-b-2 transition whitespace-nowrap flex items-center gap-1.5 ${
                         activeTab === tab.key
@@ -365,12 +366,13 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
               {dossier?.exists && (
                 <div className="mt-6 pt-4 border-t border-gray-200">
                   {(alreadySent || !!dossier?.ged_sent_at) ? (
-                    <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800 font-medium text-center">
+                    <div data-testid="bandeau-envoye" className="p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800 font-medium text-center">
                       Votre dossier a bien été envoyé à l'équipe Groupe &amp; Découverte.
                     </div>
                   ) : (
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                       <button
+                        data-testid="btn-envoyer"
                         onClick={handleSubmit}
                         disabled={!isComplete || submitting || !!dossier?.ged_sent_at}
                         className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition ${

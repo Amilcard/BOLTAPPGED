@@ -436,6 +436,7 @@ export default function InscriptionDetailPage() {
           <p className="text-sm text-amber-700 mb-4">Le dossier n'a pas encore été envoyé. Vous pouvez envoyer un email de rappel au référent.</p>
           <div className="flex items-center gap-3">
             <button
+              data-testid="btn-relance"
               onClick={handleRelance}
               disabled={relanceLoading || relanceSent}
               className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-60 disabled:cursor-not-allowed transition text-sm font-medium"

@@ -46,6 +46,13 @@ export async function POST(
       return NextResponse.json({ error: 'Fichier trop volumineux (max 5 Mo).' }, { status: 400 });
     }
 
+    const ALLOWED_MIME = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp']);
+    const ALLOWED_EXT = new Set(['pdf', 'jpg', 'jpeg', 'png', 'webp']);
+    const fileExt = file.name.split('.').pop()?.toLowerCase() ?? '';
+    if (!ALLOWED_MIME.has(file.type) || !ALLOWED_EXT.has(fileExt)) {
+      return NextResponse.json({ error: 'Type de fichier non autorisé.' }, { status: 400 });
+    }
+
     // Verifier ownership via token
     const ownership = await verifyOwnership(supabase, token, inscriptionId);
     if (!ownership.ok) {
@@ -184,6 +191,11 @@ export async function DELETE(
     const ownership = await verifyOwnership(supabase, token, inscriptionId);
     if (!ownership.ok) {
       return NextResponse.json({ error: ownership.message }, { status: ownership.status });
+    }
+
+    // Garde IDOR : vérifier que le chemin appartient bien à cette inscription
+    if (!storage_path.startsWith(`${inscriptionId}/`)) {
+      return NextResponse.json({ error: 'Chemin non autorisé.' }, { status: 403 });
     }
 
     // Supprimer du storage

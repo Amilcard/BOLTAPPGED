@@ -170,14 +170,14 @@ export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeun
           disabled={saving}
           className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-medium transition disabled:opacity-50"
         >
-          {saving ? 'Enregistrement...' : 'Enregistrer le brouillon'}
+          {saving ? 'Enregistrement...' : 'Enregistrer'}
         </button>
         <button
           onClick={() => handleSave(true)}
           disabled={saving || !form.autorisation_accepte}
           className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
         >
-          Valider le bulletin
+          Valider
         </button>
       </div>
     </div>

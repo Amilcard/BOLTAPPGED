@@ -8,6 +8,10 @@ import { Eye, FileCheck, FileClock, Trash2 } from 'lucide-react';
 import { InscriptionSupabase } from '@/lib/types';
 import { useAdminUI } from '@/components/admin/admin-ui';
 
+function daysSince(dateStr: string): number {
+  return Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
+}
+
 const STATUS_OPTIONS = [
   { value: 'en_attente', label: 'En attente', color: 'bg-blue-100 text-blue-700' },
   { value: 'validee', label: 'Validée', color: 'bg-green-100 text-green-700' },
@@ -21,7 +25,7 @@ const PAYMENT_STATUS_LABELS: Record<string, { label: string; color: string }> = 
   failed: { label: 'Échoué', color: 'bg-red-100 text-red-700' },
 };
 
-function DossierBadge({ completude }: { completude: any }) {
+function DossierBadge({ completude, gedSentAt }: { completude: any; gedSentAt?: string | null }) {
   if (!completude) {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
@@ -30,12 +34,21 @@ function DossierBadge({ completude }: { completude: any }) {
     );
   }
 
-  const fiches = [completude.bulletin, completude.sanitaire, completude.liaison].filter(Boolean).length;
-  const total = 3;
+  const fiches = [completude.bulletin, completude.sanitaire, completude.liaison, completude.renseignements].filter(Boolean).length;
+  const total = 4;
   const hasPJ = completude.pj_count > 0;
   const hasVaccins = completude.pj_vaccins;
+  const isComplete = fiches === total; // 4/4 blocs obligatoires
 
-  if (fiches === total && hasPJ && hasVaccins) {
+  if (gedSentAt) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-300">
+        <FileCheck size={12} /> ✓ Envoyé
+      </span>
+    );
+  }
+
+  if (isComplete) {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
         <FileCheck size={12} /> Complet
@@ -52,6 +65,7 @@ function DossierBadge({ completude }: { completude: any }) {
         <span className={`text-[10px] font-bold px-1 rounded ${completude.bulletin ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`} title="Bulletin d'inscription">B</span>
         <span className={`text-[10px] font-bold px-1 rounded ${completude.sanitaire ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`} title="Fiche sanitaire">S</span>
         <span className={`text-[10px] font-bold px-1 rounded ${completude.liaison ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`} title="Fiche de liaison">L</span>
+        <span className={`text-[10px] font-bold px-1 rounded ${completude.renseignements ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`} title="Fiche de renseignements">R</span>
         <span className={`text-[10px] font-bold px-1 rounded ${hasVaccins ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`} title="Carnet de vaccinations">V</span>
         <span className={`text-[10px] font-bold px-1 rounded ${hasPJ ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-400'}`} title="Pièces jointes">PJ</span>
       </div>
@@ -197,13 +211,21 @@ export default function AdminDemandes() {
                 {filtered.map((insc) => {
                   const statusStyle = getStatusStyle(insc.status);
                   const paymentStyle = getPaymentStyle(insc.payment_status);
+                  const isEnRetard = !(insc as any).ged_sent_at && daysSince(insc.created_at) > 7;
                   return (
                     <tr key={insc.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/admin/demandes/${insc.id}`)}>
                       <td className="px-4 py-4 text-sm text-gray-500">
                         {formatDate(insc.created_at)}
                       </td>
                       <td className="px-4 py-4 text-xs font-mono text-gray-500">
-                        {insc.dossier_ref || '—'}
+                        <div className="flex flex-col gap-1">
+                          <span>{insc.dossier_ref || '—'}</span>
+                          {isEnRetard && (
+                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
+                              En retard
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-4 font-medium">
                         {insc.jeune_prenom} {insc.jeune_nom}
@@ -216,7 +238,7 @@ export default function AdminDemandes() {
                         {insc.organisation && <div className="text-xs text-gray-400 truncate" title={insc.organisation}>{insc.organisation}</div>}
                       </td>
                       <td className="px-4 py-4">
-                        <DossierBadge completude={(insc as any).dossier_completude} />
+                        <DossierBadge completude={(insc as any).dossier_completude} gedSentAt={(insc as any).ged_sent_at} />
                       </td>
                       <td className="px-4 py-4 text-sm font-medium">
                         {insc.price_total} €

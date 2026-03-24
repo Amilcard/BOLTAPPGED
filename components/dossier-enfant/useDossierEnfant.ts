@@ -20,6 +20,7 @@ export interface DossierEnfant {
   liaison_completed: boolean;
   renseignements_completed: boolean;
   renseignements_required: boolean;
+  ged_sent_at?: string | null;
 }
 
 interface UseDossierEnfantReturn {

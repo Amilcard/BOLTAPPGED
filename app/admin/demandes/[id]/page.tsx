@@ -42,6 +42,10 @@ export default function InscriptionDetailPage() {
   const [dossier, setDossier] = useState<any>(null);
   const [dossierLoading, setDossierLoading] = useState(false);
   const [autresInscriptions, setAutresInscriptions] = useState<InscriptionSupabase[]>([]);
+  const [relanceLoading, setRelanceLoading] = useState(false);
+  const [relanceSent, setRelanceSent] = useState(false);
+  const [relanceError, setRelanceError] = useState<string | null>(null);
+  const [relanceAt, setRelanceAt] = useState<string | null>(null);
 
   const authHeaders = () => {
     const token = localStorage.getItem(STORAGE_KEYS.AUTH);
@@ -110,6 +114,32 @@ export default function InscriptionDetailPage() {
     }
   };
 
+  const handleRelance = async () => {
+    if (relanceLoading || relanceSent) return;
+    setRelanceLoading(true);
+    setRelanceError(null);
+    try {
+      const res = await fetch(`/api/admin/inscriptions/${inscriptionId}/relance`, {
+        method: 'POST',
+        headers: authHeaders(),
+      });
+      if (res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setRelanceSent(true);
+        if (body?.relance_at) {
+          setRelanceAt(new Date(body.relance_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }));
+        }
+      } else {
+        const body = await res.json().catch(() => ({}));
+        setRelanceError(body?.error || `Erreur ${res.status}`);
+      }
+    } catch {
+      setRelanceError('Erreur réseau');
+    } finally {
+      setRelanceLoading(false);
+    }
+  };
+
   const handleDelete = () => {
     if (!insc) return;
     confirm(`Supprimer définitivement l'inscription de ${insc.jeune_prenom} ${insc.jeune_nom} ? Cette action est irréversible.`, async () => {
@@ -142,8 +172,15 @@ export default function InscriptionDetailPage() {
   const statusStyle = STATUS_OPTIONS.find(s => s.value === insc.status) || STATUS_OPTIONS[0];
   const suiviUrl = insc.suivi_token ? `${typeof window !== 'undefined' ? window.location.origin : ''}/suivi/${insc.suivi_token}` : null;
 
+  // PJ exclues du compteur — optionnelles. 4 blocs obligatoires pour tous les séjours.
+  const totalDocs = 4;
   const completedCount = dossier
-    ? [dossier.bulletin_completed, dossier.sanitaire_completed, dossier.liaison_completed].filter(Boolean).length
+    ? [
+        dossier.bulletin_completed,
+        dossier.sanitaire_completed,
+        dossier.liaison_completed,
+        dossier.renseignements_completed,
+      ].filter(Boolean).length
     : 0;
 
   return (
@@ -247,10 +284,10 @@ export default function InscriptionDetailPage() {
         <div className="bg-white rounded-xl shadow p-6">
           <h2 className="text-lg font-semibold mb-4">Referent / Structure</h2>
           <div className="space-y-3 text-sm">
-            {insc.organisation && <div><span className="text-gray-500">Structure :</span> <strong>{insc.organisation}</strong></div>}
-            <div><span className="text-gray-500">Nom :</span> <strong>{insc.referent_nom}</strong></div>
-            <div><span className="text-gray-500">Email :</span> <strong>{insc.referent_email}</strong></div>
-            <div><span className="text-gray-500">Tel :</span> <strong>{insc.referent_tel}</strong></div>
+            {insc.organisation && <div><span className="text-gray-500">Structure / Organisme :</span> <strong>{insc.organisation}</strong></div>}
+            <div><span className="text-gray-500">Référent :</span> <strong>{insc.referent_nom}</strong></div>
+            <div><span className="text-gray-500">Email référent :</span> <strong>{insc.referent_email}</strong></div>
+            <div><span className="text-gray-500">Téléphone référent :</span> <strong>{insc.referent_tel}</strong></div>
           </div>
         </div>
 
@@ -308,32 +345,42 @@ export default function InscriptionDetailPage() {
         </div>
       </div>
 
-      {/* Preferences du referent */}
-      {(insc.pref_nouvelles_sejour || insc.pref_canal_contact || insc.besoins_specifiques || insc.consignes_communication) && (
-        <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-lg font-semibold mb-4">Preferences du referent</h2>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            {insc.pref_nouvelles_sejour && (
-              <div><span className="text-gray-500">Nouvelles :</span> <strong>{{ oui: 'Regulierement', non: 'Non', si_besoin: 'Si besoin' }[insc.pref_nouvelles_sejour] || insc.pref_nouvelles_sejour}</strong></div>
-            )}
-            {insc.pref_canal_contact && (
-              <div><span className="text-gray-500">Canal :</span> <strong>{{ email: 'Email', telephone: 'Telephone', les_deux: 'Email + Tel' }[insc.pref_canal_contact] || insc.pref_canal_contact}</strong></div>
-            )}
-            {insc.besoins_specifiques && (
-              <div className="col-span-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                <span className="text-gray-500">Besoins specifiques :</span>
-                <p className="mt-1 font-medium">{insc.besoins_specifiques}</p>
-              </div>
-            )}
-            {insc.consignes_communication && (
-              <div className="col-span-2 bg-gray-50 rounded-lg p-3">
-                <span className="text-gray-500">Consignes communication :</span>
-                <p className="mt-1">{insc.consignes_communication}</p>
-              </div>
-            )}
+      {/* Preferences de contact du referent (lecture seule) */}
+      <div className="bg-white rounded-xl shadow p-6">
+        <h2 className="text-lg font-semibold mb-4">Préférences de contact</h2>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <span className="text-gray-500">Mode de contact :</span>{' '}
+            <strong>
+              {{ email: 'Email', telephone: 'Téléphone', les_deux: 'Email + Tél' }[insc.pref_canal_contact || ''] || (insc.pref_canal_contact ? insc.pref_canal_contact : '—')}
+            </strong>
           </div>
+          <div>
+            <span className="text-gray-500">Nouvelles du jeune :</span>{' '}
+            <strong>
+              {{ oui: 'Régulièrement', non: 'Non', si_besoin: 'Si besoin' }[insc.pref_nouvelles_sejour || ''] || (insc.pref_nouvelles_sejour ? insc.pref_nouvelles_sejour : '—')}
+            </strong>
+          </div>
+          <div>
+            <span className="text-gray-500">Bilan fin de séjour :</span>{' '}
+            <strong className={insc.pref_bilan_fin_sejour ? 'text-green-700' : ''}>
+              {insc.pref_bilan_fin_sejour === true ? 'Oui' : insc.pref_bilan_fin_sejour === false ? 'Non' : '—'}
+            </strong>
+          </div>
+          {insc.consignes_communication && (
+            <div className="col-span-2 bg-gray-50 rounded-lg p-3">
+              <span className="text-gray-500">Consignes communication :</span>
+              <p className="mt-1">{insc.consignes_communication}</p>
+            </div>
+          )}
+          {insc.besoins_specifiques && (
+            <div className="col-span-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <span className="text-gray-500">Besoins spécifiques :</span>
+              <p className="mt-1 font-medium">{insc.besoins_specifiques}</p>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Dossier enfant */}
       <div className="bg-white rounded-xl shadow p-6">
@@ -346,16 +393,17 @@ export default function InscriptionDetailPage() {
           <div className="space-y-3">
             <div className="flex items-center gap-4 mb-4">
               <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full bg-green-500 rounded-full transition-all" style={{ width: `${Math.round((completedCount / 3) * 100)}%` }} />
+                <div className="h-full bg-green-500 rounded-full transition-all" style={{ width: `${Math.round((completedCount / totalDocs) * 100)}%` }} />
               </div>
-              <span className="text-sm font-medium text-gray-600">{completedCount}/3</span>
+              <span className="text-sm font-medium text-gray-600">{completedCount}/{totalDocs}</span>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-4 gap-3">
               {[
-                { key: 'bulletin', label: 'Bulletin', completed: dossier.bulletin_completed },
-                { key: 'sanitaire', label: 'Fiche sanitaire', completed: dossier.sanitaire_completed },
-                { key: 'liaison', label: 'Fiche liaison', completed: dossier.liaison_completed },
+                { key: 'bulletin', label: 'Bulletin', completed: dossier.bulletin_completed, required: true },
+                { key: 'sanitaire', label: 'Fiche sanitaire', completed: dossier.sanitaire_completed, required: true },
+                { key: 'liaison', label: 'Fiche liaison', completed: dossier.liaison_completed, required: true },
+                { key: 'renseignements', label: 'Renseignements', completed: dossier.renseignements_completed, required: true },
               ].map(doc => (
                 <div key={doc.key} className={`p-3 rounded-lg border ${doc.completed ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
                   <div className="flex items-center gap-2">
@@ -364,10 +412,46 @@ export default function InscriptionDetailPage() {
                   </div>
                 </div>
               ))}
+              {/* Pièces jointes — informatives uniquement, hors compteur */}
+              <div className={`p-3 rounded-lg border ${(dossier.documents_joints?.length ?? 0) > 0 ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'}`}>
+                <div className="flex items-center gap-2">
+                  {(dossier.documents_joints?.length ?? 0) > 0
+                    ? <FileCheck size={16} className="text-blue-600" />
+                    : <FileClock size={16} className="text-gray-400" />}
+                  <span className={`text-sm font-medium ${(dossier.documents_joints?.length ?? 0) > 0 ? 'text-blue-700' : 'text-gray-500'}`}>
+                    PJ ({dossier.documents_joints?.length ?? 0})
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* Rappel dossier incomplet */}
+      {/* Visible si le dossier n'existe pas encore OU si ged_sent_at est null (pas encore soumis) */}
+      {!dossier?.ged_sent_at && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl shadow p-6">
+          <h2 className="text-lg font-semibold mb-2 text-amber-800">Relancer le référent</h2>
+          <p className="text-sm text-amber-700 mb-4">Le dossier n'a pas encore été envoyé. Vous pouvez envoyer un email de rappel au référent.</p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleRelance}
+              disabled={relanceLoading || relanceSent}
+              className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-60 disabled:cursor-not-allowed transition text-sm font-medium"
+            >
+              {relanceLoading && <Loader2 size={16} className="animate-spin" />}
+              {relanceSent ? 'Rappel envoyé' : 'Envoyer un rappel'}
+            </button>
+            {relanceError && (
+              <span className="text-sm text-red-600">{relanceError}</span>
+            )}
+          </div>
+          {relanceAt && (
+            <p className="text-xs text-amber-600 mt-2">Dernière relance envoyée le {relanceAt}</p>
+          )}
+        </div>
+      )}
 
       {/* Lien suivi */}
       {suiviUrl && (

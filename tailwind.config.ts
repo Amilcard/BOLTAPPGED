@@ -112,6 +112,13 @@ const config: Config = {
       },
     },
   },
+  safelist: [
+    'border-orange-500', 'text-orange-600',
+    'border-blue-500',   'text-blue-600',
+    'border-red-500',    'text-red-600',
+    'border-green-500',  'text-green-600',
+    'border-purple-500', 'text-purple-600',
+  ],
   plugins: [require('tailwindcss-animate')],
 };
 

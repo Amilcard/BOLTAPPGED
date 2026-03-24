@@ -172,7 +172,7 @@ export default function SuiviProPage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex flex-wrap items-center gap-4 mb-4">
             <div>
-              <p className="text-sm text-gray-500">Structure</p>
+              <p className="text-sm text-gray-500">Structure / Organisme</p>
               <p className="font-semibold text-gray-800">{data.referent.organisation || '—'}</p>
             </div>
             <div className="h-8 w-px bg-gray-200 hidden sm:block" />
@@ -186,6 +186,15 @@ export default function SuiviProPage() {
               <p className="font-semibold text-gray-800">{data.count} inscription{data.count > 1 ? 's' : ''}</p>
             </div>
           </div>
+          {/*
+            TODO: Lot 4 — Point d'accroche espace structure (à implémenter après Supabase Auth)
+            Afficher ici un bandeau "Associer à votre structure" permettant au référent
+            de lier son compte à une entrée gd_structures (table existante, migration 020_structures_et_souhaits.sql).
+            La table gd_structures regroupe les éducateurs par domaine email (champ `domain`).
+            Chaque structure possède un code de rattachement à 6 caractères (`code`).
+            L'inscription porte déjà `structure_domain` et `structure_id` (FK → gd_structures).
+            Implémenter avec Supabase Auth session pour identifier le référent sans magic link.
+          */}
           {/* Phase 3 — Résumé financier global */}
           {data.count > 1 && (() => {
             const total = data.dossiers.reduce((s, d) => s + d.priceTotal, 0);
@@ -339,7 +348,7 @@ export default function SuiviProPage() {
             <div>
               <p className="text-gray-500">Contact Groupe &amp; Découverte</p>
               <p className="font-medium">contact@groupeetdecouverte.fr</p>
-              <p className="text-gray-500 mt-0.5">04 77 49 54 75</p>
+              <p className="text-gray-500 mt-0.5">04 23 16 16 71</p>
             </div>
             <div>
               <p className="text-gray-500">Adresse</p>

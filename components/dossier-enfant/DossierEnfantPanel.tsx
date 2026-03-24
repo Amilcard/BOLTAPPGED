@@ -5,6 +5,7 @@ import { useDossierEnfant } from './useDossierEnfant';
 import { BulletinComplementForm } from './BulletinComplementForm';
 import { FicheSanitaireForm } from './FicheSanitaireForm';
 import { FicheLiaisonJeuneForm } from './FicheLiaisonJeuneForm';
+import { FicheRenseignementsForm } from './FicheRenseignementsForm';
 import { DocumentsJointsUpload } from './DocumentsJointsUpload';
 
 interface DossierInfo {
@@ -21,14 +22,15 @@ interface Props {
   token: string;
 }
 
-const TABS = [
+const BASE_TABS = [
   { key: 'bulletin', label: 'Bulletin', icon: '📋', color: 'orange' },
   { key: 'sanitaire', label: 'Fiche sanitaire', icon: '🏥', color: 'blue' },
   { key: 'liaison', label: 'Fiche de liaison', icon: '🤝', color: 'red' },
-  { key: 'pj', label: 'Pieces jointes', icon: '📎', color: 'green' },
+  { key: 'renseignements', label: 'Renseignements', icon: '📝', color: 'purple' },
+  { key: 'pj', label: 'Pièces jointes', icon: '📎', color: 'green' },
 ] as const;
 
-type TabKey = typeof TABS[number]['key'];
+type TabKey = typeof BASE_TABS[number]['key'];
 
 /**
  * Panel principal dossier enfant — affiché dans la page suivi /suivi/[token]
@@ -75,17 +77,28 @@ function PdfDownloadButton({ inscriptionId, token, docType, label }: {
 export function DossierEnfantPanel({ inscription, token }: Props) {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('bulletin');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [alreadySent, setAlreadySent] = useState(false);
 
   const {
-    dossier, loading, saving, saved, error, saveBloc,
+    dossier, loading, saving, saved, error, saveBloc, reload,
   } = useDossierEnfant(inscription.id, token);
 
-  // Progression — 4 items : Bulletin, Sanitaire, Liaison, Pièces jointes
+  // Onglets visibles — tous les onglets sont toujours affichés (renseignements obligatoire pour tous)
+  const TABS = BASE_TABS;
+
+  // Progression — 4 blocs fixes obligatoires (PJ exclues du compteur)
   const hasPJ = (dossier?.documents_joints?.length ?? 0) > 0;
-  const completedCount = dossier
-    ? [dossier.bulletin_completed, dossier.sanitaire_completed, dossier.liaison_completed, hasPJ].filter(Boolean).length
-    : 0;
   const totalDocs = 4;
+  const completedCount = dossier
+    ? [
+        dossier.bulletin_completed,
+        dossier.sanitaire_completed,
+        dossier.liaison_completed,
+        dossier.renseignements_completed,
+      ].filter(Boolean).length
+    : 0;
   const progressPct = Math.round((completedCount / totalDocs) * 100);
   const isComplete = completedCount === totalDocs;
 
@@ -94,7 +107,35 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
   if (dossier && !dossier.bulletin_completed) missing.push('Bulletin');
   if (dossier && !dossier.sanitaire_completed) missing.push('Fiche sanitaire');
   if (dossier && !dossier.liaison_completed) missing.push('Fiche de liaison');
-  if (dossier && !hasPJ) missing.push('Pièces jointes');
+  if (dossier && !dossier.renseignements_completed) missing.push('Fiche de renseignements');
+  // Les pièces jointes sont optionnelles — ne pas les inclure dans les manquants bloquants
+
+  // Envoi GED
+  const handleSubmit = async () => {
+    if (!isComplete || submitting) return;
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      const res = await fetch(`/api/dossier-enfant/${inscription.id}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.status === 409 || body?.alreadySent) {
+        setAlreadySent(true);
+        return;
+      }
+      if (!res.ok) {
+        throw new Error(body?.error || 'Erreur lors de l\'envoi.');
+      }
+      setAlreadySent(true);
+    } catch (err: unknown) {
+      setSubmitError((err as Error).message || 'Erreur lors de l\'envoi.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="border-t border-gray-100 print:hidden">
@@ -111,6 +152,7 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                 { label: 'B', done: dossier.bulletin_completed, title: 'Bulletin' },
                 { label: 'S', done: dossier.sanitaire_completed, title: 'Fiche sanitaire' },
                 { label: 'L', done: dossier.liaison_completed, title: 'Fiche de liaison' },
+                { label: 'R', done: dossier.renseignements_completed, title: 'Renseignements' },
                 { label: 'PJ', done: hasPJ, title: 'Pièces jointes' },
               ].map(({ label, done, title }) => (
                 <span
@@ -181,7 +223,7 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                 </div>
                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-green-500 rounded-full transition-all duration-500"
+                    className={`h-full rounded-full transition-all duration-500 ${progressPct === 100 ? 'bg-green-500' : 'bg-blue-500'}`}
                     style={{ width: `${progressPct}%` }}
                   />
                 </div>
@@ -200,7 +242,10 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                   const isComplete =
                     tab.key === 'bulletin' ? dossier?.bulletin_completed :
                     tab.key === 'sanitaire' ? dossier?.sanitaire_completed :
-                    dossier?.liaison_completed;
+                    tab.key === 'liaison' ? dossier?.liaison_completed :
+                    tab.key === 'renseignements' ? dossier?.renseignements_completed :
+                    tab.key === 'pj' ? hasPJ :
+                    false;
 
                   return (
                     <button
@@ -292,11 +337,68 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                 />
               )}
 
-              {activeTab === 'pj' && (
-                <DocumentsJointsUpload
-                  inscriptionId={inscription.id}
-                  token={token}
+              {activeTab === 'renseignements' && (
+                <FicheRenseignementsForm
+                  data={(dossier?.fiche_renseignements || {}) as Record<string, unknown>}
+                  saving={saving}
+                  onSave={(data, completed) => saveBloc('fiche_renseignements', data, completed)}
+                  jeunePrenom={inscription.jeunePrenom}
+                  jeuneNom={inscription.jeuneNom}
                 />
+              )}
+
+              {activeTab === 'pj' && (
+                <>
+                  <p className="text-sm text-gray-500 mb-3">
+                    Merci de vérifier que les documents utiles ont bien été transmis si le séjour l&apos;exige :
+                    attestation de baignade, autorisation parentale, certificat médical, ou tout autre document demandé.
+                  </p>
+                  <DocumentsJointsUpload
+                    inscriptionId={inscription.id}
+                    token={token}
+                    onUploadSuccess={reload}
+                  />
+                </>
+              )}
+
+              {/* Bouton envoi GED — visible dès que le dossier existe */}
+              {dossier?.exists && (
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  {(alreadySent || !!dossier?.ged_sent_at) ? (
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800 font-medium text-center">
+                      Votre dossier a bien été envoyé à l'équipe Groupe &amp; Découverte.
+                    </div>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                      <button
+                        onClick={handleSubmit}
+                        disabled={!isComplete || submitting || !!dossier?.ged_sent_at}
+                        className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition ${
+                          isComplete
+                            ? 'bg-green-600 text-white hover:bg-green-700 cursor-pointer'
+                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        } disabled:opacity-60`}
+                      >
+                        {submitting ? (
+                          <span className="flex items-center gap-2">
+                            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            Envoi en cours...
+                          </span>
+                        ) : (
+                          'Envoyer mon dossier'
+                        )}
+                      </button>
+                      {!isComplete && (
+                        <p className="text-xs text-gray-500">
+                          {totalDocs - completedCount} document{totalDocs - completedCount > 1 ? 's' : ''} restant{totalDocs - completedCount > 1 ? 's' : ''} avant envoi
+                        </p>
+                      )}
+                      {submitError && (
+                        <p className="text-xs text-red-600">{submitError}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
             </>
           )}

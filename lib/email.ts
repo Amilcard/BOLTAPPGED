@@ -308,3 +308,205 @@ export async function sendSouhaitNotificationEducateur(data: SouhaitEmailData) {
     return null;
   }
 }
+
+/**
+ * Notification admin GED — dossier enfant soumis complet
+ * Envoyée lors du clic "Envoyer mon dossier" par le référent.
+ * Inclut des liens directs vers les PDFs individuels (pas d'assemblage).
+ */
+export async function sendDossierGedAdminNotification(data: {
+  referentNom: string;
+  referentEmail: string;
+  jeunePrenom: string;
+  jeuneNom: string;
+  dossierRef?: string;
+  sejourSlug: string;
+  sessionDate: string;
+  inscriptionId: string;
+  adminUrl: string;
+}) {
+  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
+    return null;
+  }
+
+  try {
+    const result = await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: ADMIN_EMAIL,
+      subject: `Dossier enfant soumis — ${data.jeunePrenom} ${data.jeuneNom}${data.dossierRef ? ` (${data.dossierRef})` : ''}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #166534; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">
+            <h2 style="margin: 0; font-size: 18px;">Dossier enfant soumis</h2>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 20px; border-radius: 0 0 8px 8px;">
+            <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 16px;">
+              <tr><td style="padding: 6px 0; color: #6b7280;">Jeune</td><td style="padding: 6px 0; font-weight: bold;">${data.jeunePrenom} ${data.jeuneNom}</td></tr>
+              <tr><td style="padding: 6px 0; color: #6b7280;">Référent</td><td style="padding: 6px 0;">${data.referentNom} (${data.referentEmail})</td></tr>
+              ${data.dossierRef ? `<tr><td style="padding: 6px 0; color: #6b7280;">N° dossier</td><td style="padding: 6px 0; font-family: monospace; font-weight: bold;">${data.dossierRef}</td></tr>` : ''}
+              <tr><td style="padding: 6px 0; color: #6b7280;">Séjour</td><td style="padding: 6px 0;">${data.sejourSlug.replace(/-/g, ' ')}</td></tr>
+              <tr><td style="padding: 6px 0; color: #6b7280;">Session</td><td style="padding: 6px 0;">${data.sessionDate}</td></tr>
+            </table>
+            <p style="font-size: 14px; margin: 0 0 12px 0;"><a href="${data.adminUrl}" style="background: #2a383f; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-size: 14px;">Voir dans l'admin</a></p>
+            <p style="color: #9ca3af; font-size: 12px; margin-top: 16px;">Le dossier est complet et a été soumis par le référent.</p>
+          </div>
+        </div>
+      `,
+    });
+    return result;
+  } catch (error) {
+    console.error('[EMAIL] Erreur envoi notification admin GED:', error);
+    return null;
+  }
+}
+
+/**
+ * Email de rappel dossier incomplet — envoyé manuellement par l'admin
+ * Guard : ne jamais appeler si ged_sent_at IS NOT NULL (vérification côté route)
+ */
+export async function sendRappelDossierIncomplet(data: {
+  referentEmail: string;
+  referentNom: string;
+  dossierRef?: string;
+  suiviToken: string;
+}) {
+  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
+    console.warn('[EMAIL] Clé API manquante — rappel dossier incomplet non envoyé');
+    return null;
+  }
+
+  const suiviUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.groupeetdecouverte.fr'}/suivi/${data.suiviToken}`;
+  const refLabel = data.dossierRef ? ` ${data.dossierRef}` : '';
+
+  try {
+    const result = await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: data.referentEmail,
+      subject: `Rappel - Votre dossier${refLabel} est incomplet`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 24px;">Groupe &amp; Découverte</h1>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+            <h2 style="color: #b45309; margin-top: 0;">Dossier incomplet</h2>
+            <p>Bonjour ${data.referentNom},</p>
+            <p>Nous n'avons pas encore reçu votre dossier complet. Votre espace de suivi est toujours accessible.</p>
+            ${data.dossierRef ? `<p>Référence du dossier : <strong style="font-family: monospace;">${data.dossierRef}</strong></p>` : ''}
+            <div style="text-align: center; margin: 24px 0;">
+              <a href="${suiviUrl}"
+                 style="display: inline-block; background: #2a383f; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 15px;">
+                Accéder à mon espace de suivi
+              </a>
+            </div>
+            <p style="color: #6b7280; font-size: 13px;">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br/><span style="color: #374151;">${suiviUrl}</span></p>
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
+            <p style="color: #9ca3af; font-size: 12px;">Groupe &amp; Découverte — Séjours de vacances pour enfants et adolescents</p>
+          </div>
+        </div>
+      `,
+    });
+    console.log('[EMAIL] Rappel dossier incomplet envoyé à:', data.referentEmail);
+    return result;
+  } catch (error) {
+    console.error('[EMAIL] Erreur envoi rappel dossier incomplet:', error);
+    return null;
+  }
+}
+
+/**
+ * Notification admin GED — relance envoyée manuellement vers un référent
+ * Appelée en fire-and-forget depuis la route POST /api/admin/inscriptions/[id]/relance
+ */
+export async function sendRelanceAdminNotification(data: {
+  referentNom: string;
+  referentEmail: string;
+  structureNom?: string;
+  dossierRef?: string;
+  inscriptionId: string;
+}) {
+  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
+    return null;
+  }
+
+  const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.groupeetdecouverte.fr'}/admin/demandes/${data.inscriptionId}`;
+  const dateRelance = new Date().toLocaleDateString('fr-FR');
+
+  try {
+    const result = await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: ADMIN_EMAIL,
+      subject: `[Relance envoyée] Dossier ${data.dossierRef || data.inscriptionId} — ${data.referentNom}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #b45309; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">
+            <h2 style="margin: 0; font-size: 18px;">Relance dossier incomplet envoyée</h2>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 20px; border-radius: 0 0 8px 8px;">
+            <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 16px;">
+              <tr><td style="padding: 6px 0; color: #6b7280;">Référent</td><td style="padding: 6px 0; font-weight: bold;">${data.referentNom}</td></tr>
+              <tr><td style="padding: 6px 0; color: #6b7280;">Email</td><td style="padding: 6px 0;">${data.referentEmail}</td></tr>
+              ${data.structureNom ? `<tr><td style="padding: 6px 0; color: #6b7280;">Structure</td><td style="padding: 6px 0;">${data.structureNom}</td></tr>` : ''}
+              ${data.dossierRef ? `<tr><td style="padding: 6px 0; color: #6b7280;">Dossier</td><td style="padding: 6px 0; font-family: monospace; font-weight: bold;">${data.dossierRef}</td></tr>` : ''}
+              <tr><td style="padding: 6px 0; color: #6b7280;">Date de relance</td><td style="padding: 6px 0;">${dateRelance}</td></tr>
+            </table>
+            <p style="font-size: 14px; margin: 0 0 12px 0;"><a href="${adminUrl}" style="background: #2a383f; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-size: 14px;">Voir le dossier dans l'admin</a></p>
+          </div>
+        </div>
+      `,
+    });
+    console.log('[EMAIL] Notification relance admin envoyée pour dossier:', data.dossierRef || data.inscriptionId);
+    return result;
+  } catch (error) {
+    console.error('[EMAIL] Erreur envoi notification relance admin:', error);
+    return null;
+  }
+}
+
+/**
+ * Email de complétude du dossier enfant envoyé au référent
+ */
+export async function sendDossierCompletEmail(data: {
+  referentEmail: string;
+  referentNom: string;
+  jeunePrenom: string;
+  jeuneNom: string;
+  dossierRef?: string;
+}) {
+  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
+    console.warn('[EMAIL] Clé API manquante — email dossier complet non envoyé');
+    return null;
+  }
+
+  try {
+    const result = await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: data.referentEmail,
+      subject: `Dossier de ${data.jeunePrenom} ${data.jeuneNom} complété${data.dossierRef ? ` - ${data.dossierRef}` : ''}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 24px;">Groupe &amp; Découverte</h1>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+              <h2 style="color: #166534; margin: 0 0 8px 0; font-size: 18px;">Dossier complet ✓</h2>
+              <p style="margin: 0; color: #15803d; font-size: 14px;">Tous les documents ont bien été reçus.</p>
+            </div>
+            <p>Bonjour ${data.referentNom},</p>
+            <p>Le dossier de <strong>${data.jeunePrenom} ${data.jeuneNom}</strong> est désormais complet. Nous avons bien reçu l'ensemble des documents requis (bulletin complémentaire, fiche sanitaire, fiche de liaison et pièces jointes).</p>
+            ${data.dossierRef ? `<p>Référence du dossier : <strong style="font-family: monospace;">${data.dossierRef}</strong></p>` : ''}
+            <p>Notre équipe procédera à la vérification des documents et vous contactera si nécessaire.</p>
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
+            <p style="color: #9ca3af; font-size: 12px;">Groupe &amp; Découverte — Séjours de vacances pour enfants et adolescents</p>
+          </div>
+        </div>
+      `,
+    });
+    console.log('[EMAIL] Dossier complet envoyé à:', data.referentEmail);
+    return result;
+  } catch (error) {
+    console.error('[EMAIL] Erreur envoi dossier complet:', error);
+    return null;
+  }
+}

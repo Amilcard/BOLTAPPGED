@@ -63,6 +63,27 @@ export async function GET(
 
     // Si pas de dossier, retourner un squelette vide (le front sait qu'il faut créer)
     if (!dossier) {
+      // Déterminer renseignements_required depuis gd_stays pour afficher le bon nombre d'onglets dès le premier chargement
+      let renseignementsRequired = false;
+      const { data: inscRaw } = await supabase
+        .from('gd_inscriptions')
+        .select('sejour_slug')
+        .eq('id', inscriptionId)
+        .single();
+      if (inscRaw) {
+        const { data: stayRaw } = await supabase
+          .from('gd_stays')
+          .select('documents_requis')
+          .eq('slug', (inscRaw as { sejour_slug?: string }).sejour_slug)
+          .maybeSingle();
+        if (stayRaw) {
+          const docs = Array.isArray((stayRaw as { documents_requis?: unknown[] }).documents_requis)
+            ? (stayRaw as { documents_requis: unknown[] }).documents_requis
+            : [];
+          renseignementsRequired = docs.includes('renseignements');
+        }
+      }
+
       return NextResponse.json({
         exists: false,
         inscriptionId,
@@ -75,7 +96,7 @@ export async function GET(
         sanitaire_completed: false,
         liaison_completed: false,
         renseignements_completed: false,
-        renseignements_required: false,
+        renseignements_required: renseignementsRequired,
       });
     }
 
@@ -163,14 +184,31 @@ export async function PATCH(
         [bloc]: data,
       };
       if (typeof completed === 'boolean') {
-        insertData[`${bloc.replace('fiche_', '').replace('_complement', '')}_completed`] =
-          bloc === 'bulletin_complement' ? completed :
-          bloc === 'fiche_sanitaire' ? undefined :
-          completed;
         // Map bloc name to completed column
         const completedCol = getCompletedColumn(bloc);
         if (completedCol) insertData[completedCol] = completed;
       }
+
+      // Initialiser renseignements_required depuis gd_stays.documents_requis
+      const { data: inscRaw } = await supabase
+        .from('gd_inscriptions')
+        .select('sejour_slug')
+        .eq('id', inscriptionId)
+        .single();
+      if (inscRaw) {
+        const insc = inscRaw as { sejour_slug?: string };
+        const { data: stayRaw } = await supabase
+          .from('gd_stays')
+          .select('documents_requis')
+          .eq('slug', insc.sejour_slug)
+          .maybeSingle();
+        if (stayRaw) {
+          const stay = stayRaw as { documents_requis?: unknown[] };
+          const docs = Array.isArray(stay.documents_requis) ? stay.documents_requis : [];
+          insertData.renseignements_required = docs.includes('renseignements');
+        }
+      }
+
       const { data: inserted, error: insertErr } = await supabase
         .from('gd_dossier_enfant')
         .insert(insertData)
@@ -207,6 +245,7 @@ export async function PATCH(
         throw updateErr;
       }
       result = updated;
+
     }
 
     return NextResponse.json({ ok: true, dossier: result });

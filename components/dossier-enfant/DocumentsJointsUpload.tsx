@@ -13,6 +13,7 @@ interface DocJoint {
 interface Props {
   inscriptionId: string;
   token: string;
+  onUploadSuccess?: () => void;
 }
 
 const DOC_TYPES = [
@@ -37,7 +38,7 @@ function formatDate(iso: string): string {
   });
 }
 
-export function DocumentsJointsUpload({ inscriptionId, token }: Props) {
+export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess }: Props) {
   const [documents, setDocuments] = useState<DocJoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -102,6 +103,7 @@ export function DocumentsJointsUpload({ inscriptionId, token }: Props) {
       setSuccess('Document envoye avec succes !');
       if (fileRef.current) fileRef.current.value = '';
       loadDocuments();
+      onUploadSuccess?.();
 
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
@@ -123,6 +125,7 @@ export function DocumentsJointsUpload({ inscriptionId, token }: Props) {
 
       if (res.ok) {
         loadDocuments();
+        onUploadSuccess?.();
       }
     } catch {
       // Silently fail

@@ -286,6 +286,9 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
           Valider
         </button>
       </div>
+      {!form.autorisation_soins_accepte && (
+        <p className="text-xs text-blue-600 mt-1">Cochez la case d'autorisation de soins ci-dessus pour pouvoir valider ce bloc.</p>
+      )}
     </div>
   );
 }

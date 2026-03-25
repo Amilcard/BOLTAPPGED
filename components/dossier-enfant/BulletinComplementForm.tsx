@@ -180,6 +180,9 @@ export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeun
           Valider
         </button>
       </div>
+      {!form.autorisation_accepte && (
+        <p className="text-xs text-orange-600 mt-1">Cochez la case d'autorisation ci-dessus pour pouvoir valider ce bloc.</p>
+      )}
     </div>
   );
 }

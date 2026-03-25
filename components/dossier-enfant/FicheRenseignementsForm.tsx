@@ -158,6 +158,9 @@ export function FicheRenseignementsForm({ data, saving, onSave, jeunePrenom, jeu
           Valider
         </button>
       </div>
+      {(!form.type_situation || !form.contact_urgence_nom || !form.contact_urgence_tel) && (
+        <p className="text-xs text-purple-600 mt-1">Remplissez la situation familiale et le contact d'urgence pour pouvoir valider ce bloc.</p>
+      )}
     </div>
   );
 }

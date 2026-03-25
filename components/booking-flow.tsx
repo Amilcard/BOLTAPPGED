@@ -160,6 +160,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   };
   const step = stepRaw;
   const [bookingId, setBookingId] = useState('');
+  const [bookingSuiviToken, setBookingSuiviToken] = useState('');
   const [stripeFailedInscriptionId, setStripeFailedInscriptionId] = useState('');
   const [stripeError, setStripeError] = useState('');
   const [showAllSessions, setShowAllSessions] = useState(false);
@@ -302,7 +303,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
           const piRes = await fetch('/api/payment/create-intent', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ inscriptionId: bookingId }),
+            body: JSON.stringify({ inscriptionId: bookingId, suivi_token: bookingSuiviToken }),
           });
           const piData = await piRes.json();
           if (!piRes.ok) throw new Error(piData?.error?.message || piData?.error || 'Erreur création paiement');
@@ -358,13 +359,14 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
 
       createdInscriptionId = data?.id ?? '';
       setBookingId(createdInscriptionId);
+      setBookingSuiviToken(data?.suivi_token ?? '');
 
       // Si paiement CB, créer le PaymentIntent et afficher le formulaire Stripe
       if (paymentMethod === 'card' && createdInscriptionId) {
         const piRes = await fetch('/api/payment/create-intent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ inscriptionId: createdInscriptionId }),
+          body: JSON.stringify({ inscriptionId: createdInscriptionId, suivi_token: data?.suivi_token ?? '' }),
         });
         const piData = await piRes.json();
         if (!piRes.ok) throw new Error(piData?.error?.message || piData?.error || 'Erreur création paiement');
@@ -396,7 +398,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
       const piRes = await fetch('/api/payment/create-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inscriptionId: stripeFailedInscriptionId }),
+        body: JSON.stringify({ inscriptionId: stripeFailedInscriptionId, suivi_token: bookingSuiviToken }),
       });
       const piData = await piRes.json();
       if (!piRes.ok) throw new Error(piData?.error?.message || piData?.error || 'Erreur création paiement');

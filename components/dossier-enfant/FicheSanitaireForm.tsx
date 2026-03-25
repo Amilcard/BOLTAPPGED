@@ -153,7 +153,8 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
           <Input label="Téléphone médecin" value={form.medecin_tel} onChange={v => update('medecin_tel', v)} type="tel" />
         </div>
         <p className="text-xs text-gray-400 mb-2">Joindre obligatoirement une copie des vaccins du carnet de santé.</p>
-        <div className="border rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
+        <div className="border rounded-lg overflow-hidden min-w-[480px]">
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
@@ -190,6 +191,7 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
               ))}
             </tbody>
           </table>
+        </div>
         </div>
       </Section>
 

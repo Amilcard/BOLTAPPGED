@@ -30,6 +30,15 @@ const BASE_TABS = [
   { key: 'pj', label: 'Pièces jointes', icon: '📎', color: 'green' },
 ] as const;
 
+// Classes Tailwind complètes (pas d'interpolation dynamique — la purge CSS supprimerait les classes générées)
+const TAB_ACTIVE_STYLES: Record<string, string> = {
+  bulletin:        'border-orange-500 text-orange-600',
+  sanitaire:       'border-blue-500 text-blue-600',
+  liaison:         'border-red-500 text-red-600',
+  renseignements:  'border-purple-500 text-purple-600',
+  pj:              'border-green-500 text-green-600',
+};
+
 type TabKey = typeof BASE_TABS[number]['key'];
 
 /**
@@ -254,7 +263,7 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                       onClick={() => setActiveTab(tab.key)}
                       className={`px-4 py-2 text-sm font-medium border-b-2 transition whitespace-nowrap flex items-center gap-1.5 ${
                         activeTab === tab.key
-                          ? `border-${tab.color}-500 text-${tab.color}-600`
+                          ? TAB_ACTIVE_STYLES[tab.key]
                           : 'border-transparent text-gray-500 hover:text-gray-700'
                       }`}
                     >

@@ -38,3 +38,6 @@ Documents_Legaux/
 
 # ── Règles agents IA ──
 .agent/rules/
+
+# Fixtures de test (contient tokens réels)
+.env.test

@@ -101,8 +101,8 @@ export default function ConfidentialitePage() {
               rows={[
                 ['Référent / travailleur social', 'Nom, prénom, email, téléphone, structure', 'Contrat (CGU)', '3 ans après dernière connexion'],
                 ['Enfant inscrit', 'Prénom, nom, date de naissance, structure référente', 'Contrat d\'inscription', 'Durée séjour + 3 ans'],
-                ['Dossier médical enfant', 'Fiche sanitaire (vaccinations, allergies, traitements, médecin), fiche de liaison, renseignements familiaux, quotient familial', 'Consentement explicite (Art. 9 RGPD — données de santé)', 'Durée du séjour + 1 an'],
-                ['Documents joints', 'Pièces jointes transmises (carnet de vaccination, ordonnances, attestations)', 'Consentement explicite (Art. 9 RGPD — données de santé)', 'Durée du séjour + 1 an'],
+                ['Dossier médical enfant', 'Fiche sanitaire (vaccinations, allergies, traitements, médecin), fiche de liaison, renseignements familiaux, quotient familial', 'Consentement explicite (Art. 9 RGPD — données de santé)', 'Durée du séjour + 3 mois'],
+                ['Documents joints', 'Pièces jointes transmises (carnet de vaccination, ordonnances, attestations)', 'Consentement explicite (Art. 9 RGPD — données de santé)', 'Durée du séjour + 3 mois'],
                 ['Paiement', 'Référence, montant, date (aucune coordonnée bancaire stockée)', 'Obligation légale', '10 ans (Code du commerce)'],
                 ['Logs connexion', 'Adresse IP, horodatage', 'Intérêt légitime (sécurité)', '12 mois'],
               ]}
@@ -146,7 +146,8 @@ export default function ConfidentialitePage() {
             <ul className="list-disc list-inside space-y-1 pl-2">
               <li>Au personnel habilité de l&apos;Association Groupe et Découverte</li>
               <li>Au référent ayant procédé à l&apos;inscription (accès limité à son propre dossier via lien personnel)</li>
-              <li>À <strong>Vercel Inc.</strong> — hébergement de l&apos;application (accès technique uniquement, DPA en place, serveurs Frankfurt/UE)</li>
+              <li>À <strong>Hostinger UAB</strong> — hébergement du site principal groupeetdecouverte.fr (accès technique uniquement, DPA en place, serveurs UE)</li>
+              <li>À <strong>Vercel Inc.</strong> — hébergement de l&apos;application de gestion app.groupeetdecouverte.fr (accès technique uniquement, DPA en place, serveurs UE)</li>
               <li>À <strong>Supabase Inc.</strong> — base de données et stockage des fichiers (accès technique uniquement, DPA en place, région eu-central-1 — Frankfurt, Allemagne)</li>
               <li>À <strong>Stripe, Inc.</strong> — traitement des paiements par carte (données strictement nécessaires à la transaction, certifié PCI-DSS)</li>
               <li>À <strong>Resend Inc.</strong> — envoi des emails transactionnels (confirmations, relances) — aucune donnée personnelle dans les logs conservés</li>
@@ -157,7 +158,7 @@ export default function ConfidentialitePage() {
           <Section title="6. Transferts hors Union Européenne">
             <p>
               Les données personnelles sont hébergées sur des serveurs situés en <strong>Allemagne (Frankfurt), au sein de l&apos;Union Européenne</strong>.
-              Les sous-traitants (Vercel, Supabase, Stripe, Resend) disposent tous d&apos;un accord de traitement des données (DPA)
+              Les sous-traitants (Hostinger, Vercel, Supabase, Stripe, Resend) disposent tous d&apos;un accord de traitement des données (DPA)
               conforme au RGPD et aux clauses contractuelles types de la Commission européenne.
             </p>
             <InfoBox>

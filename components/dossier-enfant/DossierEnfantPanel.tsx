@@ -224,6 +224,19 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
             </div>
           ) : (
             <>
+              {/* Notice RGPD — données médicales */}
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg flex gap-2 items-start">
+                <span className="text-blue-400 mt-0.5 shrink-0">🔒</span>
+                <p className="text-xs text-blue-700 leading-relaxed">
+                  Les informations saisies dans ce dossier (fiche sanitaire, documents médicaux) sont transmises
+                  uniquement à l&apos;équipe Groupe &amp; Découverte dans le cadre du séjour et conservées 1 an après
+                  celui-ci. Elles ne sont jamais communiquées à des tiers.{' '}
+                  <a href="/confidentialite" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-blue-900">
+                    Politique de confidentialité
+                  </a>
+                </p>
+              </div>
+
               {/* Barre de progression */}
               <div className="mb-4">
                 <div className="flex justify-between text-xs text-gray-500 mb-1">

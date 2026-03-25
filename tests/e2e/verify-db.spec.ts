@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Page Vérification DB - Anti-régression', () => {
+// La route /verify-db n'existe plus dans l'application — tests skippés
+test.describe.skip('Page Vérification DB - Anti-régression', () => {
   test('affiche tableau vérification 24 séjours', async ({ page }) => {
     await page.goto('/verify-db');
 

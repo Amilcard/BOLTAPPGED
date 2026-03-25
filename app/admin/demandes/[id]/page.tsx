@@ -98,11 +98,15 @@ export default function InscriptionDetailPage() {
     setSaving(true);
     setSaved(false);
     try {
-      await fetch(`/api/admin/inscriptions/${inscriptionId}`, {
+      const res = await fetch(`/api/admin/inscriptions/${inscriptionId}`, {
         method: 'PUT',
         headers: authHeaders(),
         body: JSON.stringify({ [field]: value }),
       });
+      if (!res.ok) {
+        toast('Erreur lors de l\'enregistrement');
+        return;
+      }
       await loadInscription();
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);

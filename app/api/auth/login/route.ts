@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     const response = NextResponse.json({ token });
     response.cookies.set('gd_session', token, {
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       path: '/',

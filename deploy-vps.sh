@@ -7,20 +7,20 @@ set -e  # Arrêter en cas d'erreur
 echo "=== DÉPLOIEMENT GED APP SUR VPS ==="
 echo ""
 
-# 1. Vérifier qu'on est sur la branche work
+# 1. Vérifier qu'on est sur la branche main
 echo "📌 Étape 1: Vérification de la branche Git"
 CURRENT_BRANCH=$(git branch --show-current)
-if [ "$CURRENT_BRANCH" != "work" ]; then
-    echo "❌ Erreur: Vous n'êtes pas sur la branche 'work' (branche actuelle: $CURRENT_BRANCH)"
-    echo "   Exécutez: git checkout work"
+if [ "$CURRENT_BRANCH" != "main" ]; then
+    echo "❌ Erreur: Vous n'êtes pas sur la branche 'main' (branche actuelle: $CURRENT_BRANCH)"
+    echo "   Exécutez: git checkout main"
     exit 1
 fi
-echo "✅ Branche 'work' active"
+echo "✅ Branche 'main' active"
 echo ""
 
 # 2. Pull des dernières modifications
 echo "📥 Étape 2: Récupération des dernières modifications"
-git pull origin work
+git pull origin main
 echo "✅ Code à jour"
 echo ""
 

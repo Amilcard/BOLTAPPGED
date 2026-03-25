@@ -99,47 +99,73 @@ export default function ConfidentialitePage() {
             <TableData
               headers={['Catégorie', 'Données', 'Base légale', 'Conservation']}
               rows={[
-                ['Compte professionnel', 'Nom, prénom, email, structure', 'Contrat (CGU)', '3 ans après dernière connexion'],
-                ['Enfant inscrit', 'Prénom, date de naissance, structure référente', 'Contrat d\'inscription', 'Durée séjour + 3 ans'],
-                ['Paiement', 'Référence, montant, date (pas de coordonnées bancaires)', 'Obligation légale', '10 ans (Code du commerce)'],
+                ['Référent / travailleur social', 'Nom, prénom, email, téléphone, structure', 'Contrat (CGU)', '3 ans après dernière connexion'],
+                ['Enfant inscrit', 'Prénom, nom, date de naissance, structure référente', 'Contrat d\'inscription', 'Durée séjour + 3 ans'],
+                ['Dossier médical enfant', 'Fiche sanitaire (vaccinations, allergies, traitements, médecin), fiche de liaison, renseignements familiaux, quotient familial', 'Consentement explicite (Art. 9 RGPD — données de santé)', 'Durée du séjour + 1 an'],
+                ['Documents joints', 'Pièces jointes transmises (carnet de vaccination, ordonnances, attestations)', 'Consentement explicite (Art. 9 RGPD — données de santé)', 'Durée du séjour + 1 an'],
+                ['Paiement', 'Référence, montant, date (aucune coordonnée bancaire stockée)', 'Obligation légale', '10 ans (Code du commerce)'],
                 ['Logs connexion', 'Adresse IP, horodatage', 'Intérêt légitime (sécurité)', '12 mois'],
               ]}
             />
+            <p className="text-xs text-orange-600 mt-2 font-medium">
+              ⚠️ Les données de santé (fiche sanitaire, documents médicaux) constituent une catégorie spéciale au sens de l&apos;article 9 du RGPD. Elles sont accessibles uniquement par le personnel habilité de l&apos;association et ne sont jamais communiquées à des tiers.
+            </p>
             <p className="text-xs text-gray-400 mt-2 italic">
               Principe de minimisation appliqué : seules les données strictement nécessaires à l&apos;organisation des séjours sont collectées.
             </p>
           </Section>
 
-          <Section title="3. Paiement en ligne">
-            <p>
-              Les paiements sont traités par notre prestataire de paiement sécurisé. L&apos;association ne stocke à
-              aucun moment les coordonnées bancaires complètes. Les transactions sont chiffrées via le protocole TLS.
-            </p>
+          <Section title="3. Lien de suivi personnel">
             <InfoBox>
-              <p className="font-semibold">Moyens de paiement acceptés</p>
-              <p>Chèque · Virement bancaire · Carte bancaire (en ligne)</p>
+              <p className="font-semibold mb-1">À quoi sert le lien de suivi ?</p>
+              <p>
+                Après chaque inscription, un lien de suivi personnel est envoyé par email au référent. Ce lien permet d&apos;accéder
+                à l&apos;espace de suivi de l&apos;inscription, de remplir le dossier de l&apos;enfant et de consulter l&apos;état du dossier.
+              </p>
+              <p className="mt-2">
+                Ce lien est <strong>strictement personnel</strong> — il ne doit pas être partagé. Il reste valide pendant la durée du séjour.
+                Pour demander sa révocation, contactez-nous à{' '}
+                <a href="mailto:groupeetdecouverte@gmail.com?subject=Révocation lien suivi" className="underline">groupeetdecouverte@gmail.com</a>.
+              </p>
             </InfoBox>
           </Section>
 
-          <Section title="4. Destinataires des données">
+          <Section title="4. Paiement en ligne">
+            <p>
+              Les paiements par carte bancaire sont traités par <strong>Stripe, Inc.</strong> (sous-traitant certifié PCI-DSS).
+              L&apos;association ne stocke à aucun moment les coordonnées bancaires complètes. Les transactions sont chiffrées via TLS.
+            </p>
+            <InfoBox>
+              <p className="font-semibold">Moyens de paiement acceptés</p>
+              <p>Chèque · Virement bancaire · Carte bancaire en ligne (Stripe)</p>
+            </InfoBox>
+          </Section>
+
+          <Section title="5. Destinataires des données">
             <p>Les données sont destinées exclusivement :</p>
             <ul className="list-disc list-inside space-y-1 pl-2">
               <li>Au personnel habilité de l&apos;Association Groupe et Découverte</li>
-              <li>Aux professionnels de la structure ayant procédé à l&apos;inscription (accès limité à leur propre structure)</li>
-              <li>À l&apos;hébergeur Hostinger (accès technique uniquement, soumis à un DPA)</li>
-              <li>Au prestataire de paiement (données strictement nécessaires à la transaction)</li>
+              <li>Au référent ayant procédé à l&apos;inscription (accès limité à son propre dossier via lien personnel)</li>
+              <li>À <strong>Vercel Inc.</strong> — hébergement de l&apos;application (accès technique uniquement, DPA en place, serveurs Frankfurt/UE)</li>
+              <li>À <strong>Supabase Inc.</strong> — base de données et stockage des fichiers (accès technique uniquement, DPA en place, région eu-central-1 — Frankfurt, Allemagne)</li>
+              <li>À <strong>Stripe, Inc.</strong> — traitement des paiements par carte (données strictement nécessaires à la transaction, certifié PCI-DSS)</li>
+              <li>À <strong>Resend Inc.</strong> — envoi des emails transactionnels (confirmations, relances) — aucune donnée personnelle dans les logs conservés</li>
             </ul>
             <p className="font-medium text-primary-700">Aucune donnée n&apos;est vendue, louée ou cédée à des tiers à des fins commerciales.</p>
           </Section>
 
-          <Section title="5. Transferts hors Union Européenne">
+          <Section title="6. Transferts hors Union Européenne">
             <p>
-              L&apos;ensemble des données est hébergé sur des serveurs situés au sein de l&apos;Union Européenne
-              (Hostinger — datacenter UE). Aucun transfert hors UE n&apos;est effectué.
+              Les données personnelles sont hébergées sur des serveurs situés en <strong>Allemagne (Frankfurt), au sein de l&apos;Union Européenne</strong>.
+              Les sous-traitants (Vercel, Supabase, Stripe, Resend) disposent tous d&apos;un accord de traitement des données (DPA)
+              conforme au RGPD et aux clauses contractuelles types de la Commission européenne.
             </p>
+            <InfoBox>
+              <p className="font-semibold text-green-700">Aucun transfert de données personnelles hors Union Européenne.</p>
+            </InfoBox>
           </Section>
 
-          <Section title="6. Sécurité des données">
+          <Section title="7. Sécurité des données">
             <p>L&apos;association met en œuvre les mesures suivantes :</p>
             <ul className="list-disc list-inside space-y-1 pl-2">
               <li>Chiffrement des communications (HTTPS / TLS)</li>
@@ -150,7 +176,7 @@ export default function ConfidentialitePage() {
             </ul>
           </Section>
 
-          <Section title="7. Vos droits">
+          <Section title="8. Vos droits">
             <p>Toute personne dont les données sont traitées dispose des droits suivants :</p>
             <TableData
               headers={['Droit', 'Description']}
@@ -178,7 +204,7 @@ export default function ConfidentialitePage() {
             </InfoBox>
           </Section>
 
-          <Section title="8. Cookies">
+          <Section title="9. Cookies">
             <p>
               L&apos;espace kids/ados étant totalement anonyme, aucun cookie de traitement ou de suivi n&apos;y est
               déposé. Sur l&apos;espace professionnel, seuls les cookies strictement nécessaires au fonctionnement

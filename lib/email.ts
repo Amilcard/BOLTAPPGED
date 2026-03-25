@@ -102,6 +102,13 @@ export async function sendInscriptionConfirmation(data: InscriptionEmailData) {
             <p style="color: #6b7280; font-size: 14px;">Votre inscription est en attente de validation. Vous recevrez un email de confirmation une fois le paiement reçu et validé.</p>
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
             <p style="color: #9ca3af; font-size: 12px;">Groupe &amp; Découverte — Séjours de vacances pour enfants et adolescents</p>
+            <p style="color: #9ca3af; font-size: 11px; margin-top: 8px; border-top: 1px solid #f3f4f6; padding-top: 8px;">
+              🔒 Vos données personnelles sont traitées par l'Association Groupe et Découverte conformément au RGPD.
+              Pour exercer vos droits (accès, rectification, suppression), écrivez à
+              <a href="mailto:groupeetdecouverte@gmail.com?subject=Demande RGPD" style="color: #6b7280;">groupeetdecouverte@gmail.com</a>
+              en mentionnant « Demande RGPD ».
+              <a href="https://app.groupeetdecouverte.fr/confidentialite" style="color: #6b7280;">Politique de confidentialité</a>
+            </p>
           </div>
         </div>
       `,
@@ -400,8 +407,14 @@ export async function sendRappelDossierIncomplet(data: {
               </a>
             </div>
             <p style="color: #6b7280; font-size: 13px;">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br/><span style="color: #374151;">${suiviUrl}</span></p>
+            <p style="color: #6b7280; font-size: 12px; margin-top: 12px;">Ce lien est personnel et réservé à votre usage. Ne le partagez pas. Il reste valide pendant toute la durée du séjour.</p>
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
             <p style="color: #9ca3af; font-size: 12px;">Groupe &amp; Découverte — Séjours de vacances pour enfants et adolescents</p>
+            <p style="color: #9ca3af; font-size: 11px; margin-top: 8px; border-top: 1px solid #f3f4f6; padding-top: 8px;">
+              🔒 Vos données personnelles sont traitées conformément au RGPD.
+              Contact : <a href="mailto:groupeetdecouverte@gmail.com?subject=Demande RGPD" style="color: #6b7280;">groupeetdecouverte@gmail.com</a> —
+              <a href="https://app.groupeetdecouverte.fr/confidentialite" style="color: #6b7280;">Politique de confidentialité</a>
+            </p>
           </div>
         </div>
       `,

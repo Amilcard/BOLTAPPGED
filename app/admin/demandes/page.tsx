@@ -102,17 +102,26 @@ export default function AdminDemandes() {
   useEffect(() => { fetchInscriptions(); }, []);
 
   const handleStatusChange = async (id: string, status: string) => {
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH);
-    const res = await fetch(`/api/admin/inscriptions/${id}`, {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      toast(`Erreur mise à jour statut : ${err?.error?.message ?? 'Erreur inconnue'}`);
+    const DESTRUCTIVE = ['refusee', 'annulee'];
+    const LABELS: Record<string, string> = { refusee: 'Refusée', annulee: 'Annulée' };
+    const doChange = async () => {
+      const token = localStorage.getItem(STORAGE_KEYS.AUTH);
+      const res = await fetch(`/api/admin/inscriptions/${id}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast(`Erreur mise à jour statut : ${err?.error?.message ?? 'Erreur inconnue'}`);
+      }
+      fetchInscriptions();
+    };
+    if (DESTRUCTIVE.includes(status)) {
+      confirm(`Passer cette inscription en "${LABELS[status]}" ? Cette action est difficile à annuler.`, doChange);
+    } else {
+      doChange();
     }
-    fetchInscriptions();
   };
 
   const handleDelete = (e: React.MouseEvent, id: string, jeune: string) => {

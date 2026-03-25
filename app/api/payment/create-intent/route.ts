@@ -20,20 +20,22 @@ export async function POST(req: NextRequest) {
   try {
     const stripe = getStripe();
     const supabase = getSupabase();
-    const { inscriptionId } = await req.json();
+    const { inscriptionId, suivi_token } = await req.json();
 
-    if (!inscriptionId) {
+    if (!inscriptionId || !suivi_token) {
       return NextResponse.json(
-        { error: 'Missing inscriptionId' },
+        { error: 'Missing inscriptionId or suivi_token' },
         { status: 400 }
       );
     }
 
     // Récupérer l'inscription ET son price_total vérifié en DB
+    // Vérification ownership : suivi_token doit correspondre à l'inscription
     const { data: inscription, error: fetchError } = await supabase
       .from('gd_inscriptions')
       .select('*')
       .eq('id', inscriptionId)
+      .eq('suivi_token', suivi_token)
       .single();
 
     if (fetchError || !inscription) {

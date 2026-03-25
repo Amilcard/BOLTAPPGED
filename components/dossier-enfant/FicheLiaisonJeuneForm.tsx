@@ -154,6 +154,9 @@ export function FicheLiaisonJeuneForm({ data, saving, onSave, jeunePrenom, jeune
           Valider
         </button>
       </div>
+      {!form.engagement_accepte && (
+        <p className="text-xs text-red-600 mt-1">Cochez la case d'engagement ci-dessus pour pouvoir valider ce bloc.</p>
+      )}
     </div>
   );
 }

@@ -51,6 +51,9 @@ function PdfDownloadButton({ inscriptionId, token, docType, label }: {
 }) {
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [emailSent, setEmailSent] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const handleDownload = async () => {
     setDownloading(true);
@@ -68,10 +71,28 @@ function PdfDownloadButton({ inscriptionId, token, docType, label }: {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Download error:', err);
+      setRetryCount(c => c + 1);
       setDownloadError(true);
-      setTimeout(() => setDownloadError(false), 5000);
+      setTimeout(() => setDownloadError(false), 8000);
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const handleSendByEmail = async () => {
+    setSendingEmail(true);
+    try {
+      await fetch(`/api/dossier-enfant/${inscriptionId}/pdf-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, type: docType }),
+      });
+      setEmailSent(true);
+      setDownloadError(false);
+    } catch {
+      // silence — l'utilisateur voit déjà le message d'erreur
+    } finally {
+      setSendingEmail(false);
     }
   };
 
@@ -84,10 +105,26 @@ function PdfDownloadButton({ inscriptionId, token, docType, label }: {
       >
         📥 {downloading ? 'Téléchargement...' : label}
       </button>
-      {downloadError && (
-        <p className="text-xs text-amber-700">
-          Échec — réessayez ou contactez-nous au 04 23 16 16 71
-        </p>
+      {emailSent && (
+        <p className="text-xs text-green-700">✓ Document envoyé par email</p>
+      )}
+      {downloadError && !emailSent && (
+        <div className="text-xs text-amber-700 space-y-1">
+          {retryCount < 2 ? (
+            <p>Le document n&apos;est pas sorti. <button onClick={handleDownload} className="underline">Réessayer</button></p>
+          ) : (
+            <p>
+              Toujours bloqué ?{' '}
+              <button
+                onClick={handleSendByEmail}
+                disabled={sendingEmail}
+                className="underline disabled:opacity-50"
+              >
+                {sendingEmail ? 'Envoi…' : 'Recevoir par email'}
+              </button>
+            </p>
+          )}
+        </div>
       )}
     </div>
   );

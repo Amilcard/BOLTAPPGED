@@ -65,7 +65,7 @@ export function useDossierEnfant(inscriptionId: string, token: string): UseDossi
   }, [inscriptionId, token]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const saveBloc = useCallback(async (

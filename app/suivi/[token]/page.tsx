@@ -462,7 +462,7 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
               className="text-sm border rounded-lg px-3 py-1.5 w-full sm:w-auto"
               value={prefNouvelles}
               disabled={saving}
-              onChange={(e) => { setPrefNouvelles(e.target.value); patchField('pref_nouvelles_sejour', e.target.value); }}
+              onChange={(e) => { setPrefNouvelles(e.target.value); void patchField('pref_nouvelles_sejour', e.target.value); }}
             >
               <option value="oui">Oui, je souhaite être tenu informé</option>
               <option value="si_besoin">Uniquement si nécessaire</option>
@@ -479,7 +479,7 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
               className="text-sm border rounded-lg px-3 py-1.5 w-full sm:w-auto"
               value={prefCanal}
               disabled={saving}
-              onChange={(e) => { setPrefCanal(e.target.value); patchField('pref_canal_contact', e.target.value); }}
+              onChange={(e) => { setPrefCanal(e.target.value); void patchField('pref_canal_contact', e.target.value); }}
             >
               <option value="email">Email</option>
               <option value="telephone">Téléphone</option>
@@ -493,7 +493,7 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
               type="checkbox"
               checked={prefBilan}
               disabled={saving}
-              onChange={(e) => { setPrefBilan(e.target.checked); patchField('pref_bilan_fin_sejour', e.target.checked); }}
+              onChange={(e) => { setPrefBilan(e.target.checked); void patchField('pref_bilan_fin_sejour', e.target.checked); }}
               className="w-4 h-4 rounded border-gray-300"
             />
             <span className="text-sm text-gray-700">Je souhaite un bilan écrit en fin de séjour</span>
@@ -515,7 +515,7 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
               onBlur={(e) => {
                 const v = e.target.value.trim();
                 if (v !== (dossier.consignesCommunication || '')) {
-                  patchField('consignes_communication', v);
+                  void patchField('consignes_communication', v);
                 }
               }}
             />
@@ -537,7 +537,7 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
               onBlur={(e) => {
                 const v = e.target.value.trim();
                 if (v !== (dossier.besoinsSpecifiques || '')) {
-                  patchField('besoins_specifiques', v);
+                  void patchField('besoins_specifiques', v);
                 }
               }}
             />

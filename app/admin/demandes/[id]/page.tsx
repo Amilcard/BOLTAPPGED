@@ -90,8 +90,8 @@ export default function InscriptionDetailPage() {
   };
 
   useEffect(() => {
-    loadInscription();
-    loadDossier();
+    void loadInscription();
+    void loadDossier();
   }, [inscriptionId]);
 
   const patchField = async (field: string, value: unknown) => {

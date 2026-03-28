@@ -79,22 +79,25 @@ export async function POST(req: NextRequest) {
           .eq('id', inscriptionId)
           .single();
 
-        if (inscription != null) {
-          const stripeAmountEur = paymentIntent.amount / 100;
-          const dbAmount = (inscription as NonNullable<typeof inscription>).price_total ?? 0;
-          if (Math.abs(stripeAmountEur - dbAmount) > 1) {
-            console.error('AMOUNT_MISMATCH in webhook:', {
-              stripe: stripeAmountEur,
-              db: dbAmount,
-              inscriptionId,
-              eventId: event.id,
-            });
-            await supabase
-              .from('gd_inscriptions')
-              .update({ payment_status: 'amount_mismatch' })
-              .eq('id', inscriptionId);
-            break;
-          }
+        if (!inscription) {
+          console.error('webhook: inscription not found for payment intent', { inscriptionId, eventId: event.id });
+          break;
+        }
+
+        const stripeAmountEur = paymentIntent.amount / 100;
+        const dbAmount = inscription.price_total ?? 0;
+        if (Math.abs(stripeAmountEur - dbAmount) > 1) {
+          console.error('AMOUNT_MISMATCH in webhook:', {
+            stripe: stripeAmountEur,
+            db: dbAmount,
+            inscriptionId,
+            eventId: event.id,
+          });
+          await supabase
+            .from('gd_inscriptions')
+            .update({ payment_status: 'amount_mismatch' })
+            .eq('id', inscriptionId);
+          break;
         }
 
         // Montant vérifié, marquer comme payé

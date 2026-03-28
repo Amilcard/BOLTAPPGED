@@ -6,6 +6,7 @@ tsconfig.tsbuildinfo
 # ── Environnement ──
 .env
 .env*.local
+.env.production
 .vercel
 
 # ── OS / éditeurs ──

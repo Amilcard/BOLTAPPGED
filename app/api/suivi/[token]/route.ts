@@ -190,7 +190,7 @@ export async function PATCH(
       },
     };
 
-    if (!editableFields[field]) {
+    if (!Object.prototype.hasOwnProperty.call(editableFields, field) || !editableFields[field]) {
       return NextResponse.json(
         { error: { code: 'FIELD_NOT_ALLOWED', message: 'Ce champ n\'est pas modifiable.' } },
         { status: 403 }

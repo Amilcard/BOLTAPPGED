@@ -55,6 +55,12 @@ export async function POST(
 
     // Générer le PDF via la route existante (appel interne)
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.groupeetdecouverte.fr';
+    // SSRF guard: s'assurer que l'URL est bien sur notre domaine
+    const allowedOrigins = ['https://app.groupeetdecouverte.fr', 'http://localhost:3000'];
+    if (!allowedOrigins.some(o => appUrl.startsWith(o))) {
+      console.error('SSRF blocked: NEXT_PUBLIC_APP_URL invalide:', appUrl);
+      return NextResponse.json({ error: 'Configuration serveur invalide.' }, { status: 500 });
+    }
     const pdfRes = await fetch(
       `${appUrl}/api/dossier-enfant/${inscriptionId}/pdf?token=${token}&type=${type}`
     );

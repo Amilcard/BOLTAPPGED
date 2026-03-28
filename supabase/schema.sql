@@ -1298,22 +1298,6 @@ CREATE TABLE public.gd_structures (
 );
 
 
---
--- Name: gd_wishes; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.gd_wishes (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    prenom text NOT NULL,
-    date_naissance date NOT NULL,
-    sejour_slug text,
-    session_date date,
-    city_departure text,
-    motivation text,
-    status text DEFAULT 'nouveau'::text,
-    created_at timestamp with time zone DEFAULT now()
-);
-
 
 --
 -- Name: import_logs; Type: TABLE; Schema: public; Owner: -
@@ -1789,13 +1773,6 @@ ALTER TABLE ONLY public.gd_structures
 ALTER TABLE ONLY public.gd_structures
     ADD CONSTRAINT gd_structures_pkey PRIMARY KEY (id);
 
-
---
--- Name: gd_wishes gd_wishes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.gd_wishes
-    ADD CONSTRAINT gd_wishes_pkey PRIMARY KEY (id);
 
 
 --
@@ -2481,13 +2458,6 @@ ALTER TABLE ONLY public.gd_stay_themes
     ADD CONSTRAINT gd_stay_themes_stay_slug_fkey FOREIGN KEY (stay_slug) REFERENCES public.gd_stays(slug) ON DELETE CASCADE;
 
 
---
--- Name: gd_wishes gd_wishes_sejour_slug_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.gd_wishes
-    ADD CONSTRAINT gd_wishes_sejour_slug_fkey FOREIGN KEY (sejour_slug) REFERENCES public.gd_stays(slug);
-
 
 --
 -- Name: payment_status_logs payment_status_logs_inscription_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
@@ -2503,12 +2473,6 @@ ALTER TABLE ONLY public.payment_status_logs
 
 CREATE POLICY "Insert gd_stays public" ON public.gd_stays FOR INSERT WITH CHECK (((slug IS NOT NULL) AND (slug <> ''::text) AND (source_url IS NOT NULL) AND (source_url <> ''::text)));
 
-
---
--- Name: gd_wishes Insertion publique; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Insertion publique" ON public.gd_wishes FOR INSERT WITH CHECK (true);
 
 
 --
@@ -2545,12 +2509,6 @@ CREATE POLICY "Lecture publique" ON public.gd_stay_themes FOR SELECT USING (true
 
 CREATE POLICY "Lecture publique" ON public.gd_stays FOR SELECT USING (true);
 
-
---
--- Name: gd_wishes Lecture publique; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Lecture publique" ON public.gd_wishes FOR SELECT USING (true);
 
 
 --
@@ -2711,11 +2669,6 @@ ALTER TABLE public.gd_stays ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE public.gd_structures ENABLE ROW LEVEL SECURITY;
 
---
--- Name: gd_wishes; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE public.gd_wishes ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: import_logs; Type: ROW SECURITY; Schema: public; Owner: -

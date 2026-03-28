@@ -253,7 +253,8 @@ export const getSessionPricesFormatted = async (slug: string) => {
 // API SOUHAITS & INSCRIPTIONS
 export const createWish = async (wish: Wish) => {
   const { data, error } = await supabaseGed
-    .from('gd_souhaits')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .from('gd_souhaits' as any)
     .insert([wish])
     .select()
 

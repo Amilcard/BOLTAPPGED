@@ -1,12 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase-server';
 
-function getSupabase() {
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY manquante');
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, key);
-}
 
 export async function GET(
   _req: NextRequest,

@@ -1,15 +1,9 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase-server';
 import { verifyAuth } from '@/lib/auth-middleware';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
 
 // Couleurs GED
 const ORANGE = rgb(0.878, 0.478, 0.373);

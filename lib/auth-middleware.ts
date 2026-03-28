@@ -10,9 +10,12 @@ export interface AuthPayload {
 export function verifyAuth(request: NextRequest): AuthPayload | null {
   try {
     const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) return null;
+    const token = authHeader?.startsWith('Bearer ')
+      ? authHeader.slice(7)
+      : request.cookies.get('gd_session')?.value;
 
-    const token = authHeader.slice(7);
+    if (!token) return null;
+
     const secret = process.env.NEXTAUTH_SECRET;
     if (!secret) return null; // Fail-safe: jamais valider sans secret
     const payload = jwt.verify(token, secret) as AuthPayload;

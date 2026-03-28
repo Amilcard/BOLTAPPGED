@@ -125,28 +125,7 @@ export default function SuiviProPage() {
   }
 
   if (error || !data) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-8 text-center">
-          <div className="text-4xl mb-4">✉️</div>
-          <h1 className="text-xl font-bold text-gray-800 mb-2">Ce lien n&apos;est plus actif</h1>
-          <p className="text-gray-600 mb-4 leading-relaxed">
-            Ce lien de suivi a peut-être expiré ou a déjà été utilisé depuis un autre appareil.
-          </p>
-          <p className="text-gray-600 mb-6 leading-relaxed">
-            Retrouvez votre lien dans l&apos;email de confirmation reçu lors de votre inscription,
-            ou contactez-nous — nous vous en renverrons un rapidement.
-          </p>
-          <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600 space-y-1 mb-6">
-            <p>📞 <a href="tel:0423161671" className="hover:text-primary">04 23 16 16 71</a> — lun.–ven. 9h–17h</p>
-            <p>✉️ <a href="mailto:contact@groupeetdecouverte.fr" className="hover:text-primary">contact@groupeetdecouverte.fr</a></p>
-          </div>
-          <a href="/" className="inline-block text-gray-400 hover:text-primary text-sm">
-            Retour à l&apos;accueil
-          </a>
-        </div>
-      </div>
-    );
+    return <ResendLinkBlock />;
   }
 
   return (
@@ -576,6 +555,77 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// === Composant renvoi de lien (affiché quand le token est invalide) ===
+function ResendLinkBlock() {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+
+  const handleResend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus('sending');
+    try {
+      await fetch('/api/suivi/resend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      setStatus('sent');
+    } catch {
+      setStatus('error');
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-8 text-center">
+        <div className="text-4xl mb-4">✉️</div>
+        <h1 className="text-xl font-bold text-gray-800 mb-2">Ce lien n&apos;est plus actif</h1>
+        <p className="text-gray-500 text-sm mb-1">
+          Recherchez <strong>Groupe &amp; Découverte</strong> dans votre boîte mail.
+        </p>
+        <p className="text-gray-400 text-xs mb-6">Pensez aussi à vérifier vos spams.</p>
+
+        {status === 'sent' ? (
+          <div className="bg-green-50 border border-green-100 rounded-lg p-4 text-green-700 text-sm">
+            ✓ Si un dossier existe pour cet email, vous recevrez votre lien dans quelques minutes.
+          </div>
+        ) : (
+          <form onSubmit={handleResend} className="space-y-3 text-left">
+            <label className="block text-sm font-medium text-gray-700">
+              Recevoir un nouveau lien
+            </label>
+            <input
+              type="email"
+              required
+              placeholder="votre@email.fr"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            <button
+              type="submit"
+              disabled={status === 'sending'}
+              className="w-full bg-primary text-white font-medium py-2.5 rounded-lg hover:bg-primary/90 transition disabled:opacity-50 text-sm"
+            >
+              {status === 'sending' ? 'Envoi en cours…' : 'Recevoir mon lien de suivi'}
+            </button>
+            {status === 'error' && (
+              <p className="text-xs text-amber-700 text-center">
+                Envoi échoué. Contactez-nous au 04 23 16 16 71.
+              </p>
+            )}
+          </form>
+        )}
+
+        <div className="mt-6 text-xs text-gray-400 space-y-1">
+          <p>📞 <a href="tel:0423161671" className="hover:text-primary">04 23 16 16 71</a> — lun.–ven. 9h–17h</p>
+          <p>✉️ <a href="mailto:contact@groupeetdecouverte.fr" className="hover:text-primary">contact@groupeetdecouverte.fr</a></p>
+        </div>
+      </div>
     </div>
   );
 }

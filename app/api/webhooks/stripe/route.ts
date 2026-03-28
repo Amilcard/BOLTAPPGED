@@ -147,15 +147,17 @@ export async function POST(req: NextRequest) {
         console.log(`Unhandled event type: ${event.type}`);
     }
 
-    // IDEMPOTENCY : enregistrer l'event comme traité
+    // IDEMPOTENCY : enregistrer l'event comme traité (ON CONFLICT DO NOTHING = atomique)
     await supabase
       .from('gd_processed_events')
-      .insert({
-        event_id: event.id,
-        event_type: event.type,
-        processed_at: new Date().toISOString(),
-      })
-      .single();
+      .upsert(
+        {
+          event_id: event.id,
+          event_type: event.type,
+          processed_at: new Date().toISOString(),
+        },
+        { onConflict: 'event_id', ignoreDuplicates: true }
+      );
 
     return NextResponse.json({ received: true });
   } catch (error: any) {

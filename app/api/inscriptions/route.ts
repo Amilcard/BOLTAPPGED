@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
 import { z } from 'zod';
-import { sendInscriptionConfirmation, sendAdminNewInscriptionNotification } from '@/lib/email';
+import { sendInscriptionConfirmation, sendAdminNewInscriptionNotification, sendStructureCodeEmail } from '@/lib/email';
 const inscriptionSchema = z.object({
   staySlug: z.string().min(1),
   sessionDate: z.string().min(1), // Date de début session
@@ -19,6 +19,14 @@ const inscriptionSchema = z.object({
   priceTotal: z.number().min(0),
   consent: z.boolean().refine(v => v === true, { message: 'Consentement requis' }),
   paymentMethod: z.enum(['card', 'bank_transfer', 'cheque', 'transfer', 'check']).optional().default('bank_transfer'),
+  // Champs structure (Phase 1 espace structure)
+  structureCode: z.string().regex(/^[A-Z0-9]{6}$/).optional(),  // Code 6 chars si connu
+  structureName: z.string().min(1),               // Nom structure (obligatoire)
+  structureAddress: z.string().optional(),         // Adresse
+  structurePostalCode: z.string().regex(/^\d{5}$/),  // CP (obligatoire, 5 chiffres)
+  structureCity: z.string().min(1),                // Ville (obligatoire)
+  structureType: z.string().optional(),            // asso, ccas, centre_social, etc.
+  structureEmail: z.string().email().optional(),   // Email structure (optionnel)
 });
 
 // Mapping front-end → DB constraint values
@@ -310,6 +318,60 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ── Résolution structure ──────────────────────────────────────────
+    let structureId: string | null = null;
+    let structurePendingName: string | null = null;
+
+    if (data.structureCode) {
+      // L'éducateur a un code → vérifier et rattacher
+      const { data: struct } = await supabase
+        .from('gd_structures')
+        .select('id')
+        .eq('code', data.structureCode.toUpperCase())
+        .eq('status', 'active')
+        .single();
+
+      if (struct) {
+        structureId = struct.id;
+      } else {
+        // Code invalide → on continue sans bloquer, mais on log
+        console.warn('[inscriptions] Code structure invalide:', data.structureCode);
+        structurePendingName = data.structureName;
+      }
+    } else {
+      // Pas de code → créer la structure automatiquement
+      const { data: newStruct, error: structErr } = await supabase
+        .from('gd_structures')
+        .insert({
+          name: data.structureName,
+          address: data.structureAddress || null,
+          postal_code: data.structurePostalCode,
+          city: data.structureCity,
+          type: data.structureType || null,
+          email: data.structureEmail || null,
+          domain: null,  // Pas de domaine automatique en Phase 1
+          created_by_email: data.email,
+        })
+        .select('id, code')
+        .single();
+
+      if (newStruct && !structErr) {
+        structureId = newStruct.id;
+        // Envoyer le code par email à l'éducateur (fire-and-forget)
+        // L'email structure est optionnel — on envoie au structureEmail si fourni, sinon à l'éducateur
+        const codeRecipient = data.structureEmail || data.email;
+        sendStructureCodeEmail({
+          recipientEmail: codeRecipient,
+          structureName: data.structureName,
+          structureCode: newStruct.code,
+          educateurPrenom: data.socialWorkerName,
+        }).catch((err) => console.error('[inscriptions] sendStructureCodeEmail failed:', err));
+      } else {
+        console.error('[inscriptions] Erreur création structure:', structErr);
+        structurePendingName = data.structureName;
+      }
+    }
+
     const { data: inscriptionRows, error } = await supabase
       .from('gd_inscriptions')
       .insert({
@@ -322,7 +384,7 @@ export async function POST(request: NextRequest) {
         referent_nom: data.socialWorkerName,
         referent_email: data.email,
         referent_tel: data.phone,
-        organisation: data.organisation,
+        organisation: data.structureName,  // Le champ organisation reste rempli pour rétrocompatibilité
         dossier_ref: dossierRef,
         // suivi_token est auto-généré par Supabase (DEFAULT gen_random_uuid())
         options_educatives: data.optionsEducatives || null,
@@ -331,6 +393,14 @@ export async function POST(request: NextRequest) {
         status: 'en_attente',
         payment_status: 'pending_payment',
         payment_method: dbPaymentMethod,
+        // Champs structure
+        structure_id: structureId,
+        structure_pending_name: structurePendingName,
+        structure_email: data.structureEmail || null,
+        structure_postal_code: data.structurePostalCode,
+        structure_city: data.structureCity,
+        structure_type: data.structureType || null,
+        structure_address: data.structureAddress || null,
       })
       .select();
     const inscription = inscriptionRows?.[0] ?? null;

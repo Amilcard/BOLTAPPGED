@@ -22,6 +22,17 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error;
 
+    // Compteurs waitlist par séjour
+    const { data: waitlistCounts } = await supabase
+      .from('gd_waitlist')
+      .select('sejour_slug')
+      .is('notified_at', null);
+
+    const waitlistBySlug: Record<string, number> = {};
+    for (const w of (waitlistCounts || []) as Array<{ sejour_slug: string }>) {
+      waitlistBySlug[w.sejour_slug] = (waitlistBySlug[w.sejour_slug] || 0) + 1;
+    }
+
     // Mapper snake_case → camelCase pour compatibilité avec le front admin
     const stays = (data || []).map((s: Record<string, unknown>) => ({
       id: s.slug, // slug comme identifiant unique
@@ -42,6 +53,7 @@ export async function GET(request: NextRequest) {
       published: s.published ?? false,
       createdAt: s.created_at,
       updatedAt: s.updated_at,
+      waitlistCount: waitlistBySlug[s.slug as string] || 0,
     }));
 
     return NextResponse.json(stays);

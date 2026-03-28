@@ -1,27 +1,20 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { requireAdmin } from '@/lib/auth-middleware';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error('Variables Supabase manquantes');
-  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
-}
-
 // PUT /api/admin/users/[id] — modifier email, rôle ou mot de passe
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   if (!requireAdmin(request)) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
   }
 
-  const { id } = params;
+  const { id } = await params;
   if (!UUID_REGEX.test(id)) {
     return NextResponse.json({ error: 'ID invalide' }, { status: 400 });
   }
@@ -57,15 +50,24 @@ export async function PUT(
 // DELETE /api/admin/users/[id] — supprimer un utilisateur
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!requireAdmin(request)) {
+  const auth = requireAdmin(request);
+  if (!auth) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
   }
 
-  const { id } = params;
+  const { id } = await params;
   if (!UUID_REGEX.test(id)) {
     return NextResponse.json({ error: 'ID invalide' }, { status: 400 });
+  }
+
+  // Anti self-delete : un admin ne peut pas supprimer son propre compte
+  if (id === auth.userId) {
+    return NextResponse.json(
+      { error: 'Impossible de supprimer votre propre compte.' },
+      { status: 400 }
+    );
   }
 
   try {

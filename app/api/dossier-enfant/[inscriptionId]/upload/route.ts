@@ -111,7 +111,10 @@ export async function POST(
         .update({ documents_joints: updatedDocs })
         .eq('id', dossier.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        await supabase.storage.from('dossier-documents').remove([storagePath]);
+        throw updateError;
+      }
     } else {
       // Dossier n'existe pas encore : le creer avec le document
       const { error: insertError } = await supabase
@@ -121,7 +124,10 @@ export async function POST(
           documents_joints: [newDoc],
         });
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        await supabase.storage.from('dossier-documents').remove([storagePath]);
+        throw insertError;
+      }
     }
 
     return NextResponse.json({

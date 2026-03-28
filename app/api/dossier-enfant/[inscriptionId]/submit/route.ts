@@ -54,7 +54,7 @@ export async function POST(
     // 2. Charger le dossier
     const { data: dossierRaw, error: dossierErr } = await supabase
       .from('gd_dossier_enfant')
-      .select('id, bulletin_completed, sanitaire_completed, liaison_completed, renseignements_completed, documents_joints, ged_sent_at')
+      .select('id, bulletin_completed, sanitaire_completed, liaison_completed, renseignements_completed, renseignements_required, documents_joints, ged_sent_at')
       .eq('inscription_id', inscriptionId)
       .single();
 
@@ -71,6 +71,7 @@ export async function POST(
       sanitaire_completed: boolean;
       liaison_completed: boolean;
       renseignements_completed: boolean;
+      renseignements_required: boolean;
       documents_joints: unknown[];
       ged_sent_at: string | null;
     };
@@ -83,9 +84,10 @@ export async function POST(
       );
     }
 
-    // 4. Vérifier complétude des 4 blocs obligatoires (PJ exclues — optionnelles)
+    // 4. Vérifier complétude — renseignements uniquement si requis par le séjour
+    const renseignementsOk = !dossier.renseignements_required || dossier.renseignements_completed;
     if (!dossier.bulletin_completed || !dossier.sanitaire_completed ||
-        !dossier.liaison_completed || !dossier.renseignements_completed) {
+        !dossier.liaison_completed || !renseignementsOk) {
       return NextResponse.json(
         { error: 'Dossier incomplet.' },
         { status: 400 }

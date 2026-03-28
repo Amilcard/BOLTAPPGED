@@ -299,6 +299,24 @@ export async function POST(request: NextRequest) {
     const cleanRemarks = data.remarques || '';
     // Normaliser la méthode de paiement pour correspondre à la contrainte DB
     const dbPaymentMethod = PAYMENT_METHOD_MAP[data.paymentMethod] || 'transfer';
+    // Anti-doublon : vérifier si une inscription identique existe déjà
+    const { data: existing } = await supabase
+      .from('gd_inscriptions')
+      .select('id, dossier_ref')
+      .eq('referent_email', data.email)
+      .eq('sejour_slug', data.staySlug)
+      .eq('session_date', normalizedDate)
+      .eq('jeune_date_naissance', data.childBirthDate)
+      .eq('status', 'en_attente')
+      .maybeSingle();
+
+    if (existing) {
+      return NextResponse.json(
+        { error: { code: 'DUPLICATE', message: 'Une inscription identique existe déjà.', dossierRef: existing.dossier_ref } },
+        { status: 409 }
+      );
+    }
+
     const { data: inscriptionRows, error } = await supabase
       .from('gd_inscriptions')
       .insert({

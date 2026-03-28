@@ -492,21 +492,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
         <div className="space-y-4">
           <h3 className="font-medium text-primary text-lg">Étape 1/5 : Choisir une session — demande d&apos;inscription</h3>
           {sessionsUnique.length === 0 && (
-            <div className="bg-blue-50 border border-blue-100 rounded-xl p-5 text-center">
-              <div className="text-3xl mb-3">📅</div>
-              <p className="font-medium text-gray-800 mb-1">Aucune session disponible pour le moment</p>
-              <p className="text-sm text-gray-500 mb-4 leading-relaxed">
-                Les inscriptions ne sont pas encore ouvertes ou toutes les places sont prises.
-                Contactez-nous pour connaître les prochaines dates.
-              </p>
-              <div className="text-sm text-gray-600 space-y-1">
-                <p>📞 <a href="tel:0423161671" className="text-primary hover:underline">04 23 16 16 71</a></p>
-                <p>✉️ <a href="mailto:contact@groupeetdecouverte.fr" className="text-primary hover:underline">contact@groupeetdecouverte.fr</a></p>
-              </div>
-              <a href="/sejours" className="inline-block mt-4 text-sm text-primary hover:underline">
-                Voir d&apos;autres séjours →
-              </a>
-            </div>
+            <WaitlistBlock sejourSlug={stay.slug || ''} />
           )}
           <div className="space-y-2">
             {sessionsUnique.slice(0, showAllSessions ? undefined : 4).map(session => {
@@ -1219,6 +1205,87 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// === Waitlist — formulaire affiché quand aucune session n'est disponible ===
+function WaitlistBlock({ sejourSlug }: { sejourSlug: string }) {
+  const [email, setEmail] = useState('');
+  const [nom, setNom] = useState('');
+  const [status, setStatus] = useState<'idle' | 'sending' | 'done' | 'error'>('idle');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus('sending');
+    try {
+      const res = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, nom, sejourSlug }),
+      });
+      setStatus(res.ok ? 'done' : 'error');
+    } catch {
+      setStatus('error');
+    }
+  };
+
+  if (status === 'done') {
+    return (
+      <div className="bg-green-50 border border-green-100 rounded-xl p-6 text-center">
+        <div className="text-3xl mb-3">✓</div>
+        <p className="font-medium text-gray-800 mb-1">Vous êtes sur la liste !</p>
+        <p className="text-sm text-gray-500">
+          Nous vous enverrons un email dès qu&apos;une place se libère pour ce séjour.
+        </p>
+        <a href="/sejours" className="inline-block mt-4 text-sm text-primary hover:underline">
+          Voir d&apos;autres séjours →
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
+      <div className="text-center mb-4">
+        <div className="text-3xl mb-2">📅</div>
+        <p className="font-medium text-gray-800">Aucune session disponible pour le moment</p>
+        <p className="text-sm text-gray-500 mt-1">
+          Laissez votre email — nous vous prévenons dès qu&apos;une place s&apos;ouvre.
+        </p>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-2">
+        <input
+          type="text"
+          placeholder="Votre nom (optionnel)"
+          value={nom}
+          onChange={e => setNom(e.target.value)}
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
+        <input
+          type="email"
+          required
+          placeholder="votre@email.fr"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
+        <button
+          type="submit"
+          disabled={status === 'sending'}
+          className="w-full bg-primary text-white font-medium py-2.5 rounded-lg hover:bg-primary/90 transition disabled:opacity-50 text-sm"
+        >
+          {status === 'sending' ? 'Enregistrement…' : 'Me prévenir dès qu\'une place s\'ouvre'}
+        </button>
+        {status === 'error' && (
+          <p className="text-xs text-amber-700 text-center">Erreur — réessayez ou appelez le 04 23 16 16 71</p>
+        )}
+      </form>
+      <div className="text-center mt-3">
+        <a href="/sejours" className="text-xs text-gray-400 hover:text-primary">
+          Voir d&apos;autres séjours →
+        </a>
+      </div>
     </div>
   );
 }

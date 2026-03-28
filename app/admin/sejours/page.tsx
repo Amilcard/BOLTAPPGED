@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import { STORAGE_KEYS, formatPrice } from '@/lib/utils';
-import { Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, EyeOff, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Stay } from '@/lib/types';
 import { useAdminUI } from '@/components/admin/admin-ui';
@@ -33,6 +33,22 @@ export default function AdminSejours() {
         headers: { Authorization: `Bearer ${token}` },
       });
       fetchStays();
+    });
+  };
+
+  const handleNotifyWaitlist = (stay: Stay) => {
+    const count = (stay as any).waitlistCount;
+    confirm(`Envoyer un email à ${count} personne(s) en attente pour ce séjour ?`, async () => {
+      const token = localStorage.getItem(STORAGE_KEYS.AUTH);
+      const res = await fetch(`/api/admin/stays/${stay.id}/notify-waitlist`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const { sent } = await res.json();
+        alert(`${sent} email(s) envoyé(s).`);
+        fetchStays();
+      }
     });
   };
 
@@ -71,6 +87,7 @@ export default function AdminSejours() {
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Âges</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Prix</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Statut</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Attente</th>
               <th className="px-6 py-4 text-right text-sm font-semibold text-gray-600">Actions</th>
             </tr>
           </thead>
@@ -86,7 +103,23 @@ export default function AdminSejours() {
                   </span>
                 </td>
                 <td className="px-6 py-4">
+                  {(stay as any).waitlistCount > 0 && (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                      <Bell size={11} /> {(stay as any).waitlistCount}
+                    </span>
+                  )}
+                </td>
+                <td className="px-6 py-4">
                   <div className="flex justify-end gap-2">
+                    {(stay as any).waitlistCount > 0 && (
+                      <button
+                        onClick={() => handleNotifyWaitlist(stay)}
+                        className="p-2 hover:bg-amber-50 text-amber-600 rounded"
+                        title={`Notifier ${(stay as any).waitlistCount} personne(s) en attente`}
+                      >
+                        <Bell size={18} />
+                      </button>
+                    )}
                     <button onClick={() => handleTogglePublish(stay)} className="p-2 hover:bg-gray-100 rounded" title={stay.published ? 'Dépublier' : 'Publier'}>
                       {stay.published ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>

@@ -406,6 +406,7 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  const [lastPatch, setLastPatch] = useState<{ field: string; value: unknown } | null>(null);
   // State contrôlé pour éviter la désynchronisation UI/DB (defaultValue non réactif)
   const [prefNouvelles, setPrefNouvelles] = useState(dossier.prefNouvellesSejour || 'si_besoin');
   const [prefCanal, setPrefCanal] = useState(dossier.prefCanalContact || 'email');
@@ -416,6 +417,7 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
   const patchField = async (field: string, value: unknown) => {
     setSaving(true);
     setSaved(false);
+    setLastPatch({ field, value });
     try {
       const res = await fetch(`/api/suivi/${token}`, {
         method: 'PATCH',
@@ -466,9 +468,17 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
             </div>
           )}
           {saveError && (
-            <div className="text-sm text-amber-700 bg-amber-50 px-3 py-2 rounded-lg leading-relaxed">
-              La modification n&apos;a pas pu être enregistrée. Vérifiez votre connexion et réessayez,
-              ou contactez-nous au <a href="tel:0423161671" className="underline">04 23 16 16 71</a>.
+            <div className="text-sm text-amber-700 bg-amber-50 px-3 py-2 rounded-lg leading-relaxed flex items-center justify-between gap-3">
+              <span>
+                Votre connexion a peut-être glissé.
+                Ce que vous avez écrit est conservé.
+              </span>
+              <button
+                onClick={() => lastPatch && patchField(lastPatch.field, lastPatch.value)}
+                className="shrink-0 text-xs font-medium underline hover:no-underline"
+              >
+                Réessayer
+              </button>
             </div>
           )}
 

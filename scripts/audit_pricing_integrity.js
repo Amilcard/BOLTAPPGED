@@ -67,7 +67,7 @@ async function auditPricing() {
     console.log(`| **${stay.title}** | **${minNuDisplay}** | *Sans transport* | 0€ | ${statusNu} |`);
 
     // Lignes pour chaque ville
-    Object.keys(citySurcharges).sort().forEach(city => {
+    Object.keys(citySurcharges).sort((a, b) => a.localeCompare(b, 'fr')).forEach(city => {
       const surcharges = Array.from(citySurcharges[city]);
       const surchargeDisplay = surcharges.map(s => `+${s}€`).join(' / ');
       const statusTransport = surcharges.length === 1 ? "✅" : "⚠️ Incohérence Surcharge";

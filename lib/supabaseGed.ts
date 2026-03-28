@@ -167,7 +167,7 @@ export const getCitiesDeparture = async (slug: string) => {
     .eq('stay_slug', slug)
 
   if (error) throw error
-  return [...new Set(data.map((d: any) => d.city_departure))].sort()
+  return [...new Set(data.map((d: any) => d.city_departure))].sort((a: string, b: string) => a.localeCompare(b, 'fr'))
 }
 
 // API SESSIONS AVEC ÂGES

@@ -2,8 +2,6 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
 import { verifyAuth } from '@/lib/auth-middleware';
-
-
 /**
  * GET /api/admin/session-prices?stay_slug=xxx
  * Retourne les tarifs de sessions pour un séjour donné

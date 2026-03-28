@@ -1,8 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
-
-
 const ALLOWED_TYPES = ['vaccins', 'ordonnance', 'pass_nautique', 'certificat_plongee', 'certificat_medical', 'attestation_assurance', 'autre'] as const;
 const MAX_SIZE = 5 * 1024 * 1024; // 5 Mo
 

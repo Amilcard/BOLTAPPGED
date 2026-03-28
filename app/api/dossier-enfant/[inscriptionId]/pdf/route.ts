@@ -4,8 +4,6 @@ import { getSupabase } from '@/lib/supabase-server';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { readFile } from 'fs/promises';
 import path from 'path';
-
-
 type DocType = 'bulletin' | 'sanitaire' | 'liaison';
 
 const TEMPLATE_FILES: Record<DocType, string> = {

@@ -3,8 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth-middleware';
 import { getSupabase } from '@/lib/supabase-server';
 import { sendRappelDossierIncomplet, sendRelanceAdminNotification } from '@/lib/email';
-
-
 /**
  * POST /api/admin/inscriptions/[id]/relance
  * Envoie un email de rappel dossier incomplet au référent.

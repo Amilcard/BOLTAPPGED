@@ -8,8 +8,6 @@ function getStripe() {
     apiVersion: '2026-01-28.clover',
   });
 }
-
-
 export async function POST(req: NextRequest) {
   try {
     const stripe = getStripe();

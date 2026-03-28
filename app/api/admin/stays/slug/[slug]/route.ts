@@ -3,8 +3,6 @@ import { requireAdmin } from '@/lib/auth-middleware';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
-
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }

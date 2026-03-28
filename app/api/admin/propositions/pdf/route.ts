@@ -3,8 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
 import { verifyAuth } from '@/lib/auth-middleware';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-
-
 // Couleurs GED
 const ORANGE = rgb(0.878, 0.478, 0.373);
 const DARK = rgb(0.12, 0.12, 0.2);

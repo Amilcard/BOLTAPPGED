@@ -2,8 +2,6 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
 import { verifyAuth } from '@/lib/auth-middleware';
-
-
 /**
  * GET /api/admin/propositions — Liste toutes les propositions tarifaires
  */

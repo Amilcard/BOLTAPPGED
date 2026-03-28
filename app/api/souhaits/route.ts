@@ -2,8 +2,6 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
 import { sendSouhaitNotificationEducateur } from '@/lib/email';
-
-
 /**
  * POST /api/souhaits
  * Crée un souhait côté serveur et envoie un email à l'éducateur.

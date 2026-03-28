@@ -1,8 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
-
-
 /**
  * GET /api/souhaits/kid/[kidToken]
  * Retourne les souhaits d'un kid via son kid_session_token (localStorage).

@@ -2,8 +2,6 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireEditor } from '@/lib/auth-middleware';
 import { getSupabase } from '@/lib/supabase-server';
-
-
 /**
  * GET /api/admin/inscriptions
  * Liste les inscriptions depuis Supabase gd_inscriptions (source de vérité).

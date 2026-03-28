@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
     // Paramètres optionnels de filtrage
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
+    const structureId = searchParams.get('structure_id');
     const parsedLimit = parseInt(searchParams.get('limit') || '100', 10);
     const limit = Number.isFinite(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 500) : 100;
 
@@ -32,6 +33,10 @@ export async function GET(req: NextRequest) {
 
     if (status) {
       query = query.eq('status', status);
+    }
+
+    if (structureId) {
+      query = query.eq('structure_id', structureId);
     }
 
     const { data, error } = await query;

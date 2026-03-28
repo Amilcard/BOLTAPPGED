@@ -177,6 +177,10 @@ describe('Webhook Stripe — /api/webhooks/stripe', () => {
         mockSupabaseInsert(table, data);
         return { single: () => ({ data: null, error: null }) };
       },
+      upsert: (data: any, opts: any) => {
+        mockSupabaseInsert(table, data);
+        return { error: null };
+      },
     }));
 
     const req = makeRequest(JSON.stringify(event));
@@ -188,6 +192,7 @@ describe('Webhook Stripe — /api/webhooks/stripe', () => {
       'gd_inscriptions',
       expect.objectContaining({ payment_status: 'paid' })
     );
+    // L'event est enregistré via upsert (qui appelle mockSupabaseInsert dans notre mock)
     expect(mockSupabaseInsert).toHaveBeenCalledWith(
       'gd_processed_events',
       expect.objectContaining({ event_id: event.id })
@@ -217,6 +222,10 @@ describe('Webhook Stripe — /api/webhooks/stripe', () => {
       insert: (data: any) => {
         mockSupabaseInsert(table, data);
         return { single: () => ({ data: null, error: null }) };
+      },
+      upsert: (data: any, opts: any) => {
+        mockSupabaseInsert(table, data);
+        return { error: null };
       },
     }));
 
@@ -250,6 +259,10 @@ describe('Webhook Stripe — /api/webhooks/stripe', () => {
         mockSupabaseInsert(table, data);
         return { single: () => ({ data: null, error: null }) };
       },
+      upsert: (data: any, opts: any) => {
+        mockSupabaseInsert(table, data);
+        return { error: null };
+      },
     }));
 
     const req = makeRequest(JSON.stringify(event));
@@ -260,7 +273,7 @@ describe('Webhook Stripe — /api/webhooks/stripe', () => {
     expect(mockSupabaseUpdate).not.toHaveBeenCalled();
   });
 
-  it('payment_intent.payment_failed → met à jour en failed', async () => {
+  it('payment_intent.payment_failed avec inscriptionId → met à jour en failed', async () => {
     const event = makeStripeEvent('payment_intent.payment_failed', 'insc_456', 60000);
     mockConstructEvent.mockReturnValueOnce(event);
 
@@ -278,6 +291,10 @@ describe('Webhook Stripe — /api/webhooks/stripe', () => {
         mockSupabaseInsert(table, data);
         return { single: () => ({ data: null, error: null }) };
       },
+      upsert: (data: any, opts: any) => {
+        mockSupabaseInsert(table, data);
+        return { error: null };
+      },
     }));
 
     const req = makeRequest(JSON.stringify(event));
@@ -291,7 +308,7 @@ describe('Webhook Stripe — /api/webhooks/stripe', () => {
     );
   });
 
-  it('metadata sans inscriptionId → pas de crash, reçu OK', async () => {
+  it('metadata sans inscriptionId → reçu OK mais event NON enregistré (Stripe réessaiera)', async () => {
     const event = makeStripeEvent('payment_intent.succeeded', null, 60000);
     mockConstructEvent.mockReturnValueOnce(event);
 
@@ -309,6 +326,10 @@ describe('Webhook Stripe — /api/webhooks/stripe', () => {
         mockSupabaseInsert(table, data);
         return { single: () => ({ data: null, error: null }) };
       },
+      upsert: (data: any, opts: any) => {
+        mockSupabaseInsert(table, data);
+        return { error: null };
+      },
     }));
 
     const req = makeRequest(JSON.stringify(event));
@@ -316,6 +337,12 @@ describe('Webhook Stripe — /api/webhooks/stripe', () => {
     const json = await res.json();
 
     expect(json.received).toBe(true);
+    // L'event ne doit PAS être enregistré dans gd_processed_events
+    // car inscriptionId manquant → Stripe réessaiera
+    expect(mockSupabaseInsert).not.toHaveBeenCalledWith(
+      'gd_processed_events',
+      expect.anything()
+    );
     expect(mockSupabaseUpdate).not.toHaveBeenCalledWith(
       'gd_inscriptions',
       expect.anything()

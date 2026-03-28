@@ -53,6 +53,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true, skipped: true });
     }
 
+    // Flag : ne marquer comme traité que si le traitement est complet
+    let shouldRecordEvent = true;
+
     // Traiter les événements
     switch (event.type) {
       case 'payment_intent.succeeded': {
@@ -60,7 +63,8 @@ export async function POST(req: NextRequest) {
         const inscriptionId = paymentIntent.metadata.inscriptionId;
 
         if (!inscriptionId) {
-          console.error('Missing inscriptionId in payment intent metadata');
+          console.error('Missing inscriptionId in payment intent metadata — Stripe réessaiera');
+          shouldRecordEvent = false; // Ne PAS enregistrer → Stripe réessaiera
           break;
         }
 
@@ -72,7 +76,8 @@ export async function POST(req: NextRequest) {
           .single();
 
         if (!inscription) {
-          console.error('webhook: inscription not found for payment intent', { inscriptionId, eventId: event.id });
+          console.error('webhook: inscription not found for payment intent — Stripe réessaiera', { inscriptionId, eventId: event.id });
+          shouldRecordEvent = false; // Race condition possible → Stripe réessaiera
           break;
         }
 
@@ -126,7 +131,10 @@ export async function POST(req: NextRequest) {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         const inscriptionId = paymentIntent.metadata.inscriptionId;
 
-        if (!inscriptionId) break;
+        if (!inscriptionId) {
+          shouldRecordEvent = false;
+          break;
+        }
 
         const { error } = await supabase
           .from('gd_inscriptions')
@@ -147,17 +155,20 @@ export async function POST(req: NextRequest) {
         console.log(`Unhandled event type: ${event.type}`);
     }
 
-    // IDEMPOTENCY : enregistrer l'event comme traité (ON CONFLICT DO NOTHING = atomique)
-    await supabase
-      .from('gd_processed_events')
-      .upsert(
-        {
-          event_id: event.id,
-          event_type: event.type,
-          processed_at: new Date().toISOString(),
-        },
-        { onConflict: 'event_id', ignoreDuplicates: true }
-      );
+    // IDEMPOTENCY : enregistrer l'event comme traité SEULEMENT si le traitement est complet
+    // Si shouldRecordEvent = false → Stripe réessaiera (metadata manquant, inscription pas encore créée)
+    if (shouldRecordEvent) {
+      await supabase
+        .from('gd_processed_events')
+        .upsert(
+          {
+            event_id: event.id,
+            event_type: event.type,
+            processed_at: new Date().toISOString(),
+          },
+          { onConflict: 'event_id', ignoreDuplicates: true }
+        );
+    }
 
     return NextResponse.json({ received: true });
   } catch (error: any) {

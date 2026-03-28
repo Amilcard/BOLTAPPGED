@@ -18,8 +18,14 @@ import { readFileSync, readdirSync } from 'fs';
 import { join, basename } from 'path';
 
 // ── Config ──────────────────────────────────────────────────────────────────
-const SUPABASE_URL      = 'https://iirfvndgzutbxwfdwawu.supabase.co';
-const SERVICE_ROLE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcmZ2bmRnenV0Ynh3ZmR3YXd1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTI3MjgwOSwiZXhwIjoyMDg0ODQ4ODA5fQ.IgRALdFN5r5ssMLYvJWJhIqpUeKU7QRrFAhvFALlsxM';
+// ⚠️  Ne JAMAIS hardcoder de secrets ici — utiliser les variables d'environnement
+const SUPABASE_URL      = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://iirfvndgzutbxwfdwawu.supabase.co';
+const SERVICE_ROLE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!SERVICE_ROLE_KEY) {
+  console.error('❌ SUPABASE_SERVICE_ROLE_KEY manquante. Lancez avec :\n   SUPABASE_SERVICE_ROLE_KEY=xxx node scripts/upload-pdf-sejours.mjs');
+  process.exit(1);
+}
 const BUCKET            = 'descriptifs';
 const PDF_FOLDER        = '/Users/laidhamoudi/Downloads/PREPARATION ETE 2026/DESCRIPTIF SEJOURS GED 2026';
 const DRY_RUN           = process.argv.includes('--dry-run');

@@ -41,3 +41,8 @@ Documents_Legaux/
 
 # Fixtures de test (contient tokens réels)
 .env.test
+
+# ── Scripts et patches contenant potentiellement des secrets ──
+# Les fichiers n8n exportés contiennent souvent des credentials en dur.
+# Ne commiter que des versions nettoyées (placeholders {{...}}).
+# install_ged_complete.sh exclut aussi pour éviter de ré-exposer un mot de passe.

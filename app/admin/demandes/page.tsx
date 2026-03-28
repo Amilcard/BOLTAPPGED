@@ -4,9 +4,16 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { STORAGE_KEYS, formatDate } from '@/lib/utils';
-import { Eye, FileCheck, FileClock, Trash2 } from 'lucide-react';
+import { Eye, FileCheck, FileClock, Trash2, Building2 } from 'lucide-react';
 import { InscriptionSupabase } from '@/lib/types';
 import { useAdminUI } from '@/components/admin/admin-ui';
+
+interface StructureOption {
+  id: string;
+  name: string;
+  city: string;
+  code: string;
+}
 
 function daysSince(dateStr: string): number {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
@@ -79,11 +86,15 @@ export default function AdminDemandes() {
   const [inscriptions, setInscriptions] = useState<InscriptionSupabase[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [structures, setStructures] = useState<StructureOption[]>([]);
+  const [selectedStructure, setSelectedStructure] = useState('');
 
   const fetchInscriptions = async () => {
     try {
       const token = localStorage.getItem(STORAGE_KEYS.AUTH);
-      const res = await fetch('/api/admin/inscriptions', {
+      const params = new URLSearchParams();
+      if (selectedStructure) params.set('structure_id', selectedStructure);
+      const res = await fetch(`/api/admin/inscriptions?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -99,7 +110,25 @@ export default function AdminDemandes() {
     }
   };
 
-  useEffect(() => { fetchInscriptions(); }, []);
+  useEffect(() => { fetchInscriptions(); }, [selectedStructure]);
+
+  useEffect(() => {
+    const loadStructures = async () => {
+      try {
+        const token = localStorage.getItem(STORAGE_KEYS.AUTH);
+        const res = await fetch('/api/admin/structures', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setStructures((data.structures || []).map((s: { id: string; name: string; city: string; code: string }) => ({
+            id: s.id, name: s.name, city: s.city, code: s.code,
+          })));
+        }
+      } catch { /* silent */ }
+    };
+    loadStructures();
+  }, []);
 
   const handleStatusChange = async (id: string, status: string) => {
     const DESTRUCTIVE = ['refusee', 'annulee'];
@@ -185,13 +214,30 @@ export default function AdminDemandes() {
         <h1 className="text-3xl font-bold text-primary">
           Demandes ({filtered.length}{search ? ` / ${inscriptions.length}` : ''})
         </h1>
-        <input
-          type="text"
-          placeholder="Rechercher un référent, enfant, structure…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="px-4 py-2 border border-gray-200 rounded-xl text-sm w-72 focus:outline-none focus:ring-2 focus:ring-primary/30"
-        />
+        <div className="flex items-center gap-3">
+          {structures.length > 0 && (
+            <div className="relative">
+              <Building2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <select
+                value={selectedStructure}
+                onChange={e => setSelectedStructure(e.target.value)}
+                className="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 min-w-[200px]"
+              >
+                <option value="">Toutes les structures</option>
+                {structures.map(s => (
+                  <option key={s.id} value={s.id}>{s.name} ({s.city})</option>
+                ))}
+              </select>
+            </div>
+          )}
+          <input
+            type="text"
+            placeholder="Rechercher un référent, enfant, structure…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="px-4 py-2 border border-gray-200 rounded-xl text-sm w-72 focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+        </div>
       </div>
 
       {filtered.length === 0 ? (

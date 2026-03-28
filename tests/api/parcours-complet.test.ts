@@ -18,13 +18,24 @@ import { describe, it, expect, beforeAll } from '@jest/globals';
 import { config } from 'dotenv';
 import { resolve } from 'path';
 
-// Charger .env (Supabase URL + service key) — override:true pour écraser les vars de test
+// Charger .env (Supabase URL + service key)
 config({ path: resolve(__dirname, '../../.env'), override: true });
+// Injecter TEST_ADMIN_SESSION depuis .env.test (lecture directe pour éviter les problèmes de hoisting)
+{
+  const fs = require('fs');
+  const testEnvPath = resolve(__dirname, '../../.env.test');
+  if (fs.existsSync(testEnvPath)) {
+    const content = fs.readFileSync(testEnvPath, 'utf8');
+    const m = content.match(/^TEST_ADMIN_SESSION\s*=\s*"?([^"\r\n]+)"?/m);
+    if (m) process.env.TEST_ADMIN_SESSION = m[1].trim();
+  }
+}
 
 const BASE_URL     = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000').replace(/\/$/, '');
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const ADMIN_TOKEN  = process.env.TEST_ADMIN_SESSION || '';
+// Lu à la volée pour éviter le hoisting Jest (la constante serait vide si évaluée avant le bloc env)
+const getAdminToken = () => process.env.TEST_ADMIN_SESSION || '';
 const TEST_EMAIL   = 'test-parcours@ged-test.internal';
 
 let serverReachable = false;
@@ -276,16 +287,16 @@ describe('P4 — Upload pièce jointe (chemin nominal)', () => {
 describe('P5 — Changement de statut admin', () => {
   it('passe en "validee"', async () => {
     if (skip('P5-validee') || !inscriptionId) return;
-    if (!ADMIN_TOKEN) { console.warn('[SKIP] P5 — TEST_ADMIN_SESSION manquant'); return; }
+    if (!getAdminToken()) { console.warn('[SKIP] P5 — TEST_ADMIN_SESSION manquant'); return; }
 
-    const res = await put(`/api/admin/inscriptions/${inscriptionId}`, { status: 'validee' }, ADMIN_TOKEN);
+    const res = await put(`/api/admin/inscriptions/${inscriptionId}`, { status: 'validee' }, getAdminToken());
     expect(res.status).toBe(200);
   });
 
   it('passe en "refusee"', async () => {
-    if (skip('P5-refusee') || !inscriptionId || !ADMIN_TOKEN) return;
+    if (skip('P5-refusee') || !inscriptionId || !getAdminToken()) return;
 
-    const res = await put(`/api/admin/inscriptions/${inscriptionId}`, { status: 'refusee' }, ADMIN_TOKEN);
+    const res = await put(`/api/admin/inscriptions/${inscriptionId}`, { status: 'refusee' }, getAdminToken());
     expect(res.status).toBe(200);
   });
 

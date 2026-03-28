@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
 import { z } from 'zod';
-import { sendInscriptionConfirmation, sendAdminNewInscriptionNotification, sendStructureCodeEmail } from '@/lib/email';
+import { sendInscriptionConfirmation, sendAdminNewInscriptionNotification, sendStructureCodeEmail, sendNewEducateurAlert } from '@/lib/email';
 const inscriptionSchema = z.object({
   staySlug: z.string().min(1),
   sessionDate: z.string().min(1), // Date de début session
@@ -339,7 +339,14 @@ export async function POST(request: NextRequest) {
         structurePendingName = data.structureName;
       }
     } else {
-      // Pas de code → créer la structure automatiquement
+      // Pas de code → vérifier s'il existe déjà des structures sur le même CP
+      const { data: existingOnCP } = await supabase
+        .from('gd_structures')
+        .select('id, name, code, city')
+        .eq('postal_code', data.structurePostalCode)
+        .eq('status', 'active');
+
+      // Créer la structure automatiquement
       const { data: newStruct, error: structErr } = await supabase
         .from('gd_structures')
         .insert({
@@ -358,7 +365,6 @@ export async function POST(request: NextRequest) {
       if (newStruct && !structErr) {
         structureId = newStruct.id;
         // Envoyer le code par email à l'éducateur (fire-and-forget)
-        // L'email structure est optionnel — on envoie au structureEmail si fourni, sinon à l'éducateur
         const codeRecipient = data.structureEmail || data.email;
         sendStructureCodeEmail({
           recipientEmail: codeRecipient,
@@ -366,6 +372,17 @@ export async function POST(request: NextRequest) {
           structureCode: newStruct.code,
           educateurPrenom: data.socialWorkerName,
         }).catch((err) => console.error('[inscriptions] sendStructureCodeEmail failed:', err));
+
+        // Si des structures existaient déjà sur ce CP → alerte admin
+        if (existingOnCP && existingOnCP.length > 0) {
+          sendNewEducateurAlert({
+            existingStructures: existingOnCP as Array<{ name: string; code: string; city: string }>,
+            newEducateurNom: data.socialWorkerName,
+            newEducateurEmail: data.email,
+            structureDeclaredName: data.structureName,
+            postalCode: data.structurePostalCode,
+          }).catch((err) => console.error('[inscriptions] sendNewEducateurAlert failed:', err));
+        }
       } else {
         console.error('[inscriptions] Erreur création structure:', structErr);
         structurePendingName = data.structureName;

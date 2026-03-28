@@ -535,6 +535,57 @@ interface StructureCodeEmailData {
   educateurPrenom: string;
 }
 
+// ── Alerte nouvel éducateur détecté sur même CP ──────────────────────────
+
+interface NewEducateurAlertData {
+  adminEmail?: string;
+  existingStructures: Array<{ name: string; code: string; city: string }>;
+  newEducateurNom: string;
+  newEducateurEmail: string;
+  structureDeclaredName: string;
+  postalCode: string;
+}
+
+export async function sendNewEducateurAlert(data: NewEducateurAlertData) {
+  try {
+    const resend = getResend();
+    if (!process.env.EMAIL_SERVICE_API_KEY) return null;
+
+    const structList = data.existingStructures
+      .map(s => `<li><strong>${s.name}</strong> (${s.city}) — code : <code>${s.code}</code></li>`)
+      .join('');
+
+    const result = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: data.adminEmail || ADMIN_EMAIL,
+      subject: `[Structure] Nouvel éducateur détecté — ${data.postalCode} — ${data.structureDeclaredName}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #D4AC0D; color: #333; padding: 16px 20px; border-radius: 8px 8px 0 0;">
+            <h2 style="margin: 0; font-size: 18px;">⚠️ Nouvel éducateur sans code structure</h2>
+          </div>
+          <div style="padding: 24px; background: #f9f9f9; border-radius: 0 0 8px 8px;">
+            <p><strong>${data.newEducateurNom}</strong> (${data.newEducateurEmail}) vient d'inscrire un enfant pour la structure "<strong>${data.structureDeclaredName}</strong>" (CP ${data.postalCode}).</p>
+            <p>Il existe déjà ${data.existingStructures.length > 1 ? 'des structures' : 'une structure'} enregistrée(s) sur ce code postal :</p>
+            <ul>${structList}</ul>
+            <p style="margin-top: 16px;">Actions possibles :</p>
+            <ul>
+              <li>Si c'est la même structure → transmettre le code à l'éducateur ou rattacher manuellement dans l'admin</li>
+              <li>Si c'est une structure différente → aucune action, une nouvelle structure a été créée</li>
+            </ul>
+            <p style="color: #666; font-size: 13px; margin-top: 24px;">Email automatique — Groupe & Découverte</p>
+          </div>
+        </div>
+      `,
+    });
+    console.log('[EMAIL] Alerte nouvel éducateur envoyée pour CP:', data.postalCode);
+    return result;
+  } catch (error) {
+    console.error('[EMAIL] Erreur envoi alerte nouvel éducateur:', error);
+    return null;
+  }
+}
+
 export async function sendStructureCodeEmail(data: StructureCodeEmailData) {
   try {
     const resend = getResend();

@@ -35,6 +35,17 @@ let dossierRef      = '';
 // ─── Setup ──────────────────────────────────────────────────────────────────
 
 beforeAll(async () => {
+  // Nettoyage des données de test résiduelles (anti-doublon)
+  if (SUPABASE_URL && SERVICE_KEY) {
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/gd_inscriptions?referent_email=eq.${encodeURIComponent(TEST_EMAIL)}`,
+      {
+        method: 'DELETE',
+        headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, Prefer: 'return=minimal' },
+      }
+    ).catch(() => {});
+  }
+
   try {
     const r = await fetch(`${BASE_URL}/api/inscriptions`, {
       method: 'OPTIONS',
@@ -95,20 +106,23 @@ describe('P1 — Inscription complète', () => {
     if (skip('P1')) return;
 
     const res  = await post('/api/inscriptions', {
-      staySlug:         'mountain-and-chill',
-      sessionDate:      '2026-08-02',
-      cityDeparture:    'sans_transport',
-      organisation:     'Structure Test Parcours',
-      socialWorkerName: 'Référent Parcours',
-      email:            TEST_EMAIL,
-      phone:            '0600000001',
-      childFirstName:   'ParcourEnfant',
-      childLastName:    'Test',
-      childBirthDate:   '2014-03-10',
-      remarques:        '[TEST PARCOURS — à supprimer]',
-      priceTotal:       885,
-      consent:          true,
-      paymentMethod:    'transfer',
+      staySlug:            'mountain-and-chill',
+      sessionDate:         '2026-08-02',
+      cityDeparture:       'sans_transport',
+      organisation:        'Structure Test Parcours',
+      socialWorkerName:    'Référent Parcours',
+      email:               TEST_EMAIL,
+      phone:               '0600000001',
+      childFirstName:      'ParcourEnfant',
+      childLastName:       'Test',
+      childBirthDate:      '2014-03-10',
+      remarques:           '[TEST PARCOURS — à supprimer]',
+      priceTotal:          885,
+      consent:             true,
+      paymentMethod:       'transfer',
+      structureName:       'Structure Test Parcours',
+      structurePostalCode: '75001',
+      structureCity:       'Paris',
     });
     const data = await res.json();
 

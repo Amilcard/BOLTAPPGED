@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       { expiresIn: '8h' }
     );
 
-    const response = NextResponse.json({ token });
+    const response = NextResponse.json({ ok: true });
     response.cookies.set('gd_session', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

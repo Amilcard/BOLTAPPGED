@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { jwtVerify } from 'jose';
 
-export function middleware(request: NextRequest) {
-  const session = request.cookies.get('gd_session');
-  // Vérifier que le cookie contient un JWT bien formé (3 segments séparés par '.')
-  const isJwtShaped = (session?.value ?? '').split('.').length === 3;
-  if (!isJwtShaped) {
+export async function middleware(request: NextRequest) {
+  const token = request.cookies.get('gd_session')?.value;
+  if (!token) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
-  return NextResponse.next();
+
+  try {
+    const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET!);
+    await jwtVerify(token, secret);
+    return NextResponse.next();
+  } catch {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
 }
 
 export const config = {

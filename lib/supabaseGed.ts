@@ -253,7 +253,7 @@ export const getSessionPricesFormatted = async (slug: string) => {
 // API SOUHAITS & INSCRIPTIONS
 export const createWish = async (wish: Wish) => {
   const { data, error } = await supabaseGed
-    .from('gd_wishes')
+    .from('gd_souhaits')
     .insert([wish])
     .select()
 

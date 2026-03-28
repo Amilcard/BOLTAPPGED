@@ -2,8 +2,6 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
 import { sendDossierCompletEmail, sendDossierGedAdminNotification } from '@/lib/email';
-
-
 /**
  * POST /api/dossier-enfant/[inscriptionId]/submit
  * Soumet le dossier enfant complet à l'équipe GED.

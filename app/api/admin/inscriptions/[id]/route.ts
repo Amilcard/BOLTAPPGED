@@ -3,8 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth-middleware';
 import { getSupabase } from '@/lib/supabase-server';
 import { sendStatusChangeEmail } from '@/lib/email';
-
-
 /**
  * GET /api/admin/inscriptions/[id]
  * Détail d'une inscription depuis Supabase gd_inscriptions.

@@ -1,8 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
-
-
 /**
  * GET /api/suivi/[token]
  * Vue lecture seule : retourne tous les dossiers liés au même référent

@@ -3,8 +3,6 @@ import { requireEditor } from '@/lib/auth-middleware';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
-
-
 // PUT toggle published (seul champ modifiable depuis admin pour l'instant)
 export async function PUT(
   request: NextRequest,

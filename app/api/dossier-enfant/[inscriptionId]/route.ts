@@ -1,8 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
-
-
 // Blocs JSONB éditables (whitelist)
 const EDITABLE_BLOCS = [
   'bulletin_complement',

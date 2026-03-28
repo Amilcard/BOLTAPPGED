@@ -3,8 +3,6 @@ import { requireAdmin } from '@/lib/auth-middleware';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
-
-
 // DELETE session
 export async function DELETE(
   request: NextRequest,

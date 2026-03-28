@@ -3,8 +3,6 @@ import { verifyAuth } from '@/lib/auth-middleware';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
-
-
 // GET sessions for a stay (by slug) from Supabase
 export async function GET(
   request: NextRequest,

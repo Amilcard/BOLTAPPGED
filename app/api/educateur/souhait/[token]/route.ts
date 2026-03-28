@@ -1,8 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
-
-
 /**
  * GET /api/educateur/souhait/[token]
  * Retourne le souhait via educateur_token (magic link).

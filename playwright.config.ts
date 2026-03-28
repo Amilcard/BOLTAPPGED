@@ -1,5 +1,16 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// ── SÉCURITÉ : empêcher tout lancement E2E contre la production ─────────────
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
+if (baseURL.includes('groupeetdecouverte.fr') || baseURL.includes('vercel.app')) {
+  throw new Error(
+    '❌ PLAYWRIGHT_BASE_URL pointe vers la production !\n' +
+    `   URL détectée : ${baseURL}\n` +
+    '   Les tests E2E créent de vraies inscriptions — ne jamais lancer contre la prod.\n' +
+    '   Utilisez http://localhost:3000 ou un environnement staging.'
+  );
+}
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
@@ -9,7 +20,7 @@ export default defineConfig({
   reporter: 'html',
 
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
+    baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },

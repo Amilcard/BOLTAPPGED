@@ -41,6 +41,10 @@
     "scripts",
     "supabase",
     "supabase/**",
-    "prisma"
+    "prisma",
+    "_untracked_backup",
+    "_untracked_backup/**",
+    "_archives",
+    "_archives/**"
   ]
 }

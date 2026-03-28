@@ -36,6 +36,16 @@ interface Step1Data {
   socialWorkerName: string;
   email: string;
   phone: string;
+  // Champs structure (Phase 1 espace structure)
+  structureCode: string;
+  structureName: string;
+  structureAddress: string;
+  structurePostalCode: string;
+  structureCity: string;
+  structureType: string;
+  structureEmail: string;
+  structureVerified: boolean;  // true si le code a été vérifié
+  structureId: string | null;  // id retourné par verify
 }
 
 interface Step2Data {
@@ -205,7 +215,18 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     socialWorkerName: '',
     email: '',
     phone: '',
+    structureCode: '',
+    structureName: '',
+    structureAddress: '',
+    structurePostalCode: '',
+    structureCity: '',
+    structureType: '',
+    structureEmail: '',
+    structureVerified: false,
+    structureId: null,
   });
+  const [structureSearchResults, setStructureSearchResults] = useState<Array<{ name: string; city: string; type: string; contactHint: string | null }>>([]);
+  const [structureCodeError, setStructureCodeError] = useState('');
 
   const [step2, setStep2] = useState<Step2Data>({
     childFirstName: '',
@@ -259,12 +280,12 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   const phoneRegex = /^[\d\s\+\-\.()]{10,}$/; // Min 10 chiffres/espaces
   const isEmailValid = emailRegex.test(step1.email);
   const isPhoneValid = phoneRegex.test(step1.phone);
-  const isCodePostalValid = ((step1 as any).codePostal || '').length === 5;
-  const isVilleValid = ((step1 as any).ville || '').trim().length >= 2;
-  const isStep1Valid = step1.organisation?.trim().length >= 2
-    && step1.addresseStructure && step1.addresseStructure.trim().length >= 5
-    && isCodePostalValid
-    && isVilleValid
+  const isStructureNameValid = step1.structureName?.trim().length >= 2;
+  const isStructureCPValid = /^\d{5}$/.test(step1.structurePostalCode);
+  const isStructureCityValid = step1.structureCity?.trim().length >= 2;
+  const isStep1Valid = isStructureNameValid
+    && isStructureCPValid
+    && isStructureCityValid
     && step1.socialWorkerName?.trim().length >= 2
     && isEmailValid
     && isPhoneValid;
@@ -328,7 +349,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     let createdInscriptionId = '';
 
     try {
-      const fullAddress = [step1.addresseStructure, (step1 as any).codePostal, (step1 as any).ville].filter(Boolean).join(', ');
+      const fullAddress = [step1.structureAddress, step1.structurePostalCode, step1.structureCity].filter(Boolean).join(', ');
       const addressNote = fullAddress ? `[ADRESSE]: ${fullAddress}` : '';
       const sexNote = step2.childSex ? `[SEXE]: ${step2.childSex}` : '';
       const remarques = [addressNote, sexNote].filter(Boolean).join('\n');
@@ -340,7 +361,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
           staySlug: stay?.slug,
           sessionDate: selectedSession.startDate,
           cityDeparture: selectedCity || 'sans_transport',
-          organisation: step1.organisation,
+          organisation: step1.structureName,
           socialWorkerName: step1.socialWorkerName,
           email: step1.email,
           phone: step1.phone,
@@ -351,6 +372,14 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
           priceTotal: totalPrice ?? 0,
           consent: step2.consent,
           paymentMethod,
+          // Champs structure (Espace Structure)
+          structureCode: step1.structureCode || undefined,
+          structureName: step1.structureName,
+          structureAddress: step1.structureAddress || undefined,
+          structurePostalCode: step1.structurePostalCode,
+          structureCity: step1.structureCity,
+          structureType: step1.structureType || undefined,
+          structureEmail: step1.structureEmail || undefined,
         }),
       });
 
@@ -625,49 +654,169 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
         <div className="space-y-4">
           <h3 className="font-medium text-primary text-lg">Étape 3/5 : Informations de la structure</h3>
           <div className="space-y-3">
+            {/* Code structure (optionnel) */}
             <div>
-              <label className="text-sm text-primary-600 mb-1 block">Organisation *</label>
+              <label className="text-sm text-primary-600 mb-1 block">Code structure (si vous en avez un)</label>
+              <div className="flex gap-2">
+                <input
+                  ref={firstInputRef}
+                  type="text"
+                  placeholder="Ex: CRF76H"
+                  value={step1.structureCode}
+                  onChange={e => {
+                    const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+                    setStep1({ ...step1, structureCode: val, structureVerified: false, structureId: null });
+                    setStructureCodeError('');
+                  }}
+                  onBlur={async () => {
+                    if (step1.structureCode.length === 6) {
+                      try {
+                        const res = await fetch(`/api/structures/verify/${step1.structureCode}`);
+                        const json = await res.json();
+                        if (json.valid) {
+                          setStep1(prev => ({
+                            ...prev,
+                            structureVerified: true,
+                            structureId: json.structureId,
+                            structureName: json.name,
+                            structureAddress: json.address || '',
+                            structurePostalCode: json.postalCode || '',
+                            structureCity: json.city || '',
+                            structureType: json.type || '',
+                            organisation: json.name,
+                          }));
+                          setStructureCodeError('');
+                          setStructureSearchResults([]);
+                        } else {
+                          setStructureCodeError('Code structure non reconnu.');
+                          setStep1(prev => ({ ...prev, structureVerified: false, structureId: null }));
+                        }
+                      } catch { setStructureCodeError('Erreur de vérification.'); }
+                    }
+                  }}
+                  maxLength={6}
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureVerified ? 'border-green-400 bg-green-50' : structureCodeError ? 'border-red-400' : 'border-primary-200'}`}
+                />
+                {step1.structureVerified && (
+                  <span className="flex items-center text-green-600 text-sm font-medium whitespace-nowrap">✓ Vérifié</span>
+                )}
+              </div>
+              {structureCodeError && <p className="mt-1 text-xs text-red-500">{structureCodeError}</p>}
+              {!step1.structureVerified && !structureCodeError && (
+                <p className="mt-1 text-xs text-gray-500">Pas de code ? Remplissez les informations ci-dessous.</p>
+              )}
+            </div>
+
+            {/* Nom de la structure */}
+            <div>
+              <label className="text-sm text-primary-600 mb-1 block">Nom de la structure *</label>
               <input
-                ref={firstInputRef}
                 type="text"
-                placeholder="Nom de la structure"
-                value={step1.organisation}
-                onChange={e => setStep1({ ...step1, organisation: e.target.value })}
-                className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
+                placeholder="Ex: Croix-Rouge du Havre"
+                value={step1.structureName}
+                onChange={e => setStep1({ ...step1, structureName: e.target.value, organisation: e.target.value })}
+                disabled={step1.structureVerified}
+                className={`w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureVerified ? 'bg-gray-50 text-gray-600' : ''}`}
               />
             </div>
+
+            {/* Adresse */}
             <div>
-              <label className="text-sm text-primary-600 mb-1 block">Adresse *</label>
+              <label className="text-sm text-primary-600 mb-1 block">Adresse</label>
               <input
                 type="text"
                 placeholder="N° et rue"
-                value={step1.addresseStructure || ''}
-                onChange={e => setStep1({ ...step1, addresseStructure: e.target.value })}
-                className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
+                value={step1.structureAddress}
+                onChange={e => setStep1({ ...step1, structureAddress: e.target.value })}
+                disabled={step1.structureVerified}
+                className={`w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureVerified ? 'bg-gray-50 text-gray-600' : ''}`}
               />
             </div>
+
+            {/* CP + Ville */}
             <div className="grid grid-cols-3 gap-2">
               <div>
                 <label className="text-sm text-primary-600 mb-1 block">Code postal *</label>
                 <input
                   type="text"
-                  placeholder="42000"
-                  value={(step1 as any).codePostal || ''}
-                  onChange={e => setStep1({ ...step1, codePostal: e.target.value.replace(/\D/g, '').slice(0, 5) } as any)}
+                  placeholder="76600"
+                  value={step1.structurePostalCode}
+                  onChange={e => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 5);
+                    setStep1({ ...step1, structurePostalCode: val });
+                  }}
+                  onBlur={async () => {
+                    // Recherche de structures existantes sur ce CP
+                    if (step1.structurePostalCode.length === 5 && !step1.structureVerified) {
+                      try {
+                        const res = await fetch(`/api/structures/search?cp=${step1.structurePostalCode}`);
+                        const json = await res.json();
+                        setStructureSearchResults(json.structures || []);
+                      } catch { setStructureSearchResults([]); }
+                    }
+                  }}
+                  disabled={step1.structureVerified}
                   maxLength={5}
-                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${(step1 as any).codePostal && (step1 as any).codePostal.length !== 5 ? 'border-red-400' : 'border-primary-200'}`}
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structurePostalCode && step1.structurePostalCode.length !== 5 ? 'border-red-400' : 'border-primary-200'} ${step1.structureVerified ? 'bg-gray-50 text-gray-600' : ''}`}
                 />
               </div>
               <div className="col-span-2">
                 <label className="text-sm text-primary-600 mb-1 block">Ville *</label>
                 <input
                   type="text"
-                  placeholder="Saint-Étienne"
-                  value={(step1 as any).ville || ''}
-                  onChange={e => setStep1({ ...step1, ville: e.target.value } as any)}
-                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${(step1 as any).ville && (step1 as any).ville.trim().length < 2 ? 'border-red-400' : 'border-primary-200'}`}
+                  placeholder="Le Havre"
+                  value={step1.structureCity}
+                  onChange={e => setStep1({ ...step1, structureCity: e.target.value })}
+                  disabled={step1.structureVerified}
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureCity && step1.structureCity.trim().length < 2 ? 'border-red-400' : 'border-primary-200'} ${step1.structureVerified ? 'bg-gray-50 text-gray-600' : ''}`}
                 />
               </div>
+            </div>
+
+            {/* Encart structures existantes sur ce CP */}
+            {structureSearchResults.length > 0 && !step1.structureVerified && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <p className="text-sm font-medium text-amber-800 mb-2">Structure(s) déjà enregistrée(s) sur ce code postal :</p>
+                {structureSearchResults.map((s, i) => (
+                  <p key={i} className="text-sm text-amber-700">• {s.name} ({s.city}){s.contactHint ? ` — contact : ${s.contactHint}` : ''}</p>
+                ))}
+                <p className="text-xs text-amber-600 mt-2">Si c'est votre structure, demandez le code à vos collègues et saisissez-le ci-dessus. Sinon, continuez normalement.</p>
+              </div>
+            )}
+
+            {/* Type de structure */}
+            <div>
+              <label className="text-sm text-primary-600 mb-1 block">Type de structure</label>
+              <select
+                value={step1.structureType}
+                onChange={e => setStep1({ ...step1, structureType: e.target.value })}
+                disabled={step1.structureVerified}
+                className={`w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureVerified ? 'bg-gray-50 text-gray-600' : ''}`}
+              >
+                <option value="">Sélectionner...</option>
+                <option value="asso">Association</option>
+                <option value="ccas">CCAS</option>
+                <option value="centre_social">Centre social</option>
+                <option value="maison_quartier">Maison de quartier</option>
+                <option value="collectivite">Collectivité</option>
+                <option value="autre">Autre</option>
+              </select>
+            </div>
+
+            {/* Email structure */}
+            <div>
+              <label className="text-sm text-primary-600 mb-1 block">Email de la structure</label>
+              <input
+                type="email"
+                placeholder="contact@structure.fr"
+                value={step1.structureEmail}
+                onChange={e => setStep1({ ...step1, structureEmail: e.target.value })}
+                disabled={step1.structureVerified}
+                className={`w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureVerified ? 'bg-gray-50 text-gray-600' : ''}`}
+              />
+              {!step1.structureVerified && (
+                <p className="mt-1 text-xs text-gray-500">Un code de validation sera envoyé à cette adresse. Pensez à vérifier cette boîte mail après l'inscription.</p>
+              )}
             </div>
             <div>
               <label className="text-sm text-primary-600 mb-1 block">Nom du référent *</label>

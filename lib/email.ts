@@ -523,3 +523,49 @@ export async function sendDossierCompletEmail(data: {
     return null;
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// Email — Code structure (Phase 1 espace structure)
+// ═══════════════════════════════════════════════════════════════════════
+
+interface StructureCodeEmailData {
+  recipientEmail: string;
+  structureName: string;
+  structureCode: string;
+  educateurPrenom: string;
+}
+
+export async function sendStructureCodeEmail(data: StructureCodeEmailData) {
+  try {
+    const resend = getResend();
+    if (!process.env.EMAIL_SERVICE_API_KEY) return null;
+
+    const result = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: data.recipientEmail,
+      subject: `Votre code structure Groupe & Découverte : ${data.structureCode}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #1A5276; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 22px;">Groupe & Découverte</h1>
+          </div>
+          <div style="padding: 30px; background: #f9f9f9; border-radius: 0 0 8px 8px;">
+            <p>Bonjour,</p>
+            <p>La structure <strong>${data.structureName}</strong> est désormais enregistrée sur Groupe & Découverte.</p>
+            <div style="background: #1A5276; color: white; text-align: center; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 0 0 5px 0; font-size: 14px;">Votre code structure</p>
+              <p style="margin: 0; font-size: 32px; font-weight: bold; letter-spacing: 4px;">${data.structureCode}</p>
+            </div>
+            <p><strong>Transmettez ce code à vos collègues</strong> pour regrouper les inscriptions de votre structure. Ils pourront le saisir lors de leur prochaine inscription ou depuis leur espace de suivi.</p>
+            <p style="color: #666; font-size: 13px; margin-top: 30px;">Cet email a été envoyé suite à l'inscription réalisée par ${data.educateurPrenom}. Si vous n'êtes pas concerné(e), vous pouvez ignorer ce message.</p>
+          </div>
+        </div>
+      `,
+    });
+    console.log('[EMAIL] Code structure envoyé à:', data.recipientEmail);
+    return result;
+  } catch (error) {
+    console.error('[EMAIL] Erreur envoi code structure:', error);
+    return null;
+  }
+}

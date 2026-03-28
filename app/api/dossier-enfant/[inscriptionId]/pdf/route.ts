@@ -95,8 +95,15 @@ export async function GET(
       || inscription.sejour_slug
       || '';
 
-    // Charger le template PDF
-    const templatePath = path.join(process.cwd(), 'public', 'templates', TEMPLATE_FILES[docType]);
+    // Charger le template PDF — path traversal guard
+    const templatesDir = path.join(process.cwd(), 'public', 'templates');
+    const templatePath = path.join(templatesDir, TEMPLATE_FILES[docType]);
+    if (!templatePath.startsWith(templatesDir)) {
+      return NextResponse.json(
+        { error: { code: 'INVALID_PATH', message: 'Chemin de template invalide.' } },
+        { status: 400 }
+      );
+    }
     const templateBytes = await readFile(templatePath);
     const pdfDoc = await PDFDocument.load(templateBytes);
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);

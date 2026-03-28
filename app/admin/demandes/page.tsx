@@ -131,6 +131,8 @@ export default function AdminDemandes() {
   }, []);
 
   const handleStatusChange = async (id: string, status: string) => {
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!UUID_RE.test(id)) return;
     const DESTRUCTIVE = ['refusee', 'annulee'];
     const LABELS: Record<string, string> = { refusee: 'Refusée', annulee: 'Annulée' };
     const doChange = async () => {

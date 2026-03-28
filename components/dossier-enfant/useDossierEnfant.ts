@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export interface DossierEnfant {
   exists: boolean;
   inscription_id?: string;
@@ -47,6 +49,7 @@ export function useDossierEnfant(inscriptionId: string, token: string): UseDossi
 
   const load = useCallback(async () => {
     if (!inscriptionId || !token) return;
+    if (!UUID_RE.test(inscriptionId) || !UUID_RE.test(token)) return;
     setLoading(true);
     setError(null);
     try {
@@ -78,6 +81,7 @@ export function useDossierEnfant(inscriptionId: string, token: string): UseDossi
     if (savedTimeout.current) clearTimeout(savedTimeout.current);
 
     try {
+      if (!UUID_RE.test(inscriptionId)) throw new Error('ID invalide');
       const res = await fetch(`/api/dossier-enfant/${inscriptionId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },

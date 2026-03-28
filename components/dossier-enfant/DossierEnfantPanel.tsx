@@ -50,6 +50,7 @@ function PdfDownloadButton({ inscriptionId, token, docType, label }: {
   inscriptionId: string; token: string; docType: string; label: string;
 }) {
   const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState(false);
 
   const handleDownload = async () => {
     setDownloading(true);
@@ -67,19 +68,28 @@ function PdfDownloadButton({ inscriptionId, token, docType, label }: {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Download error:', err);
+      setDownloadError(true);
+      setTimeout(() => setDownloadError(false), 5000);
     } finally {
       setDownloading(false);
     }
   };
 
   return (
-    <button
-      onClick={handleDownload}
-      disabled={downloading}
-      className="px-3 py-1.5 bg-white border border-gray-300 hover:bg-gray-100 rounded-lg text-xs font-medium transition disabled:opacity-50 flex items-center gap-1"
-    >
-      📥 {downloading ? 'Téléchargement...' : label}
-    </button>
+    <div className="inline-flex flex-col items-start gap-1">
+      <button
+        onClick={handleDownload}
+        disabled={downloading}
+        className="px-3 py-1.5 bg-white border border-gray-300 hover:bg-gray-100 rounded-lg text-xs font-medium transition disabled:opacity-50 flex items-center gap-1"
+      >
+        📥 {downloading ? 'Téléchargement...' : label}
+      </button>
+      {downloadError && (
+        <p className="text-xs text-amber-700">
+          Échec — réessayez ou contactez-nous au 04 23 16 16 71
+        </p>
+      )}
+    </div>
   );
 }
 

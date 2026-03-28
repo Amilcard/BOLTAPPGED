@@ -128,11 +128,21 @@ export default function SuiviProPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-8 text-center">
-          <div className="text-4xl mb-4">🔒</div>
-          <h1 className="text-xl font-bold text-gray-800 mb-2">Accès impossible</h1>
-          <p className="text-gray-600">{error || 'Ce lien de suivi n\'est pas valide.'}</p>
-          <a href="/" className="inline-block mt-6 text-primary hover:underline text-sm">
-            Retour à l'accueil
+          <div className="text-4xl mb-4">✉️</div>
+          <h1 className="text-xl font-bold text-gray-800 mb-2">Ce lien n&apos;est plus actif</h1>
+          <p className="text-gray-600 mb-4 leading-relaxed">
+            Ce lien de suivi a peut-être expiré ou a déjà été utilisé depuis un autre appareil.
+          </p>
+          <p className="text-gray-600 mb-6 leading-relaxed">
+            Retrouvez votre lien dans l&apos;email de confirmation reçu lors de votre inscription,
+            ou contactez-nous — nous vous en renverrons un rapidement.
+          </p>
+          <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600 space-y-1 mb-6">
+            <p>📞 <a href="tel:0423161671" className="hover:text-primary">04 23 16 16 71</a> — lun.–ven. 9h–17h</p>
+            <p>✉️ <a href="mailto:contact@groupeetdecouverte.fr" className="hover:text-primary">contact@groupeetdecouverte.fr</a></p>
+          </div>
+          <a href="/" className="inline-block text-gray-400 hover:text-primary text-sm">
+            Retour à l&apos;accueil
           </a>
         </div>
       </div>
@@ -395,6 +405,7 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   // State contrôlé pour éviter la désynchronisation UI/DB (defaultValue non réactif)
   const [prefNouvelles, setPrefNouvelles] = useState(dossier.prefNouvellesSejour || 'si_besoin');
   const [prefCanal, setPrefCanal] = useState(dossier.prefCanalContact || 'email');
@@ -417,6 +428,8 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
       }
     } catch (err) {
       console.error('Erreur mise à jour préférence:', err);
+      setSaveError(true);
+      setTimeout(() => setSaveError(false), 5000);
     } finally {
       setSaving(false);
     }
@@ -450,6 +463,12 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
           {saved && (
             <div className="flex items-center gap-1.5 text-sm text-green-700 font-medium bg-green-50 px-3 py-1.5 rounded-lg">
               <Check className="w-3.5 h-3.5" /> Enregistré
+            </div>
+          )}
+          {saveError && (
+            <div className="text-sm text-amber-700 bg-amber-50 px-3 py-2 rounded-lg leading-relaxed">
+              La modification n&apos;a pas pu être enregistrée. Vérifiez votre connexion et réessayez,
+              ou contactez-nous au <a href="tel:0423161671" className="underline">04 23 16 16 71</a>.
             </div>
           )}
 

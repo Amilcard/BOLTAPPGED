@@ -491,6 +491,23 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
       {step === 0 && (
         <div className="space-y-4">
           <h3 className="font-medium text-primary text-lg">Étape 1/5 : Choisir une session — demande d&apos;inscription</h3>
+          {sessionsUnique.length === 0 && (
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-5 text-center">
+              <div className="text-3xl mb-3">📅</div>
+              <p className="font-medium text-gray-800 mb-1">Aucune session disponible pour le moment</p>
+              <p className="text-sm text-gray-500 mb-4 leading-relaxed">
+                Les inscriptions ne sont pas encore ouvertes ou toutes les places sont prises.
+                Contactez-nous pour connaître les prochaines dates.
+              </p>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p>📞 <a href="tel:0423161671" className="text-primary hover:underline">04 23 16 16 71</a></p>
+                <p>✉️ <a href="mailto:contact@groupeetdecouverte.fr" className="text-primary hover:underline">contact@groupeetdecouverte.fr</a></p>
+              </div>
+              <a href="/sejours" className="inline-block mt-4 text-sm text-primary hover:underline">
+                Voir d&apos;autres séjours →
+              </a>
+            </div>
+          )}
           <div className="space-y-2">
             {sessionsUnique.slice(0, showAllSessions ? undefined : 4).map(session => {
               const isFull = (session?.seatsLeft ?? 0) === 0;

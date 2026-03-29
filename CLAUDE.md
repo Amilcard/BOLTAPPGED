@@ -60,3 +60,11 @@ npx tsc --noEmit
 - Pas d'effet cascade
 - Non-régression prioritaire
 - Commit + push uniquement si le fix est sûr
+
+## Token efficiency (règle permanente)
+
+- Réponses courtes, structurées, sans redondance ni remplissage
+- Préférer tableaux/listes à la prose
+- Ne jamais répéter le contexte déjà connu
+- Auto-optimiser avant chaque réponse
+- Adapter le niveau d'explication au profil de l'utilisateur (18 ans, non expert → expliquer clairement sans jargon)

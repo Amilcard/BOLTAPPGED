@@ -42,6 +42,29 @@ export interface Stay {
   expertiseLabel?: string | null;       // Encadrement/diplômes
   intensityLabel?: string | null;       // Intensité/rythme (optionnel)
   priceIncludesFeatures?: string[] | null; // Bullets dynamiques 'inclus' (max 3-5)
+  sourceUrl?: string | null;               // URL source externe
+  descriptionMarketing?: string | null;    // Description marketing alternative
+  rawSessions?: RawSessionData[];          // Données sessions brutes
+  priceFrom_display?: number | null;       // Prix affiché (alias front)
+  contentKids?: Record<string, unknown> | null; // Contenu kids structuré
+}
+
+export interface RawSessionData {
+  id?: string;
+  start_date?: string;
+  end_date?: string;
+  seats_total?: number | null;
+  seats_left?: number | null;
+  age_min?: number | null;
+  age_max?: number | null;
+  is_full?: boolean | null;
+  price?: number | null;
+  date_text?: string;
+  city_departure?: string | null;
+  created_at?: string;
+  import_batch_ts?: string | null;
+  updated_at?: string;
+  [key: string]: unknown; // Allow additional properties from DB
 }
 
 export interface StaySession {
@@ -114,6 +137,64 @@ export interface InscriptionSupabase {
   pref_bilan_fin_sejour?: boolean;
   consignes_communication?: string;
   besoins_specifiques?: string;
+}
+
+// === TYPES ENRICHIS (réponses API avec données jointes) ===
+
+export interface InscriptionEnriched extends InscriptionSupabase {
+  sejour_titre?: string;
+  ged_sent_at?: string | null;
+  dossier_completude?: {
+    bulletin: boolean;
+    sanitaire: boolean;
+    liaison: boolean;
+    renseignements: boolean;
+    pj_count: number;
+    pj_vaccins: boolean;
+  } | null;
+}
+
+export interface StayWithWaitlist extends Stay {
+  waitlistCount?: number;
+}
+
+export interface DossierEnfant {
+  id?: string;
+  inscription_id?: string;
+  bulletin_completed?: boolean | null;
+  sanitaire_completed?: boolean | null;
+  liaison_completed?: boolean | null;
+  renseignements_completed?: boolean | null;
+  documents_joints?: DossierDocument[] | null;
+  ged_sent_at?: string | null;
+  [key: string]: unknown;
+}
+
+export interface DossierDocument {
+  name?: string;
+  type?: string;
+  url?: string;
+  storage_path?: string;
+  uploaded_at?: string;
+}
+
+export interface GdStructureSearchResult {
+  name: string;
+  city: string | null;
+  type: string | null;
+  email: string | null;
+}
+
+export interface SessionPriceRow {
+  id?: string;
+  stay_slug?: string;
+  start_date?: string;
+  end_date?: string;
+  is_full?: boolean;
+  price?: number | null;
+  seats_total?: number;
+  seats_left?: number;
+  date_text?: string;
 }
 
 export type ViewMode = 'pro' | 'kids';

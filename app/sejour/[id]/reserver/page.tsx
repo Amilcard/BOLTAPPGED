@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
+import type { Stay } from '@/lib/types';
 import { getSejourBySlug, getStaySessions, getDepartureCitiesFormatted, getSessionPricesFormatted, getSessionPrices, supabaseGed } from '@/lib/supabaseGed';
 import { BookingFlow } from '@/components/booking-flow';
 
@@ -25,15 +26,15 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
 
   // Index is_full par clé start_date|end_date pour lookup rapide
   const isFullMap = new Map<string, boolean>(
-    sessionPrices.map((p: any) => [`${p.start_date}|${p.end_date}`, p.is_full === true])
+    sessionPrices.map((p: { start_date: string; end_date: string; is_full?: boolean | null }) => [`${p.start_date}|${p.end_date}`, p.is_full === true])
   );
 
   // Filtrer sessions sans dates valides (guard null DB)
-  const validSessions = sessionsRaw.filter((s: any) => s.start_date && s.end_date);
+  const validSessions = sessionsRaw.filter((s: { start_date?: string; end_date?: string }) => s.start_date && s.end_date);
 
   // Map snake_case DB → camelCase frontend
   // IMPORTANT: l'ID = slug__start__end — identique au format de sejour/[id]/page.tsx
-  const sessions = validSessions.map((s: any) => ({
+  const sessions = validSessions.map((s: { start_date: string; end_date: string }) => ({
     ...s,
     id: `${params.id}__${s.start_date}__${s.end_date}`,
     stayId: params.id,
@@ -69,7 +70,7 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
       .limit(10);
 
     if (candidates && candidates.length > 0) {
-      const candidateSlugs = candidates.map((c: any) => c.slug);
+      const candidateSlugs = candidates.map((c: { slug: string }) => c.slug);
 
       // Requête 2 : slugs ayant au moins une session disponible (is_full != true)
       const { data: availableRows } = await supabaseGed
@@ -78,15 +79,15 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
         .in('stay_slug', candidateSlugs)
         .or('is_full.is.null,is_full.eq.false');
 
-      const availableSlugsSet = new Set((availableRows ?? []).map((r: any) => r.stay_slug));
+      const availableSlugsSet = new Set((availableRows ?? []).map((r: { stay_slug: string }) => r.stay_slug));
 
       // Filtrer uniquement séjours avec sessions dispo — jamais un séjour complet
-      const filtered = candidates.filter((c: any) => availableSlugsSet.has(c.slug));
+      const filtered = candidates.filter((c: { slug: string }) => availableSlugsSet.has(c.slug));
 
       // Tri : même tranche d'âge > durée proche > prix croissant
       const currentAgeMin = stay.age_min ?? 0;
       const currentAgeMax = stay.age_max ?? 99;
-      filtered.sort((a: any, b: any) => {
+      filtered.sort((a: { age_min?: number | null; age_max?: number | null }, b: { age_min?: number | null; age_max?: number | null }) => {
         const aAgeMatch = a.age_min === currentAgeMin && a.age_max === currentAgeMax ? 0 : 1;
         const bAgeMatch = b.age_min === currentAgeMin && b.age_max === currentAgeMax ? 0 : 1;
         return aAgeMatch - bAgeMatch;
@@ -210,8 +211,7 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
             </div>
           ) : (
             <BookingFlow
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              stay={enrichedStay as any}
+              stay={enrichedStay as unknown as Stay & { departureCities: typeof departureCities; enrichmentSessions: typeof enrichmentSessions }}
               sessions={availableSessions}
               initialSessionId={searchParams.session}
               initialCity={searchParams.ville}

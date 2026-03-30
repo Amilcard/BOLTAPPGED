@@ -95,7 +95,7 @@ export async function POST(
       if (docType === 'autre') {
         updatedDocs = [...existingDocs, newDoc];
       } else {
-        updatedDocs = existingDocs.filter((d: any) => d.type !== docType);
+        updatedDocs = existingDocs.filter((d: { type?: string }) => d.type !== docType);
         updatedDocs.push(newDoc);
       }
 
@@ -127,9 +127,10 @@ export async function POST(
       success: true,
       document: newDoc,
     }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Upload error:', error);
-    return NextResponse.json({ error: error.message || 'Erreur serveur.' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Erreur serveur.';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -164,8 +165,9 @@ export async function GET(
     const docs = dossier?.documents_joints || [];
 
     return NextResponse.json({ documents: Array.isArray(docs) ? docs : [] });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -209,7 +211,7 @@ export async function DELETE(
 
     if (dossier) {
       const docs = Array.isArray(dossier.documents_joints) ? dossier.documents_joints : [];
-      const updatedDocs = docs.filter((d: any) => d.storage_path !== storage_path);
+      const updatedDocs = docs.filter((d: { storage_path?: string }) => d.storage_path !== storage_path);
 
       await supabase
         .from('gd_dossier_enfant')
@@ -218,8 +220,9 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

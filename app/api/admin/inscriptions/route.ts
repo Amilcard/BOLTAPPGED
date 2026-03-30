@@ -47,9 +47,15 @@ export async function GET(req: NextRequest) {
     }
 
     // Enrichir avec les infos de completude dossier + titre sejour
-    const enriched = (data || []).map((insc: any) => {
-      const dossier = insc.gd_dossier_enfant?.[0] || null;
-      const docs = Array.isArray(dossier?.documents_joints) ? dossier.documents_joints : [];
+    interface InscriptionRaw {
+      gd_dossier_enfant?: Array<{ bulletin_completed?: boolean; sanitaire_completed?: boolean; liaison_completed?: boolean; renseignements_completed?: boolean; documents_joints?: Array<{ type: string }> | null; ged_sent_at?: string | null }>;
+      gd_stays?: { marketing_title?: string; title?: string };
+      sejour_slug: string;
+      [key: string]: unknown;
+    }
+    const enriched = (data || []).map((insc: InscriptionRaw) => {
+      const dossier = insc.gd_dossier_enfant?.[0] ?? null;
+      const docs = dossier && Array.isArray(dossier.documents_joints) ? dossier.documents_joints : [];
       const stay = insc.gd_stays;
 
       return {
@@ -64,7 +70,7 @@ export async function GET(req: NextRequest) {
           liaison: !!dossier.liaison_completed,
           renseignements: !!dossier.renseignements_completed,
           pj_count: docs.length,
-          pj_vaccins: docs.some((d: any) => d.type === 'vaccins'),
+          pj_vaccins: docs.some((d: { type?: string }) => d.type === 'vaccins'),
         } : null,
       };
     });

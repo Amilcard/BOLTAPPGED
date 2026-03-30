@@ -7,7 +7,7 @@ import {
   ArrowLeft, Trash2, ExternalLink, ClipboardCopy,
   FileCheck, FileClock, Download, Save, Loader2,
 } from 'lucide-react';
-import { InscriptionSupabase } from '@/lib/types';
+import { InscriptionSupabase, InscriptionEnriched, DossierEnfant } from '@/lib/types';
 import { useAdminUI } from '@/components/admin/admin-ui';
 
 const STATUS_OPTIONS = [
@@ -39,7 +39,7 @@ export default function InscriptionDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [dossier, setDossier] = useState<any>(null);
+  const [dossier, setDossier] = useState<DossierEnfant | null>(null);
   const [dossierLoading, setDossierLoading] = useState(false);
   const [autresInscriptions, setAutresInscriptions] = useState<InscriptionSupabase[]>([]);
   const [relanceLoading, setRelanceLoading] = useState(false);
@@ -267,7 +267,7 @@ export default function InscriptionDetailPage() {
         <div className="bg-white rounded-xl shadow p-6">
           <h2 className="text-lg font-semibold mb-4">Sejour</h2>
           <div className="space-y-3 text-sm">
-            <div><span className="text-gray-500">Sejour :</span> <strong>{(insc as any).sejour_titre || insc.sejour_slug}</strong></div>
+            <div><span className="text-gray-500">Sejour :</span> <strong>{(insc as InscriptionEnriched).sejour_titre || insc.sejour_slug}</strong></div>
             <div><span className="text-gray-500">Session :</span> <strong>{insc.session_date}</strong></div>
             <div><span className="text-gray-500">Ville depart :</span> <strong className="capitalize">{insc.city_departure}</strong></div>
             {insc.payment_method && <div><span className="text-gray-500">Methode :</span> <strong>{insc.payment_method}</strong></div>}

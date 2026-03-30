@@ -75,7 +75,7 @@ export function HomeContent({
   // LOT 1: Calculate budget range from actual stays (Option A)
   const budgetRange = useMemo(() => {
     const prices = stays
-      .map(s => (s as any).priceFrom)
+      .map(s => s.priceFrom)
       .filter((p): p is number => p != null && p > 0);
     return calculateBudgetRange(prices);
   }, [stays]);
@@ -124,7 +124,7 @@ export function HomeContent({
 
       // Budget filter (LOT 1: filter by max budget - only for authenticated pros with prices)
       if (showBudgetFilter && filters.budgetMax !== undefined && filters.budgetMax < budgetRange.max) {
-        const stayPrice = (stay as any).priceFrom;
+        const stayPrice = stay.priceFrom;
         if (stayPrice && stayPrice > filters.budgetMax) {
           return false;
         }

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Check, ChevronRight, ChevronLeft, Loader2, Info, AlertCircle, Calendar, MapPin, CreditCard } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import type { Stay, StaySession } from '@/lib/types';
+import type { Stay, StaySession, RawSessionData } from '@/lib/types';
 import { formatDate, formatDateLong, validateChildAge } from '@/lib/utils';
 
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
@@ -107,8 +107,9 @@ function StripePaymentForm({ clientSecret, onSuccess, onError }: { clientSecret:
       } else {
         onError('Le paiement n\'a pas abouti. Veuillez réessayer.');
       }
-    } catch (err: any) {
-      onError(err.message || 'Erreur inattendue.');
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Erreur inattendue.';
+      onError(errorMsg);
     } finally {
       setProcessing(false);
     }
@@ -140,8 +141,8 @@ function StripePaymentForm({ clientSecret, onSuccess, onError }: { clientSecret:
 
 export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity = '' }: BookingFlowProps) {
   const router = useRouter();
-  const departureCities = (stay as any).departureCities || [];
-  const enrichmentSessions = (stay as any).enrichmentSessions || [];
+  const departureCities = (stay as Stay & { departureCities?: DepartureCity[] }).departureCities || [];
+  const enrichmentSessions = (stay as Stay & { enrichmentSessions?: SessionPriceData[] }).enrichmentSessions || [];
 
   // Normaliser la ville depuis l'URL vers le format DB
   // "Sans transport" ou "Sans+transport" → "sans_transport"
@@ -189,7 +190,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     return age;
   };
 
-  const selectedSession = sessions?.find(s => s?.id === selectedSessionId);
+  const selectedSession = sessions.find(s => s?.id === selectedSessionId);
 
   let sessionBasePrice: number | null = null;
   if (selectedSession && enrichmentSessions && enrichmentSessions.length > 0) {
@@ -197,7 +198,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     const day = String(start.getDate()).padStart(2, '0');
     const month = String(start.getMonth() + 1).padStart(2, '0');
     const dateStr = `${day}/${month}`;
-    const found = enrichmentSessions.find((s: SessionPriceData) => s.date_text?.includes(dateStr));
+    const found = enrichmentSessions.find((s: SessionPriceData) => s.date_text.includes(dateStr));
     if (found) {
       sessionBasePrice = found.promo_price_eur || found.base_price_eur;
     } else {
@@ -280,7 +281,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   const phoneRegex = /^[\d\s\+\-\.()]{10,}$/; // Min 10 chiffres/espaces
   const isEmailValid = emailRegex.test(step1.email);
   const isPhoneValid = phoneRegex.test(step1.phone);
-  const isStructureNameValid = step1.structureName?.trim().length >= 2;
+  const isStructureNameValid = step1.structureName.trim().length >= 2;
   const isStructureCPValid = /^\d{5}$/.test(step1.structurePostalCode);
   const isStructureCityValid = step1.structureCity?.trim().length >= 2;
   const isStep1Valid = isStructureNameValid
@@ -585,7 +586,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             <div className="space-y-2 max-h-[50vh] overflow-y-auto">
               {standardDepartureCities
                 .slice()
-                .sort((a: any, b: any) => {
+                .sort((a: DepartureCity, b: DepartureCity) => {
                   if (a.city === 'sans_transport') return -1;
                   if (b.city === 'sans_transport') return 1;
                   const aIndex = STANDARD_CITIES.findIndex(std => a.city.toLowerCase().includes(std.toLowerCase()));
@@ -595,7 +596,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                   if (bIndex >= 0) return 1;
                   return a.city.localeCompare(b.city);
                 })
-                .map((city: any, idx: number) => {
+                .map((city: DepartureCity, idx: number) => {
                   const isCitySelected = selectedCity === city.city;
                   return (
                     <label
@@ -1156,7 +1157,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             )}
           </p>
           <div className="bg-primary-50 p-4 rounded-xl text-left text-sm space-y-1">
-            <p><strong>Référence :</strong> {bookingId?.slice(0, 8)?.toUpperCase() || bookingId}</p>
+            <p><strong>Référence :</strong> {bookingId.slice(0, 8).toUpperCase() || bookingId}</p>
             <p><strong>Session :</strong> {formatDateLong(selectedSession?.startDate ?? '')} - {formatDateLong(selectedSession?.endDate ?? '')}</p>
             <p><strong>Ville :</strong> {selectedCity === 'sans_transport' ? 'Sans transport (par vos soins)' : selectedCity}</p>
             <p><strong>Enfant :</strong> {step2.childFirstName} (né le {new Date(step2.childBirthDate).toLocaleDateString('fr-FR')})</p>
@@ -1168,7 +1169,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
           {paymentMethod === 'bank_transfer' && (
             <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-left text-sm">
               <h4 className="font-semibold text-blue-800 mb-2">Instructions de virement</h4>
-              <p className="text-blue-700 text-xs">Les coordonnées bancaires (IBAN) vous ont été envoyées par email. Veuillez effectuer le virement en indiquant votre référence <strong>{bookingId?.slice(0, 8)?.toUpperCase()}</strong> en libellé.</p>
+              <p className="text-blue-700 text-xs">Les coordonnées bancaires (IBAN) vous ont été envoyées par email. Veuillez effectuer le virement en indiquant votre référence <strong>{bookingId.slice(0, 8).toUpperCase()}</strong> en libellé.</p>
               <p className="text-blue-600 text-xs mt-2 font-medium">Notre équipe vous contactera par email pour valider l&apos;inscription après réception du règlement.</p>
             </div>
           )}

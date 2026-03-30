@@ -23,9 +23,10 @@ export async function GET(request: NextRequest) {
       throw error;
     }
     return NextResponse.json({ propositions: data || [] });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error in GET /api/admin/propositions:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -58,11 +59,17 @@ export async function POST(req: NextRequest) {
     }
 
     // Récupérer les infos du séjour
+    interface StayRow {
+      slug: string;
+      title?: string;
+      marketing_title?: string;
+      description_pro?: string;
+    }
     const { data: sejour } = await supabase
       .from('gd_stays')
       .select('slug, title, marketing_title, description_pro')
       .eq('slug', sejour_slug)
-      .single();
+      .single() as { data: StayRow | null; error?: unknown };
 
     if (!sejour) {
       return NextResponse.json({ error: 'Séjour introuvable.' }, { status: 404 });
@@ -91,7 +98,7 @@ export async function POST(req: NextRequest) {
     const prixTotal = Number(prixSejour) + Number(prixTransport) + prixEncadrement;
 
     // Récupérer les activités du séjour
-    const sejourActivites = (sejour as any).description_pro || '';
+    const sejourActivites = sejour.description_pro || '';
 
     // Créer la proposition
     const { data: proposition, error } = await supabase
@@ -104,7 +111,7 @@ export async function POST(req: NextRequest) {
         enfant_nom,
         enfant_prenom,
         sejour_slug,
-        sejour_titre: (sejour as any).marketing_title || (sejour as any).title,
+        sejour_titre: sejour.marketing_title || sejour.title,
         sejour_activites: sejourActivites,
         session_start,
         session_end,
@@ -122,9 +129,10 @@ export async function POST(req: NextRequest) {
     if (error) throw error;
 
     return NextResponse.json({ proposition }, { status: 201 });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error creating proposition:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -171,8 +179,9 @@ export async function PATCH(req: NextRequest) {
 
     if (error) throw error;
     return NextResponse.json({ proposition: data });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -201,7 +210,8 @@ export async function DELETE(req: NextRequest) {
 
     if (error) throw error;
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

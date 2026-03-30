@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
+import { GdStructureSearchResult } from '@/lib/types';
 
 /**
  * GET /api/structures/search?cp=76600
@@ -32,7 +33,7 @@ export async function GET(req: NextRequest) {
     if (error) throw error;
 
     // Ne PAS retourner le code ni l'id — l'éducateur doit le demander à ses collègues
-    const structures = (data || []).map((s: any) => ({
+    const structures = (data || []).map((s: GdStructureSearchResult) => ({
       name: s.name,
       city: s.city,
       type: s.type,

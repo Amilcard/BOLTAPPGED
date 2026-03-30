@@ -27,7 +27,7 @@ import {
   Image as ImageIcon,
 } from 'lucide-react';
 import { getReassurancePoints, getThemeStyle } from '@/config/premium-themes';
-import type { Stay, StaySession } from '@/lib/types';
+import type { Stay, StaySession, RawSessionData } from '@/lib/types';
 import { formatDateLong, getWishlistMotivation, addToWishlist } from '@/lib/utils';
 import { getPriceBreakdown, findSessionPrice, getMinSessionPrice, type EnrichmentSessionData } from '@/lib/pricing';
 import { useApp } from '@/components/providers';
@@ -44,7 +44,7 @@ type EnrichmentData = { source_url: string; departures: DepartureData[]; session
 
 const PRIORITY_CITIES = ['paris', 'lyon', 'marseille', 'lille', 'bordeaux', 'rennes'];
 
-export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], price_base?: number | null, price_unit?: string, pro_price_note?: string, sourceUrl?: string | null, pdfUrl?: string | null, geoLabel?: string | null, geoPrecision?: string | null, accommodationLabel?: string | null, contentKids?: any, rawSessions?: any[], images?: string[] } }) {
+export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], price_base?: number | null, price_unit?: string, pro_price_note?: string, sourceUrl?: string | null, pdfUrl?: string | null, geoLabel?: string | null, geoPrecision?: string | null, accommodationLabel?: string | null, contentKids?: Record<string, unknown> | null, rawSessions?: RawSessionData[], images?: string[] } }) {
   const { mode, mounted, refreshWishlist } = useApp();
   const router = useRouter();
   const [showWishlistModal, setShowWishlistModal] = useState(false);
@@ -56,8 +56,8 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
   const [preSelectedCity, setPreSelectedCity] = useState<string>('');
 
   // Enrichment data
-  const stayUrl = String((stay as any)?.sourceUrl ?? "").trim();
-  const pdfUrl = (stay as any)?.pdfUrl ?? null;
+  const stayUrl = String(stay?.sourceUrl ?? "").trim();
+  const pdfUrl = stay?.pdfUrl ?? null;
   const contentKidsParsed = typeof stay?.contentKids === 'string' ? JSON.parse(stay.contentKids) : stay?.contentKids;
   const allDepartureCities: DepartureData[] = contentKidsParsed?.departureCities ?? [];
   const sessionsFormatted = contentKidsParsed?.sessionsFormatted ?? [];
@@ -90,21 +90,21 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
 
   // === TITRE H1: CityCrunch marketing_title UNIQUEMENT — plus aucun fallback legacy UFOVAL ===
-  const displayTitle = (stay as any)?.marketingTitle || 'Séjour';
+  const displayTitle = stay?.marketingTitle || 'Séjour';
 
   // === SOUS-TITRE H2: CityCrunch punchline UNIQUEMENT ===
-  const displaySubtitle = (stay as any)?.punchline || '';
+  const displaySubtitle = stay?.punchline || '';
 
   // === BODY: CityCrunch expert_pitch > punchline (jamais de legacy) ===
-  let displayDesc = (stay as any)?.expertPitch
-    || (stay as any)?.punchline
+  let displayDesc = stay?.expertPitch
+    || stay?.punchline
     || null;
 
   // PROTECTION ANTI-DUPLICATION
   // Si le Body est identique au H2 (à cause des fallbacks), on force un autre contenu
   if (displayDesc === displaySubtitle) {
-    if ((stay as any)?.descriptionMarketing && (stay as any)?.descriptionMarketing !== displaySubtitle) {
-       displayDesc = (stay as any)?.descriptionMarketing;
+    if (stay?.descriptionMarketing && stay?.descriptionMarketing !== displaySubtitle) {
+       displayDesc = stay?.descriptionMarketing;
     } else if (programme.length > 0) {
        // Si vraiment pas de description unique, on prend les 2 premiers points du programme comme résumé
        displayDesc = programme.slice(0, 2).join(' ') + '...';
@@ -145,7 +145,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
   const handleShare = async () => {
     const url = typeof window !== 'undefined' ? window.location.href : '';
-    const title = (stay as any)?.marketingTitle || stay?.title || 'Séjour';
+    const title = stay?.marketingTitle || stay?.title || 'Séjour';
     const motivation = getWishlistMotivation(slug);
     const text = motivation
       ? `Ce séjour m'intéresse : ${title}\nPourquoi : ${motivation}`
@@ -172,8 +172,8 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
   // Lot 10B: Extraire les tranches d'âges depuis ageRangesDisplay (calculé côté serveur)
   // Fallback: utiliser rawSessions si ageRangesDisplay pas disponible (rétrocompatibilité)
-  const ageRangesFromProps = (stay as any).ageRangesDisplay;
-  const rawSessions = (stay as any).rawSessions || [];
+  const ageRangesFromProps = stay.ageRangesDisplay;
+  const rawSessions = stay.rawSessions || [];
 
   // Extraire les tranches individuelles depuis ageRangesDisplay
   // Format attendu: "6-8 / 9-11 / 12-14 ans" → ["6-8", "9-11", "12-14"]
@@ -393,14 +393,14 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
             {/* Localisation */}
             <div className="flex items-center gap-2">
                <MapPin className="w-5 h-5 text-primary" />
-               <span className="font-medium">{(stay as any)?.spotLabel || stay?.geography}</span>
+               <span className="font-medium">{stay?.spotLabel || stay?.geography}</span>
             </div>
 
             <div className="ml-auto">
                {/* Badge émotion minimaliste */}
                {(() => {
                  const EXCLUDED_DISPLAY_TAGS = ['MER', 'MONTAGNE', 'PLEIN_AIR', 'PLEIN AIR', 'DECOUVERTE'];
-                 const emotionTag = (stay as any)?.emotionTag;
+                 const emotionTag = stay?.emotionTag;
                  if (emotionTag) {
                    return (
                      <span className="px-4 py-1.5 bg-gray-100 text-primary text-xs font-bold rounded-full capitalize">
@@ -438,7 +438,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   <MapPin className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                   <div>
                     <span className="text-xs text-gray-500 uppercase font-bold tracking-wide block mb-1">Environnement</span>
-                    <span className="text-sm font-semibold text-gray-900 leading-tight block">{(stay as any)?.spotLabel || stay?.geography || 'Non précisé'}</span>
+                    <span className="text-sm font-semibold text-gray-900 leading-tight block">{stay?.spotLabel || stay?.geography || 'Non précisé'}</span>
                   </div>
                 </div>
                 {/* 2. Hébergement — Premium standing_label > Legacy accommodationLabel */}
@@ -446,7 +446,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   <Home className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                   <div>
                     <span className="text-xs text-gray-500 uppercase font-bold tracking-wide block mb-1">Confort & Standing</span>
-                    <span className="text-sm font-semibold text-gray-900 leading-tight block">{(stay as any)?.standingLabel || stay?.accommodationLabel || stay?.accommodation || 'Confort standard'}</span>
+                    <span className="text-sm font-semibold text-gray-900 leading-tight block">{stay?.standingLabel || stay?.accommodationLabel || stay?.accommodation || 'Confort standard'}</span>
                   </div>
                 </div>
                 {/* 3. Encadrement — Premium expertise_label > Legacy supervision */}
@@ -454,7 +454,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   <Shield className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                   <div>
                     <span className="text-xs text-gray-500 uppercase font-bold tracking-wide block mb-1">Niveau d'encadrement</span>
-                    <span className="text-sm font-semibold text-gray-900 leading-tight block">{(stay as any)?.expertiseLabel || stay?.supervision || '1 anim / 8 jeunes'}</span>
+                    <span className="text-sm font-semibold text-gray-900 leading-tight block">{stay?.expertiseLabel || stay?.supervision || '1 anim / 8 jeunes'}</span>
                   </div>
                 </div>
                 {/* 4. Intensité — Premium intensity_label > Placeholder */}
@@ -464,7 +464,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   </div>
                   <div>
                     <span className="text-xs text-gray-500 uppercase font-bold tracking-wide block mb-1">Rythme / Intensité</span>
-                    <span className="text-sm font-semibold text-gray-900 leading-tight block">{(stay as any)?.intensityLabel || 'Rythme adapté'}</span>
+                    <span className="text-sm font-semibold text-gray-900 leading-tight block">{stay?.intensityLabel || 'Rythme adapté'}</span>
                   </div>
                 </div>
               </div>
@@ -473,11 +473,11 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
             {/* === BLOC EXPERTISE & RÉUSSITE ÉDUCATIVE (Premium - DYNAMIQUE) === */}
             {(() => {
               // Priorité: emotion_tag premium > themes[0] legacy
-              const primaryTheme = (stay as any)?.emotionTag || themes[0] || 'DEFAULT';
+              const primaryTheme = stay?.emotionTag || themes[0] || 'DEFAULT';
               const themeStyle = getThemeStyle(primaryTheme);
 
               // DYNAMIQUE: price_includes_features (DB) > fallback getReassurancePoints (config)
-              const priceFeatures = (stay as any)?.priceIncludesFeatures;
+              const priceFeatures = stay?.priceIncludesFeatures;
               const dynamicPoints: string[] = Array.isArray(priceFeatures) && priceFeatures.length > 0
                 ? priceFeatures.slice(0, 5)  // Max 5 bullets
                 : getReassurancePoints(primaryTheme).points;

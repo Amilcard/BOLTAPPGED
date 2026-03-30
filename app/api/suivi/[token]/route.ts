@@ -179,28 +179,11 @@ export async function PATCH(
       );
     }
 
-    // Champs éditables par le référent (whitelist stricte)
-    const editableFields: Record<string, (v: unknown) => unknown> = {
-      pref_nouvelles_sejour: (v) => {
-        const allowed = ['oui', 'non', 'si_besoin'];
-        return allowed.includes(v as string) ? v : 'si_besoin';
-      },
-      pref_canal_contact: (v) => {
-        const allowed = ['email', 'telephone', 'les_deux'];
-        return allowed.includes(v as string) ? v : 'email';
-      },
-      pref_bilan_fin_sejour: (v) => Boolean(v),
-      consignes_communication: (v) => {
-        const s = typeof v === 'string' ? v.trim().slice(0, 500) : null;
-        return s || null;
-      },
-      besoins_specifiques: (v) => {
-        const s = typeof v === 'string' ? v.trim().slice(0, 1000) : null;
-        return s || null;
-      },
-    };
+    // Champs éditables par le référent (whitelist stricte — switch explicite, pas d'accès dynamique)
+    const EDITABLE_FIELDS = ['pref_nouvelles_sejour', 'pref_canal_contact', 'pref_bilan_fin_sejour', 'consignes_communication', 'besoins_specifiques'] as const;
+    type EditableField = typeof EDITABLE_FIELDS[number];
 
-    if (!Object.prototype.hasOwnProperty.call(editableFields, field)) {
+    if (!EDITABLE_FIELDS.includes(field as EditableField)) {
       return NextResponse.json(
         { error: { code: 'FIELD_NOT_ALLOWED', message: 'Ce champ n\'est pas modifiable.' } },
         { status: 403 }
@@ -237,8 +220,25 @@ export async function PATCH(
       );
     }
 
-    // Appliquer la mise à jour
-    const sanitizedValue = editableFields[field](value);
+    // Appliquer la mise à jour — switch explicite, aucun accès dynamique à des fonctions
+    let sanitizedValue: unknown;
+    switch (field as EditableField) {
+      case 'pref_nouvelles_sejour':
+        sanitizedValue = ['oui', 'non', 'si_besoin'].includes(value as string) ? value : 'si_besoin';
+        break;
+      case 'pref_canal_contact':
+        sanitizedValue = ['email', 'telephone', 'les_deux'].includes(value as string) ? value : 'email';
+        break;
+      case 'pref_bilan_fin_sejour':
+        sanitizedValue = Boolean(value);
+        break;
+      case 'consignes_communication':
+        sanitizedValue = typeof value === 'string' ? (value.trim().slice(0, 500) || null) : null;
+        break;
+      case 'besoins_specifiques':
+        sanitizedValue = typeof value === 'string' ? (value.trim().slice(0, 1000) || null) : null;
+        break;
+    }
     const { error: updateErr } = await supabase
       .from('gd_inscriptions')
       .update({ [field]: sanitizedValue })

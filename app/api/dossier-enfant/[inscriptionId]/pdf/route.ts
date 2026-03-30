@@ -98,7 +98,7 @@ export async function GET(
     // Charger le template PDF — path traversal guard
     const baseDir = path.resolve(process.cwd(), 'public', 'templates');
     const resolvedPath = path.resolve(baseDir, TEMPLATE_FILES[docType]);
-    if (!resolvedPath.startsWith(baseDir)) {
+    if (!resolvedPath.startsWith(baseDir + path.sep)) {
       return NextResponse.json(
         { error: { code: 'INVALID_PATH', message: 'Chemin de template invalide.' } },
         { status: 400 }

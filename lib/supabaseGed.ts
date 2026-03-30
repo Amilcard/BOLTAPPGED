@@ -19,8 +19,15 @@ function getClient() {
     // même avec `export const dynamic = 'force-dynamic'` au niveau page.
     _supabaseGed = createClient<Database>(url, key, {
       global: {
-        fetch: (input: RequestInfo | URL, init?: RequestInit) =>
-          fetch(input, { ...init, cache: 'no-store' }),
+        fetch: (input: RequestInfo | URL, init?: RequestInit) => {
+          const inputUrl = typeof input === 'string' ? input
+            : input instanceof URL ? input.href
+            : (input as Request).url;
+          if (!inputUrl.startsWith(url)) {
+            throw new Error('URL fetch Supabase non autorisée');
+          }
+          return fetch(input, { ...init, cache: 'no-store' });
+        },
       },
     })
   }

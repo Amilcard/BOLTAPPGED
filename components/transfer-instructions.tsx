@@ -20,7 +20,7 @@ export function TransferInstructions({
   const bic = process.env.NEXT_PUBLIC_BIC || 'XXXXXXX';
 
   const copyToClipboard = (text: string, type: string) => {
-    navigator.clipboard.writeText(text);
+    void navigator.clipboard.writeText(text);
     setCopied(type);
     setTimeout(() => setCopied(null), 2000);
   };

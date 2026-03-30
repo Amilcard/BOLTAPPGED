@@ -108,8 +108,8 @@ export default function PropositionsPage() {
   }, []);
 
   useEffect(() => {
-    loadPropositions();
-    loadSejours();
+    void loadPropositions();
+    void loadSejours();
   }, [loadPropositions, loadSejours]);
 
   // Quand un séjour est sélectionné, charger ses sessions depuis session_prices
@@ -166,7 +166,7 @@ export default function PropositionsPage() {
         sejour_slug: '', session_start: '', session_end: '', ville_depart: '',
         encadrement: false,
       });
-      loadPropositions();
+      void loadPropositions();
     } catch (err: any) {
       setError(err.message || 'Erreur lors de la création');
     } finally {
@@ -218,7 +218,7 @@ export default function PropositionsPage() {
         headers: authHeaders(),
         body: JSON.stringify({ id, status }),
       });
-      loadPropositions();
+      void loadPropositions();
     } catch (err) {
       console.error('Error updating status:', err);
     }
@@ -547,7 +547,7 @@ export default function PropositionsPage() {
                           <Eye size={18} className="text-orange-600" />
                         </button>
                         <button
-                          onClick={() => downloadPdf(p.id)}
+                          onClick={() => { void downloadPdf(p.id); }}
                           className="p-1.5 hover:bg-gray-100 rounded-lg transition" title="Télécharger PDF"
                         >
                           <FileDown size={18} className="text-gray-600" />

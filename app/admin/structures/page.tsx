@@ -63,7 +63,7 @@ export default function AdminStructures() {
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
-      const res = await fetch(`/api/admin/structures?${params}`, { headers });
+      const res = await fetch(`/api/admin/structures?${params.toString()}`, { headers });
       if (res.ok) {
         const data = await res.json();
         setStructures(data.structures || []);
@@ -265,7 +265,7 @@ export default function AdminStructures() {
                   </td>
                   <td className="px-4 py-3 flex gap-2">
                     <button
-                      onClick={() => toggleDetail(s.id)}
+                      onClick={() => { void toggleDetail(s.id); }}
                       className="text-primary hover:text-primary/80 text-sm flex items-center gap-1"
                       title="Voir les inscriptions"
                     >

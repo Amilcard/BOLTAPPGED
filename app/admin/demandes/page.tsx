@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { STORAGE_KEYS, formatDate } from '@/lib/utils';
 import { Eye, FileCheck, FileClock, Trash2, Building2 } from 'lucide-react';
-import { InscriptionSupabase } from '@/lib/types';
+import { InscriptionSupabase, InscriptionEnriched } from '@/lib/types';
 import { useAdminUI } from '@/components/admin/admin-ui';
 
 interface StructureOption {
@@ -94,7 +94,7 @@ export default function AdminDemandes() {
       const token = localStorage.getItem(STORAGE_KEYS.AUTH);
       const params = new URLSearchParams();
       if (selectedStructure) params.set('structure_id', selectedStructure);
-      const res = await fetch(`/api/admin/inscriptions?${params}`, {
+      const res = await fetch(`/api/admin/inscriptions?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -110,7 +110,7 @@ export default function AdminDemandes() {
     }
   };
 
-  useEffect(() => { fetchInscriptions(); }, [selectedStructure]);
+  useEffect(() => { void fetchInscriptions(); }, [selectedStructure]);
 
   useEffect(() => {
     const loadStructures = async () => {
@@ -127,7 +127,7 @@ export default function AdminDemandes() {
         }
       } catch { /* silent */ }
     };
-    loadStructures();
+    void loadStructures();
   }, []);
 
   const handleStatusChange = async (id: string, status: string) => {
@@ -146,12 +146,12 @@ export default function AdminDemandes() {
         const err = await res.json().catch(() => ({}));
         toast(`Erreur mise à jour statut : ${err?.error?.message ?? 'Erreur inconnue'}`);
       }
-      fetchInscriptions();
+      void fetchInscriptions();
     };
     if (DESTRUCTIVE.includes(status)) {
       confirm(`Passer cette inscription en "${LABELS[status]}" ? Cette action est difficile à annuler.`, doChange);
     } else {
-      doChange();
+      void doChange();
     }
   };
 
@@ -170,7 +170,7 @@ export default function AdminDemandes() {
           toast(`Erreur suppression : ${err?.error?.message || res.status}`);
           return;
         }
-        fetchInscriptions();
+        void fetchInscriptions();
       } catch {
         toast('Erreur réseau lors de la suppression');
       }
@@ -268,7 +268,7 @@ export default function AdminDemandes() {
                 {filtered.map((insc) => {
                   const statusStyle = getStatusStyle(insc.status);
                   const paymentStyle = getPaymentStyle(insc.payment_status);
-                  const isEnRetard = !(insc as any).ged_sent_at && daysSince(insc.created_at) > 7;
+                  const isEnRetard = !(insc as InscriptionEnriched).ged_sent_at && daysSince(insc.created_at) > 7;
                   return (
                     <tr key={insc.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/admin/demandes/${insc.id}`)}>
                       <td className="px-4 py-4 text-sm text-gray-500">
@@ -288,14 +288,14 @@ export default function AdminDemandes() {
                         {insc.jeune_prenom} {insc.jeune_nom}
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-600">
-                        {(insc as any).sejour_titre || insc.sejour_slug}
+                        {(insc as InscriptionEnriched).sejour_titre || insc.sejour_slug}
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-600 max-w-[160px]">
                         <div className="font-medium truncate" title={insc.referent_nom}>{insc.referent_nom}</div>
                         {insc.organisation && <div className="text-xs text-gray-400 truncate" title={insc.organisation}>{insc.organisation}</div>}
                       </td>
                       <td className="px-4 py-4">
-                        <DossierBadge completude={(insc as any).dossier_completude} gedSentAt={(insc as any).ged_sent_at} />
+                        <DossierBadge completude={(insc as InscriptionEnriched).dossier_completude} gedSentAt={(insc as InscriptionEnriched).ged_sent_at} />
                       </td>
                       <td className="px-4 py-4 text-sm font-medium">
                         {insc.price_total} €
@@ -309,7 +309,7 @@ export default function AdminDemandes() {
                         <select
                           className={`px-3 py-1 rounded-full text-xs font-medium ${statusStyle.color} cursor-pointer`}
                           value={insc.status}
-                          onChange={(e) => handleStatusChange(insc.id, e.target.value)}
+                          onChange={(e) => { void handleStatusChange(insc.id, e.target.value); }}
                         >
                           {STATUS_OPTIONS.map((opt) => (
                             <option key={opt.value} value={opt.value}>{opt.label}</option>

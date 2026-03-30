@@ -64,7 +64,7 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess }:
   };
 
   useEffect(() => {
-    loadDocuments();
+    void loadDocuments();
   }, [inscriptionId, token]);
 
   const handleUpload = async () => {
@@ -102,7 +102,7 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess }:
 
       setSuccess('Document envoye avec succes !');
       if (fileRef.current) fileRef.current.value = '';
-      loadDocuments();
+      void loadDocuments();
       onUploadSuccess?.();
 
       setTimeout(() => setSuccess(''), 3000);
@@ -124,7 +124,7 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess }:
       });
 
       if (res.ok) {
-        loadDocuments();
+        void loadDocuments();
         onUploadSuccess?.();
       }
     } catch {

@@ -6,12 +6,12 @@ import { useEffect, useState } from 'react';
 import { STORAGE_KEYS, formatPrice } from '@/lib/utils';
 import { Plus, Pencil, Trash2, Eye, EyeOff, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Stay } from '@/lib/types';
+import { Stay, StayWithWaitlist } from '@/lib/types';
 import { useAdminUI } from '@/components/admin/admin-ui';
 
 export default function AdminSejours() {
   const { confirm } = useAdminUI();
-  const [stays, setStays] = useState<Stay[]>([]);
+  const [stays, setStays] = useState<StayWithWaitlist[]>([]);
   const [editingStay, setEditingStay] = useState<Stay | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -36,8 +36,8 @@ export default function AdminSejours() {
     });
   };
 
-  const handleNotifyWaitlist = (stay: Stay) => {
-    const count = (stay as any).waitlistCount;
+  const handleNotifyWaitlist = (stay: StayWithWaitlist) => {
+    const count = stay.waitlistCount;
     confirm(`Envoyer un email à ${count} personne(s) en attente pour ce séjour ?`, async () => {
       const token = localStorage.getItem(STORAGE_KEYS.AUTH);
       const res = await fetch(`/api/admin/stays/${stay.id}/notify-waitlist`, {
@@ -75,7 +75,7 @@ export default function AdminSejours() {
         <StayForm
           stay={editingStay}
           onClose={() => { setIsCreating(false); setEditingStay(null); }}
-          onSave={() => { fetchStays(); setIsCreating(false); setEditingStay(null); }}
+          onSave={() => { void fetchStays(); setIsCreating(false); setEditingStay(null); }}
         />
       )}
 
@@ -103,19 +103,19 @@ export default function AdminSejours() {
                   </span>
                 </td>
                 <td className="px-6 py-4">
-                  {(stay as any).waitlistCount > 0 && (
+                  {stay.waitlistCount && stay.waitlistCount > 0 && (
                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                      <Bell size={11} /> {(stay as any).waitlistCount}
+                      <Bell size={11} /> {stay.waitlistCount}
                     </span>
                   )}
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex justify-end gap-2">
-                    {(stay as any).waitlistCount > 0 && (
+                    {stay.waitlistCount && stay.waitlistCount > 0 && (
                       <button
                         onClick={() => handleNotifyWaitlist(stay)}
                         className="p-2 hover:bg-amber-50 text-amber-600 rounded"
-                        title={`Notifier ${(stay as any).waitlistCount} personne(s) en attente`}
+                        title={`Notifier ${stay.waitlistCount} personne(s) en attente`}
                       >
                         <Bell size={18} />
                       </button>

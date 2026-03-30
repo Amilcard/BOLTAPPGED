@@ -303,7 +303,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
         {/* Save button */}
         {!saved && (
           <button
-            onClick={handleSaveMotivation}
+            onClick={() => { void handleSaveMotivation(); }}
             disabled={!isFormValid() || isSubmitting}
             className="w-full mb-4 py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >

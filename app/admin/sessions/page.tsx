@@ -38,8 +38,8 @@ export default function AdminSessions() {
     if (res.ok) setSessions(await res.json());
   };
 
-  useEffect(() => { fetchStays(); }, []);
-  useEffect(() => { fetchSessions(); }, [selectedStay]);
+  useEffect(() => { void fetchStays(); }, []);
+  useEffect(() => { void fetchSessions(); }, [selectedStay]);
 
   const handleDelete = (sessionId: string) => {
     confirm('Supprimer cette session ? Cette action est irréversible.', async () => {
@@ -78,7 +78,7 @@ export default function AdminSessions() {
           session={editingSession}
           stayId={selectedStay}
           onClose={() => { setIsCreating(false); setEditingSession(null); }}
-          onSave={() => { fetchSessions(); setIsCreating(false); setEditingSession(null); }}
+          onSave={() => { void fetchSessions(); setIsCreating(false); setEditingSession(null); }}
         />
       )}
 

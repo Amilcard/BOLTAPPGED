@@ -102,6 +102,13 @@ export async function sendInscriptionConfirmation(data: InscriptionEmailData) {
             <p style="color: #6b7280; font-size: 14px;">Votre inscription est en attente de validation. Vous recevrez un email de confirmation une fois le paiement reçu et validé.</p>
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
             <p style="color: #9ca3af; font-size: 12px;">Groupe &amp; Découverte — Séjours de vacances pour enfants et adolescents</p>
+            <p style="color: #9ca3af; font-size: 11px; margin-top: 8px; border-top: 1px solid #f3f4f6; padding-top: 8px;">
+              🔒 Vos données personnelles sont traitées par l'Association Groupe et Découverte conformément au RGPD.
+              Pour exercer vos droits (accès, rectification, suppression), écrivez à
+              <a href="mailto:groupeetdecouverte@gmail.com?subject=Demande RGPD" style="color: #6b7280;">groupeetdecouverte@gmail.com</a>
+              en mentionnant « Demande RGPD ».
+              <a href="https://app.groupeetdecouverte.fr/confidentialite" style="color: #6b7280;">Politique de confidentialité</a>
+            </p>
           </div>
         </div>
       `,
@@ -245,6 +252,371 @@ export async function sendStatusChangeEmail(
     return result;
   } catch (error) {
     console.error('[EMAIL] Erreur envoi changement statut:', error);
+    return null;
+  }
+}
+
+// ============================================================
+// Notification souhait kid → éducateur
+// ============================================================
+
+interface SouhaitEmailData {
+  educateurEmail: string;
+  educateurPrenom?: string;
+  kidPrenom: string;
+  sejourTitre: string;
+  motivation: string;
+  lienReponse: string;
+}
+
+export async function sendSouhaitNotificationEducateur(data: SouhaitEmailData) {
+  const apiKey = process.env.EMAIL_SERVICE_API_KEY;
+  if (!apiKey || apiKey === 'YOUR_EMAIL_API_KEY_HERE') return null;
+
+  try {
+    const resend = getResend();
+    const prenom = data.educateurPrenom ? ` ${data.educateurPrenom}` : '';
+    return await resend.emails.send({
+      from: FROM_EMAIL,
+      to: data.educateurEmail,
+      subject: `${data.kidPrenom} souhaite partir en séjour — ${data.sejourTitre}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto;">
+          <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 20px;">Groupe &amp; Découverte</h1>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+            <h2 style="color: #2a383f;">Un souhait de séjour à traiter</h2>
+            <p>Bonjour${prenom},</p>
+            <p><strong>${data.kidPrenom}</strong> a noté un souhait pour le séjour :</p>
+            <div style="background: #f9fafb; border-left: 4px solid #e07a5f; padding: 16px; margin: 16px 0; border-radius: 4px;">
+              <p style="margin: 0 0 8px; font-weight: bold; color: #2a383f;">${data.sejourTitre}</p>
+              <p style="margin: 0; color: #4b5563; font-style: italic;">&laquo; ${data.motivation} &raquo;</p>
+            </div>
+            <p>Cliquez sur le bouton ci-dessous pour consulter ce souhait et y répondre :</p>
+            <div style="text-align: center; margin: 24px 0;">
+              <a href="${data.lienReponse}"
+                 style="display: inline-block; background: #e07a5f; color: white; padding: 14px 28px; border-radius: 9999px; text-decoration: none; font-weight: bold; font-size: 15px;">
+                Voir le souhait et répondre
+              </a>
+            </div>
+            <p style="color: #9ca3af; font-size: 12px; margin-top: 24px;">
+              Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br/>
+              <span style="color: #6b7280;">${data.lienReponse}</span>
+            </p>
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
+            <p style="color: #9ca3af; font-size: 12px;">Groupe &amp; Découverte — Séjours de vacances pour enfants et adolescents</p>
+          </div>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error('[EMAIL] Erreur envoi souhait éducateur:', error);
+    return null;
+  }
+}
+
+/**
+ * Notification admin GED — dossier enfant soumis complet
+ * Envoyée lors du clic "Envoyer mon dossier" par le référent.
+ * Inclut des liens directs vers les PDFs individuels (pas d'assemblage).
+ */
+export async function sendDossierGedAdminNotification(data: {
+  referentNom: string;
+  referentEmail: string;
+  jeunePrenom: string;
+  jeuneNom: string;
+  dossierRef?: string;
+  sejourSlug: string;
+  sessionDate: string;
+  inscriptionId: string;
+  adminUrl: string;
+}) {
+  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
+    return null;
+  }
+
+  try {
+    const result = await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: ADMIN_EMAIL,
+      subject: `Dossier enfant soumis — ${data.jeunePrenom} ${data.jeuneNom}${data.dossierRef ? ` (${data.dossierRef})` : ''}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #166534; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">
+            <h2 style="margin: 0; font-size: 18px;">Dossier enfant soumis</h2>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 20px; border-radius: 0 0 8px 8px;">
+            <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 16px;">
+              <tr><td style="padding: 6px 0; color: #6b7280;">Jeune</td><td style="padding: 6px 0; font-weight: bold;">${data.jeunePrenom} ${data.jeuneNom}</td></tr>
+              <tr><td style="padding: 6px 0; color: #6b7280;">Référent</td><td style="padding: 6px 0;">${data.referentNom} (${data.referentEmail})</td></tr>
+              ${data.dossierRef ? `<tr><td style="padding: 6px 0; color: #6b7280;">N° dossier</td><td style="padding: 6px 0; font-family: monospace; font-weight: bold;">${data.dossierRef}</td></tr>` : ''}
+              <tr><td style="padding: 6px 0; color: #6b7280;">Séjour</td><td style="padding: 6px 0;">${data.sejourSlug.replace(/-/g, ' ')}</td></tr>
+              <tr><td style="padding: 6px 0; color: #6b7280;">Session</td><td style="padding: 6px 0;">${data.sessionDate}</td></tr>
+            </table>
+            <p style="font-size: 14px; margin: 0 0 12px 0;"><a href="${data.adminUrl}" style="background: #2a383f; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-size: 14px;">Voir dans l'admin</a></p>
+            <p style="color: #9ca3af; font-size: 12px; margin-top: 16px;">Le dossier est complet et a été soumis par le référent.</p>
+          </div>
+        </div>
+      `,
+    });
+    return result;
+  } catch (error) {
+    console.error('[EMAIL] Erreur envoi notification admin GED:', error);
+    return null;
+  }
+}
+
+/**
+ * Email de rappel dossier incomplet — envoyé manuellement par l'admin
+ * Guard : ne jamais appeler si ged_sent_at IS NOT NULL (vérification côté route)
+ */
+export async function sendRappelDossierIncomplet(data: {
+  referentEmail: string;
+  referentNom: string;
+  dossierRef?: string;
+  suiviToken: string;
+}) {
+  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
+    console.warn('[EMAIL] Clé API manquante — rappel dossier incomplet non envoyé');
+    return null;
+  }
+
+  const suiviUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.groupeetdecouverte.fr'}/suivi/${data.suiviToken}`;
+  const refLabel = data.dossierRef ? ` ${data.dossierRef}` : '';
+
+  try {
+    const result = await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: data.referentEmail,
+      subject: `Rappel - Votre dossier${refLabel} est incomplet`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 24px;">Groupe &amp; Découverte</h1>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+            <h2 style="color: #b45309; margin-top: 0;">Dossier incomplet</h2>
+            <p>Bonjour ${data.referentNom},</p>
+            <p>Nous n'avons pas encore reçu votre dossier complet. Votre espace de suivi est toujours accessible.</p>
+            ${data.dossierRef ? `<p>Référence du dossier : <strong style="font-family: monospace;">${data.dossierRef}</strong></p>` : ''}
+            <div style="text-align: center; margin: 24px 0;">
+              <a href="${suiviUrl}"
+                 style="display: inline-block; background: #2a383f; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 15px;">
+                Accéder à mon espace de suivi
+              </a>
+            </div>
+            <p style="color: #6b7280; font-size: 13px;">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br/><span style="color: #374151;">${suiviUrl}</span></p>
+            <p style="color: #6b7280; font-size: 12px; margin-top: 12px;">Ce lien est personnel et réservé à votre usage. Ne le partagez pas. Il reste valide pendant toute la durée du séjour.</p>
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
+            <p style="color: #9ca3af; font-size: 12px;">Groupe &amp; Découverte — Séjours de vacances pour enfants et adolescents</p>
+            <p style="color: #9ca3af; font-size: 11px; margin-top: 8px; border-top: 1px solid #f3f4f6; padding-top: 8px;">
+              🔒 Vos données personnelles sont traitées conformément au RGPD.
+              Contact : <a href="mailto:groupeetdecouverte@gmail.com?subject=Demande RGPD" style="color: #6b7280;">groupeetdecouverte@gmail.com</a> —
+              <a href="https://app.groupeetdecouverte.fr/confidentialite" style="color: #6b7280;">Politique de confidentialité</a>
+            </p>
+          </div>
+        </div>
+      `,
+    });
+    console.log('[EMAIL] Rappel dossier incomplet envoyé à:', data.referentEmail);
+    return result;
+  } catch (error) {
+    console.error('[EMAIL] Erreur envoi rappel dossier incomplet:', error);
+    return null;
+  }
+}
+
+/**
+ * Notification admin GED — relance envoyée manuellement vers un référent
+ * Appelée en fire-and-forget depuis la route POST /api/admin/inscriptions/[id]/relance
+ */
+export async function sendRelanceAdminNotification(data: {
+  referentNom: string;
+  referentEmail: string;
+  structureNom?: string;
+  dossierRef?: string;
+  inscriptionId: string;
+}) {
+  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
+    return null;
+  }
+
+  const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.groupeetdecouverte.fr'}/admin/demandes/${data.inscriptionId}`;
+  const dateRelance = new Date().toLocaleDateString('fr-FR');
+
+  try {
+    const result = await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: ADMIN_EMAIL,
+      subject: `[Relance envoyée] Dossier ${data.dossierRef || data.inscriptionId} — ${data.referentNom}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #b45309; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">
+            <h2 style="margin: 0; font-size: 18px;">Relance dossier incomplet envoyée</h2>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 20px; border-radius: 0 0 8px 8px;">
+            <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 16px;">
+              <tr><td style="padding: 6px 0; color: #6b7280;">Référent</td><td style="padding: 6px 0; font-weight: bold;">${data.referentNom}</td></tr>
+              <tr><td style="padding: 6px 0; color: #6b7280;">Email</td><td style="padding: 6px 0;">${data.referentEmail}</td></tr>
+              ${data.structureNom ? `<tr><td style="padding: 6px 0; color: #6b7280;">Structure</td><td style="padding: 6px 0;">${data.structureNom}</td></tr>` : ''}
+              ${data.dossierRef ? `<tr><td style="padding: 6px 0; color: #6b7280;">Dossier</td><td style="padding: 6px 0; font-family: monospace; font-weight: bold;">${data.dossierRef}</td></tr>` : ''}
+              <tr><td style="padding: 6px 0; color: #6b7280;">Date de relance</td><td style="padding: 6px 0;">${dateRelance}</td></tr>
+            </table>
+            <p style="font-size: 14px; margin: 0 0 12px 0;"><a href="${adminUrl}" style="background: #2a383f; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-size: 14px;">Voir le dossier dans l'admin</a></p>
+          </div>
+        </div>
+      `,
+    });
+    console.log('[EMAIL] Notification relance admin envoyée pour dossier:', data.dossierRef || data.inscriptionId);
+    return result;
+  } catch (error) {
+    console.error('[EMAIL] Erreur envoi notification relance admin:', error);
+    return null;
+  }
+}
+
+/**
+ * Email de complétude du dossier enfant envoyé au référent
+ */
+export async function sendDossierCompletEmail(data: {
+  referentEmail: string;
+  referentNom: string;
+  jeunePrenom: string;
+  jeuneNom: string;
+  dossierRef?: string;
+}) {
+  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
+    console.warn('[EMAIL] Clé API manquante — email dossier complet non envoyé');
+    return null;
+  }
+
+  try {
+    const result = await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: data.referentEmail,
+      subject: `Dossier de ${data.jeunePrenom} ${data.jeuneNom} complété${data.dossierRef ? ` - ${data.dossierRef}` : ''}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 24px;">Groupe &amp; Découverte</h1>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+              <h2 style="color: #166534; margin: 0 0 8px 0; font-size: 18px;">Dossier complet ✓</h2>
+              <p style="margin: 0; color: #15803d; font-size: 14px;">Tous les documents ont bien été reçus.</p>
+            </div>
+            <p>Bonjour ${data.referentNom},</p>
+            <p>Le dossier de <strong>${data.jeunePrenom} ${data.jeuneNom}</strong> est désormais complet. Nous avons bien reçu l'ensemble des documents requis (bulletin complémentaire, fiche sanitaire, fiche de liaison et pièces jointes).</p>
+            ${data.dossierRef ? `<p>Référence du dossier : <strong style="font-family: monospace;">${data.dossierRef}</strong></p>` : ''}
+            <p>Notre équipe procédera à la vérification des documents et vous contactera si nécessaire.</p>
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
+            <p style="color: #9ca3af; font-size: 12px;">Groupe &amp; Découverte — Séjours de vacances pour enfants et adolescents</p>
+          </div>
+        </div>
+      `,
+    });
+    console.log('[EMAIL] Dossier complet envoyé à:', data.referentEmail);
+    return result;
+  } catch (error) {
+    console.error('[EMAIL] Erreur envoi dossier complet:', error);
+    return null;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Email — Code structure (Phase 1 espace structure)
+// ═══════════════════════════════════════════════════════════════════════
+
+interface StructureCodeEmailData {
+  recipientEmail: string;
+  structureName: string;
+  structureCode: string;
+  educateurPrenom: string;
+}
+
+// ── Alerte nouvel éducateur détecté sur même CP ──────────────────────────
+
+interface NewEducateurAlertData {
+  adminEmail?: string;
+  existingStructures: Array<{ name: string; code: string; city: string }>;
+  newEducateurNom: string;
+  newEducateurEmail: string;
+  structureDeclaredName: string;
+  postalCode: string;
+}
+
+export async function sendNewEducateurAlert(data: NewEducateurAlertData) {
+  try {
+    const resend = getResend();
+    if (!process.env.EMAIL_SERVICE_API_KEY) return null;
+
+    const structList = data.existingStructures
+      .map(s => `<li><strong>${s.name}</strong> (${s.city}) — code : <code>${s.code}</code></li>`)
+      .join('');
+
+    const result = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: data.adminEmail || ADMIN_EMAIL,
+      subject: `[Structure] Nouvel éducateur détecté — ${data.postalCode} — ${data.structureDeclaredName}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #D4AC0D; color: #333; padding: 16px 20px; border-radius: 8px 8px 0 0;">
+            <h2 style="margin: 0; font-size: 18px;">⚠️ Nouvel éducateur sans code structure</h2>
+          </div>
+          <div style="padding: 24px; background: #f9f9f9; border-radius: 0 0 8px 8px;">
+            <p><strong>${data.newEducateurNom}</strong> (${data.newEducateurEmail}) vient d'inscrire un enfant pour la structure "<strong>${data.structureDeclaredName}</strong>" (CP ${data.postalCode}).</p>
+            <p>Il existe déjà ${data.existingStructures.length > 1 ? 'des structures' : 'une structure'} enregistrée(s) sur ce code postal :</p>
+            <ul>${structList}</ul>
+            <p style="margin-top: 16px;">Actions possibles :</p>
+            <ul>
+              <li>Si c'est la même structure → transmettre le code à l'éducateur ou rattacher manuellement dans l'admin</li>
+              <li>Si c'est une structure différente → aucune action, une nouvelle structure a été créée</li>
+            </ul>
+            <p style="color: #666; font-size: 13px; margin-top: 24px;">Email automatique — Groupe & Découverte</p>
+          </div>
+        </div>
+      `,
+    });
+    console.log('[EMAIL] Alerte nouvel éducateur envoyée pour CP:', data.postalCode);
+    return result;
+  } catch (error) {
+    console.error('[EMAIL] Erreur envoi alerte nouvel éducateur:', error);
+    return null;
+  }
+}
+
+export async function sendStructureCodeEmail(data: StructureCodeEmailData) {
+  try {
+    const resend = getResend();
+    if (!process.env.EMAIL_SERVICE_API_KEY) return null;
+
+    const result = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: data.recipientEmail,
+      subject: `Votre code structure Groupe & Découverte : ${data.structureCode}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #1A5276; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 22px;">Groupe & Découverte</h1>
+          </div>
+          <div style="padding: 30px; background: #f9f9f9; border-radius: 0 0 8px 8px;">
+            <p>Bonjour,</p>
+            <p>La structure <strong>${data.structureName}</strong> est désormais enregistrée sur Groupe & Découverte.</p>
+            <div style="background: #1A5276; color: white; text-align: center; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 0 0 5px 0; font-size: 14px;">Votre code structure</p>
+              <p style="margin: 0; font-size: 32px; font-weight: bold; letter-spacing: 4px;">${data.structureCode}</p>
+            </div>
+            <p><strong>Transmettez ce code à vos collègues</strong> pour regrouper les inscriptions de votre structure. Ils pourront le saisir lors de leur prochaine inscription ou depuis leur espace de suivi.</p>
+            <p style="color: #666; font-size: 13px; margin-top: 30px;">Cet email a été envoyé suite à l'inscription réalisée par ${data.educateurPrenom}. Si vous n'êtes pas concerné(e), vous pouvez ignorer ce message.</p>
+          </div>
+        </div>
+      `,
+    });
+    console.log('[EMAIL] Code structure envoyé à:', data.recipientEmail);
+    return result;
+  } catch (error) {
+    console.error('[EMAIL] Erreur envoi code structure:', error);
     return null;
   }
 }

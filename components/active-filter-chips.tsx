@@ -55,9 +55,10 @@ export function ActiveFilterChips({
 
   // Ages
   filters.ages.forEach((age) => {
+    const ageLabel = Object.prototype.hasOwnProperty.call(AGE_LABELS, age) ? AGE_LABELS[age] : age;
     chips.push({
       key: `age-${age}`,
-      label: AGE_LABELS[age] || age,
+      label: ageLabel,
       onRemove: () =>
         onFiltersChange({
           ...filters,

@@ -1,23 +1,17 @@
 export const dynamic = 'force-dynamic';
 import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase-server';
 import { headers } from 'next/headers';
 import { sendPaymentConfirmedAdminNotification } from '@/lib/email';
 
 function getStripe() {
-  return new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeKey) throw new Error('STRIPE_SECRET_KEY is not configured');
+  return new Stripe(stripeKey, {
     apiVersion: '2026-01-28.clover',
   });
 }
-
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
-
 export async function POST(req: NextRequest) {
   try {
     const stripe = getStripe();
@@ -34,17 +28,20 @@ export async function POST(req: NextRequest) {
     }
 
     // Vérifier la signature Stripe
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret) throw new Error('STRIPE_WEBHOOK_SECRET is not configured');
     let event: Stripe.Event;
     try {
       event = stripe.webhooks.constructEvent(
         body,
         sig as string,
-        process.env.STRIPE_WEBHOOK_SECRET!
+        webhookSecret
       );
-    } catch (err: any) {
-      console.error('Webhook signature verification failed:', err.message);
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Signature invalide';
+      console.error('Webhook signature verification failed:', errMsg);
       return NextResponse.json(
-        { error: `Webhook Error: ${err.message}` },
+        { error: `Webhook Error: ${errMsg}` },
         { status: 400 }
       );
     }
@@ -61,6 +58,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true, skipped: true });
     }
 
+    // Flag : ne marquer comme traité que si le traitement est complet
+    let shouldRecordEvent = true;
+
     // Traiter les événements
     switch (event.type) {
       case 'payment_intent.succeeded': {
@@ -68,7 +68,8 @@ export async function POST(req: NextRequest) {
         const inscriptionId = paymentIntent.metadata.inscriptionId;
 
         if (!inscriptionId) {
-          console.error('Missing inscriptionId in payment intent metadata');
+          console.error('Missing inscriptionId in payment intent metadata — Stripe réessaiera');
+          shouldRecordEvent = false; // Ne PAS enregistrer → Stripe réessaiera
           break;
         }
 
@@ -79,22 +80,26 @@ export async function POST(req: NextRequest) {
           .eq('id', inscriptionId)
           .single();
 
-        if (inscription != null) {
-          const stripeAmountEur = paymentIntent.amount / 100;
-          const dbAmount = (inscription as NonNullable<typeof inscription>).price_total ?? 0;
-          if (Math.abs(stripeAmountEur - dbAmount) > 1) {
-            console.error('AMOUNT_MISMATCH in webhook:', {
-              stripe: stripeAmountEur,
-              db: dbAmount,
-              inscriptionId,
-              eventId: event.id,
-            });
-            await supabase
-              .from('gd_inscriptions')
-              .update({ payment_status: 'amount_mismatch' })
-              .eq('id', inscriptionId);
-            break;
-          }
+        if (!inscription) {
+          console.error('webhook: inscription not found for payment intent — Stripe réessaiera', { inscriptionId, eventId: event.id });
+          shouldRecordEvent = false; // Race condition possible → Stripe réessaiera
+          break;
+        }
+
+        const stripeAmountEur = paymentIntent.amount / 100;
+        const dbAmount = inscription.price_total ?? 0;
+        if (Math.abs(stripeAmountEur - dbAmount) > 1) {
+          console.error('AMOUNT_MISMATCH in webhook:', {
+            stripe: stripeAmountEur,
+            db: dbAmount,
+            inscriptionId,
+            eventId: event.id,
+          });
+          await supabase
+            .from('gd_inscriptions')
+            .update({ payment_status: 'amount_mismatch' })
+            .eq('id', inscriptionId);
+          break;
         }
 
         // Montant vérifié, marquer comme payé
@@ -108,6 +113,7 @@ export async function POST(req: NextRequest) {
 
         if (error) {
           console.error('Error updating payment status:', error);
+          shouldRecordEvent = false;
         } else {
           console.log(`Payment succeeded for inscription ${inscriptionId}`);
           // Notification admin non-bloquante
@@ -131,7 +137,10 @@ export async function POST(req: NextRequest) {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         const inscriptionId = paymentIntent.metadata.inscriptionId;
 
-        if (!inscriptionId) break;
+        if (!inscriptionId) {
+          shouldRecordEvent = false;
+          break;
+        }
 
         const { error } = await supabase
           .from('gd_inscriptions')
@@ -152,21 +161,26 @@ export async function POST(req: NextRequest) {
         console.log(`Unhandled event type: ${event.type}`);
     }
 
-    // IDEMPOTENCY : enregistrer l'event comme traité
-    await supabase
-      .from('gd_processed_events')
-      .insert({
-        event_id: event.id,
-        event_type: event.type,
-        processed_at: new Date().toISOString(),
-      })
-      .single();
+    // IDEMPOTENCY : enregistrer l'event comme traité SEULEMENT si le traitement est complet
+    // Si shouldRecordEvent = false → Stripe réessaiera (metadata manquant, inscription pas encore créée)
+    if (shouldRecordEvent) {
+      await supabase
+        .from('gd_processed_events')
+        .upsert(
+          {
+            event_id: event.id,
+            event_type: event.type,
+            processed_at: new Date().toISOString(),
+          },
+          { onConflict: 'event_id', ignoreDuplicates: true }
+        );
+    }
 
     return NextResponse.json({ received: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Webhook error:', error);
     return NextResponse.json(
-      { error: error.message || 'Webhook processing failed' },
+      { error: error instanceof Error ? error.message : 'Webhook processing failed' },
       { status: 500 }
     );
   }

@@ -19,8 +19,15 @@ function getClient() {
     // même avec `export const dynamic = 'force-dynamic'` au niveau page.
     _supabaseGed = createClient<Database>(url, key, {
       global: {
-        fetch: (input: RequestInfo | URL, init?: RequestInit) =>
-          fetch(input, { ...init, cache: 'no-store' }),
+        fetch: (input: RequestInfo | URL, init?: RequestInit) => {
+          const inputUrl = typeof input === 'string' ? input
+            : input instanceof URL ? input.href
+            : (input as Request).url;
+          if (!inputUrl.startsWith(url)) {
+            throw new Error('URL fetch Supabase non autorisée');
+          }
+          return fetch(input, { ...init, cache: 'no-store' });
+        },
       },
     })
   }
@@ -30,7 +37,7 @@ function getClient() {
 // Proxy object: existing callers use `supabaseGed.from(...)` unchanged.
 export const supabaseGed = new Proxy({} as ReturnType<typeof createClient<Database>>, {
   get(_target, prop) {
-    return (getClient() as any)[prop]
+    return (getClient() as unknown as Record<string | symbol, unknown>)[prop]
   },
 })
 
@@ -91,6 +98,7 @@ export const getSejours = async (filters: StayFilters = {}) => {
   if (error) throw error
 
   // Mapping manuel snake_case → camelCase pour les champs premium
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return data?.map((stay: any) => ({
     ...stay,
     marketingTitle: stay.marketing_title,
@@ -167,7 +175,7 @@ export const getCitiesDeparture = async (slug: string) => {
     .eq('stay_slug', slug)
 
   if (error) throw error
-  return [...new Set(data.map((d: any) => d.city_departure))].sort()
+  return [...new Set(data.map((d: { city_departure: string }) => d.city_departure))].sort((a: string, b: string) => a.localeCompare(b, 'fr'))
 }
 
 // API SESSIONS AVEC ÂGES
@@ -253,7 +261,8 @@ export const getSessionPricesFormatted = async (slug: string) => {
 // API SOUHAITS & INSCRIPTIONS
 export const createWish = async (wish: Wish) => {
   const { data, error } = await supabaseGed
-    .from('gd_wishes')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .from('gd_souhaits' as any)
     .insert([wish])
     .select()
 
@@ -311,9 +320,9 @@ export const getAllStayThemes = async (): Promise<Record<string, string[]>> => {
   }
 
   // Regrouper par stay_slug
-  const themesMap: Record<string, string[]> = {}
+  const themesMap: Record<string, string[]> = Object.create(null) as Record<string, string[]>
   data?.forEach(row => {
-    if (!themesMap[row.stay_slug]) {
+    if (!Object.prototype.hasOwnProperty.call(themesMap, row.stay_slug)) {
       themesMap[row.stay_slug] = []
     }
     themesMap[row.stay_slug].push(row.theme)
@@ -342,11 +351,11 @@ export const getMinPricesBySlug = async (): Promise<Record<string, number>> => {
     return {}
   }
 
-  const pricesMap: Record<string, number> = {}
+  const pricesMap: Record<string, number> = Object.create(null) as Record<string, number>
   for (const row of data || []) {
     const price = row.price_ged_total
     if (price == null || !Number.isFinite(price)) continue
-    if (!pricesMap[row.stay_slug] || price < pricesMap[row.stay_slug]) {
+    if (!Object.prototype.hasOwnProperty.call(pricesMap, row.stay_slug) || price < pricesMap[row.stay_slug]) {
       pricesMap[row.stay_slug] = price
     }
   }

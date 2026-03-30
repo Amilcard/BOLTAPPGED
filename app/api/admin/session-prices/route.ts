@@ -1,15 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase-server';
 import { verifyAuth } from '@/lib/auth-middleware';
-
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
-
 /**
  * GET /api/admin/session-prices?stay_slug=xxx
  * Retourne les tarifs de sessions pour un séjour donné
@@ -36,8 +28,9 @@ export async function GET(request: NextRequest) {
     if (error) throw error;
 
     return NextResponse.json({ sessions: data || [] });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error in GET /api/admin/session-prices:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

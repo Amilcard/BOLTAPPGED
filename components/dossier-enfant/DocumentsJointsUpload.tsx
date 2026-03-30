@@ -13,6 +13,7 @@ interface DocJoint {
 interface Props {
   inscriptionId: string;
   token: string;
+  onUploadSuccess?: () => void;
 }
 
 const DOC_TYPES = [
@@ -37,7 +38,7 @@ function formatDate(iso: string): string {
   });
 }
 
-export function DocumentsJointsUpload({ inscriptionId, token }: Props) {
+export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess }: Props) {
   const [documents, setDocuments] = useState<DocJoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -63,7 +64,7 @@ export function DocumentsJointsUpload({ inscriptionId, token }: Props) {
   };
 
   useEffect(() => {
-    loadDocuments();
+    void loadDocuments();
   }, [inscriptionId, token]);
 
   const handleUpload = async () => {
@@ -101,11 +102,12 @@ export function DocumentsJointsUpload({ inscriptionId, token }: Props) {
 
       setSuccess('Document envoye avec succes !');
       if (fileRef.current) fileRef.current.value = '';
-      loadDocuments();
+      void loadDocuments();
+      onUploadSuccess?.();
 
       setTimeout(() => setSuccess(''), 3000);
-    } catch (err: any) {
-      setError(err.message || 'Erreur lors de l\'envoi.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erreur lors de l\'envoi.');
     } finally {
       setUploading(false);
     }
@@ -122,7 +124,8 @@ export function DocumentsJointsUpload({ inscriptionId, token }: Props) {
       });
 
       if (res.ok) {
-        loadDocuments();
+        void loadDocuments();
+        onUploadSuccess?.();
       }
     } catch {
       // Silently fail

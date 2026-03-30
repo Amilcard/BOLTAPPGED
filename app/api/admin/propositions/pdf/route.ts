@@ -1,16 +1,8 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase-server';
 import { verifyAuth } from '@/lib/auth-middleware';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
-
 // Couleurs GED
 const ORANGE = rgb(0.878, 0.478, 0.373);
 const DARK = rgb(0.12, 0.12, 0.2);
@@ -44,7 +36,7 @@ export async function GET(req: NextRequest) {
 
     if (!prop) return NextResponse.json({ error: 'Proposition introuvable' }, { status: 404 });
 
-    const p = prop as Record<string, any>;
+    const p = prop as Record<string, unknown>;
 
     // Nettoyer caracteres non-WinAnsi
     const c = (str: unknown): string => {
@@ -66,7 +58,6 @@ export async function GET(req: NextRequest) {
 
     const LEFT = 50;
     const RIGHT = width - 50;
-    const COL_RIGHT = RIGHT; // right edge for price alignment
 
     // Helper write (top-down Y)
     const w = (x: number, y: number, text: string, font = regular, size = 10, color = DARK) => {
@@ -124,7 +115,7 @@ export async function GET(req: NextRequest) {
       Y += 18;
     };
 
-    infoRow('Enfant :', `${c((p.enfant_nom || '').toUpperCase())} ${c(p.enfant_prenom || '')}`);
+    infoRow('Enfant :', `${c(String(p.enfant_nom ?? '').toUpperCase())} ${c(p.enfant_prenom)}`);
     infoRow('Sejour :', c(p.sejour_titre || p.sejour_slug || ''));
     if (p.sejour_activites) {
       w(LBL, Y, 'Activites :', regular, 10, GRAY);
@@ -132,7 +123,7 @@ export async function GET(req: NextRequest) {
       w(VAL, Y, act, bold, 9, ORANGE);
       Y += 18;
     }
-    infoRow('Periode :', `Du ${fmtDate(p.session_start)} au ${fmtDate(p.session_end)}`);
+    infoRow('Periode :', `Du ${fmtDate(p.session_start as string)} au ${fmtDate(p.session_end as string)}`);
     infoRow('Ville de depart :', c(p.ville_depart || ''));
     infoRow('N. agrement DSCS :', c(p.agrement_dscs || '069ORG0667'));
 
@@ -215,8 +206,8 @@ export async function GET(req: NextRequest) {
         'Content-Disposition': `inline; filename="${filename}"`,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('PDF generation error:', error);
-    return NextResponse.json({ error: error.message || 'Erreur generation PDF' }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Erreur generation PDF' }, { status: 500 });
   }
 }

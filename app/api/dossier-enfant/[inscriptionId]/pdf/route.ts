@@ -1,16 +1,9 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase-server';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { readFile } from 'fs/promises';
 import path from 'path';
-
-function getSupabase() {
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY manquante');
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, key);
-}
-
 type DocType = 'bulletin' | 'sanitaire' | 'liaison';
 
 const TEMPLATE_FILES: Record<DocType, string> = {
@@ -25,10 +18,10 @@ const TEMPLATE_FILES: Record<DocType, string> = {
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { inscriptionId: string } }
+  { params }: { params: Promise<{ inscriptionId: string }> }
 ) {
   try {
-    const { inscriptionId } = params;
+    const { inscriptionId } = await params;
     const token = req.nextUrl.searchParams.get('token');
     const docType = req.nextUrl.searchParams.get('type') as DocType;
 
@@ -92,9 +85,27 @@ export async function GET(
       );
     }
 
-    // Charger le template PDF
-    const templatePath = path.join(process.cwd(), 'public', 'templates', TEMPLATE_FILES[docType]);
-    const templateBytes = await readFile(templatePath);
+    // Résoudre le nom commercial du séjour (marketing_title > slug)
+    const { data: stayRaw } = await supabase
+      .from('gd_stays')
+      .select('marketing_title')
+      .eq('slug', inscription.sejour_slug)
+      .maybeSingle();
+    const sejourNom = (stayRaw as { marketing_title?: string } | null)?.marketing_title
+      || inscription.sejour_slug
+      || '';
+
+    // Charger le template PDF — docType est déjà validé par whitelist TEMPLATE_FILES ci-dessus
+    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal -- static whitelist
+    const baseDir = path.resolve(process.cwd(), 'public', 'templates');
+    const resolvedPath = path.resolve(baseDir, TEMPLATE_FILES[docType]);
+    if (!resolvedPath.startsWith(baseDir + path.sep)) {
+      return NextResponse.json(
+        { error: { code: 'INVALID_PATH', message: 'Chemin de template invalide.' } },
+        { status: 400 }
+      );
+    }
+    const templateBytes = await readFile(resolvedPath);
     const pdfDoc = await PDFDocument.load(templateBytes);
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
@@ -121,9 +132,7 @@ export async function GET(
       });
     };
 
-    /**
-     * Écrire un X pour une checkbox cochée.
-     */
+    /** Écrire un X pour une checkbox cochée. */
     const writeCheck = (pageIndex: number, x: number, y: number, checked: boolean) => {
       if (checked) {
         writeText(pageIndex, x, y, 'X', { bold: true, size: 11 });
@@ -133,86 +142,76 @@ export async function GET(
     /** Helper pour string safe */
     const s = (val: unknown): string => (typeof val === 'string' ? val : (val ? String(val) : ''));
 
+    /** Formater une date ISO (YYYY-MM-DD ou YYYY-MM-DDThh…) en DD/MM/YYYY */
+    const formatDate = (iso: string): string => {
+      if (!iso) return '';
+      const match = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (!match) return iso;
+      return `${match[3]}/${match[2]}/${match[1]}`;
+    };
+
     // ========================================================================
     // BULLETIN D'INSCRIPTION
     // Calibré sur bulletin-inscription-template.pdf (595.276 x 841.89, 1 page)
     // ========================================================================
     if (docType === 'bulletin') {
-      const d = (dossier.bulletin_complement || {}) as Record<string, unknown>;
+      const d   = (dossier.bulletin_complement || {}) as Record<string, unknown>;
+      const san = (dossier.fiche_sanitaire    || {}) as Record<string, unknown>;
 
       // --- COORDONNÉES (haut de page) ---
-      // Prénom du participant : ……… | Date de naissance : ………
-      writeText(0, 160, 79, inscription.jeune_prenom);
-      writeText(0, 416, 79, inscription.jeune_date_naissance);
+      writeText(0, 160, 79,  inscription.jeune_prenom);
+      writeText(0, 416, 79,  formatDate(inscription.jeune_date_naissance));
 
-      // NOM du participant : ……… | Sexe : ………
-      writeText(0, 160, 95, inscription.jeune_nom);
-      writeText(0, 416, 95, s(d.sexe) || '');
+      writeText(0, 160, 95,  inscription.jeune_nom);
+      writeText(0, 416, 95,  s(san.sexe));                         // sexe → fiche_sanitaire
 
-      // Nom du responsable légal : ……… | Téléphone : ………
       writeText(0, 160, 111, inscription.referent_nom);
-      writeText(0, 416, 111, s(d.telephone) || inscription.referent_email || '');
+      writeText(0, 416, 111, s(san.resp1_tel_portable) || '');     // tél responsable → fiche_sanitaire
 
-      // Adresse permanente : ……… | Mail : ………
       writeText(0, 160, 127, s(d.adresse_permanente));
       writeText(0, 416, 127, s(d.mail) || inscription.referent_email || '');
 
-      // --- SÉJOURS CHOISIS (table, row 1) ---
-      // Headers at y≈166 : NOM DU SÉJOUR | DATES | VILLE DE DÉPART | VILLE DE RETOUR
-      // Row 1 at y≈180
-      writeText(0, 35, 185, inscription.sejour_slug || '', { size: smallFontSize });
-      writeText(0, 142, 185, inscription.session_date || '', { size: smallFontSize });
-      writeText(0, 250, 185, inscription.city_departure || '', { size: smallFontSize });
+      // --- SÉJOURS CHOISIS ---
+      writeText(0, 35,  185, sejourNom,                            { size: smallFontSize });
+      writeText(0, 142, 185, formatDate(inscription.session_date), { size: smallFontSize });
+      writeText(0, 250, 185, inscription.city_departure || '',     { size: smallFontSize });
 
       // --- ORGANISATION DU DÉPART ET DU RETOUR ---
-      // Adresse de départ
-      // Nom : ……… (x=120, y=261.6) | Adresse : ……… (x=376, y=261.6)
-      writeText(0, 120, 266, s(d.depart_nom));
-      writeText(0, 376, 266, s(d.depart_adresse));
-      // Lien avec l'enfant (y=277.7) | Téléphone (y=277.7)
-      writeText(0, 120, 282, s(d.depart_lien));
-      writeText(0, 376, 282, s(d.depart_telephone));
+      writeText(0, 120, 266, s(d.adresse_depart_nom));
+      writeText(0, 376, 266, s(d.adresse_depart_adresse));
+      writeText(0, 120, 282, s(d.adresse_depart_lien));
+      writeText(0, 376, 282, s(d.adresse_depart_telephone));
 
-      // Adresse de retour
-      // Nom (y=310) | Adresse (y=310)
-      writeText(0, 120, 314, s(d.retour_nom));
-      writeText(0, 376, 314, s(d.retour_adresse));
-      // Lien (y=326.2) | Téléphone (y=326.2)
-      writeText(0, 120, 330, s(d.retour_lien));
-      writeText(0, 376, 330, s(d.retour_telephone));
+      writeText(0, 120, 314, s(d.adresse_retour_nom));
+      writeText(0, 376, 314, s(d.adresse_retour_adresse));
+      writeText(0, 120, 330, s(d.adresse_retour_lien));
+      writeText(0, 376, 330, s(d.adresse_retour_telephone));
 
-      // --- Documents à envoyer (checkboxes) ---
-      // Adresse permanente (y≈371), Adresse de départ (y≈393), Adresse de retour (y≈415)
-      // Ces checkboxes sont à x≈150
-      writeCheck(0, 150, 375, s(d.envoi_adresse_permanente) === 'true' || d.envoi_adresse_permanente === true);
-      writeCheck(0, 150, 397, s(d.envoi_adresse_depart) === 'true' || d.envoi_adresse_depart === true);
-      writeCheck(0, 150, 419, s(d.envoi_adresse_retour) === 'true' || d.envoi_adresse_retour === true);
+      // --- ENVOI DE LA FICHE DE LIAISON (choix utilisateur) ---
+      // La convocation est gérée par GED après validation du dossier, hors périmètre ici.
+      const envoiFicheLiaison = s(d.envoi_fiche_liaison);
+      writeCheck(0, 150, 375, envoiFicheLiaison === 'permanente');
+      writeCheck(0, 150, 397, envoiFicheLiaison === 'depart');
+      writeCheck(0, 150, 419, envoiFicheLiaison === 'retour');
 
       // --- PERSONNE À CONTACTER EN CAS D'URGENCE ---
-      // Nom (x=120, y=464) | Adresse (x=376, y=464)
       writeText(0, 120, 468, s(d.contact_urgence_nom));
       writeText(0, 376, 468, s(d.contact_urgence_adresse));
-      // Lien (x=120, y=480.1) | Téléphone (x=376, y=480.1)
       writeText(0, 120, 484, s(d.contact_urgence_lien));
       writeText(0, 376, 484, s(d.contact_urgence_telephone));
 
       // --- FINANCEMENT ---
-      // Checkboxes financement (ASE, établissement, famille, etc.)
-      // Positions approximatives : y≈575-620
-      writeCheck(0, 35, 580, s(d.financement_ase) === 'true' || d.financement_ase === true);
+      writeCheck(0, 35, 580, s(d.financement_ase)           === 'true' || d.financement_ase           === true);
       writeCheck(0, 35, 596, s(d.financement_etablissement) === 'true' || d.financement_etablissement === true);
-      writeCheck(0, 35, 612, s(d.financement_famille) === 'true' || d.financement_famille === true);
-      writeCheck(0, 35, 628, s(d.financement_autre) === 'true' || d.financement_autre === true);
-      if (s(d.financement_autre_detail)) {
-        writeText(0, 100, 628, s(d.financement_autre_detail), { size: smallFontSize });
+      writeCheck(0, 35, 612, s(d.financement_famille)       === 'true' || d.financement_famille       === true);
+      writeCheck(0, 35, 628, s(d.financement_autres)        === 'true' || d.financement_autres        === true);
+      if (s(d.financement_montants)) {
+        writeText(0, 100, 628, s(d.financement_montants), { size: smallFontSize });
       }
 
       // --- AUTORISATION LÉGALE ---
-      // Je soussigné (y≈699, x≈102)
-      writeText(0, 102, 703, s(d.soussigne_nom));
-      // Fait à (y≈739, x≈56)
-      writeText(0, 56, 743, s(d.fait_a));
-      // Date — à droite du "Fait à"
+      writeText(0, 102, 703, s(d.soussigne_nom) || inscription.referent_nom);
+      writeText(0, 56,  743, s(d.autorisation_fait_a));
       writeText(0, 280, 743, s(d.date_signature) || new Date().toLocaleDateString('fr-FR'));
 
     // ========================================================================
@@ -225,247 +224,212 @@ export async function GET(
       // ──── PAGE 1 ────
 
       // 1. L'ENFANT
-      // Classe (2025/2026) : x=438, y≈168
       writeText(0, 438, 170, s(d.classe));
-
-      // Nom du mineur : fill at ~x=140, y=183
       writeText(0, 140, 183, inscription.jeune_nom);
-
-      // Sexe : Garçon (checkbox ~x=350, y=187) | Fille (checkbox ~x=412, y=187)
       writeCheck(0, 350, 187, s(d.sexe) === 'garcon');
       writeCheck(0, 412, 187, s(d.sexe) === 'fille');
-
-      // Prénom : fill at ~x=100, y=199
       writeText(0, 100, 199, inscription.jeune_prenom);
+      writeText(0, 138, 216, formatDate(inscription.jeune_date_naissance));
 
-      // Date de naissance : fill at ~x=138, y=216
-      writeText(0, 138, 216, inscription.jeune_date_naissance);
-
-      // Sieste : OUI (x≈340) / ça dépend / NON
       writeCheck(0, 457, 200, s(d.sieste) === 'oui');
       writeCheck(0, 497, 218, s(d.sieste) === 'non');
 
-      // Enfant détenteur d'un P.A.I. ou bénéficiant de l'AEEH (y≈250)
-      // PAI checkbox, AEEH checkbox
-      writeCheck(0, 166, 250, s(d.pai) === 'true' || d.pai === true);
+      writeCheck(0, 166, 250, s(d.pai)  === 'true' || d.pai  === true);
       writeCheck(0, 318, 250, s(d.aeeh) === 'true' || d.aeeh === true);
 
-      // 2. LES RESPONSABLES LÉGAUX (y≈303)
-      // --- Responsable 1 (payeur) - colonne gauche ---
-      writeText(0, 65, 345, s(d.resp1_nom));
-      writeText(0, 90, 362, s(d.resp1_prenom));
-      writeText(0, 71, 378, s(d.resp1_parente));
-      writeText(0, 90, 395, s(d.resp1_adresse), { size: smallFontSize });
-      writeText(0, 27, 411, s(d.resp1_adresse_suite), { size: smallFontSize });
-      writeText(0, 27, 427, s(d.resp1_cp_ville), { size: smallFontSize });
+      // 2. LES RESPONSABLES LÉGAUX
+      writeText(0, 65,  345, s(d.resp1_nom));
+      writeText(0, 90,  362, s(d.resp1_prenom));
+      writeText(0, 71,  378, s(d.resp1_parente));
+      writeText(0, 90,  395, s(d.resp1_adresse),       { size: smallFontSize });
+      writeText(0, 27,  411, s(d.resp1_adresse_suite),  { size: smallFontSize });
+      writeText(0, 27,  427, s(d.resp1_cp_ville),       { size: smallFontSize });
       writeText(0, 100, 444, s(d.resp1_profession));
-      writeText(0, 230, 472, s(d.resp1_email), { size: smallFontSize });
-      writeText(0, 27, 490, s(d.resp1_email), { size: smallFontSize }); // continuation si long
-      writeText(0, 98, 507, s(d.resp1_tel_domicile));
-      writeText(0, 97, 523, s(d.resp1_tel_portable));
+      writeText(0, 230, 472, s(d.resp1_email),          { size: smallFontSize });
+      writeText(0, 27,  490, s(d.resp1_email),          { size: smallFontSize }); // continuation si long
+      writeText(0, 98,  507, s(d.resp1_tel_domicile));
+      writeText(0, 97,  523, s(d.resp1_tel_portable));
       writeText(0, 100, 540, s(d.resp1_tel_travail));
 
-      // --- Responsable 2 - colonne droite ---
       writeText(0, 350, 322, s(d.resp2_nom));
       writeText(0, 370, 336, s(d.resp2_prenom));
       writeText(0, 356, 350, s(d.resp2_parente));
-      writeText(0, 370, 364, s(d.resp2_adresse), { size: smallFontSize });
-      writeText(0, 309, 392, s(d.resp2_adresse_suite), { size: smallFontSize });
-      writeText(0, 309, 420, s(d.resp2_cp_ville), { size: smallFontSize });
+      writeText(0, 370, 364, s(d.resp2_adresse),       { size: smallFontSize });
+      writeText(0, 309, 392, s(d.resp2_adresse_suite),  { size: smallFontSize });
+      writeText(0, 309, 420, s(d.resp2_cp_ville),       { size: smallFontSize });
       writeText(0, 380, 448, s(d.resp2_profession));
-      writeText(0, 345, 462, s(d.resp2_email), { size: smallFontSize });
-      writeText(0, 309, 477, s(d.resp2_email), { size: smallFontSize }); // continuation
+      writeText(0, 345, 462, s(d.resp2_email),          { size: smallFontSize });
+      writeText(0, 309, 477, s(d.resp2_email),          { size: smallFontSize }); // continuation
       writeText(0, 382, 493, s(d.resp2_tel_domicile));
       writeText(0, 381, 510, s(d.resp2_tel_portable));
       writeText(0, 395, 526, s(d.resp2_tel_travail));
 
-      // N° Allocataire CAF/MSA : x≈183, y≈557
       writeText(0, 183, 557, s(d.allocataire_caf_msa));
-      // Quotient Familial : x≈415, y≈557
       writeText(0, 415, 557, s(d.quotient_familial));
 
-      // 3. LES DÉLÉGATIONS (y≈578)
-      // 3 lignes de délégation : NOM, Prénom, Lien, Tél
+      // 3. LES DÉLÉGATIONS
       const delegations = [
-        { nom: s(d.delegation1_nom), prenom: s(d.delegation1_prenom), lien: s(d.delegation1_lien), tel: s(d.delegation1_tel) },
-        { nom: s(d.delegation2_nom), prenom: s(d.delegation2_prenom), lien: s(d.delegation2_lien), tel: s(d.delegation2_tel) },
-        { nom: s(d.delegation3_nom), prenom: s(d.delegation3_prenom), lien: s(d.delegation3_lien), tel: s(d.delegation3_tel) },
+        { nom: s(d.delegation_1_nom), prenom: s(d.delegation_1_prenom), lien: s(d.delegation_1_lien), tel: s(d.delegation_1_tel) },
+        { nom: s(d.delegation_2_nom), prenom: s(d.delegation_2_prenom), lien: s(d.delegation_2_lien), tel: s(d.delegation_2_tel) },
+        { nom: s(d.delegation_3_nom), prenom: s(d.delegation_3_prenom), lien: s(d.delegation_3_lien), tel: s(d.delegation_3_tel) },
       ];
-      // Table rows at approximately y=650, 665, 680
       delegations.forEach((del, i) => {
         const rowY = 656 + i * 16;
-        writeText(0, 35, rowY, del.nom, { size: smallFontSize });
+        writeText(0, 35,  rowY, del.nom,    { size: smallFontSize });
         writeText(0, 155, rowY, del.prenom, { size: smallFontSize });
-        writeText(0, 300, rowY, del.lien, { size: smallFontSize });
-        writeText(0, 420, rowY, del.tel, { size: smallFontSize });
+        writeText(0, 300, rowY, del.lien,   { size: smallFontSize });
+        writeText(0, 420, rowY, del.tel,    { size: smallFontSize });
       });
 
       // ──── PAGE 2 ────
 
       // 4. LES VACCINATIONS
-      // Nom du médecin traitant : x≈173, y≈46
       writeText(1, 173, 46, s(d.medecin_nom));
-      // Tél : x≈374, y≈46
       writeText(1, 374, 46, s(d.medecin_tel));
 
-      // Table de vaccins — 9 vaccins avec OUI/NON et date
-      // Les lignes commencent ~y=70 avec un espacement de ~13pt
-      const vaccins = [
-        { key: 'diphterie', label: 'Diphtérie' },
-        { key: 'tetanos', label: 'Tétanos' },
-        { key: 'polio', label: 'Poliomyélite' },
-        { key: 'coqueluche', label: 'Coqueluche' },
-        { key: 'hib', label: 'Haemophilus B' },
-        { key: 'hepatite_b', label: 'Hépatite B' },
-        { key: 'rougeole', label: 'Rougeole' },
-        { key: 'oreillons', label: 'Oreillons' },
-        { key: 'rubeole', label: 'Rubéole' },
-        { key: 'meningocoque_c', label: 'Méningocoque C' },
-        { key: 'pneumocoque', label: 'Pneumocoque' },
+      // ROR : le formulaire groupe Rubéole/Oreillons/Rougeole en une clé unique.
+      // Le template GED a 3 lignes séparées → on reporte la même valeur OUI/NON + date.
+      const rorVal  = s(d.vaccin_rubeole_oreillons_rougeole);
+      const rorDate = s(d.vaccin_rubeole_oreillons_rougeole_date);
+
+      const vaccins: { key: string; ror?: true }[] = [
+        { key: 'diphterie' },
+        { key: 'tetanos' },
+        { key: 'poliomyelite' },
+        { key: 'coqueluche' },
+        { key: 'haemophilus' },
+        { key: 'hepatite_b' },
+        { key: 'rougeole',  ror: true },
+        { key: 'oreillons', ror: true },
+        { key: 'rubeole',   ror: true },
+        { key: 'meningocoque_c' },
+        { key: 'pneumocoque' },
       ];
 
       vaccins.forEach((v, i) => {
         const rowY = 80 + i * 9;
-        const val = s(d[`vaccin_${v.key}`]);
-        const date = s(d[`vaccin_${v.key}_date`]);
-        // OUI checkbox ~x=260, NON ~x=340, Date ~x=430
+        const val  = v.ror ? rorVal  : s(d[`vaccin_${v.key}`]);
+        const date = v.ror ? rorDate : s(d[`vaccin_${v.key}_date`]);
         writeCheck(1, 260, rowY, val === 'oui');
         writeCheck(1, 340, rowY, val === 'non');
         if (date) writeText(1, 430, rowY, date, { size: 7 });
       });
 
-      // 5. RENSEIGNEMENTS MÉDICAUX (y≈221 page 2)
-      // Poids : x≈74, y≈247
+      // 5. RENSEIGNEMENTS MÉDICAUX
       writeText(1, 74, 247, s(d.poids));
-      // Taille : x≈72, y≈267
       writeText(1, 72, 267, s(d.taille));
 
-      // Traitement médical OUI (x≈450) / NON (x≈517) at y≈258
       writeCheck(1, 472, 258, s(d.traitement_en_cours) === 'true' || d.traitement_en_cours === true);
       writeCheck(1, 520, 258, s(d.traitement_en_cours) === 'false' || d.traitement_en_cours === false);
-
-      // Allergies connues — zone texte ~y=320
-      if (s(d.allergies)) {
-        writeText(1, 35, 330, s(d.allergies), { size: smallFontSize });
+      if (s(d.traitement_detail)) {
+        writeText(1, 35, 278, s(d.traitement_detail), { size: smallFontSize });
       }
 
-      // Antécédents médicaux / chirurgicaux — zone ~y=380
-      if (s(d.antecedents)) {
-        writeText(1, 35, 390, s(d.antecedents), { size: smallFontSize });
+      // Allergies — construire depuis les clés distinctes du formulaire
+      const allergiesParts: string[] = [];
+      if (s(d.allergie_asthme)         === 'oui') allergiesParts.push('Asthme');
+      if (s(d.allergie_alimentaire)    === 'oui') allergiesParts.push('Alimentaire');
+      if (s(d.allergie_medicamenteuse) === 'oui') allergiesParts.push('Médicamenteuse');
+      if (s(d.allergie_autres))                   allergiesParts.push(s(d.allergie_autres));
+      if (s(d.allergie_detail))                   allergiesParts.push(s(d.allergie_detail));
+      const allergiesText = allergiesParts.join(' — ');
+      if (allergiesText) {
+        writeText(1, 35, 330, allergiesText, { size: smallFontSize });
       }
 
-      // Recommandations des parents — zone ~y=480
+      // Antécédents médicaux / chirurgicaux
+      if (s(d.probleme_sante_detail)) {
+        writeText(1, 35, 390, s(d.probleme_sante_detail), { size: smallFontSize });
+      }
+
+      // Recommandations des parents
       if (s(d.recommandations_parents)) {
         writeText(1, 35, 490, s(d.recommandations_parents), { size: smallFontSize });
       }
 
-      // Remarques complémentaires — zone ~y=540
+      // Remarques complémentaires
       if (s(d.remarques)) {
         writeText(1, 35, 550, s(d.remarques), { size: smallFontSize });
       }
 
       // Autorisation de soins
-      // "Je soussigné" : x≈102, y≈727
       writeText(1, 102, 727, s(d.autorisation_soins_soussigne));
-      // "Fait à" — approximation
       writeText(1, 100, 755, s(d.fait_a));
       writeText(1, 300, 755, s(d.date_signature) || new Date().toLocaleDateString('fr-FR'));
 
     // ========================================================================
-    // FICHE DE LIAISON — PAGE 1 (Jeune / Éducateur)
+    // FICHE DE LIAISON — PAGE 1 (Jeune / Éducateur/trice)
     // Calibré sur fiche-liaison-template.pdf (595.32 x 841.92, 3 pages)
-    // Pages 2-3 sont internes GED, non remplies en ligne.
+    // Pages 2-3 (avant-séjour, compte rendu) : usage interne GED, non remplies en ligne.
     // ========================================================================
     } else if (docType === 'liaison') {
       const d = (dossier.fiche_liaison_jeune || {}) as Record<string, unknown>;
 
       // RENSEIGNEMENTS CONCERNANT LE JEUNE
-      // Nom du jeune : x≈115, y≈213
       writeText(0, 115, 213, inscription.jeune_nom);
-      // Prénom : x≈290, y≈213
       writeText(0, 290, 213, inscription.jeune_prenom);
-      // Date de naissance : x≈494, y≈213
-      writeText(0, 494, 213, inscription.jeune_date_naissance, { size: smallFontSize });
+      writeText(0, 494, 213, formatDate(inscription.jeune_date_naissance), { size: smallFontSize });
 
-      // Nom de l'établissement : x≈159, y≈237
       writeText(0, 159, 237, s(d.etablissement_nom));
-      // Adresse : x≈87, y≈261
-      writeText(0, 87, 261, s(d.etablissement_adresse));
-      // Code Postal : x≈105, y≈285 | Ville : x≈233, y≈285
+      writeText(0, 87,  261, s(d.etablissement_adresse));
       writeText(0, 105, 285, s(d.etablissement_cp));
       writeText(0, 233, 285, s(d.etablissement_ville));
 
-      // Centre et nom du séjour : x≈163, y≈332
-      writeText(0, 163, 332, inscription.sejour_slug || '');
-      // Dates du séjour : x≈123, y≈356
-      writeText(0, 123, 356, inscription.session_date || '');
+      writeText(0, 163, 332, sejourNom);
+      writeText(0, 123, 356, formatDate(inscription.session_date));
 
-      // Responsable de l'établissement joignable
-      // Nom : x≈74, y≈416 | Prénom : x≈369, y≈416
-      writeText(0, 74, 416, s(d.resp_etablissement_nom));
+      writeText(0, 74,  416, s(d.resp_etablissement_nom));
       writeText(0, 369, 416, s(d.resp_etablissement_prenom));
-      // Tél portable 1 : x≈121, y≈440 | Tél portable 2 : x≈366, y≈440
       writeText(0, 121, 440, s(d.resp_etablissement_tel1));
       writeText(0, 366, 440, s(d.resp_etablissement_tel2));
 
-      // PARTIE A REMPLIR PAR LE JEUNE
-      // Comment as-tu choisi ton séjour ? (y≈488)
-      // Seul/e : oui ☐ x≈76, y≈511 | non ☐ x≈106
-      writeCheck(0, 76, 511, s(d.choix_seul) === 'oui');
-      writeCheck(0, 106, 511, s(d.choix_seul) === 'non');
-      // Avec un/e ami/e : oui ☐ x≈245, y≈511 | non ☐ x≈274
-      writeCheck(0, 245, 511, s(d.choix_ami) === 'oui');
-      writeCheck(0, 274, 511, s(d.choix_ami) === 'non');
-      // Avec l'aide d'un/e éducateur/trice : oui ☐ x≈496, y≈511 | non ☐ x≈526
+      // PARTIE À REMPLIR PAR LE JEUNE
+      writeCheck(0, 76,  511, s(d.choix_seul)      === 'oui');
+      writeCheck(0, 106, 511, s(d.choix_seul)      === 'non');
+      writeCheck(0, 245, 511, s(d.choix_ami)       === 'oui');
+      writeCheck(0, 274, 511, s(d.choix_ami)       === 'non');
       writeCheck(0, 496, 511, s(d.choix_educateur) === 'oui');
       writeCheck(0, 526, 511, s(d.choix_educateur) === 'non');
 
-      // Es-tu déjà parti/e en séjour de vacances ? oui ☐ x≈230, y≈530 | non ☐ x≈259
       writeCheck(0, 230, 530, s(d.deja_parti) === 'oui');
       writeCheck(0, 259, 530, s(d.deja_parti) === 'non');
 
-      // Si oui, où et quand ? x≈131, y≈547
       if (s(d.deja_parti_detail)) {
         writeText(0, 131, 547, s(d.deja_parti_detail), { size: smallFontSize });
       }
 
-      // Pourquoi as-tu choisi ce séjour ? (y≈559)
-      // Réponse sur lignes : x≈37, y≈581
       if (s(d.pourquoi_ce_sejour)) {
         const text = s(d.pourquoi_ce_sejour);
-        // Découper le texte en lignes de ~85 caractères max
         const maxChars = 85;
-        const line1 = text.slice(0, maxChars);
-        const line2 = text.slice(maxChars, maxChars * 2);
-        writeText(0, 37, 581, line1, { size: smallFontSize });
-        if (line2) writeText(0, 37, 598, line2, { size: smallFontSize });
+        writeText(0, 37, 581, text.slice(0, maxChars),           { size: smallFontSize });
+        if (text.length > maxChars) {
+          writeText(0, 37, 598, text.slice(maxChars, maxChars * 2), { size: smallFontSize });
+        }
       }
 
-      // As-tu pris connaissance de la fiche technique ? oui ☐ x≈303, y≈617 | non ☐ x≈333
       writeCheck(0, 303, 617, s(d.fiche_technique_lue) === 'oui');
       writeCheck(0, 333, 617, s(d.fiche_technique_lue) === 'non');
 
-      // ENGAGEMENT (y≈649)
-      // "Fait à" : x≈80, y≈740
-      writeText(0, 80, 740, s(d.signature_fait_a));
-      // Date : x≈280, y≈740
+      // ENGAGEMENT
+      writeText(0, 80,  740, s(d.signature_fait_a));
       writeText(0, 280, 740, new Date().toLocaleDateString('fr-FR'));
     }
 
     // Générer le PDF final
     const pdfBytes = await pdfDoc.save();
 
-    // Noms de fichier
     const fileNames: Record<DocType, string> = {
       bulletin: `Bulletin_Inscription_${inscription.jeune_prenom}_${inscription.jeune_nom}.pdf`,
       sanitaire: `Fiche_Sanitaire_${inscription.jeune_prenom}_${inscription.jeune_nom}.pdf`,
       liaison: `Fiche_Liaison_${inscription.jeune_prenom}_${inscription.jeune_nom}.pdf`,
     };
 
+    const fileName = Object.prototype.hasOwnProperty.call(fileNames, docType) ? fileNames[docType] : `document_${inscription.jeune_prenom}_${inscription.jeune_nom}.pdf`;
+
     return new NextResponse(pdfBytes, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${fileNames[docType]}"`,
+        'Content-Disposition': `attachment; filename="${fileName}"`,
       },
     });
   } catch (error) {

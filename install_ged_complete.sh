@@ -16,7 +16,9 @@ echo "================================="
 echo ""
 
 # Connection string
-CONNECTION_STRING="postgresql://postgres:DBUM6aLeioZ1j9eC@db.iirfvndgzutbxwfdwawu.supabase.co:5432/postgres"
+# ⚠️  Ne JAMAIS hardcoder de mot de passe ici
+# Utiliser : export DATABASE_URL="postgresql://postgres:MOT_DE_PASSE@db.xxx.supabase.co:5432/postgres"
+CONNECTION_STRING="${DATABASE_URL:?❌ Variable DATABASE_URL non définie. Exportez-la avant de lancer ce script.}"
 
 # ============================================
 # 1. Vérifier psql

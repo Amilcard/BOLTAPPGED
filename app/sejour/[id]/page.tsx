@@ -139,7 +139,7 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
       startDate: s.start_date,
       endDate: s.end_date,
       // is_full mis à jour par n8n via UFOVAL — 0 = complet, -1 = dispo (illimité)
-      seatsLeft: (s as any).is_full === true ? 0 : -1,
+      seatsLeft: (s as { is_full?: boolean }).is_full === true ? 0 : -1,
     })),
     rawSessions: staySessions, // Prop "NO CASCADE" pour passer les âges sans modifier les types globaux
 

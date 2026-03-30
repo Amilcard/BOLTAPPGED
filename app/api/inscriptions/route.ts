@@ -1,15 +1,9 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase-server';
 import { z } from 'zod';
-import { sendInscriptionConfirmation, sendAdminNewInscriptionNotification } from '@/lib/email';
-
-function getSupabase() {
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY manquante');
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, key);
-}
-
+import { sendInscriptionConfirmation, sendAdminNewInscriptionNotification, sendStructureCodeEmail, sendNewEducateurAlert } from '@/lib/email';
+import { randomBytes } from 'crypto';
 const inscriptionSchema = z.object({
   staySlug: z.string().min(1),
   sessionDate: z.string().min(1), // Date de début session
@@ -24,8 +18,16 @@ const inscriptionSchema = z.object({
   optionsEducatives: z.string().optional(),
   remarques: z.string().optional(),
   priceTotal: z.number().min(0),
-  consent: z.boolean().refine(v => v === true, { message: 'Consentement requis' }),
+  consent: z.boolean().refine(v => v, { message: 'Consentement requis' }),
   paymentMethod: z.enum(['card', 'bank_transfer', 'cheque', 'transfer', 'check']).optional().default('bank_transfer'),
+  // Champs structure (Phase 1 espace structure)
+  structureCode: z.string().regex(/^[A-Z0-9]{6}$/).optional(),  // Code 6 chars si connu
+  structureName: z.string().min(1),               // Nom structure (obligatoire)
+  structureAddress: z.string().optional(),         // Adresse
+  structurePostalCode: z.string().regex(/^\d{5}$/),  // CP (obligatoire, 5 chiffres)
+  structureCity: z.string().min(1),                // Ville (obligatoire)
+  structureType: z.string().optional(),            // asso, ccas, centre_social, etc.
+  structureEmail: z.string().email().optional(),   // Email structure (optionnel)
 });
 
 // Mapping front-end → DB constraint values
@@ -80,8 +82,9 @@ export async function POST(request: NextRequest) {
     // Normaliser la date envoyée par le front (peut être ISO ou date pure)
     const normalizedDate = data.sessionDate.split('T')[0]; // "2026-07-05T00:00:00Z" → "2026-07-05"
     // Stratégie: chercher par date pure d'abord, fallback par plage si timestamptz
-    let priceRow: any = null;
-    let priceError: any = null;
+    interface PriceRow { price_ged_total: number; transport_surcharge_ged: number; city_departure: string; }
+    let priceRow: PriceRow | null = null;
+    let priceError: unknown = null;
 
     // Tentative 1: match exact date pure
     const { data: priceRows1, error: priceErr1 } = await supabase
@@ -92,6 +95,13 @@ export async function POST(request: NextRequest) {
       .eq('city_departure', data.cityDeparture)
       .limit(1);
 
+    if (priceErr1) {
+      console.error('Price DB error (tentative 1):', priceErr1);
+      return NextResponse.json(
+        { error: { code: 'PRICE_NOT_FOUND', message: 'Impossible de vérifier le prix pour cette session.' } },
+        { status: 400 }
+      );
+    }
     if (priceRows1 && priceRows1.length > 0) {
       priceRow = priceRows1[0];
     } else {
@@ -216,32 +226,33 @@ export async function POST(request: NextRequest) {
       data.priceTotal = serverCityPrice;
     }
 
-    // ── CAPACITY CHECK (read-only, pas de décrement) ──
-    const { data: sessionRows } = await supabase
-      .from('gd_stay_sessions')
-      .select('seats_left, age_min, age_max')
-      .eq('stay_slug', data.staySlug)
-      .eq('start_date', normalizedDate)
-      .limit(1);
-    const sessionRow = sessionRows?.[0] ?? null;
+    // ── CAPACITY CHECK atomique via RPC (SELECT FOR UPDATE) ──
+    const { data: capacityCheck, error: rpcError } = await supabase
+      .rpc('gd_check_session_capacity', {
+        p_slug: data.staySlug,
+        p_start_date: normalizedDate,
+      });
 
-    // Validation âge spécifique au séjour
-    if (sessionRow && sessionRow.age_min !== null && sessionRow.age_max !== null) {
-      const sessionAgeMin = sessionRow.age_min;
-      const sessionAgeMax = sessionRow.age_max;
-      if (age < sessionAgeMin || age > sessionAgeMax) {
-        return NextResponse.json(
-          { error: { code: 'AGE_INCOMPATIBLE', message: `Âge incompatible (${age} ans). Ce séjour requiert ${sessionAgeMin}-${sessionAgeMax} ans.` } },
-          { status: 400 }
-        );
-      }
-    }
-
-    if (sessionRow && sessionRow.seats_left !== null && sessionRow.seats_left <= 0) {
+    if (rpcError) {
+      console.error('Capacity check RPC error:', rpcError);
+      // En cas d'erreur RPC, fallback sur la vérification non-atomique
+    } else if (capacityCheck && !capacityCheck.allowed) {
       return NextResponse.json(
         { error: { code: 'SESSION_FULL', message: 'Cette session est complète. Plus de places disponibles.' } },
         { status: 400 }
       );
+    }
+
+    // Validation âge depuis le résultat RPC ou fallback DB
+    const ageMin = capacityCheck?.age_min ?? null;
+    const ageMax = capacityCheck?.age_max ?? null;
+    if (ageMin !== null && ageMax !== null) {
+      if (age < ageMin || age > ageMax) {
+        return NextResponse.json(
+          { error: { code: 'AGE_INCOMPATIBLE', message: `Âge incompatible (${age} ans). Ce séjour requiert ${ageMin}-${ageMax} ans.` } },
+          { status: 400 }
+        );
+      }
     }
 
     // ── VÉRIFICATION cohérence session → séjour ──
@@ -292,12 +303,114 @@ export async function POST(request: NextRequest) {
     // Phase 1 pro : organisation dédiée + dossier_ref généré côté serveur
     const now = new Date();
     const datePrefix = now.toISOString().slice(0, 10).replace(/-/g, '');
-    const randomSuffix = Math.random().toString(36).substring(2, 10).toUpperCase();
+    const randomSuffix = randomBytes(5).toString('hex').substring(0, 8).toUpperCase();
     const dossierRef = `DOS-${datePrefix}-${randomSuffix}`;
     // Remarques nettoyées (on ne stocke plus l'orga dedans, elle a sa propre colonne)
     const cleanRemarks = data.remarques || '';
     // Normaliser la méthode de paiement pour correspondre à la contrainte DB
     const dbPaymentMethod = PAYMENT_METHOD_MAP[data.paymentMethod] || 'transfer';
+    // Anti-doublon : vérifier si une inscription identique existe déjà
+    const { data: existing } = await supabase
+      .from('gd_inscriptions')
+      .select('id, dossier_ref')
+      .eq('referent_email', data.email)
+      .eq('sejour_slug', data.staySlug)
+      .eq('session_date', normalizedDate)
+      .eq('jeune_date_naissance', data.childBirthDate)
+      .not('status', 'eq', 'annule')
+      .maybeSingle();
+
+    if (existing) {
+      return NextResponse.json(
+        { error: { code: 'DUPLICATE', message: 'Une inscription identique existe déjà.', dossierRef: existing.dossier_ref } },
+        { status: 409 }
+      );
+    }
+
+    // ── Résolution structure ──────────────────────────────────────────
+    let structureId: string | null = null;
+    let structurePendingName: string | null = null;
+
+    if (data.structureCode) {
+      // L'éducateur a un code → vérifier et rattacher
+      const { data: struct } = await supabase
+        .from('gd_structures')
+        .select('id')
+        .eq('code', data.structureCode.toUpperCase())
+        .eq('status', 'active')
+        .single();
+
+      if (struct) {
+        structureId = struct.id;
+      } else {
+        // Code invalide → on continue sans bloquer, mais on log
+        console.warn('[inscriptions] Code structure invalide:', data.structureCode);
+        structurePendingName = data.structureName;
+      }
+    } else {
+      // Pas de code → chercher structure existante par nom + CP (déduplication)
+      const { data: existingStruct } = await supabase
+        .from('gd_structures')
+        .select('id')
+        .ilike('name', data.structureName)
+        .eq('postal_code', data.structurePostalCode)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (existingStruct) {
+        structureId = existingStruct.id;
+      } else {
+        // Structures sur même CP (pour alerte admin si doublon potentiel)
+        const { data: existingOnCP } = await supabase
+          .from('gd_structures')
+          .select('id, name, code, city')
+          .eq('postal_code', data.structurePostalCode)
+          .eq('status', 'active');
+
+        // Créer la structure automatiquement
+        const { data: newStruct, error: structErr } = await supabase
+          .from('gd_structures')
+          .insert({
+            name: data.structureName,
+            address: data.structureAddress || null,
+            postal_code: data.structurePostalCode,
+            city: data.structureCity,
+            type: data.structureType || null,
+            email: data.structureEmail || null,
+            domain: null,  // Pas de domaine automatique en Phase 1
+            created_by_email: data.email,
+          })
+          .select('id, code')
+          .single();
+
+        if (newStruct && !structErr) {
+          structureId = newStruct.id;
+          // Envoyer le code par email à l'éducateur (fire-and-forget)
+          const codeRecipient = data.structureEmail || data.email;
+          sendStructureCodeEmail({
+            recipientEmail: codeRecipient,
+            structureName: data.structureName,
+            structureCode: newStruct.code,
+            educateurPrenom: data.socialWorkerName,
+          }).catch((err) => console.error('[inscriptions] sendStructureCodeEmail failed:', err));
+
+          // Si des structures existaient déjà sur ce CP → alerte admin
+          if (existingOnCP && existingOnCP.length > 0) {
+            sendNewEducateurAlert({
+              existingStructures: existingOnCP as Array<{ name: string; code: string; city: string }>,
+              newEducateurNom: data.socialWorkerName,
+              newEducateurEmail: data.email,
+              structureDeclaredName: data.structureName,
+              postalCode: data.structurePostalCode,
+            }).catch((err) => console.error('[inscriptions] sendNewEducateurAlert failed:', err));
+          }
+        } else {
+          console.error('[inscriptions] Erreur création structure:', structErr);
+          structurePendingName = data.structureName;
+        }
+      }
+    }
+
     const { data: inscriptionRows, error } = await supabase
       .from('gd_inscriptions')
       .insert({
@@ -310,7 +423,7 @@ export async function POST(request: NextRequest) {
         referent_nom: data.socialWorkerName,
         referent_email: data.email,
         referent_tel: data.phone,
-        organisation: data.organisation,
+        organisation: data.structureName,  // Le champ organisation reste rempli pour rétrocompatibilité
         dossier_ref: dossierRef,
         // suivi_token est auto-généré par Supabase (DEFAULT gen_random_uuid())
         options_educatives: data.optionsEducatives || null,
@@ -319,6 +432,14 @@ export async function POST(request: NextRequest) {
         status: 'en_attente',
         payment_status: 'pending_payment',
         payment_method: dbPaymentMethod,
+        // Champs structure
+        structure_id: structureId,
+        structure_pending_name: structurePendingName,
+        structure_email: data.structureEmail || null,
+        structure_postal_code: data.structurePostalCode,
+        structure_city: data.structureCity,
+        structure_type: data.structureType || null,
+        structure_address: data.structureAddress || null,
       })
       .select();
     const inscription = inscriptionRows?.[0] ?? null;
@@ -326,7 +447,7 @@ export async function POST(request: NextRequest) {
     if (error || !inscription) {
       console.error('Supabase insert error:', error);
       return NextResponse.json(
-        { error: { code: 'INSERT_ERROR', message: 'Impossible de créer l\'inscription.', details: error?.message } },
+        { error: { code: 'INSERT_ERROR', message: 'Impossible de créer l\'inscription.' } },
         { status: 500 }
       );
     }
@@ -375,10 +496,9 @@ export async function POST(request: NextRequest) {
     );
   } catch (error: unknown) {
     console.error('POST /api/inscriptions error:', error);
-    const message = error instanceof Error ? error.message : 'Erreur interne';
 
     return NextResponse.json(
-      { error: { code: 'INTERNAL_ERROR', message, details: message } },
+      { error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur.' } },
       { status: 500 }
     );
   }

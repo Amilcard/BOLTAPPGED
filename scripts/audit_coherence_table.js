@@ -14,8 +14,10 @@ function auditCoherence() {
   console.log('| Écran / Composant | Polices (Familles) | Couleurs (Thème) | Nuances de Gris | ⚠️ Hardcodé | Score Cohérence |');
   console.log('|---|---|---|---|---|---|');
 
+  const allowedDir = path.resolve(process.cwd());
   SCREENS.forEach(screen => {
-    const fullPath = path.join(process.cwd(), screen.file);
+    const fullPath = path.resolve(process.cwd(), screen.file);
+    if (!fullPath.startsWith(allowedDir + path.sep)) return;
     if (!fs.existsSync(fullPath)) return;
 
     const content = fs.readFileSync(fullPath, 'utf8');

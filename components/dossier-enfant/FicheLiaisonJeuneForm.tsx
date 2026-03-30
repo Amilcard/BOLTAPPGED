@@ -144,16 +144,19 @@ export function FicheLiaisonJeuneForm({ data, saving, onSave, jeunePrenom, jeune
           disabled={saving}
           className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-medium transition disabled:opacity-50"
         >
-          {saving ? 'Enregistrement...' : 'Enregistrer le brouillon'}
+          {saving ? 'Enregistrement...' : 'Enregistrer'}
         </button>
         <button
           onClick={() => handleSave(true)}
           disabled={saving || !form.engagement_accepte}
           className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
         >
-          Valider la fiche de liaison
+          Valider
         </button>
       </div>
+      {!form.engagement_accepte && (
+        <p className="text-xs text-red-600 mt-1">Cochez la case d'engagement ci-dessus pour pouvoir valider ce bloc.</p>
+      )}
     </div>
   );
 }

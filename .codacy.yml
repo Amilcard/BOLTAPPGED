@@ -1,0 +1,29 @@
+# .codacy.yml — Configuration Codacy pour GED_APP
+# Exclut les fichiers non-code (docs, audits, agents, patches)
+# pour réduire le bruit métrique (~300-400 faux positifs)
+
+exclude_paths:
+  - ".agent/**"
+  - ".claude/**"
+  - "docs/**"
+  - "sql/REFERENCE_*.sql"
+  - "sql/GUIDE_*.md"
+  - "sql/GRILLE_*.sql"
+  - "sql/AUDIT_*.sql"
+  - "sql/VISUALISATION_*.sql"
+  - "n8n-patches/**"
+  - "patches-securite-financiere/**"
+  - "scripts/**"
+  - "prisma/migrations/**"
+  - "_archives/**"
+  - "AUDIT_N8N_VPS.md"
+  - "DIAGNOSTIC.md"
+  - "README-INSTALLATION.md"
+  - "REVIEW_ESPACE_PRO_ARCHITECTURE.md"
+  - "Topo_Parcours_Utilisateurs_GED.md"
+  - "Prompt_Audit_Blind_Pour_IA.md"
+  - "Rapport_Securisation_GED_28mars2026.docx"
+  - "resume-audit-securite-pour-IA.md"
+  # Fichiers SQL — RAISE NOTICE est du PL/pgSQL valide, faux positifs parseur Codacy
+  - "sql/**"
+  - "supabase/**"

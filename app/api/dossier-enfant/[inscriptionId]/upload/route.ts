@@ -1,13 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-function getSupabase() {
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY manquante');
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, key);
-}
-
+import { getSupabase } from '@/lib/supabase-server';
 const ALLOWED_TYPES = ['vaccins', 'ordonnance', 'pass_nautique', 'certificat_plongee', 'certificat_medical', 'attestation_assurance', 'autre'] as const;
 const MAX_SIZE = 5 * 1024 * 1024; // 5 Mo
 
@@ -44,6 +37,13 @@ export async function POST(
 
     if (file.size > MAX_SIZE) {
       return NextResponse.json({ error: 'Fichier trop volumineux (max 5 Mo).' }, { status: 400 });
+    }
+
+    const ALLOWED_MIME = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp']);
+    const ALLOWED_EXT = new Set(['pdf', 'jpg', 'jpeg', 'png', 'webp']);
+    const fileExt = file.name.split('.').pop()?.toLowerCase() ?? '';
+    if (!ALLOWED_MIME.has(file.type) || !ALLOWED_EXT.has(fileExt)) {
+      return NextResponse.json({ error: 'Type de fichier non autorisé.' }, { status: 400 });
     }
 
     // Verifier ownership via token
@@ -95,7 +95,7 @@ export async function POST(
       if (docType === 'autre') {
         updatedDocs = [...existingDocs, newDoc];
       } else {
-        updatedDocs = existingDocs.filter((d: any) => d.type !== docType);
+        updatedDocs = existingDocs.filter((d: { type?: string }) => d.type !== docType);
         updatedDocs.push(newDoc);
       }
 
@@ -104,7 +104,10 @@ export async function POST(
         .update({ documents_joints: updatedDocs })
         .eq('id', dossier.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        await supabase.storage.from('dossier-documents').remove([storagePath]);
+        throw updateError;
+      }
     } else {
       // Dossier n'existe pas encore : le creer avec le document
       const { error: insertError } = await supabase
@@ -114,16 +117,20 @@ export async function POST(
           documents_joints: [newDoc],
         });
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        await supabase.storage.from('dossier-documents').remove([storagePath]);
+        throw insertError;
+      }
     }
 
     return NextResponse.json({
       success: true,
       document: newDoc,
     }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Upload error:', error);
-    return NextResponse.json({ error: error.message || 'Erreur serveur.' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Erreur serveur.';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -158,8 +165,9 @@ export async function GET(
     const docs = dossier?.documents_joints || [];
 
     return NextResponse.json({ documents: Array.isArray(docs) ? docs : [] });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -186,6 +194,11 @@ export async function DELETE(
       return NextResponse.json({ error: ownership.message }, { status: ownership.status });
     }
 
+    // Garde IDOR : vérifier que le chemin appartient bien à cette inscription
+    if (!storage_path.startsWith(`${inscriptionId}/`)) {
+      return NextResponse.json({ error: 'Chemin non autorisé.' }, { status: 403 });
+    }
+
     // Supprimer du storage
     await supabase.storage.from('dossier-documents').remove([storage_path]);
 
@@ -198,7 +211,7 @@ export async function DELETE(
 
     if (dossier) {
       const docs = Array.isArray(dossier.documents_joints) ? dossier.documents_joints : [];
-      const updatedDocs = docs.filter((d: any) => d.storage_path !== storage_path);
+      const updatedDocs = docs.filter((d: { storage_path?: string }) => d.storage_path !== storage_path);
 
       await supabase
         .from('gd_dossier_enfant')
@@ -207,15 +220,16 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
 // ---- Helpers ----
 
 async function verifyOwnership(
-  supabase: any,
+  supabase: ReturnType<typeof getSupabase>,
   token: string,
   inscriptionId: string
 ): Promise<{ ok: true } | { ok: false; message: string; status: number }> {

@@ -1,24 +1,17 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth-middleware';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase-server';
 import { sendStatusChangeEmail } from '@/lib/email';
-
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
-
 /**
  * GET /api/admin/inscriptions/[id]
  * Détail d'une inscription depuis Supabase gd_inscriptions.
  */
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const supabase = getSupabase();
-    const auth = await verifyAuth(req);
+    const auth = verifyAuth(req);
     if (!auth) {
       return NextResponse.json(
         { error: { code: 'unauthorized', message: 'Non autorisé' } },
@@ -29,7 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const { data, error } = await supabase
       .from('gd_inscriptions')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (error || !data) {
@@ -54,10 +47,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
  * Met à jour le statut d'une inscription dans Supabase.
  * Statuts possibles : en_attente, validee, refusee, annulee
  */
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const supabase = getSupabase();
-    const auth = await verifyAuth(req);
+    const auth = verifyAuth(req);
     if (!auth || !['ADMIN', 'EDITOR'].includes(auth.role)) {
       return NextResponse.json(
         { error: { code: 'unauthorized', message: 'Non autorisé' } },
@@ -125,7 +119,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const { data, error } = await supabase
       .from('gd_inscriptions')
       .update(updateData)
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single();
 
@@ -163,7 +157,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try {
     const { id: inscriptionId } = await params;
     const supabase = getSupabase();
-    const auth = await verifyAuth(req);
+    const auth = verifyAuth(req);
     if (!auth || auth.role !== 'ADMIN') {
       return NextResponse.json(
         { error: { code: 'unauthorized', message: 'Seul un admin peut supprimer.' } },

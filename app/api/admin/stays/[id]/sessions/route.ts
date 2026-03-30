@@ -1,15 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth-middleware';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
-
-function getSupabaseAdmin() {
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY manquante');
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, key);
-}
-
 // GET sessions for a stay (by slug) from Supabase
 export async function GET(
   request: NextRequest,
@@ -41,7 +34,7 @@ export async function GET(
       stayId: s.stay_slug,
       startDate: s.start_date,
       endDate: s.end_date,
-      seatsTotal: (s.seats_total as number) ?? 0,
+      seatsTotal: s.seats_total as number,
       seatsLeft: (s.seats_left as number) ?? -1,
     }));
 

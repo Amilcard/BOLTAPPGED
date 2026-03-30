@@ -75,7 +75,7 @@ export function HomeContent({
   // LOT 1: Calculate budget range from actual stays (Option A)
   const budgetRange = useMemo(() => {
     const prices = stays
-      .map(s => (s as any).priceFrom)
+      .map(s => s.priceFrom)
       .filter((p): p is number => p != null && p > 0);
     return calculateBudgetRange(prices);
   }, [stays]);
@@ -124,7 +124,7 @@ export function HomeContent({
 
       // Budget filter (LOT 1: filter by max budget - only for authenticated pros with prices)
       if (showBudgetFilter && filters.budgetMax !== undefined && filters.budgetMax < budgetRange.max) {
-        const stayPrice = (stay as any).priceFrom;
+        const stayPrice = stay.priceFrom;
         if (stayPrice && stayPrice > filters.budgetMax) {
           return false;
         }
@@ -148,39 +148,6 @@ export function HomeContent({
     setFilters(DEFAULT_FILTERS);
     setSearchQuery('');
   }, []);
-
-  // Tranches d'âge de référence (axe principal du catalogue)
-  const AGE_GROUPS = [
-    { label: '6-8 ans', labelKids: '👶 Pour les 6-8 ans', min: 6, max: 8 },
-    { label: '9-11 ans', labelKids: '🧒 Pour les 9-11 ans', min: 9, max: 11 },
-    { label: '12-14 ans', labelKids: '🎒 Pour les 12-14 ans', min: 12, max: 14 },
-    { label: '15-17 ans', labelKids: '🎓 Pour les 15-17 ans', min: 15, max: 17 },
-  ];
-
-  // Grouper séjours par tranche d'âge AVEC DEDUPE GLOBAL
-  // Règle: 1 séjour = 1 apparition max (première section compatible gagne)
-  const sejoursByAge = useMemo(() => {
-    const renderedSlugs = new Set<string>();
-
-    return AGE_GROUPS.map(group => {
-      // Filtrer: overlap ET pas encore rendu
-      const groupStays = stays.filter(s => {
-        const sMin = s.ageMin ?? 0;
-        const sMax = s.ageMax ?? 99;
-        const hasOverlap = sMin <= group.max && sMax >= group.min;
-        const notRendered = !renderedSlugs.has(s.slug || s.id);
-        return hasOverlap && notRendered;
-      });
-
-      // Marquer comme rendus
-      groupStays.forEach(s => renderedSlugs.add(s.slug || s.id));
-
-      return { ...group, stays: groupStays };
-    }).filter(g => g.stays.length > 0);
-  }, [stays]);
-
-  // Check if any filters are active (to show carousels/grids or filtered grid)
-  const hasActiveFilters = searchQuery.trim() !== '' || activeFiltersCount > 0;
 
   return (
     <main className="bg-gray-50 flex flex-col">

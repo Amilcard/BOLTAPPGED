@@ -216,7 +216,7 @@ export function isGedCity(city: string): boolean {
 
 // ============================================================
 // NOUVEAU: Fonction centralisée de calcul prix pour l'UI
-// Utilisée par: stay-detail.tsx, booking-modal.tsx
+// Utilisée par: stay-detail.tsx
 // ============================================================
 
 export type EducationalOptionType = 'ZEN' | 'ULTIME' | null;

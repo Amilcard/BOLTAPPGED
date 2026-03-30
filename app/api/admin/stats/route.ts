@@ -1,15 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireEditor } from '@/lib/auth-middleware';
-import { createClient } from '@supabase/supabase-js';
-
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
-
+import { getSupabase } from '@/lib/supabase-server';
 /**
  * GET /api/admin/stats
  * Statistiques enrichies depuis Supabase (source de vérité).
@@ -68,7 +60,7 @@ export async function GET(req: NextRequest) {
     };
 
     // Inscriptions par jour (7 derniers jours)
-    const recentByDay: Record<string, number> = {};
+    const recentByDay: Record<string, number> = Object.create(null) as Record<string, number>;
     // Pré-remplir les 7 jours
     for (let i = 6; i >= 0; i--) {
       const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
@@ -78,7 +70,7 @@ export async function GET(req: NextRequest) {
     if (recentRes.data) {
       for (const row of recentRes.data as unknown as { created_at: string }[]) {
         const day = row.created_at?.slice(0, 10);
-        if (day && day in recentByDay) {
+        if (day && Object.prototype.hasOwnProperty.call(recentByDay, day)) {
           recentByDay[day]++;
         }
       }
@@ -86,7 +78,7 @@ export async function GET(req: NextRequest) {
     const recentDays = Object.entries(recentByDay).map(([date, count]) => ({ date, count }));
 
     // Top 5 séjours
-    const slugCounts: Record<string, number> = {};
+    const slugCounts: Record<string, number> = Object.create(null) as Record<string, number>;
     if (topSejoursRes.data) {
       for (const row of topSejoursRes.data as unknown as { sejour_slug: string }[]) {
         const slug = row.sejour_slug;

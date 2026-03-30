@@ -44,11 +44,11 @@ export default function AdminDashboard() {
     const token = localStorage.getItem(STORAGE_KEYS.AUTH);
 
     if (!token) {
-      router.replace('/login');
+      void router.replace('/login');
       return;
     }
 
-    fetch('/api/admin/stats', {
+    void fetch('/api/admin/stats', {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
@@ -65,7 +65,7 @@ export default function AdminDashboard() {
       })
       .then((data) => { if (data) setStats(data); })
       .catch(() => {
-        router.replace('/login');
+        void router.replace('/login');
       })
       .finally(() => setIsLoading(false));
   }, []);

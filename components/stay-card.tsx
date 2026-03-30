@@ -2,11 +2,8 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { MapPin, Users, Clock, Home, ArrowRight } from 'lucide-react';
 import type { Stay } from '@/lib/types';
-import { Button } from '@/components/ui/button';
 import { useApp } from '@/components/providers';
-import { getThemeStyle } from '@/config/premium-themes';
 
 export function StayCard({ stay }: { stay: Stay }) {
   const { mode } = useApp();
@@ -18,21 +15,10 @@ export function StayCard({ stay }: { stay: Stay }) {
   // === DESCRIPTION: CityCrunch punchline UNIQUEMENT — plus aucun fallback legacy UFOVAL ===
   const displayDesc = stay?.punchline || '';
 
-  // === BADGE ÉMOTION: Premium emotion_tag > Legacy themes[0] ===
-  // Clean style: Neutral gray, text primary.
-  const EXCLUDED_DISPLAY_TAGS = ['MER', 'MONTAGNE', 'PLEIN_AIR', 'PLEIN AIR', 'DECOUVERTE'];
-  const normalize = (s: string) => s.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  const emotionBadge = stay?.emotionTag || null;
-  const isEmotionExcluded = emotionBadge ? EXCLUDED_DISPLAY_TAGS.includes(normalize(emotionBadge)) : true;
-  const themes = Array.isArray(stay?.themes) ? stay.themes : [];
-  const fallbackTheme = themes.find(t => !EXCLUDED_DISPLAY_TAGS.includes(normalize(t))) || null;
-  const mainTheme = (emotionBadge && !isEmotionExcluded) ? emotionBadge : fallbackTheme;
-
   // === LOCALISATION: Premium spot_label > Legacy geography ===
   const spotDisplay = stay?.spotLabel || stay?.geography || 'France';
 
   // === STANDING: Premium standing_label > Legacy accommodationLabel ===
-  const standingDisplay = stay?.standingLabel || stay?.accommodationLabel || 'Centre';
 
   // Durée: utiliser durationDays (serveur, Math.ceil) comme source de vérité
   // Recalcul client uniquement si sessions avec durées multiples

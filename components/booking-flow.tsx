@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, ChevronRight, ChevronLeft, Loader2, Info, AlertCircle, Calendar, MapPin, CreditCard } from 'lucide-react';
+import Link from 'next/link';
+import { Check, ChevronRight, ChevronLeft, Loader2, AlertCircle, Calendar, MapPin, CreditCard } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import type { Stay, StaySession } from '@/lib/types';
-import { formatDate, formatDateLong, validateChildAge } from '@/lib/utils';
+import type { Stay, StaySession} from '@/lib/types';
+import { formatDateLong} from '@/lib/utils';
 
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
   ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
@@ -36,6 +37,16 @@ interface Step1Data {
   socialWorkerName: string;
   email: string;
   phone: string;
+  // Champs structure (Phase 1 espace structure)
+  structureCode: string;
+  structureName: string;
+  structureAddress: string;
+  structurePostalCode: string;
+  structureCity: string;
+  structureType: string;
+  structureEmail: string;
+  structureVerified: boolean;  // true si le code a été vérifié
+  structureId: string | null;  // id retourné par verify
 }
 
 interface Step2Data {
@@ -97,8 +108,9 @@ function StripePaymentForm({ clientSecret, onSuccess, onError }: { clientSecret:
       } else {
         onError('Le paiement n\'a pas abouti. Veuillez réessayer.');
       }
-    } catch (err: any) {
-      onError(err.message || 'Erreur inattendue.');
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Erreur inattendue.';
+      onError(errorMsg);
     } finally {
       setProcessing(false);
     }
@@ -130,8 +142,8 @@ function StripePaymentForm({ clientSecret, onSuccess, onError }: { clientSecret:
 
 export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity = '' }: BookingFlowProps) {
   const router = useRouter();
-  const departureCities = (stay as any).departureCities || [];
-  const enrichmentSessions = (stay as any).enrichmentSessions || [];
+  const departureCities = (stay as Stay & { departureCities?: DepartureCity[] }).departureCities || [];
+  const enrichmentSessions = (stay as Stay & { enrichmentSessions?: SessionPriceData[] }).enrichmentSessions || [];
 
   // Normaliser la ville depuis l'URL vers le format DB
   // "Sans transport" ou "Sans+transport" → "sans_transport"
@@ -160,6 +172,9 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   };
   const step = stepRaw;
   const [bookingId, setBookingId] = useState('');
+  const [bookingSuiviToken, setBookingSuiviToken] = useState('');
+  const [stripeFailedInscriptionId, setStripeFailedInscriptionId] = useState('');
+  const [stripeError, setStripeError] = useState('');
   const [showAllSessions, setShowAllSessions] = useState(false);
 
   const firstInputRef = useRef<HTMLInputElement>(null);
@@ -176,7 +191,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     return age;
   };
 
-  const selectedSession = sessions?.find(s => s?.id === selectedSessionId);
+  const selectedSession = sessions.find(s => s?.id === selectedSessionId);
 
   let sessionBasePrice: number | null = null;
   if (selectedSession && enrichmentSessions && enrichmentSessions.length > 0) {
@@ -202,7 +217,18 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     socialWorkerName: '',
     email: '',
     phone: '',
+    structureCode: '',
+    structureName: '',
+    structureAddress: '',
+    structurePostalCode: '',
+    structureCity: '',
+    structureType: '',
+    structureEmail: '',
+    structureVerified: false,
+    structureId: null,
   });
+  const [structureSearchResults, setStructureSearchResults] = useState<Array<{ name: string; city: string; type: string; contactHint: string | null }>>([]);
+  const [structureCodeError, setStructureCodeError] = useState('');
 
   const [step2, setStep2] = useState<Step2Data>({
     childFirstName: '',
@@ -239,7 +265,6 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   }, [step2.childBirthDate, stay.ageMin, stay.ageMax, selectedSession]);
 
   // -1 = dispo illimité (UFOVAL source de vérité), 0 = complet
-  const validSessions = sessions?.filter(s => s?.seatsLeft === -1 || (s?.seatsLeft ?? 0) > 0) ?? [];
   const sessionsUnique = (sessions || []).filter((s, idx, arr) => {
     const key = `${s.startDate}-${s.endDate}`;
     return idx === arr.findIndex(x => `${x.startDate}-${x.endDate}` === key);
@@ -256,12 +281,12 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   const phoneRegex = /^[\d\s\+\-\.()]{10,}$/; // Min 10 chiffres/espaces
   const isEmailValid = emailRegex.test(step1.email);
   const isPhoneValid = phoneRegex.test(step1.phone);
-  const isCodePostalValid = ((step1 as any).codePostal || '').length === 5;
-  const isVilleValid = ((step1 as any).ville || '').trim().length >= 2;
-  const isStep1Valid = step1.organisation?.trim().length >= 2
-    && step1.addresseStructure && step1.addresseStructure.trim().length >= 5
-    && isCodePostalValid
-    && isVilleValid
+  const isStructureNameValid = step1.structureName.trim().length >= 2;
+  const isStructureCPValid = /^\d{5}$/.test(step1.structurePostalCode);
+  const isStructureCityValid = step1.structureCity?.trim().length >= 2;
+  const isStep1Valid = isStructureNameValid
+    && isStructureCPValid
+    && isStructureCityValid
     && step1.socialWorkerName?.trim().length >= 2
     && isEmailValid
     && isPhoneValid;
@@ -290,11 +315,42 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
       return;
     }
 
+    // SÉCURITÉ: Ne pas recréer une inscription si elle existe déjà (retour step 6→4)
+    if (bookingId) {
+      if (paymentMethod === 'card') {
+        // Réutiliser l'inscription existante pour créer un nouveau PaymentIntent
+        setLoading(true);
+        setError('');
+        try {
+          const piRes = await fetch('/api/payment/create-intent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ inscriptionId: bookingId, suivi_token: bookingSuiviToken }),
+          });
+          const piData = await piRes.json();
+          if (!piRes.ok) throw new Error(piData?.error?.message || piData?.error || 'Erreur création paiement');
+          setStripeClientSecret(piData.clientSecret);
+          setStep(6);
+        } catch (err: unknown) {
+          setError(err instanceof Error ? err.message : 'Erreur inconnue');
+        } finally {
+          setLoading(false);
+        }
+        return;
+      } else {
+        // Mode changé en virement/chèque : passer directement à step 5 sans recréer
+        setStep(5);
+        return;
+      }
+    }
+
     setLoading(true);
     setError('');
 
+    let createdInscriptionId = '';
+
     try {
-      const fullAddress = [step1.addresseStructure, (step1 as any).codePostal, (step1 as any).ville].filter(Boolean).join(', ');
+      const fullAddress = [step1.structureAddress, step1.structurePostalCode, step1.structureCity].filter(Boolean).join(', ');
       const addressNote = fullAddress ? `[ADRESSE]: ${fullAddress}` : '';
       const sexNote = step2.childSex ? `[SEXE]: ${step2.childSex}` : '';
       const remarques = [addressNote, sexNote].filter(Boolean).join('\n');
@@ -306,7 +362,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
           staySlug: stay?.slug,
           sessionDate: selectedSession.startDate,
           cityDeparture: selectedCity || 'sans_transport',
-          organisation: step1.organisation,
+          organisation: step1.structureName,
           socialWorkerName: step1.socialWorkerName,
           email: step1.email,
           phone: step1.phone,
@@ -317,30 +373,68 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
           priceTotal: totalPrice ?? 0,
           consent: step2.consent,
           paymentMethod,
+          // Champs structure (Espace Structure)
+          structureCode: step1.structureCode || undefined,
+          structureName: step1.structureName,
+          structureAddress: step1.structureAddress || undefined,
+          structurePostalCode: step1.structurePostalCode,
+          structureCity: step1.structureCity,
+          structureType: step1.structureType || undefined,
+          structureEmail: step1.structureEmail || undefined,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error?.message ?? 'Erreur lors de la réservation');
 
-      const inscriptionId = data?.id ?? '';
-      setBookingId(inscriptionId);
+      createdInscriptionId = data?.id ?? '';
+      setBookingId(createdInscriptionId);
+      setBookingSuiviToken(data?.suivi_token ?? '');
 
       // Si paiement CB, créer le PaymentIntent et afficher le formulaire Stripe
-      if (paymentMethod === 'card' && inscriptionId) {
+      if (paymentMethod === 'card' && createdInscriptionId) {
         const piRes = await fetch('/api/payment/create-intent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ inscriptionId }),
+          body: JSON.stringify({ inscriptionId: createdInscriptionId, suivi_token: data?.suivi_token ?? '' }),
         });
         const piData = await piRes.json();
         if (!piRes.ok) throw new Error(piData?.error?.message || piData?.error || 'Erreur création paiement');
         setStripeClientSecret(piData.clientSecret);
-        setStep(6); // Step 6 = formulaire Stripe
+        setStep(6);
         return;
       }
 
       setStep(5);
+    } catch (err: unknown) {
+      if (createdInscriptionId) {
+        // Inscription créée mais Stripe a échoué — permettre retry sans re-créer
+        setStripeFailedInscriptionId(createdInscriptionId);
+        setError('Paiement CB indisponible. Vous pouvez réessayer ou contacter l\'organisateur.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Retry Stripe uniquement — sans re-créer l'inscription
+  const retryStripePayment = async () => {
+    if (!stripeFailedInscriptionId) return;
+    setLoading(true);
+    setError('');
+    try {
+      const piRes = await fetch('/api/payment/create-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inscriptionId: stripeFailedInscriptionId, suivi_token: bookingSuiviToken }),
+      });
+      const piData = await piRes.json();
+      if (!piRes.ok) throw new Error(piData?.error?.message || piData?.error || 'Erreur création paiement');
+      setStripeClientSecret(piData.clientSecret);
+      setStripeFailedInscriptionId('');
+      setStep(6);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
     } finally {
@@ -355,7 +449,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
         <div className="flex gap-2 mb-6">
           {[0, 1, 2, 3, 4].map(i => (
             <div
-              key={i}
+              key={`step-${i}`}
               className={`h-1 flex-1 rounded-full transition-colors ${
                 i <= step ? 'bg-secondary' : 'bg-primary-100'
               }`}
@@ -366,6 +460,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
       {step === 6 && (
         <div className="flex gap-2 mb-6">
           {[0, 1, 2, 3, 4].map(i => (
+            // deepsource-ignore JS-0437 -- static step indices, i is the stable key
             <div key={i} className="h-1 flex-1 rounded-full bg-secondary" />
           ))}
         </div>
@@ -398,6 +493,9 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
       {step === 0 && (
         <div className="space-y-4">
           <h3 className="font-medium text-primary text-lg">Étape 1/5 : Choisir une session — demande d&apos;inscription</h3>
+          {sessionsUnique.length === 0 && (
+            <WaitlistBlock sejourSlug={stay.slug || ''} />
+          )}
           <div className="space-y-2">
             {sessionsUnique.slice(0, showAllSessions ? undefined : 4).map(session => {
               const isFull = (session?.seatsLeft ?? 0) === 0;
@@ -489,7 +587,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             <div className="space-y-2 max-h-[50vh] overflow-y-auto">
               {standardDepartureCities
                 .slice()
-                .sort((a: any, b: any) => {
+                .sort((a: DepartureCity, b: DepartureCity) => {
                   if (a.city === 'sans_transport') return -1;
                   if (b.city === 'sans_transport') return 1;
                   const aIndex = STANDARD_CITIES.findIndex(std => a.city.toLowerCase().includes(std.toLowerCase()));
@@ -499,11 +597,11 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                   if (bIndex >= 0) return 1;
                   return a.city.localeCompare(b.city);
                 })
-                .map((city: any, idx: number) => {
+                .map((city: DepartureCity) => {
                   const isCitySelected = selectedCity === city.city;
                   return (
                     <label
-                      key={idx}
+                      key={city.city}
                       className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
                         isCitySelected
                           ? 'border-secondary bg-secondary/5 ring-2 ring-secondary/20'
@@ -526,7 +624,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                         className="sr-only"
                       />
                       <span className="flex-1 text-sm font-medium text-primary-700 capitalize">
-                        {city.city === 'sans_transport' ? 'Sans transport (inclus)' : city.city}
+                        {city.city === 'sans_transport' ? 'Sans transport — prix séjour seul' : city.city}
                       </span>
                       <span className={`text-sm font-semibold ${isCitySelected ? 'text-secondary' : 'text-primary-600'}`}>
                         {city.extra_eur === 0 ? 'Inclus' : `+${city.extra_eur}€`}
@@ -561,49 +659,169 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
         <div className="space-y-4">
           <h3 className="font-medium text-primary text-lg">Étape 3/5 : Informations de la structure</h3>
           <div className="space-y-3">
+            {/* Code structure (optionnel) */}
             <div>
-              <label className="text-sm text-primary-600 mb-1 block">Organisation *</label>
+              <label className="text-sm text-primary-600 mb-1 block">Code structure (si vous en avez un)</label>
+              <div className="flex gap-2">
+                <input
+                  ref={firstInputRef}
+                  type="text"
+                  placeholder="Ex: CRF76H"
+                  value={step1.structureCode}
+                  onChange={e => {
+                    const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+                    setStep1({ ...step1, structureCode: val, structureVerified: false, structureId: null });
+                    setStructureCodeError('');
+                  }}
+                  onBlur={async () => {
+                    if (step1.structureCode.length === 6) {
+                      try {
+                        const res = await fetch(`/api/structures/verify/${step1.structureCode}`);
+                        const json = await res.json();
+                        if (json.valid) {
+                          setStep1(prev => ({
+                            ...prev,
+                            structureVerified: true,
+                            structureId: json.structureId,
+                            structureName: json.name,
+                            structureAddress: json.address || '',
+                            structurePostalCode: json.postalCode || '',
+                            structureCity: json.city || '',
+                            structureType: json.type || '',
+                            organisation: json.name,
+                          }));
+                          setStructureCodeError('');
+                          setStructureSearchResults([]);
+                        } else {
+                          setStructureCodeError('Code structure non reconnu.');
+                          setStep1(prev => ({ ...prev, structureVerified: false, structureId: null }));
+                        }
+                      } catch { setStructureCodeError('Erreur de vérification.'); }
+                    }
+                  }}
+                  maxLength={6}
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureVerified ? 'border-green-400 bg-green-50' : structureCodeError ? 'border-red-400' : 'border-primary-200'}`}
+                />
+                {step1.structureVerified && (
+                  <span className="flex items-center text-green-600 text-sm font-medium whitespace-nowrap">✓ Vérifié</span>
+                )}
+              </div>
+              {structureCodeError && <p className="mt-1 text-xs text-red-500">{structureCodeError}</p>}
+              {!step1.structureVerified && !structureCodeError && (
+                <p className="mt-1 text-xs text-gray-500">Pas de code ? Remplissez les informations ci-dessous.</p>
+              )}
+            </div>
+
+            {/* Nom de la structure */}
+            <div>
+              <label className="text-sm text-primary-600 mb-1 block">Nom de la structure *</label>
               <input
-                ref={firstInputRef}
                 type="text"
-                placeholder="Nom de la structure"
-                value={step1.organisation}
-                onChange={e => setStep1({ ...step1, organisation: e.target.value })}
-                className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
+                placeholder="Ex: Croix-Rouge du Havre"
+                value={step1.structureName}
+                onChange={e => setStep1({ ...step1, structureName: e.target.value, organisation: e.target.value })}
+                disabled={step1.structureVerified}
+                className={`w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureVerified ? 'bg-gray-50 text-gray-600' : ''}`}
               />
             </div>
+
+            {/* Adresse */}
             <div>
-              <label className="text-sm text-primary-600 mb-1 block">Adresse *</label>
+              <label className="text-sm text-primary-600 mb-1 block">Adresse</label>
               <input
                 type="text"
                 placeholder="N° et rue"
-                value={step1.addresseStructure || ''}
-                onChange={e => setStep1({ ...step1, addresseStructure: e.target.value })}
-                className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
+                value={step1.structureAddress}
+                onChange={e => setStep1({ ...step1, structureAddress: e.target.value })}
+                disabled={step1.structureVerified}
+                className={`w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureVerified ? 'bg-gray-50 text-gray-600' : ''}`}
               />
             </div>
+
+            {/* CP + Ville */}
             <div className="grid grid-cols-3 gap-2">
               <div>
                 <label className="text-sm text-primary-600 mb-1 block">Code postal *</label>
                 <input
                   type="text"
-                  placeholder="42000"
-                  value={(step1 as any).codePostal || ''}
-                  onChange={e => setStep1({ ...step1, codePostal: e.target.value.replace(/\D/g, '').slice(0, 5) } as any)}
+                  placeholder="76600"
+                  value={step1.structurePostalCode}
+                  onChange={e => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 5);
+                    setStep1({ ...step1, structurePostalCode: val });
+                  }}
+                  onBlur={async () => {
+                    // Recherche de structures existantes sur ce CP
+                    if (step1.structurePostalCode.length === 5 && !step1.structureVerified) {
+                      try {
+                        const res = await fetch(`/api/structures/search?cp=${step1.structurePostalCode}`);
+                        const json = await res.json();
+                        setStructureSearchResults(json.structures || []);
+                      } catch { setStructureSearchResults([]); }
+                    }
+                  }}
+                  disabled={step1.structureVerified}
                   maxLength={5}
-                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${(step1 as any).codePostal && (step1 as any).codePostal.length !== 5 ? 'border-red-400' : 'border-primary-200'}`}
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structurePostalCode && step1.structurePostalCode.length !== 5 ? 'border-red-400' : 'border-primary-200'} ${step1.structureVerified ? 'bg-gray-50 text-gray-600' : ''}`}
                 />
               </div>
               <div className="col-span-2">
                 <label className="text-sm text-primary-600 mb-1 block">Ville *</label>
                 <input
                   type="text"
-                  placeholder="Saint-Étienne"
-                  value={(step1 as any).ville || ''}
-                  onChange={e => setStep1({ ...step1, ville: e.target.value } as any)}
-                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${(step1 as any).ville && (step1 as any).ville.trim().length < 2 ? 'border-red-400' : 'border-primary-200'}`}
+                  placeholder="Le Havre"
+                  value={step1.structureCity}
+                  onChange={e => setStep1({ ...step1, structureCity: e.target.value })}
+                  disabled={step1.structureVerified}
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureCity && step1.structureCity.trim().length < 2 ? 'border-red-400' : 'border-primary-200'} ${step1.structureVerified ? 'bg-gray-50 text-gray-600' : ''}`}
                 />
               </div>
+            </div>
+
+            {/* Encart structures existantes sur ce CP */}
+            {structureSearchResults.length > 0 && !step1.structureVerified && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <p className="text-sm font-medium text-amber-800 mb-2">Structure(s) déjà enregistrée(s) sur ce code postal :</p>
+                {structureSearchResults.map((s) => (
+                  <p key={`${s.name}-${s.city}`} className="text-sm text-amber-700">• {s.name} ({s.city}){s.contactHint ? ` — contact : ${s.contactHint}` : ''}</p>
+                ))}
+                <p className="text-xs text-amber-600 mt-2">Si c'est votre structure, demandez le code à vos collègues et saisissez-le ci-dessus. Sinon, continuez normalement.</p>
+              </div>
+            )}
+
+            {/* Type de structure */}
+            <div>
+              <label className="text-sm text-primary-600 mb-1 block">Type de structure</label>
+              <select
+                value={step1.structureType}
+                onChange={e => setStep1({ ...step1, structureType: e.target.value })}
+                disabled={step1.structureVerified}
+                className={`w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureVerified ? 'bg-gray-50 text-gray-600' : ''}`}
+              >
+                <option value="">Sélectionner...</option>
+                <option value="asso">Association</option>
+                <option value="ccas">CCAS</option>
+                <option value="centre_social">Centre social</option>
+                <option value="maison_quartier">Maison de quartier</option>
+                <option value="collectivite">Collectivité</option>
+                <option value="autre">Autre</option>
+              </select>
+            </div>
+
+            {/* Email structure */}
+            <div>
+              <label className="text-sm text-primary-600 mb-1 block">Email de la structure</label>
+              <input
+                type="email"
+                placeholder="contact@structure.fr"
+                value={step1.structureEmail}
+                onChange={e => setStep1({ ...step1, structureEmail: e.target.value })}
+                disabled={step1.structureVerified}
+                className={`w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureVerified ? 'bg-gray-50 text-gray-600' : ''}`}
+              />
+              {!step1.structureVerified && (
+                <p className="mt-1 text-xs text-gray-500">Un code de validation sera envoyé à cette adresse. Pensez à vérifier cette boîte mail après l'inscription.</p>
+              )}
             </div>
             <div>
               <label className="text-sm text-primary-600 mb-1 block">Nom du référent *</label>
@@ -665,13 +883,17 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
         <div className="space-y-4">
           <h3 className="font-medium text-primary text-lg">Étape 4/5 : Informations de l'enfant</h3>
           <div className="space-y-3">
-            <input
-              type="text"
-              placeholder="Prénom de l'enfant *"
-              value={step2.childFirstName}
-              onChange={e => setStep2({ ...step2, childFirstName: e.target.value })}
-              className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
-            />
+            <div>
+              <label htmlFor="child-firstname" className="text-sm text-primary-600 mb-1 block">Prénom de l'enfant *</label>
+              <input
+                id="child-firstname"
+                type="text"
+                placeholder="Ex: Léa"
+                value={step2.childFirstName}
+                onChange={e => setStep2({ ...step2, childFirstName: e.target.value })}
+                className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
+              />
+            </div>
             <div>
               <label className="text-sm text-primary-600 mb-1 block">Date de naissance *</label>
               <input
@@ -714,13 +936,13 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               />
               <span className="text-sm text-primary-600">
                 J&apos;ai lu et j&apos;accepte les{' '}
-                <a href="/cgv" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-primary" onClick={e => e.stopPropagation()}>
+                <Link href="/cgv" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-primary" onClick={e => e.stopPropagation()}>
                   Conditions Générales de Vente
-                </a>{' '}
+                </Link>{' '}
                 et les{' '}
-                <a href="/cgu" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-primary" onClick={e => e.stopPropagation()}>
+                <Link href="/cgu" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-primary" onClick={e => e.stopPropagation()}>
                   CGU
-                </a>. Je confirme que les données de l&apos;enfant sont saisies dans le cadre de mes fonctions et avec l&apos;accord des responsables légaux. *
+                </Link>. Je confirme que les données de l&apos;enfant sont saisies dans le cadre de mes fonctions et avec l&apos;accord des responsables légaux. *
               </span>
             </label>
           </div>
@@ -734,7 +956,18 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             </div>
           )}
           {error && !ageError && (
-            <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm">{error}</div>
+            <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm space-y-2">
+              <p>{error}</p>
+              {stripeFailedInscriptionId && (
+                <button
+                  onClick={retryStripePayment}
+                  disabled={loading}
+                  className="text-sm font-medium underline text-red-700 hover:text-red-900 disabled:opacity-50"
+                >
+                  Réessayer le paiement CB
+                </button>
+              )}
+            </div>
           )}
           <div className="flex gap-3">
             <button
@@ -767,7 +1000,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               <p><span className="font-medium text-primary-500">Session :</span> {formatDateLong(selectedSession?.startDate ?? '')} - {formatDateLong(selectedSession?.endDate ?? '')}</p>
               <p><span className="font-medium text-primary-500">Ville de départ :</span> {selectedCity === 'sans_transport' ? 'Sans transport' : selectedCity} {extraVille > 0 ? `(+${extraVille}€)` : '(Inclus)'}</p>
               <div className="border-t border-primary-200 my-2 pt-2">
-                <p><span className="font-medium text-primary-500">Enfant :</span> {step2.childFirstName} ({calculateAge(step2.childBirthDate)} ans)</p>
+                <p><span className="font-medium text-primary-500">Enfant :</span> {step2.childFirstName} ({calculateAge(step2.childBirthDate, selectedSession?.startDate ? new Date(selectedSession.startDate) : undefined)} ans)</p>
                 <p><span className="font-medium text-primary-500">Structure :</span> {step1.organisation} ({step1.socialWorkerName})</p>
               </div>
             </div>
@@ -834,8 +1067,17 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             </div>
           )}
           {error && !ageError && (
-            <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" /> {error}
+            <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100 space-y-2">
+              <div className="flex items-center gap-2"><AlertCircle className="w-4 h-4 shrink-0" /> {error}</div>
+              {stripeFailedInscriptionId && (
+                <button
+                  onClick={retryStripePayment}
+                  disabled={loading}
+                  className="text-sm font-medium underline text-red-700 hover:text-red-900 disabled:opacity-50"
+                >
+                  Réessayer le paiement CB
+                </button>
+              )}
             </div>
           )}
           <div className="flex gap-3">
@@ -847,7 +1089,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             </button>
             <button
               onClick={handleSubmit}
-              disabled={loading || totalPrice === null || ageError !== '' || !paymentMethod}
+              disabled={loading || totalPrice === null || ageError !== '' || !paymentMethod || !!stripeFailedInscriptionId}
               className="flex-1 py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
@@ -869,20 +1111,34 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             <StripePaymentForm
               clientSecret={stripeClientSecret}
               onSuccess={() => setStep(5)}
-              onError={(msg) => setError(msg)}
+              onError={(msg) => setStripeError(msg)}
             />
           </Elements>
-          {error && (
+          {stripeError && (
             <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" /> {error}
+              <AlertCircle className="w-4 h-4" /> {stripeError}
             </div>
           )}
           <button
-            onClick={() => { setStep(4); setStripeClientSecret(null); }}
+            onClick={() => { setStripeError(''); setStep(4); setStripeClientSecret(null); }}
             className="w-full py-2 text-sm text-primary-500 hover:text-primary hover:underline"
           >
             ← Choisir un autre mode de paiement
           </button>
+        </div>
+      )}
+      {step === 6 && stripeClientSecret && !stripePromise && (
+        <div className="space-y-4">
+          <h3 className="font-medium text-primary text-lg">Paiement sécurisé</h3>
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+            Paiement par carte non disponible.{' '}
+            <button
+              onClick={() => { setStep(4); setStripeClientSecret(null); }}
+              className="underline font-medium hover:text-amber-900"
+            >
+              Choisir un autre mode
+            </button>
+          </div>
         </div>
       )}
 
@@ -893,7 +1149,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             <Check className="w-8 h-8 text-green-600" />
           </div>
           <h3 className="text-xl font-semibold text-primary mb-2">
-            {paymentMethod === 'card' ? 'Réservation confirmée !' : 'Demande enregistrée'}
+            {paymentMethod === 'card' ? 'Inscription confirmée !' : 'Demande enregistrée'}
           </h3>
           <p className="text-primary-600 mb-4">
             Votre demande pour <strong>{stay?.marketingTitle || 'Séjour'}</strong> a bien été enregistrée.
@@ -902,7 +1158,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             )}
           </p>
           <div className="bg-primary-50 p-4 rounded-xl text-left text-sm space-y-1">
-            <p><strong>Référence :</strong> {bookingId?.slice(0, 8)?.toUpperCase() || bookingId}</p>
+            <p><strong>Référence :</strong> {bookingId.slice(0, 8).toUpperCase() || bookingId}</p>
             <p><strong>Session :</strong> {formatDateLong(selectedSession?.startDate ?? '')} - {formatDateLong(selectedSession?.endDate ?? '')}</p>
             <p><strong>Ville :</strong> {selectedCity === 'sans_transport' ? 'Sans transport (par vos soins)' : selectedCity}</p>
             <p><strong>Enfant :</strong> {step2.childFirstName} (né le {new Date(step2.childBirthDate).toLocaleDateString('fr-FR')})</p>
@@ -914,7 +1170,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
           {paymentMethod === 'bank_transfer' && (
             <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-left text-sm">
               <h4 className="font-semibold text-blue-800 mb-2">Instructions de virement</h4>
-              <p className="text-blue-700 text-xs">Les coordonnées bancaires (IBAN) vous ont été envoyées par email. Veuillez effectuer le virement en indiquant votre référence <strong>{bookingId?.slice(0, 8)?.toUpperCase()}</strong> en libellé.</p>
+              <p className="text-blue-700 text-xs">Les coordonnées bancaires (IBAN) vous ont été envoyées par email. Veuillez effectuer le virement en indiquant votre référence <strong>{bookingId.slice(0, 8).toUpperCase()}</strong> en libellé.</p>
               <p className="text-blue-600 text-xs mt-2 font-medium">Notre équipe vous contactera par email pour valider l&apos;inscription après réception du règlement.</p>
             </div>
           )}
@@ -932,14 +1188,106 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             </div>
           )}
 
-          <button
-            onClick={() => router.push(`/sejour/${stay.slug}`)}
-            className="mt-6 px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary-600 transition-colors"
-          >
-            Retour au séjour
-          </button>
+          <div className="mt-6 flex flex-col gap-3">
+            <p className="text-xs text-primary-500 text-center">
+              Un email avec le lien de votre espace de suivi vous a été envoyé à <strong>{step1.email}</strong>.
+            </p>
+            <button
+              onClick={() => void router.push(`/sejour/${stay.slug}`)}
+              className="px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary-600 transition-colors"
+            >
+              Retour au séjour
+            </button>
+            <button
+              onClick={() => void router.push('/')}
+              className="px-6 py-3 border border-primary-200 text-primary rounded-full font-medium hover:bg-primary-50 transition-colors"
+            >
+              Découvrir d'autres séjours
+            </button>
+          </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// === Waitlist — formulaire affiché quand aucune session n'est disponible ===
+function WaitlistBlock({ sejourSlug }: { sejourSlug: string }) {
+  const [email, setEmail] = useState('');
+  const [nom, setNom] = useState('');
+  const [status, setStatus] = useState<'idle' | 'sending' | 'done' | 'error'>('idle');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus('sending');
+    try {
+      const res = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, nom, sejourSlug }),
+      });
+      setStatus(res.ok ? 'done' : 'error');
+    } catch {
+      setStatus('error');
+    }
+  };
+
+  if (status === 'done') {
+    return (
+      <div className="bg-green-50 border border-green-100 rounded-xl p-6 text-center">
+        <div className="text-3xl mb-3">✓</div>
+        <p className="font-medium text-gray-800 mb-1">Vous êtes sur la liste !</p>
+        <p className="text-sm text-gray-500">
+          Nous vous enverrons un email dès qu&apos;une place se libère pour ce séjour.
+        </p>
+        <Link href="/sejours" className="inline-block mt-4 text-sm text-primary hover:underline">
+          Voir d&apos;autres séjours →
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
+      <div className="text-center mb-4">
+        <div className="text-3xl mb-2">📅</div>
+        <p className="font-medium text-gray-800">Aucune session disponible pour le moment</p>
+        <p className="text-sm text-gray-500 mt-1">
+          Laissez votre email — nous vous prévenons dès qu&apos;une place s&apos;ouvre.
+        </p>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-2">
+        <input
+          type="text"
+          placeholder="Votre nom (optionnel)"
+          value={nom}
+          onChange={e => setNom(e.target.value)}
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
+        <input
+          type="email"
+          required
+          placeholder="votre@email.fr"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
+        <button
+          type="submit"
+          disabled={status === 'sending'}
+          className="w-full bg-primary text-white font-medium py-2.5 rounded-lg hover:bg-primary/90 transition disabled:opacity-50 text-sm"
+        >
+          {status === 'sending' ? 'Enregistrement…' : 'Me prévenir dès qu\'une place s\'ouvre'}
+        </button>
+        {status === 'error' && (
+          <p className="text-xs text-amber-700 text-center">Erreur — réessayez ou appelez le 04 23 16 16 71</p>
+        )}
+      </form>
+      <div className="text-center mt-3">
+        <Link href="/sejours" className="text-xs text-gray-400 hover:text-primary">
+          Voir d&apos;autres séjours →
+        </Link>
+      </div>
     </div>
   );
 }

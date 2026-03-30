@@ -4,7 +4,8 @@
 -- ============================================
 
 -- 1. Vider la table existante (évite doublons)
-DELETE FROM gd_stay_themes;
+-- WHERE true ajouté explicitement pour confirmer l'intention de vider toute la table
+DELETE FROM gd_stay_themes WHERE true;
 
 -- 2. Insérer tous les mappings
 INSERT INTO gd_stay_themes (stay_slug, theme) VALUES

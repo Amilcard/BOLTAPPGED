@@ -1,8 +1,79 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import jwt from 'jsonwebtoken';
 
+const MAX_ATTEMPTS = 5;
+const WINDOW_MINUTES = 15;
+
+function getClientIp(req: NextRequest): string {
+  return (
+    req.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+    req.headers.get('x-real-ip') ||
+    'unknown'
+  );
+}
+
+/**
+ * Rate limiting persistant via Supabase (table gd_login_attempts).
+ * Résiste au multi-instance Vercel contrairement au Map en mémoire.
+ *
+ * La table est créée par la migration sql/025_login_rate_limiting.sql :
+ *   gd_login_attempts(ip TEXT PK, attempt_count INT, window_start TIMESTAMPTZ)
+ */
+async function isRateLimited(ip: string): Promise<boolean> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const now = new Date();
+    const windowStart = new Date(now.getTime() - WINDOW_MINUTES * 60 * 1000);
+
+    // Lire l'entrée existante
+    const { data: entry } = await supabase
+      .from('gd_login_attempts')
+      .select('attempt_count, window_start')
+      .eq('ip', ip)
+      .single();
+
+    // Pas d'entrée ou fenêtre expirée → reset
+    if (!entry || new Date(entry.window_start) < windowStart) {
+      await supabase
+        .from('gd_login_attempts')
+        .upsert(
+          { ip, attempt_count: 1, window_start: now.toISOString() },
+          { onConflict: 'ip' }
+        );
+      return false;
+    }
+
+    // Trop de tentatives dans la fenêtre
+    if (entry.attempt_count >= MAX_ATTEMPTS) {
+      return true;
+    }
+
+    // Incrémenter le compteur
+    await supabase
+      .from('gd_login_attempts')
+      .update({ attempt_count: entry.attempt_count + 1 })
+      .eq('ip', ip);
+
+    return false;
+  } catch (err) {
+    // Fail-open : si la table n'existe pas encore ou erreur BDD,
+    // on laisse passer (mieux que bloquer tous les logins)
+    console.error('[rate-limit] Erreur, fail-open:', err);
+    return false;
+  }
+}
+
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  if (await isRateLimited(ip)) {
+    return NextResponse.json(
+      { error: 'Trop de tentatives. Réessayez dans 15 minutes.' },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = await req.json();
     const { email, password } = body;
@@ -50,7 +121,18 @@ export async function POST(req: NextRequest) {
       { expiresIn: '8h' }
     );
 
-    return NextResponse.json({ token });
+    // Reset rate limit après connexion réussie
+    getSupabaseAdmin().from('gd_login_attempts').delete().eq('ip', ip);
+
+    const response = NextResponse.json({ ok: true });
+    response.cookies.set('gd_session', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 60 * 60 * 8,
+    });
+    return response;
   } catch (error) {
     console.error('[auth/login] Erreur:', error);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });

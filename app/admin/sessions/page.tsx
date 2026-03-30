@@ -7,8 +7,10 @@ import { STORAGE_KEYS, formatDate } from '@/lib/utils';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Stay, StaySession } from '@/lib/types';
+import { useAdminUI } from '@/components/admin/admin-ui';
 
 export default function AdminSessions() {
+  const { confirm } = useAdminUI();
   const [stays, setStays] = useState<Stay[]>([]);
   const [selectedStay, setSelectedStay] = useState<string>('');
   const [sessions, setSessions] = useState<StaySession[]>([]);
@@ -36,17 +38,18 @@ export default function AdminSessions() {
     if (res.ok) setSessions(await res.json());
   };
 
-  useEffect(() => { fetchStays(); }, []);
-  useEffect(() => { fetchSessions(); }, [selectedStay]);
+  useEffect(() => { void fetchStays(); }, []);
+  useEffect(() => { void fetchSessions(); }, [selectedStay]);
 
-  const handleDelete = async (sessionId: string) => {
-    if (!confirm('Supprimer cette session ?')) return;
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH);
-    await fetch(`/api/admin/stays/${selectedStay}/sessions/${sessionId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
+  const handleDelete = (sessionId: string) => {
+    confirm('Supprimer cette session ? Cette action est irréversible.', async () => {
+      const token = localStorage.getItem(STORAGE_KEYS.AUTH);
+      await fetch(`/api/admin/stays/${selectedStay}/sessions/${sessionId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchSessions();
     });
-    fetchSessions();
   };
 
   return (
@@ -75,7 +78,7 @@ export default function AdminSessions() {
           session={editingSession}
           stayId={selectedStay}
           onClose={() => { setIsCreating(false); setEditingSession(null); }}
-          onSave={() => { fetchSessions(); setIsCreating(false); setEditingSession(null); }}
+          onSave={() => { void fetchSessions(); setIsCreating(false); setEditingSession(null); }}
         />
       )}
 

@@ -1,15 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireEditor } from '@/lib/auth-middleware';
-import { createClient } from '@supabase/supabase-js';
-
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
-
+import { getSupabase } from '@/lib/supabase-server';
 /**
  * GET /api/admin/dossier-enfant/[inscriptionId]
  * Admin : lecture seule du dossier enfant d'une inscription.

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import { Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { DossierEnfantPanel } from '@/components/dossier-enfant/DossierEnfantPanel';
 
 // === Types locaux (lecture seule, pas besoin d'exporter) ===
@@ -9,11 +11,11 @@ interface DossierSuivi {
   id: string;
   dossierRef?: string;
   sejourNom: string;
+  sejourSlug: string;
   sessionDate: string;
   cityDeparture: string;
   jeunePrenom: string;
   jeuneNom: string;
-  jeuneDateNaissance: string;
   organisation?: string;
   referentNom: string;
   priceTotal: number;
@@ -99,7 +101,7 @@ export default function SuiviProPage() {
 
   useEffect(() => {
     if (!token) return;
-    fetch(`/api/suivi/${token}`)
+    void fetch(`/api/suivi/${token}`)
       .then(async (res) => {
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
@@ -124,35 +126,34 @@ export default function SuiviProPage() {
   }
 
   if (error || !data) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-8 text-center">
-          <div className="text-4xl mb-4">🔒</div>
-          <h1 className="text-xl font-bold text-gray-800 mb-2">Accès impossible</h1>
-          <p className="text-gray-600">{error || 'Ce lien de suivi n\'est pas valide.'}</p>
-          <a href="/" className="inline-block mt-6 text-primary hover:underline text-sm">
-            Retour à l'accueil
-          </a>
-        </div>
-      </div>
-    );
+    return <ResendLinkBlock />;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header simplifié (pas de nav vitrine, pas de header complet) */}
-      <header className="bg-[#2a383f] text-white print:bg-white print:text-black">
+      <header className="bg-primary text-white print:bg-white print:text-black">
         <div className="max-w-5xl mx-auto px-4 py-5 flex items-center justify-between">
           <div>
             <h1 className="text-lg font-bold">Groupe &amp; Découverte</h1>
-            <p className="text-sm text-white/70 print:text-gray-500">Espace suivi professionnel</p>
+            <p className="text-sm text-white/70 print:text-gray-500">
+              {data.referent?.nom ? `Mon espace de suivi — ${data.referent.nom}` : 'Mon espace de suivi'}
+            </p>
           </div>
-          <button
-            onClick={() => window.print()}
-            className="print:hidden px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition"
-          >
-            Imprimer le récapitulatif
-          </button>
+          <div className="print:hidden flex items-center gap-2">
+            <Link
+              href="/"
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition"
+            >
+              Découvrir des séjours
+            </Link>
+            <button
+              onClick={() => window.print()}
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition"
+            >
+              Imprimer
+            </button>
+          </div>
         </div>
       </header>
 
@@ -161,7 +162,7 @@ export default function SuiviProPage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex flex-wrap items-center gap-4 mb-4">
             <div>
-              <p className="text-sm text-gray-500">Structure</p>
+              <p className="text-sm text-gray-500">Structure / Organisme</p>
               <p className="font-semibold text-gray-800">{data.referent.organisation || '—'}</p>
             </div>
             <div className="h-8 w-px bg-gray-200 hidden sm:block" />
@@ -175,6 +176,15 @@ export default function SuiviProPage() {
               <p className="font-semibold text-gray-800">{data.count} inscription{data.count > 1 ? 's' : ''}</p>
             </div>
           </div>
+          {/*
+            TODO: Lot 4 — Point d'accroche espace structure (à implémenter après Supabase Auth)
+            Afficher ici un bandeau "Associer à votre structure" permettant au référent
+            de lier son compte à une entrée gd_structures (table existante, migration 020_structures_et_souhaits.sql).
+            La table gd_structures regroupe les éducateurs par domaine email (champ `domain`).
+            Chaque structure possède un code de rattachement à 6 caractères (`code`).
+            L'inscription porte déjà `structure_domain` et `structure_id` (FK → gd_structures).
+            Implémenter avec Supabase Auth session pour identifier le référent sans magic link.
+          */}
           {/* Phase 3 — Résumé financier global */}
           {data.count > 1 && (() => {
             const total = data.dossiers.reduce((s, d) => s + d.priceTotal, 0);
@@ -201,27 +211,6 @@ export default function SuiviProPage() {
           })()}
         </div>
 
-        {/* Bloc contacts utiles */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <h3 className="font-semibold text-gray-800 mb-3">Contacts utiles</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-gray-500">Contact Groupe &amp; Découverte</p>
-              <p className="font-medium">contact@groupeetdecouverte.fr</p>
-              <p className="text-gray-500 mt-0.5">04 77 49 54 75</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Adresse</p>
-              <p className="font-medium">3 rue Flobert — 42000 Saint-Étienne</p>
-            </div>
-            <div className="sm:col-span-2">
-              <p className="text-gray-500">Horaires</p>
-              <p className="font-medium">Du lundi au vendredi, 9h-12h / 14h-17h</p>
-              <p className="text-xs text-gray-400 mt-1">Pendant le séjour, l'équipe sur place est joignable aux horaires communiqués dans le courrier de convocation.</p>
-            </div>
-          </div>
-        </div>
-
         {/* Liste des dossiers */}
         <div className="space-y-4">
           {data.dossiers.map((d) => {
@@ -239,9 +228,17 @@ export default function SuiviProPage() {
                     </h2>
                     <p className="text-sm text-gray-500">{d.sejourNom}</p>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Badge {...st} />
                     <Badge {...ps} />
+                    {d.sejourSlug && (
+                      <a
+                        href={`/sejour/${d.sejourSlug}`}
+                        className="print:hidden text-xs text-primary hover:underline font-medium"
+                      >
+                        Voir ce séjour →
+                      </a>
+                    )}
                   </div>
                 </div>
 
@@ -262,11 +259,7 @@ export default function SuiviProPage() {
                     <p className="font-medium">{d.cityDeparture === 'sans_transport' ? 'Sans transport' : d.cityDeparture}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500">Date de naissance</p>
-                    <p className="font-medium">{formatDate(d.jeuneDateNaissance)}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Montant</p>
+                    <p className="text-gray-500">Tarif</p>
                     <p className="font-bold">{d.priceTotal} €</p>
                   </div>
                   {d.paymentMethod && (
@@ -320,7 +313,6 @@ export default function SuiviProPage() {
                     id: d.id,
                     jeunePrenom: d.jeunePrenom,
                     jeuneNom: d.jeuneNom,
-                    jeuneDateNaissance: d.jeuneDateNaissance,
                     sejourNom: d.sejourNom,
                     sessionDate: d.sessionDate,
                   }}
@@ -339,10 +331,31 @@ export default function SuiviProPage() {
           })}
         </div>
 
+        {/* Contacts utiles — après les dossiers */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
+          <h3 className="font-semibold text-gray-800 mb-3">Contacts utiles</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-gray-500">Contact Groupe &amp; Découverte</p>
+              <p className="font-medium">contact@groupeetdecouverte.fr</p>
+              <p className="text-gray-500 mt-0.5">04 23 16 16 71</p>
+            </div>
+            <div>
+              <p className="text-gray-500">Adresse</p>
+              <p className="font-medium">3 rue Flobert — 42000 Saint-Étienne</p>
+            </div>
+            <div className="sm:col-span-2">
+              <p className="text-gray-500">Horaires</p>
+              <p className="font-medium">Du lundi au vendredi, 9h-12h / 14h-17h</p>
+              <p className="text-xs text-gray-400 mt-1">Pendant le séjour, l'équipe sur place est joignable aux horaires communiqués dans le courrier de convocation.</p>
+            </div>
+          </div>
+        </div>
+
         {/* Footer page */}
         <div className="mt-8 text-center text-xs text-gray-400 print:mt-4">
           <p>Groupe &amp; Découverte — Séjours de vacances pour enfants et adolescents</p>
-          <p className="mt-1">Ce document a été généré automatiquement. Pour toute question, contactez-nous à contact@groupeetdecouverte.fr</p>
+          <p className="mt-1">Page générée à la demande. Pour toute question, contactez-nous à contact@groupeetdecouverte.fr</p>
         </div>
       </main>
 
@@ -372,10 +385,19 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+  const [lastPatch, setLastPatch] = useState<{ field: string; value: unknown } | null>(null);
+  // State contrôlé pour éviter la désynchronisation UI/DB (defaultValue non réactif)
+  const [prefNouvelles, setPrefNouvelles] = useState(dossier.prefNouvellesSejour || 'si_besoin');
+  const [prefCanal, setPrefCanal] = useState(dossier.prefCanalContact || 'email');
+  const [prefBilan, setPrefBilan] = useState(dossier.prefBilanFinSejour || false);
+  const [consignes, setConsignes] = useState(dossier.consignesCommunication || '');
+  const [besoins, setBesoins] = useState(dossier.besoinsSpecifiques || '');
 
   const patchField = async (field: string, value: unknown) => {
     setSaving(true);
     setSaved(false);
+    setLastPatch({ field, value });
     try {
       const res = await fetch(`/api/suivi/${token}`, {
         method: 'PATCH',
@@ -388,6 +410,8 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
       }
     } catch (err) {
       console.error('Erreur mise à jour préférence:', err);
+      setSaveError(true);
+      setTimeout(() => setSaveError(false), 5000);
     } finally {
       setSaving(false);
     }
@@ -409,7 +433,7 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
             <span className="ml-2 text-xs text-green-600 font-normal">Renseigné</span>
           )}
         </span>
-        <span className="text-gray-400">{open ? '▲' : '▼'}</span>
+        {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
       </button>
 
       {open && (
@@ -419,7 +443,23 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
           </p>
 
           {saved && (
-            <div className="text-xs text-green-600 font-medium">Enregistré</div>
+            <div className="flex items-center gap-1.5 text-sm text-green-700 font-medium bg-green-50 px-3 py-1.5 rounded-lg">
+              <Check className="w-3.5 h-3.5" /> Enregistré
+            </div>
+          )}
+          {saveError && (
+            <div className="text-sm text-amber-700 bg-amber-50 px-3 py-2 rounded-lg leading-relaxed flex items-center justify-between gap-3">
+              <span>
+                Votre connexion a peut-être glissé.
+                Ce que vous avez écrit est conservé.
+              </span>
+              <button
+                onClick={() => lastPatch && patchField(lastPatch.field, lastPatch.value)}
+                className="shrink-0 text-xs font-medium underline hover:no-underline"
+              >
+                Réessayer
+              </button>
+            </div>
           )}
 
           {/* Nouvelles pendant le séjour */}
@@ -429,9 +469,9 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
             </label>
             <select
               className="text-sm border rounded-lg px-3 py-1.5 w-full sm:w-auto"
-              defaultValue={dossier.prefNouvellesSejour || 'si_besoin'}
+              value={prefNouvelles}
               disabled={saving}
-              onChange={(e) => patchField('pref_nouvelles_sejour', e.target.value)}
+              onChange={(e) => { setPrefNouvelles(e.target.value); void patchField('pref_nouvelles_sejour', e.target.value); }}
             >
               <option value="oui">Oui, je souhaite être tenu informé</option>
               <option value="si_besoin">Uniquement si nécessaire</option>
@@ -446,9 +486,9 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
             </label>
             <select
               className="text-sm border rounded-lg px-3 py-1.5 w-full sm:w-auto"
-              defaultValue={dossier.prefCanalContact || 'email'}
+              value={prefCanal}
               disabled={saving}
-              onChange={(e) => patchField('pref_canal_contact', e.target.value)}
+              onChange={(e) => { setPrefCanal(e.target.value); void patchField('pref_canal_contact', e.target.value); }}
             >
               <option value="email">Email</option>
               <option value="telephone">Téléphone</option>
@@ -460,9 +500,9 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
-              defaultChecked={dossier.prefBilanFinSejour || false}
+              checked={prefBilan}
               disabled={saving}
-              onChange={(e) => patchField('pref_bilan_fin_sejour', e.target.checked)}
+              onChange={(e) => { setPrefBilan(e.target.checked); void patchField('pref_bilan_fin_sejour', e.target.checked); }}
               className="w-4 h-4 rounded border-gray-300"
             />
             <span className="text-sm text-gray-700">Je souhaite un bilan écrit en fin de séjour</span>
@@ -477,13 +517,14 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
               className="w-full border rounded-lg px-3 py-2 text-sm resize-none"
               rows={2}
               maxLength={500}
-              defaultValue={dossier.consignesCommunication || ''}
+              value={consignes}
               disabled={saving}
               placeholder="Ex : ne pas appeler entre 12h et 14h, contacter plutôt la directrice de l'établissement..."
+              onChange={(e) => setConsignes(e.target.value)}
               onBlur={(e) => {
                 const v = e.target.value.trim();
                 if (v !== (dossier.consignesCommunication || '')) {
-                  patchField('consignes_communication', v);
+                  void patchField('consignes_communication', v);
                 }
               }}
             />
@@ -498,13 +539,14 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
               className="w-full border rounded-lg px-3 py-2 text-sm resize-none"
               rows={3}
               maxLength={1000}
-              defaultValue={dossier.besoinsSpecifiques || ''}
+              value={besoins}
               disabled={saving}
               placeholder="Ex : attention renforcée nécessaire, repères utiles pour l'équipe, modalités facilitant l'intégration, éléments à anticiper avant le départ..."
+              onChange={(e) => setBesoins(e.target.value)}
               onBlur={(e) => {
                 const v = e.target.value.trim();
                 if (v !== (dossier.besoinsSpecifiques || '')) {
-                  patchField('besoins_specifiques', v);
+                  void patchField('besoins_specifiques', v);
                 }
               }}
             />
@@ -514,6 +556,77 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// === Composant renvoi de lien (affiché quand le token est invalide) ===
+function ResendLinkBlock() {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+
+  const handleResend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus('sending');
+    try {
+      await fetch('/api/suivi/resend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      setStatus('sent');
+    } catch {
+      setStatus('error');
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-8 text-center">
+        <div className="text-4xl mb-4">✉️</div>
+        <h1 className="text-xl font-bold text-gray-800 mb-2">Ce lien n&apos;est plus actif</h1>
+        <p className="text-gray-500 text-sm mb-1">
+          Recherchez <strong>Groupe &amp; Découverte</strong> dans votre boîte mail.
+        </p>
+        <p className="text-gray-400 text-xs mb-6">Pensez aussi à vérifier vos spams.</p>
+
+        {status === 'sent' ? (
+          <div className="bg-green-50 border border-green-100 rounded-lg p-4 text-green-700 text-sm">
+            ✓ Si un dossier existe pour cet email, vous recevrez votre lien dans quelques minutes.
+          </div>
+        ) : (
+          <form onSubmit={handleResend} className="space-y-3 text-left">
+            <label className="block text-sm font-medium text-gray-700">
+              Recevoir un nouveau lien
+            </label>
+            <input
+              type="email"
+              required
+              placeholder="votre@email.fr"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            <button
+              type="submit"
+              disabled={status === 'sending'}
+              className="w-full bg-primary text-white font-medium py-2.5 rounded-lg hover:bg-primary/90 transition disabled:opacity-50 text-sm"
+            >
+              {status === 'sending' ? 'Envoi en cours…' : 'Recevoir mon lien de suivi'}
+            </button>
+            {status === 'error' && (
+              <p className="text-xs text-amber-700 text-center">
+                Envoi échoué. Contactez-nous au 04 23 16 16 71.
+              </p>
+            )}
+          </form>
+        )}
+
+        <div className="mt-6 text-xs text-gray-400 space-y-1">
+          <p>📞 <a href="tel:0423161671" className="hover:text-primary">04 23 16 16 71</a> — lun.–ven. 9h–17h</p>
+          <p>✉️ <a href="mailto:contact@groupeetdecouverte.fr" className="hover:text-primary">contact@groupeetdecouverte.fr</a></p>
+        </div>
+      </div>
     </div>
   );
 }

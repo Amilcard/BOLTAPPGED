@@ -1,7 +1,7 @@
 /**
  * Tests du module de tarification GED
  */
-import { GedPricing, calculateGedPrice, GedDuration } from './pricing';
+import { GedPricing} from './pricing';
 
 console.log('🧪 TESTS TARIFICATION GED\n');
 console.log('='.repeat(80));

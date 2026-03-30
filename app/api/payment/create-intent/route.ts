@@ -1,39 +1,35 @@
 export const dynamic = 'force-dynamic';
 import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase-server';
 
 function getStripe() {
-  return new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeKey) throw new Error('STRIPE_SECRET_KEY is not configured');
+  return new Stripe(stripeKey, {
     apiVersion: '2026-01-28.clover',
   });
 }
-
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
-
 export async function POST(req: NextRequest) {
   try {
     const stripe = getStripe();
     const supabase = getSupabase();
-    const { inscriptionId } = await req.json();
+    const { inscriptionId, suivi_token } = await req.json();
 
-    if (!inscriptionId) {
+    if (!inscriptionId || !suivi_token) {
       return NextResponse.json(
-        { error: 'Missing inscriptionId' },
+        { error: 'Missing inscriptionId or suivi_token' },
         { status: 400 }
       );
     }
 
     // Récupérer l'inscription ET son price_total vérifié en DB
+    // Vérification ownership : suivi_token doit correspondre à l'inscription
     const { data: inscription, error: fetchError } = await supabase
       .from('gd_inscriptions')
       .select('*')
       .eq('id', inscriptionId)
+      .eq('suivi_token', suivi_token)
       .single();
 
     if (fetchError || !inscription) {
@@ -53,9 +49,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Réutiliser le PaymentIntent existant si déjà créé — évite les intents orphelins sur retry
+    if (inscription.stripe_payment_intent_id) {
+      const existing = await stripe.paymentIntents.retrieve(inscription.stripe_payment_intent_id);
+      if (existing.status !== 'canceled' && existing.status !== 'succeeded') {
+        return NextResponse.json({
+          clientSecret: existing.client_secret,
+          paymentIntentId: existing.id,
+        });
+      }
+    }
+
     // Créer Payment Intent Stripe avec le montant vérifié
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(verifiedAmount * 100), // Convertir en centimes
+      amount: Math.round(verifiedAmount * 100),
       currency: 'eur',
       payment_method_types: ['card'],
       metadata: {
@@ -65,15 +72,18 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Sauvegarder Payment Intent ID en DB
-    const { error: updateError } = await supabase
+    // Sauvegarder Payment Intent ID en DB — atomique : WHERE stripe_payment_intent_id IS NULL
+    // Évite la race condition si deux requêtes simultanées créent deux intents
+    const { data: updatedRows, error: updateError } = await supabase
       .from('gd_inscriptions')
       .update({
         stripe_payment_intent_id: paymentIntent.id,
         payment_method: 'stripe',
         payment_status: 'pending_payment',
       })
-      .eq('id', inscriptionId);
+      .eq('id', inscriptionId)
+      .is('stripe_payment_intent_id', null)
+      .select('stripe_payment_intent_id');
 
     if (updateError) {
       console.error('Error updating inscription:', updateError);
@@ -83,14 +93,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Si 0 lignes mises à jour → une autre requête a déjà écrit un intent, réutiliser
+    if (!updatedRows || updatedRows.length === 0) {
+      const { data: refreshed } = await supabase
+        .from('gd_inscriptions')
+        .select('stripe_payment_intent_id')
+        .eq('id', inscriptionId)
+        .single();
+      if (refreshed?.stripe_payment_intent_id) {
+        const existing = await stripe.paymentIntents.retrieve(refreshed.stripe_payment_intent_id);
+        return NextResponse.json({ clientSecret: existing.client_secret, paymentIntentId: existing.id });
+      }
+      return NextResponse.json({ error: 'Concurrent request conflict' }, { status: 409 });
+    }
+
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating payment intent:', error);
+    const message = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: message },
       { status: 500 }
     );
   }

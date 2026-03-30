@@ -86,7 +86,7 @@ export function HomeCarousels({ stays }: HomeCarouselsProps) {
 
   const scrollCarousel = (sectionId: string, direction: 'left' | 'right', maxScroll: number) => {
     setScrollPositions(prev => {
-      const current = prev[sectionId] || 0;
+      const current = Object.prototype.hasOwnProperty.call(prev, sectionId) ? prev[sectionId] : 0;
       const scrollAmount = 320; // ~largeur carte + gap
 
       let newScroll;

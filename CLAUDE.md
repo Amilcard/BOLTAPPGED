@@ -222,3 +222,21 @@ npm install --legacy-peer-deps
 npx prisma generate
 npx prisma migrate reset
 ```
+
+## Règles de travail
+
+**Branche unique : `main`** — Vercel déploie automatiquement depuis `main`. Ne pas créer de branches, ne pas ouvrir de PR sauf cas exceptionnel.
+
+Vérifier TypeScript avant chaque push : `npx tsc --noEmit`
+
+## Règles de correction
+
+- Diff minimal — ne toucher qu'aux fichiers strictement nécessaires
+- Pas de refactor large sans demande explicite
+- Non-régression prioritaire
+- Commit + push uniquement si le fix est sûr
+
+## Token efficiency (règle permanente)
+
+- Réponses courtes, structurées, sans redondance
+- Préférer tableaux/listes à la prose

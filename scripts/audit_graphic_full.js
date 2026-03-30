@@ -12,7 +12,9 @@ const FILES_TO_AUDIT = [
 ];
 
 function analyzeFile(filePath) {
-  const fullPath = path.join(process.cwd(), filePath);
+  const allowedDir = path.resolve(process.cwd());
+  const fullPath = path.resolve(process.cwd(), filePath);
+  if (!fullPath.startsWith(allowedDir + path.sep)) return;
   if (!fs.existsSync(fullPath)) {
     console.log(`❌ Fichier introuvable: ${filePath}`);
     return;

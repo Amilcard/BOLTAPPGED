@@ -1,13 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-function getSupabase() {
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY manquante');
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, key);
-}
-
+import { getSupabase } from '@/lib/supabase-server';
 /**
  * GET /api/suivi/[token]
  * Vue lecture seule : retourne tous les dossiers liés au même référent
@@ -18,10 +11,10 @@ function getSupabase() {
  */
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
-    const { token } = params;
+    const { token } = await params;
 
     // Validation basique UUID
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -56,7 +49,7 @@ export async function GET(
       .from('gd_inscriptions')
       .select(
         'id, dossier_ref, sejour_slug, session_date, city_departure, ' +
-        'jeune_prenom, jeune_nom, jeune_date_naissance, ' +
+        'jeune_prenom, jeune_nom, ' +
         'organisation, referent_nom, ' +
         'price_total, status, payment_status, payment_method, payment_reference, ' +
         'options_educatives, ' +
@@ -76,7 +69,7 @@ export async function GET(
     // 3. Enrichir avec les noms marketing des séjours
     const rows = (dossiers || []) as unknown as Record<string, unknown>[];
     const slugs = [...new Set(rows.map(d => d.sejour_slug as string))];
-    let stayNames: Record<string, string> = {};
+    const stayNames: Record<string, string> = Object.create(null) as Record<string, string>;
     if (slugs.length > 0) {
       const { data: stays } = await supabase
         .from('gd_stays')
@@ -84,24 +77,27 @@ export async function GET(
         .in('slug', slugs);
       if (stays) {
         const stayRows = stays as unknown as { slug: string; marketing_title?: string }[];
-        stayNames = Object.fromEntries(
-          stayRows.map(s => [s.slug, s.marketing_title || s.slug.replace(/-/g, ' ')])
-        );
+        for (const s of stayRows) {
+          stayNames[s.slug] = s.marketing_title || s.slug.replace(/-/g, ' ');
+        }
       }
     }
 
     // 4. Mapper pour la vue pro (champs exposés uniquement)
     const result = rows.map(d => {
       const slug = d.sejour_slug as string;
+      const sejourNom = Object.prototype.hasOwnProperty.call(stayNames, slug)
+        ? stayNames[slug]
+        : slug.replace(/-/g, ' ');
       return {
         id: d.id,
         dossierRef: d.dossier_ref,
-        sejourNom: stayNames[slug] || slug.replace(/-/g, ' '),
+        sejourNom,
+        sejourSlug: slug,
         sessionDate: d.session_date,
         cityDeparture: d.city_departure,
         jeunePrenom: d.jeune_prenom,
         jeuneNom: d.jeune_nom,
-        jeuneDateNaissance: d.jeune_date_naissance,
         organisation: d.organisation,
         referentNom: d.referent_nom,
         priceTotal: d.price_total,
@@ -153,10 +149,10 @@ export async function GET(
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
-    const { token } = params;
+    const { token } = await params;
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!token || !uuidRegex.test(token)) {
       return NextResponse.json(
@@ -169,6 +165,13 @@ export async function PATCH(
     const body = await req.json();
     const { inscriptionId, field, value } = body;
 
+    if (!inscriptionId || !uuidRegex.test(inscriptionId)) {
+      return NextResponse.json(
+        { error: { code: 'INVALID_PARAMS', message: 'Paramètres invalides.' } },
+        { status: 400 }
+      );
+    }
+
     if (!inscriptionId || !field) {
       return NextResponse.json(
         { error: { code: 'MISSING_PARAMS', message: 'Paramètres manquants.' } },
@@ -176,28 +179,11 @@ export async function PATCH(
       );
     }
 
-    // Champs éditables par le référent (whitelist stricte)
-    const editableFields: Record<string, (v: unknown) => unknown> = {
-      pref_nouvelles_sejour: (v) => {
-        const allowed = ['oui', 'non', 'si_besoin'];
-        return allowed.includes(v as string) ? v : 'si_besoin';
-      },
-      pref_canal_contact: (v) => {
-        const allowed = ['email', 'telephone', 'les_deux'];
-        return allowed.includes(v as string) ? v : 'email';
-      },
-      pref_bilan_fin_sejour: (v) => Boolean(v),
-      consignes_communication: (v) => {
-        const s = typeof v === 'string' ? v.trim().slice(0, 500) : null;
-        return s || null;
-      },
-      besoins_specifiques: (v) => {
-        const s = typeof v === 'string' ? v.trim().slice(0, 1000) : null;
-        return s || null;
-      },
-    };
+    // Champs éditables par le référent (whitelist stricte — switch explicite, pas d'accès dynamique)
+    const EDITABLE_FIELDS = ['pref_nouvelles_sejour', 'pref_canal_contact', 'pref_bilan_fin_sejour', 'consignes_communication', 'besoins_specifiques'] as const;
+    type EditableField = typeof EDITABLE_FIELDS[number];
 
-    if (!editableFields[field]) {
+    if (!EDITABLE_FIELDS.includes(field as EditableField)) {
       return NextResponse.json(
         { error: { code: 'FIELD_NOT_ALLOWED', message: 'Ce champ n\'est pas modifiable.' } },
         { status: 403 }
@@ -234,8 +220,25 @@ export async function PATCH(
       );
     }
 
-    // Appliquer la mise à jour
-    const sanitizedValue = editableFields[field](value);
+    // Appliquer la mise à jour — switch explicite, aucun accès dynamique à des fonctions
+    let sanitizedValue: unknown;
+    switch (field as EditableField) {
+      case 'pref_nouvelles_sejour':
+        sanitizedValue = ['oui', 'non', 'si_besoin'].includes(value as string) ? value : 'si_besoin';
+        break;
+      case 'pref_canal_contact':
+        sanitizedValue = ['email', 'telephone', 'les_deux'].includes(value as string) ? value : 'email';
+        break;
+      case 'pref_bilan_fin_sejour':
+        sanitizedValue = Boolean(value);
+        break;
+      case 'consignes_communication':
+        sanitizedValue = typeof value === 'string' ? (value.trim().slice(0, 500) || null) : null;
+        break;
+      case 'besoins_specifiques':
+        sanitizedValue = typeof value === 'string' ? (value.trim().slice(0, 1000) || null) : null;
+        break;
+    }
     const { error: updateErr } = await supabase
       .from('gd_inscriptions')
       .update({ [field]: sanitizedValue })

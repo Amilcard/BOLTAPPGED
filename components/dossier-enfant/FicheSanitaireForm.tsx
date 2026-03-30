@@ -8,7 +8,7 @@ interface Props {
   onSave: (data: Record<string, unknown>, completed?: boolean) => Promise<boolean>;
   jeunePrenom: string;
   jeuneNom: string;
-  jeuneDateNaissance: string;
+  jeuneDateNaissance?: string;
 }
 
 const VACCINS = [
@@ -137,6 +137,7 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
       <Section title="3. Délégations (personnes autorisées à récupérer l'enfant)">
         <p className="text-xs text-gray-400 mb-3">Indiquez les personnes ayant reçu votre autorisation.</p>
         {[1, 2, 3].map(i => (
+          // deepsource-ignore JS-0437 -- static numbered delegations, i is the stable key
           <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
             <Input label="Nom" value={form[`delegation_${i}_nom`]} onChange={v => update(`delegation_${i}_nom`, v)} />
             <Input label="Prénom" value={form[`delegation_${i}_prenom`]} onChange={v => update(`delegation_${i}_prenom`, v)} />
@@ -153,7 +154,8 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
           <Input label="Téléphone médecin" value={form.medecin_tel} onChange={v => update('medecin_tel', v)} type="tel" />
         </div>
         <p className="text-xs text-gray-400 mb-2">Joindre obligatoirement une copie des vaccins du carnet de santé.</p>
-        <div className="border rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
+        <div className="border rounded-lg overflow-hidden min-w-[480px]">
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
@@ -190,6 +192,7 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
               ))}
             </tbody>
           </table>
+        </div>
         </div>
       </Section>
 
@@ -274,16 +277,19 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
           disabled={saving}
           className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-medium transition disabled:opacity-50"
         >
-          {saving ? 'Enregistrement...' : 'Enregistrer le brouillon'}
+          {saving ? 'Enregistrement...' : 'Enregistrer'}
         </button>
         <button
           onClick={() => handleSave(true)}
           disabled={saving || !form.autorisation_soins_accepte}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
         >
-          Valider la fiche sanitaire
+          Valider
         </button>
       </div>
+      {!form.autorisation_soins_accepte && (
+        <p className="text-xs text-blue-600 mt-1">Cochez la case d'autorisation de soins ci-dessus pour pouvoir valider ce bloc.</p>
+      )}
     </div>
   );
 }

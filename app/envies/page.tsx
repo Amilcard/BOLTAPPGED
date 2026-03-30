@@ -2,8 +2,24 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Heart, ArrowLeft, Compass, ChevronRight, Clock } from 'lucide-react';
+import { Heart, ArrowLeft, Compass, ChevronRight, Clock, Check, MessageCircle, X } from 'lucide-react';
 import { getWishlistItems, type WishlistItem } from '@/lib/utils';
+
+interface SouhaitServeur {
+  id: string;
+  sejour_slug: string;
+  status: string;
+  reponse_educateur: string | null;
+  kid_prenom_referent: string | null;
+}
+
+const STATUT_BADGE: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  emis:          { label: 'Envoyé', color: 'bg-orange-100 text-orange-700', icon: <Clock className="w-3 h-3" /> },
+  vu:            { label: 'Consulté', color: 'bg-blue-100 text-blue-700', icon: <Clock className="w-3 h-3" /> },
+  en_discussion: { label: 'En discussion', color: 'bg-purple-100 text-purple-700', icon: <MessageCircle className="w-3 h-3" /> },
+  valide:        { label: 'Validé !', color: 'bg-green-100 text-green-700', icon: <Check className="w-3 h-3" /> },
+  refuse:        { label: 'Pas cette fois', color: 'bg-red-100 text-red-700', icon: <X className="w-3 h-3" /> },
+};
 
 function timeAgo(dateStr: string): string {
   const date = new Date(dateStr);
@@ -18,11 +34,21 @@ function timeAgo(dateStr: string): string {
 
 export default function EnviesPage() {
   const [items, setItems] = useState<WishlistItem[]>([]);
+  const [souhaits, setSouhaits] = useState<SouhaitServeur[]>([]);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     setItems(getWishlistItems());
+
+    // Charger les statuts depuis le serveur
+    const kidToken = localStorage.getItem('gd_kid_session_token');
+    if (kidToken) {
+      void fetch(`/api/souhaits/kid/${kidToken}`)
+        .then(res => res.ok ? res.json() : [])
+        .then(data => setSouhaits(Array.isArray(data) ? data : []))
+        .catch(() => {});
+    }
   }, []);
 
   if (!mounted) return null;
@@ -70,6 +96,8 @@ export default function EnviesPage() {
           <div className="space-y-3">
             {items.map((item) => {
               const stayLabel = item.stayId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+              const souhait = souhaits.find(s => s.sejour_slug === item.stayId);
+              const badge = souhait ? STATUT_BADGE[souhait.status] : null;
               return (
                 <Link
                   key={item.stayId}
@@ -104,12 +132,17 @@ export default function EnviesPage() {
                           <Clock className="w-3 h-3" />
                           {timeAgo(item.addedAt)}
                         </span>
-                        {item.emailStructure && (
-                          <span className="text-xs text-gray-500 truncate max-w-[140px]">
-                            Référent·e : {item.emailStructure}
+                        {badge && (
+                          <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${badge.color}`}>
+                            {badge.icon} {badge.label}
                           </span>
                         )}
                       </div>
+                      {souhait?.reponse_educateur && (
+                        <p className="text-xs text-gray-500 italic mt-1">
+                          💬 {souhait.reponse_educateur}
+                        </p>
+                      )}
                     </div>
 
                     {/* Flèche */}

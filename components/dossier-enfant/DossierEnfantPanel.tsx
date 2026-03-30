@@ -1,17 +1,19 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useDossierEnfant } from './useDossierEnfant';
 import { BulletinComplementForm } from './BulletinComplementForm';
 import { FicheSanitaireForm } from './FicheSanitaireForm';
 import { FicheLiaisonJeuneForm } from './FicheLiaisonJeuneForm';
+import { FicheRenseignementsForm } from './FicheRenseignementsForm';
 import { DocumentsJointsUpload } from './DocumentsJointsUpload';
 
 interface DossierInfo {
   id: string;
   jeunePrenom: string;
   jeuneNom: string;
-  jeuneDateNaissance: string;
+  jeuneDateNaissance?: string;
   sejourNom: string;
   sessionDate: string;
 }
@@ -21,14 +23,24 @@ interface Props {
   token: string;
 }
 
-const TABS = [
+const BASE_TABS = [
   { key: 'bulletin', label: 'Bulletin', icon: '📋', color: 'orange' },
   { key: 'sanitaire', label: 'Fiche sanitaire', icon: '🏥', color: 'blue' },
   { key: 'liaison', label: 'Fiche de liaison', icon: '🤝', color: 'red' },
-  { key: 'pj', label: 'Pieces jointes', icon: '📎', color: 'green' },
+  { key: 'renseignements', label: 'Renseignements', icon: '📝', color: 'purple' },
+  { key: 'pj', label: 'Pièces jointes', icon: '📎', color: 'green' },
 ] as const;
 
-type TabKey = typeof TABS[number]['key'];
+// Classes Tailwind complètes (pas d'interpolation dynamique — la purge CSS supprimerait les classes générées)
+const TAB_ACTIVE_STYLES: Record<string, string> = {
+  bulletin:        'border-orange-500 text-orange-600',
+  sanitaire:       'border-blue-500 text-blue-600',
+  liaison:         'border-red-500 text-red-600',
+  renseignements:  'border-purple-500 text-purple-600',
+  pj:              'border-green-500 text-green-600',
+};
+
+type TabKey = typeof BASE_TABS[number]['key'];
 
 /**
  * Panel principal dossier enfant — affiché dans la page suivi /suivi/[token]
@@ -39,6 +51,10 @@ function PdfDownloadButton({ inscriptionId, token, docType, label }: {
   inscriptionId: string; token: string; docType: string; label: string;
 }) {
   const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [emailSent, setEmailSent] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const handleDownload = async () => {
     setDownloading(true);
@@ -56,36 +72,127 @@ function PdfDownloadButton({ inscriptionId, token, docType, label }: {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Download error:', err);
+      setRetryCount(c => c + 1);
+      setDownloadError(true);
+      setTimeout(() => setDownloadError(false), 8000);
     } finally {
       setDownloading(false);
     }
   };
 
+  const handleSendByEmail = async () => {
+    setSendingEmail(true);
+    try {
+      await fetch(`/api/dossier-enfant/${inscriptionId}/pdf-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, type: docType }),
+      });
+      setEmailSent(true);
+      setDownloadError(false);
+    } catch {
+      // silence — l'utilisateur voit déjà le message d'erreur
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
   return (
-    <button
-      onClick={handleDownload}
-      disabled={downloading}
-      className="px-3 py-1.5 bg-white border border-gray-300 hover:bg-gray-100 rounded-lg text-xs font-medium transition disabled:opacity-50 flex items-center gap-1"
-    >
-      📥 {downloading ? 'Téléchargement...' : label}
-    </button>
+    <div className="inline-flex flex-col items-start gap-1">
+      <button
+        onClick={handleDownload}
+        disabled={downloading}
+        className="px-3 py-1.5 bg-white border border-gray-300 hover:bg-gray-100 rounded-lg text-xs font-medium transition disabled:opacity-50 flex items-center gap-1"
+      >
+        📥 {downloading ? 'Téléchargement...' : label}
+      </button>
+      {emailSent && (
+        <p className="text-xs text-green-700">✓ Document envoyé par email</p>
+      )}
+      {downloadError && !emailSent && (
+        <div className="text-xs text-amber-700 space-y-1">
+          {retryCount < 2 ? (
+            <p>Le document n&apos;est pas sorti. <button onClick={handleDownload} className="underline">Réessayer</button></p>
+          ) : (
+            <p>
+              Toujours bloqué ?{' '}
+              <button
+                onClick={handleSendByEmail}
+                disabled={sendingEmail}
+                className="underline disabled:opacity-50"
+              >
+                {sendingEmail ? 'Envoi…' : 'Recevoir par email'}
+              </button>
+            </p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
 export function DossierEnfantPanel({ inscription, token }: Props) {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('bulletin');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [alreadySent, setAlreadySent] = useState(false);
 
   const {
-    dossier, loading, saving, saved, error, saveBloc,
+    dossier, loading, saving, saved, error, saveBloc, reload,
   } = useDossierEnfant(inscription.id, token);
 
-  // Progression
+  // Onglets visibles — tous les onglets sont toujours affichés (renseignements obligatoire pour tous)
+  const TABS = BASE_TABS;
+
+  // Progression — 4 blocs fixes obligatoires (PJ exclues du compteur)
+  const hasPJ = (dossier?.documents_joints.length ?? 0) > 0;
+  const totalDocs = 4;
   const completedCount = dossier
-    ? [dossier.bulletin_completed, dossier.sanitaire_completed, dossier.liaison_completed].filter(Boolean).length
+    ? [
+        dossier.bulletin_completed,
+        dossier.sanitaire_completed,
+        dossier.liaison_completed,
+        dossier.renseignements_completed,
+      ].filter(Boolean).length
     : 0;
-  const totalDocs = 3;
   const progressPct = Math.round((completedCount / totalDocs) * 100);
+  const isComplete = completedCount === totalDocs;
+
+  // Documents manquants pour l'alerte
+  const missing: string[] = [];
+  if (dossier && !dossier.bulletin_completed) missing.push('Bulletin');
+  if (dossier && !dossier.sanitaire_completed) missing.push('Fiche sanitaire');
+  if (dossier && !dossier.liaison_completed) missing.push('Fiche de liaison');
+  if (dossier && !dossier.renseignements_completed) missing.push('Fiche de renseignements');
+  // Les pièces jointes sont optionnelles — ne pas les inclure dans les manquants bloquants
+
+  // Envoi GED
+  const handleSubmit = async () => {
+    if (!isComplete || submitting) return;
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      const res = await fetch(`/api/dossier-enfant/${inscription.id}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.status === 409 || body?.alreadySent) {
+        setAlreadySent(true);
+        return;
+      }
+      if (!res.ok) {
+        throw new Error(body?.error || 'Erreur lors de l\'envoi.');
+      }
+      setAlreadySent(true);
+    } catch (err: unknown) {
+      setSubmitError((err as Error).message || 'Erreur lors de l\'envoi.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="border-t border-gray-100 print:hidden">
@@ -93,26 +200,64 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
         onClick={() => setOpen(!open)}
         className="w-full px-6 py-3 flex items-center justify-between text-sm text-gray-600 hover:bg-gray-50 transition"
       >
-        <span className="font-medium flex items-center gap-2">
-          📄 Dossier enfant — Documents officiels
-          {completedCount > 0 && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">
-              {completedCount}/{totalDocs} validé{completedCount > 1 ? 's' : ''}
-            </span>
+        <span className="font-medium flex flex-wrap items-center gap-2">
+          📄 Dossier enfant
+          {/* Badges par document — toujours visibles */}
+          {dossier && (
+            <>
+              {[
+                { label: 'B', done: dossier.bulletin_completed, title: 'Bulletin' },
+                { label: 'S', done: dossier.sanitaire_completed, title: 'Fiche sanitaire' },
+                { label: 'L', done: dossier.liaison_completed, title: 'Fiche de liaison' },
+                { label: 'R', done: dossier.renseignements_completed, title: 'Renseignements' },
+                { label: 'PJ', done: hasPJ, title: 'Pièces jointes' },
+              ].map(({ label, done, title }) => (
+                <span
+                  key={label}
+                  title={title}
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                    done ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                  }`}
+                >
+                  {done ? '✓' : '!'} {label}
+                </span>
+              ))}
+              {isComplete && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+                  Dossier complet ✓
+                </span>
+              )}
+            </>
           )}
-          {completedCount === 0 && dossier?.exists && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">
-              En cours
-            </span>
-          )}
-          {!dossier?.exists && !loading && (
+          {!dossier && !loading && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
               À compléter
             </span>
           )}
         </span>
-        <span className="text-gray-400">{open ? '▲' : '▼'}</span>
+        <span className="text-gray-400 text-xs">{open ? '▲' : '▼'}</span>
       </button>
+
+      {/* Alerte documents manquants — visible SANS ouvrir le panel */}
+      {dossier && !isComplete && missing.length > 0 && (
+        <div className="mx-6 mb-3 p-3 bg-orange-50 border border-orange-200 rounded-xl text-sm">
+          <p className="font-medium text-orange-800">
+            {missing.length} document{missing.length > 1 ? 's' : ''} manquant{missing.length > 1 ? 's' : ''} :
+            {' '}<span className="font-normal">{missing.join(', ')}</span>
+          </p>
+          {inscription.sessionDate && (
+            <p className="text-xs text-orange-600 mt-1">
+              Séjour prévu le {new Date(inscription.sessionDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} — pensez à compléter votre dossier avant le départ.
+            </p>
+          )}
+          <button
+            onClick={() => setOpen(true)}
+            className="mt-2 text-xs font-medium text-orange-700 underline hover:text-orange-900"
+          >
+            Compléter le dossier →
+          </button>
+        </div>
+      )}
 
       {open && (
         <div className="px-6 pb-6">
@@ -127,6 +272,19 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
             </div>
           ) : (
             <>
+              {/* Notice RGPD — données médicales */}
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg flex gap-2 items-start">
+                <span className="text-blue-400 mt-0.5 shrink-0">🔒</span>
+                <p className="text-xs text-blue-700 leading-relaxed">
+                  Les informations saisies dans ce dossier (fiche sanitaire, documents médicaux) sont transmises
+                  uniquement à l&apos;équipe Groupe &amp; Découverte dans le cadre du séjour et conservées 3 mois après
+                  celui-ci. Elles ne sont jamais communiquées à des tiers.{' '}
+                  <Link href="/confidentialite" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-blue-900">
+                    Politique de confidentialité
+                  </Link>
+                </p>
+              </div>
+
               {/* Barre de progression */}
               <div className="mb-4">
                 <div className="flex justify-between text-xs text-gray-500 mb-1">
@@ -135,7 +293,7 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                 </div>
                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-green-500 rounded-full transition-all duration-500"
+                    className={`h-full rounded-full transition-all duration-500 ${progressPct === 100 ? 'bg-green-500' : 'bg-blue-500'}`}
                     style={{ width: `${progressPct}%` }}
                   />
                 </div>
@@ -154,15 +312,19 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                   const isComplete =
                     tab.key === 'bulletin' ? dossier?.bulletin_completed :
                     tab.key === 'sanitaire' ? dossier?.sanitaire_completed :
-                    dossier?.liaison_completed;
+                    tab.key === 'liaison' ? dossier?.liaison_completed :
+                    tab.key === 'renseignements' ? dossier?.renseignements_completed :
+                    tab.key === 'pj' ? hasPJ :
+                    false;
 
                   return (
                     <button
                       key={tab.key}
+                      data-testid={`tab-${tab.key}`}
                       onClick={() => setActiveTab(tab.key)}
                       className={`px-4 py-2 text-sm font-medium border-b-2 transition whitespace-nowrap flex items-center gap-1.5 ${
                         activeTab === tab.key
-                          ? `border-${tab.color}-500 text-${tab.color}-600`
+                          ? TAB_ACTIVE_STYLES[tab.key]
                           : 'border-transparent text-gray-500 hover:text-gray-700'
                       }`}
                     >
@@ -230,7 +392,7 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                   onSave={(data, completed) => saveBloc('fiche_sanitaire', data, completed)}
                   jeunePrenom={inscription.jeunePrenom}
                   jeuneNom={inscription.jeuneNom}
-                  jeuneDateNaissance={inscription.jeuneDateNaissance}
+                  jeuneDateNaissance={inscription.jeuneDateNaissance ?? ''}
                 />
               )}
 
@@ -246,11 +408,69 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                 />
               )}
 
-              {activeTab === 'pj' && (
-                <DocumentsJointsUpload
-                  inscriptionId={inscription.id}
-                  token={token}
+              {activeTab === 'renseignements' && (
+                <FicheRenseignementsForm
+                  data={(dossier?.fiche_renseignements || {}) as Record<string, unknown>}
+                  saving={saving}
+                  onSave={(data, completed) => saveBloc('fiche_renseignements', data, completed)}
+                  jeunePrenom={inscription.jeunePrenom}
+                  jeuneNom={inscription.jeuneNom}
                 />
+              )}
+
+              {activeTab === 'pj' && (
+                <>
+                  <p className="text-sm text-gray-500 mb-3">
+                    Merci de vérifier que les documents utiles ont bien été transmis si le séjour l&apos;exige :
+                    attestation de baignade, autorisation parentale, certificat médical, ou tout autre document demandé.
+                  </p>
+                  <DocumentsJointsUpload
+                    inscriptionId={inscription.id}
+                    token={token}
+                    onUploadSuccess={reload}
+                  />
+                </>
+              )}
+
+              {/* Bouton envoi GED — visible dès que le dossier existe */}
+              {dossier?.exists && (
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  {(alreadySent || !!dossier.ged_sent_at) ? (
+                    <div data-testid="bandeau-envoye" className="p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800 font-medium text-center">
+                      Votre dossier a bien été envoyé à l'équipe Groupe &amp; Découverte.
+                    </div>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                      <button
+                        data-testid="btn-envoyer"
+                        onClick={handleSubmit}
+                        disabled={!isComplete || submitting || !!dossier?.ged_sent_at}
+                        className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition ${
+                          isComplete
+                            ? 'bg-green-600 text-white hover:bg-green-700 cursor-pointer'
+                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        } disabled:opacity-60`}
+                      >
+                        {submitting ? (
+                          <span className="flex items-center gap-2">
+                            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            Envoi en cours...
+                          </span>
+                        ) : (
+                          'Envoyer mon dossier'
+                        )}
+                      </button>
+                      {!isComplete && (
+                        <p className="text-xs text-gray-500">
+                          {totalDocs - completedCount} document{totalDocs - completedCount > 1 ? 's' : ''} restant{totalDocs - completedCount > 1 ? 's' : ''} avant envoi
+                        </p>
+                      )}
+                      {submitError && (
+                        <p className="text-xs text-red-600">{submitError}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
             </>
           )}

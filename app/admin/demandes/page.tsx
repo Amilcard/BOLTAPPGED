@@ -138,6 +138,7 @@ export default function AdminDemandes() {
     const LABELS: Record<string, string> = { refusee: 'Refusée', annulee: 'Annulée' };
     const doChange = async () => {
       const token = localStorage.getItem(STORAGE_KEYS.AUTH);
+      // nosemgrep: javascript.lang.security.audit.ssrf.http-request.js-ssrf -- relative URL, UUID validated above
       const res = await fetch(`/api/admin/inscriptions/${id}`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },

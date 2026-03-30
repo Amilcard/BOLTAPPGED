@@ -53,6 +53,7 @@ export function useDossierEnfant(inscriptionId: string, token: string): UseDossi
     setLoading(true);
     setError(null);
     try {
+      // nosemgrep: javascript.lang.security.audit.ssrf.http-request.js-ssrf -- relative URL, same origin
       const res = await fetch(`/api/dossier-enfant/${encodeURIComponent(inscriptionId)}?token=${encodeURIComponent(token)}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -82,6 +83,7 @@ export function useDossierEnfant(inscriptionId: string, token: string): UseDossi
 
     try {
       if (!UUID_RE.test(inscriptionId)) throw new Error('ID invalide');
+      // nosemgrep: javascript.lang.security.audit.ssrf.http-request.js-ssrf -- relative URL, same origin
       const res = await fetch(`/api/dossier-enfant/${encodeURIComponent(inscriptionId)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },

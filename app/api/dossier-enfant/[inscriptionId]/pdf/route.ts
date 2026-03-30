@@ -95,7 +95,8 @@ export async function GET(
       || inscription.sejour_slug
       || '';
 
-    // Charger le template PDF — path traversal guard
+    // Charger le template PDF — docType est déjà validé par whitelist TEMPLATE_FILES ci-dessus
+    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal -- static whitelist
     const baseDir = path.resolve(process.cwd(), 'public', 'templates');
     const resolvedPath = path.resolve(baseDir, TEMPLATE_FILES[docType]);
     if (!resolvedPath.startsWith(baseDir + path.sep)) {

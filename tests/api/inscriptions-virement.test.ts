@@ -53,13 +53,13 @@ const mockSendStructureCode = jest.fn().mockResolvedValue(undefined);
 const mockSendNewEducAlert = jest.fn().mockResolvedValue(undefined);
 
 jest.mock('@/lib/email', () => ({
-  sendInscriptionConfirmation: (...args: any[]) => {
-    mockEmailData = args[0];
+  sendInscriptionConfirmation: (...args: unknown[]) => {
+    mockEmailData = args[0] as Record<string, unknown>;
     return mockSendConfirmation(...args);
   },
-  sendAdminNewInscriptionNotification: (...args: any[]) => mockSendAdminNotif(...args),
-  sendStructureCodeEmail: (...args: any[]) => mockSendStructureCode(...args),
-  sendNewEducateurAlert: (...args: any[]) => mockSendNewEducAlert(...args),
+  sendAdminNewInscriptionNotification: (...args: unknown[]) => mockSendAdminNotif(...args),
+  sendStructureCodeEmail: (...args: unknown[]) => mockSendStructureCode(...args),
+  sendNewEducateurAlert: (...args: unknown[]) => mockSendNewEducAlert(...args),
 }));
 
 import { POST } from '@/app/api/inscriptions/route';

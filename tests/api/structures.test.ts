@@ -46,7 +46,7 @@ function makeVerifyRequest(code: string): NextRequest {
   return new NextRequest(`http://localhost:3000/api/structures/verify/${code}`);
 }
 
-function buildChain(result: { data?: any; error?: any }) {
+function buildChain(result: { data?: unknown; error?: unknown }) {
   return {
     select: jest.fn().mockReturnValue({
       eq: jest.fn().mockReturnValue({

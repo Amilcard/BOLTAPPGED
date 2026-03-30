@@ -18,6 +18,7 @@
  */
 
 // ── Env ──────────────────────────────────────────────────────────────────────
+import type { NextRequest } from 'next/server';
 process.env.NEXT_PUBLIC_SUPABASE_URL    = 'https://test.supabase.co';
 process.env.SUPABASE_SERVICE_ROLE_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.fake-key';
 process.env.NEXT_PUBLIC_SITE_URL        = 'http://localhost:3000';
@@ -53,14 +54,14 @@ const VALID_KID_TOKEN2 = 'aaaaaaaa-0000-0000-0000-000000000002';
 function makeGetRequest(kidToken: string) {
   return {
     nextUrl: { searchParams: new URLSearchParams() },
-  } as any;
+  } as unknown as NextRequest;
 }
 
 function makePostRequest(body: object) {
   return {
     json: async () => body,
     nextUrl: { searchParams: new URLSearchParams() },
-  } as any;
+  } as unknown as NextRequest;
 }
 
 // ── Import handlers ──────────────────────────────────────────────────────────

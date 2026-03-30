@@ -97,7 +97,7 @@ function mockSelectOrder(result: { data: unknown; error: unknown }) {
 import { GET as getStays } from '@/app/api/admin/stays/route';
 
 // Dynamic route imports need special handling
-let putStay: any, deleteStay: any, getSlug: any;
+let putStay: ((req: unknown, ctx: unknown) => Promise<Response>) | undefined, deleteStay: ((req: unknown, ctx: unknown) => Promise<Response>) | undefined, getSlug: ((req: unknown, ctx: unknown) => Promise<Response>) | undefined;
 try {
   const stayIdRoute = require('@/app/api/admin/stays/[id]/route');
   putStay = stayIdRoute.PUT;

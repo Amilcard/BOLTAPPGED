@@ -18,6 +18,7 @@
  */
 
 // ── Env ──────────────────────────────────────────────────────────────────────
+import type { NextRequest } from 'next/server';
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.fake-key';
 
@@ -43,8 +44,8 @@ const VALID_TOKEN = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
 const VALID_INSCRIPTION_ID = 'b2c3d4e5-f6a7-8901-bcde-f12345678901';
 const REFERENT_EMAIL = 'marie.dupont@test.fr';
 
-function makeRequest(body: Record<string, any>): any {
-  return { json: () => Promise.resolve(body) } as any;
+function makeRequest(body: Record<string, unknown>) {
+  return { json: () => Promise.resolve(body) } as unknown as NextRequest;
 }
 
 function makeParams(inscriptionId: string) {
@@ -52,7 +53,7 @@ function makeParams(inscriptionId: string) {
 }
 
 /** Complete dossier data */
-function completeDossier(overrides: Record<string, any> = {}) {
+function completeDossier(overrides: Record<string, unknown> = {}) {
   return {
     id: 'dossier_123',
     bulletin_completed: true,
@@ -72,8 +73,8 @@ function completeDossier(overrides: Record<string, any> = {}) {
  */
 function setupMocks(opts: {
   ownership?: 'ok' | 'not_found' | 'mismatch';
-  dossier?: any; // null = not found, object = dossier data
-  updateError?: any;
+  dossier?: Record<string, unknown> | null; // null = not found, object = dossier data
+  updateError?: unknown;
 } = {}) {
   const { ownership = 'ok', dossier = completeDossier(), updateError = null } = opts;
 
@@ -85,7 +86,7 @@ function setupMocks(opts: {
     if (table === 'gd_inscriptions') {
       return {
         select: () => ({
-          eq: (col: string, val: any) => ({
+          eq: (col: string, val: unknown) => ({
             single: () => {
               inscriptionCallCount++;
               if (ownership === 'not_found') {

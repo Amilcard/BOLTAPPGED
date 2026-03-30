@@ -18,6 +18,7 @@
  */
 
 // ── Env ──────────────────────────────────────────────────────────────────────
+import type { NextRequest } from 'next/server';
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.fake-key';
 process.env.NEXT_PUBLIC_SITE_URL = 'http://localhost:3000';
@@ -33,7 +34,7 @@ jest.mock('@/lib/supabase-server', () => ({
 }));
 
 jest.mock('@/lib/email', () => ({
-  sendSouhaitNotificationEducateur: (...args: any[]) => mockSendSouhaitNotification(...args),
+  sendSouhaitNotificationEducateur: (...args: unknown[]) => mockSendSouhaitNotification(...args),
 }));
 
 import { POST } from '@/app/api/souhaits/route';
@@ -42,13 +43,13 @@ import { POST } from '@/app/api/souhaits/route';
 
 const VALID_UUID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
 
-function makeRequest(body: Record<string, any>): any {
+function makeRequest(body: Record<string, unknown>) {
   return {
     json: () => Promise.resolve(body),
-  } as any;
+  } as unknown as NextRequest;
 }
 
-function validBody(overrides: Record<string, any> = {}): Record<string, any> {
+function validBody(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     kidSessionToken: VALID_UUID,
     kidPrenom: 'Lucas',
@@ -65,7 +66,7 @@ function validBody(overrides: Record<string, any> = {}): Record<string, any> {
 /** Configure mockFrom for the standard "create new souhait" path */
 function setupCreatePath(opts: {
   structureExists?: boolean;
-  existingSouhait?: any;
+  existingSouhait?: Record<string, unknown> | null;
 } = {}) {
   mockFrom.mockImplementation((table: string) => {
     if (table === 'gd_structures') {
@@ -83,8 +84,8 @@ function setupCreatePath(opts: {
     if (table === 'gd_souhaits') {
       return {
         select: () => ({
-          eq: (col1: string, val1: any) => ({
-            eq: (col2: string, val2: any) => ({
+          eq: (col1: string, val1: unknown) => ({
+            eq: (col2: string, val2: unknown) => ({
               single: () => ({
                 data: opts.existingSouhait || null,
                 error: opts.existingSouhait ? null : { code: 'PGRST116' },
@@ -92,7 +93,7 @@ function setupCreatePath(opts: {
             }),
           }),
         }),
-        insert: (data: any) => ({
+        insert: (data: Record<string, unknown>) => ({
           select: () => ({
             single: () => ({
               data: {
@@ -104,7 +105,7 @@ function setupCreatePath(opts: {
             }),
           }),
         }),
-        update: (data: any) => ({
+        update: (data: Record<string, unknown>) => ({
           eq: () => ({ error: null }),
         }),
       };
@@ -201,7 +202,7 @@ describe('POST /api/souhaits', () => {
     expect(res.status).toBe(201);
     // gd_structures ne devrait pas être appelé (domaine générique)
     const structureCalls = mockFrom.mock.calls.filter(
-      (call: any[]) => call[0] === 'gd_structures'
+      (call: unknown[]) => call[0] === 'gd_structures'
     );
     expect(structureCalls).toHaveLength(0);
   });

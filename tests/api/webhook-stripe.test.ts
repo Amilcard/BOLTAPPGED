@@ -30,28 +30,39 @@ jest.mock('next/headers', () => ({
   }),
 }));
 
+// ── Types internes pour les mocks Supabase ────────────────────────────────────
+interface SupabaseRow { [key: string]: unknown }
+interface SelectSingleResult { data: SupabaseRow | null; error: unknown }
+type MockFrom = (table: string) => SupabaseMock
+interface SupabaseMock {
+  select: (..._args: unknown[]) => { eq: (..._eqArgs: unknown[]) => { single: () => SelectSingleResult } };
+  update: (data: SupabaseRow) => { eq: () => { error: null } };
+  insert: (data: SupabaseRow) => { single: () => { data: null; error: null } };
+  upsert?: (data: SupabaseRow, _opts?: unknown) => { error: null };
+}
+
 // Mock Supabase
 const mockSupabaseSelect = jest.fn();
 const mockSupabaseUpdate = jest.fn();
 const mockSupabaseInsert = jest.fn();
-let selectSingleResult: { data: any; error: any } = { data: null, error: null };
+let selectSingleResult: SelectSingleResult = { data: null, error: null };
 
-const mockSupabaseFrom = jest.fn().mockImplementation((table: string) => ({
-  select: (...args: any[]) => {
-    mockSupabaseSelect(table, ...args);
+const mockSupabaseFrom = jest.fn().mockImplementation((table: string): SupabaseMock => ({
+  select: (..._args: unknown[]) => {
+    mockSupabaseSelect(table, ..._args);
     return {
-      eq: (...eqArgs: any[]) => ({
+      eq: (..._eqArgs: unknown[]) => ({
         single: () => selectSingleResult,
       }),
     };
   },
-  update: (data: any) => {
+  update: (data: SupabaseRow) => {
     mockSupabaseUpdate(table, data);
     return {
       eq: () => ({ error: null }),
     };
   },
-  insert: (data: any) => {
+  insert: (data: SupabaseRow) => {
     mockSupabaseInsert(table, data);
     return { single: () => ({ data: null, error: null }) };
   },
@@ -77,16 +88,23 @@ jest.mock('@/lib/email', () => ({
 
 // ── Import route AFTER mocks ────────────────────────────────────────────────
 import { POST } from '@/app/api/webhooks/stripe/route';
+import type { NextRequest } from 'next/server';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function makeRequest(body: string): any {
-  return {
-    text: () => Promise.resolve(body),
-  } as any;
+interface MockRequest { text: () => Promise<string> }
+
+function makeRequest(body: string): MockRequest {
+  return { text: () => Promise.resolve(body) };
 }
 
-function makeStripeEvent(type: string, inscriptionId: string | null, amountCents: number): any {
+interface StripeEventMock {
+  id: string;
+  type: string;
+  data: { object: { id: string; amount: number; metadata: Record<string, string> } };
+}
+
+function makeStripeEvent(type: string, inscriptionId: string | null, amountCents: number): StripeEventMock {
   return {
     id: `evt_test_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
     type,
@@ -98,6 +116,31 @@ function makeStripeEvent(type: string, inscriptionId: string | null, amountCents
       },
     },
   };
+}
+
+// Helper : fabrique un mockImplementation Supabase complet pour un test
+function makeFullMock(
+  resolveTable: (table: string) => SelectSingleResult
+): MockFrom {
+  return (table: string): SupabaseMock => ({
+    select: (..._args: unknown[]) => ({
+      eq: (..._eqArgs: unknown[]) => ({
+        single: () => resolveTable(table),
+      }),
+    }),
+    update: (data: SupabaseRow) => {
+      mockSupabaseUpdate(table, data);
+      return { eq: () => ({ error: null }) };
+    },
+    insert: (data: SupabaseRow) => {
+      mockSupabaseInsert(table, data);
+      return { single: () => ({ data: null, error: null }) };
+    },
+    upsert: (data: SupabaseRow, _opts?: unknown) => {
+      mockSupabaseInsert(table, data);
+      return { error: null };
+    },
+  });
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────
@@ -121,7 +164,7 @@ describe('Webhook Stripe — /api/webhooks/stripe', () => {
     });
 
     const req = makeRequest('{}');
-    const res = await POST(req);
+    const res = await POST(req as unknown as NextRequest);
     const json = await res.json();
 
     expect(res.status).toBe(400);
@@ -134,7 +177,7 @@ describe('Webhook Stripe — /api/webhooks/stripe', () => {
     });
 
     const req = makeRequest('{}');
-    const res = await POST(req);
+    const res = await POST(req as unknown as NextRequest);
     const json = await res.json();
 
     expect(res.status).toBe(400);
@@ -145,46 +188,27 @@ describe('Webhook Stripe — /api/webhooks/stripe', () => {
     const event = makeStripeEvent('payment_intent.succeeded', 'insc_123', 60000);
     mockConstructEvent.mockReturnValueOnce(event);
 
-    // Override from() pour gérer les différentes tables
-    mockSupabaseFrom.mockImplementation((table: string) => ({
-      select: (...args: any[]) => ({
-        eq: (...eqArgs: any[]) => ({
-          single: () => {
-            if (table === 'gd_processed_events') return { data: null, error: null };
-            if (table === 'gd_inscriptions') {
-              return {
-                data: {
-                  price_total: 600,
-                  referent_nom: 'Dupont',
-                  referent_email: 'test@test.fr',
-                  jeune_prenom: 'Jules',
-                  jeune_nom: 'Martin',
-                  sejour_slug: 'alpoo-kids',
-                  dossier_ref: 'DOS-TEST',
-                },
-                error: null,
-              };
-            }
-            return { data: null, error: null };
+    mockSupabaseFrom.mockImplementation(makeFullMock((table) => {
+      if (table === 'gd_processed_events') return { data: null, error: null };
+      if (table === 'gd_inscriptions') {
+        return {
+          data: {
+            price_total: 600,
+            referent_nom: 'Dupont',
+            referent_email: 'test@test.fr',
+            jeune_prenom: 'Jules',
+            jeune_nom: 'Martin',
+            sejour_slug: 'alpoo-kids',
+            dossier_ref: 'DOS-TEST',
           },
-        }),
-      }),
-      update: (data: any) => {
-        mockSupabaseUpdate(table, data);
-        return { eq: () => ({ error: null }) };
-      },
-      insert: (data: any) => {
-        mockSupabaseInsert(table, data);
-        return { single: () => ({ data: null, error: null }) };
-      },
-      upsert: (data: any, opts: any) => {
-        mockSupabaseInsert(table, data);
-        return { error: null };
-      },
+          error: null,
+        };
+      }
+      return { data: null, error: null };
     }));
 
     const req = makeRequest(JSON.stringify(event));
-    const res = await POST(req);
+    const res = await POST(req as unknown as NextRequest);
     const json = await res.json();
 
     expect(json.received).toBe(true);
@@ -192,7 +216,6 @@ describe('Webhook Stripe — /api/webhooks/stripe', () => {
       'gd_inscriptions',
       expect.objectContaining({ payment_status: 'paid' })
     );
-    // L'event est enregistré via upsert (qui appelle mockSupabaseInsert dans notre mock)
     expect(mockSupabaseInsert).toHaveBeenCalledWith(
       'gd_processed_events',
       expect.objectContaining({ event_id: event.id })
@@ -203,34 +226,14 @@ describe('Webhook Stripe — /api/webhooks/stripe', () => {
     const event = makeStripeEvent('payment_intent.succeeded', 'insc_123', 99900); // 999€
     mockConstructEvent.mockReturnValueOnce(event);
 
-    mockSupabaseFrom.mockImplementation((table: string) => ({
-      select: (...args: any[]) => ({
-        eq: (...eqArgs: any[]) => ({
-          single: () => {
-            if (table === 'gd_processed_events') return { data: null, error: null };
-            if (table === 'gd_inscriptions') {
-              return { data: { price_total: 600 }, error: null }; // 600€ en BDD, 999€ Stripe
-            }
-            return { data: null, error: null };
-          },
-        }),
-      }),
-      update: (data: any) => {
-        mockSupabaseUpdate(table, data);
-        return { eq: () => ({ error: null }) };
-      },
-      insert: (data: any) => {
-        mockSupabaseInsert(table, data);
-        return { single: () => ({ data: null, error: null }) };
-      },
-      upsert: (data: any, opts: any) => {
-        mockSupabaseInsert(table, data);
-        return { error: null };
-      },
+    mockSupabaseFrom.mockImplementation(makeFullMock((table) => {
+      if (table === 'gd_processed_events') return { data: null, error: null };
+      if (table === 'gd_inscriptions') return { data: { price_total: 600 }, error: null };
+      return { data: null, error: null };
     }));
 
     const req = makeRequest(JSON.stringify(event));
-    const res = await POST(req);
+    const res = await POST(req as unknown as NextRequest);
 
     expect(mockSupabaseUpdate).toHaveBeenCalledWith(
       'gd_inscriptions',
@@ -242,31 +245,13 @@ describe('Webhook Stripe — /api/webhooks/stripe', () => {
     const event = makeStripeEvent('payment_intent.succeeded', 'insc_123', 60000);
     mockConstructEvent.mockReturnValueOnce(event);
 
-    mockSupabaseFrom.mockImplementation((table: string) => ({
-      select: (...args: any[]) => ({
-        eq: (...eqArgs: any[]) => ({
-          single: () => {
-            if (table === 'gd_processed_events') return { data: { id: 'exists' }, error: null };
-            return { data: null, error: null };
-          },
-        }),
-      }),
-      update: (data: any) => {
-        mockSupabaseUpdate(table, data);
-        return { eq: () => ({ error: null }) };
-      },
-      insert: (data: any) => {
-        mockSupabaseInsert(table, data);
-        return { single: () => ({ data: null, error: null }) };
-      },
-      upsert: (data: any, opts: any) => {
-        mockSupabaseInsert(table, data);
-        return { error: null };
-      },
+    mockSupabaseFrom.mockImplementation(makeFullMock((table) => {
+      if (table === 'gd_processed_events') return { data: { id: 'exists' }, error: null };
+      return { data: null, error: null };
     }));
 
     const req = makeRequest(JSON.stringify(event));
-    const res = await POST(req);
+    const res = await POST(req as unknown as NextRequest);
     const json = await res.json();
 
     expect(json.skipped).toBe(true);
@@ -277,28 +262,10 @@ describe('Webhook Stripe — /api/webhooks/stripe', () => {
     const event = makeStripeEvent('payment_intent.payment_failed', 'insc_456', 60000);
     mockConstructEvent.mockReturnValueOnce(event);
 
-    mockSupabaseFrom.mockImplementation((table: string) => ({
-      select: (...args: any[]) => ({
-        eq: (...eqArgs: any[]) => ({
-          single: () => ({ data: null, error: null }),
-        }),
-      }),
-      update: (data: any) => {
-        mockSupabaseUpdate(table, data);
-        return { eq: () => ({ error: null }) };
-      },
-      insert: (data: any) => {
-        mockSupabaseInsert(table, data);
-        return { single: () => ({ data: null, error: null }) };
-      },
-      upsert: (data: any, opts: any) => {
-        mockSupabaseInsert(table, data);
-        return { error: null };
-      },
-    }));
+    mockSupabaseFrom.mockImplementation(makeFullMock(() => ({ data: null, error: null })));
 
     const req = makeRequest(JSON.stringify(event));
-    const res = await POST(req);
+    const res = await POST(req as unknown as NextRequest);
     const json = await res.json();
 
     expect(json.received).toBe(true);
@@ -312,33 +279,13 @@ describe('Webhook Stripe — /api/webhooks/stripe', () => {
     const event = makeStripeEvent('payment_intent.succeeded', null, 60000);
     mockConstructEvent.mockReturnValueOnce(event);
 
-    mockSupabaseFrom.mockImplementation((table: string) => ({
-      select: (...args: any[]) => ({
-        eq: (...eqArgs: any[]) => ({
-          single: () => ({ data: null, error: null }),
-        }),
-      }),
-      update: (data: any) => {
-        mockSupabaseUpdate(table, data);
-        return { eq: () => ({ error: null }) };
-      },
-      insert: (data: any) => {
-        mockSupabaseInsert(table, data);
-        return { single: () => ({ data: null, error: null }) };
-      },
-      upsert: (data: any, opts: any) => {
-        mockSupabaseInsert(table, data);
-        return { error: null };
-      },
-    }));
+    mockSupabaseFrom.mockImplementation(makeFullMock(() => ({ data: null, error: null })));
 
     const req = makeRequest(JSON.stringify(event));
-    const res = await POST(req);
+    const res = await POST(req as unknown as NextRequest);
     const json = await res.json();
 
     expect(json.received).toBe(true);
-    // L'event ne doit PAS être enregistré dans gd_processed_events
-    // car inscriptionId manquant → Stripe réessaiera
     expect(mockSupabaseInsert).not.toHaveBeenCalledWith(
       'gd_processed_events',
       expect.anything()

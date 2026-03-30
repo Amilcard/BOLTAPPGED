@@ -57,7 +57,7 @@ export async function POST(
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.groupeetdecouverte.fr';
     // SSRF guard: s'assurer que l'URL est bien sur notre domaine
     const allowedOrigins = ['https://app.groupeetdecouverte.fr', 'http://localhost:3000'];
-    if (!allowedOrigins.some(o => appUrl.startsWith(o))) {
+    if (!allowedOrigins.some(o => appUrl === o || appUrl.startsWith(o + '/'))) {
       console.error('SSRF blocked: NEXT_PUBLIC_APP_URL invalide:', appUrl);
       return NextResponse.json({ error: 'Configuration serveur invalide.' }, { status: 500 });
     }

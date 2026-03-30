@@ -162,6 +162,13 @@ export async function PATCH(
     const body = await req.json();
     const { inscriptionId, field, value } = body;
 
+    if (!inscriptionId || !uuidRegex.test(inscriptionId)) {
+      return NextResponse.json(
+        { error: { code: 'INVALID_PARAMS', message: 'Paramètres invalides.' } },
+        { status: 400 }
+      );
+    }
+
     if (!inscriptionId || !field) {
       return NextResponse.json(
         { error: { code: 'MISSING_PARAMS', message: 'Paramètres manquants.' } },

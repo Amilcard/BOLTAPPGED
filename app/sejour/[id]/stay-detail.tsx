@@ -488,8 +488,8 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                     Inclus dans votre tarif Sérénité
                   </h3>
                   <div className="grid sm:grid-cols-2 gap-3">
-                    {dynamicPoints.map((point, index) => (
-                      <div key={index} className="flex items-center gap-2">
+                    {dynamicPoints.map((point) => (
+                      <div key={point} className="flex items-center gap-2">
                         <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
                           <Check className={`w-3 h-3 ${themeStyle.textColor} font-bold`} />
                         </div>
@@ -505,8 +505,8 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
             <section className="bg-white rounded-xl shadow-brand p-5">
               <h2 className="text-lg font-bold text-primary mb-3">Contenu du séjour</h2>
               <ul className="space-y-3 mb-5">
-                {programme.slice(0, 5).map((item, i) => (
-                  <li key={i} className="flex items-start gap-3">
+                {programme.slice(0, 5).map((item) => (
+                  <li key={item} className="flex items-start gap-3">
                     <ChevronRight className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                     <span className="text-base text-gray-700 leading-7">{item}</span>
                   </li>

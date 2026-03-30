@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useDossierEnfant } from './useDossierEnfant';
 import { BulletinComplementForm } from './BulletinComplementForm';
 import { FicheSanitaireForm } from './FicheSanitaireForm';
@@ -278,9 +279,9 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                   Les informations saisies dans ce dossier (fiche sanitaire, documents médicaux) sont transmises
                   uniquement à l&apos;équipe Groupe &amp; Découverte dans le cadre du séjour et conservées 3 mois après
                   celui-ci. Elles ne sont jamais communiquées à des tiers.{' '}
-                  <a href="/confidentialite" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-blue-900">
+                  <Link href="/confidentialite" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-blue-900">
                     Politique de confidentialité
-                  </a>
+                  </Link>
                 </p>
               </div>
 

@@ -195,6 +195,7 @@ export default function AdminDemandes() {
         <h1 className="text-3xl font-bold text-primary mb-8">Demandes</h1>
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           {[...Array(5)].map((_, i) => (
+            // deepsource-ignore JS-0437 -- static array skeleton, i is the stable key
             <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-gray-100 animate-pulse">
               <div className="h-4 bg-gray-200 rounded w-24" />
               <div className="h-4 bg-gray-200 rounded w-32 flex-1" />

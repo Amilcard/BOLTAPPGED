@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Check, ChevronRight, ChevronLeft, Loader2, AlertCircle, Calendar, MapPin, CreditCard } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -459,6 +460,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
       {step === 6 && (
         <div className="flex gap-2 mb-6">
           {[0, 1, 2, 3, 4].map(i => (
+            // deepsource-ignore JS-0437 -- static step indices, i is the stable key
             <div key={i} className="h-1 flex-1 rounded-full bg-secondary" />
           ))}
         </div>
@@ -780,8 +782,8 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             {structureSearchResults.length > 0 && !step1.structureVerified && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                 <p className="text-sm font-medium text-amber-800 mb-2">Structure(s) déjà enregistrée(s) sur ce code postal :</p>
-                {structureSearchResults.map((s, i) => (
-                  <p key={i} className="text-sm text-amber-700">• {s.name} ({s.city}){s.contactHint ? ` — contact : ${s.contactHint}` : ''}</p>
+                {structureSearchResults.map((s) => (
+                  <p key={`${s.name}-${s.city}`} className="text-sm text-amber-700">• {s.name} ({s.city}){s.contactHint ? ` — contact : ${s.contactHint}` : ''}</p>
                 ))}
                 <p className="text-xs text-amber-600 mt-2">Si c'est votre structure, demandez le code à vos collègues et saisissez-le ci-dessus. Sinon, continuez normalement.</p>
               </div>
@@ -934,13 +936,13 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               />
               <span className="text-sm text-primary-600">
                 J&apos;ai lu et j&apos;accepte les{' '}
-                <a href="/cgv" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-primary" onClick={e => e.stopPropagation()}>
+                <Link href="/cgv" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-primary" onClick={e => e.stopPropagation()}>
                   Conditions Générales de Vente
-                </a>{' '}
+                </Link>{' '}
                 et les{' '}
-                <a href="/cgu" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-primary" onClick={e => e.stopPropagation()}>
+                <Link href="/cgu" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-primary" onClick={e => e.stopPropagation()}>
                   CGU
-                </a>. Je confirme que les données de l&apos;enfant sont saisies dans le cadre de mes fonctions et avec l&apos;accord des responsables légaux. *
+                </Link>. Je confirme que les données de l&apos;enfant sont saisies dans le cadre de mes fonctions et avec l&apos;accord des responsables légaux. *
               </span>
             </label>
           </div>
@@ -1238,9 +1240,9 @@ function WaitlistBlock({ sejourSlug }: { sejourSlug: string }) {
         <p className="text-sm text-gray-500">
           Nous vous enverrons un email dès qu&apos;une place se libère pour ce séjour.
         </p>
-        <a href="/sejours" className="inline-block mt-4 text-sm text-primary hover:underline">
+        <Link href="/sejours" className="inline-block mt-4 text-sm text-primary hover:underline">
           Voir d&apos;autres séjours →
-        </a>
+        </Link>
       </div>
     );
   }
@@ -1282,9 +1284,9 @@ function WaitlistBlock({ sejourSlug }: { sejourSlug: string }) {
         )}
       </form>
       <div className="text-center mt-3">
-        <a href="/sejours" className="text-xs text-gray-400 hover:text-primary">
+        <Link href="/sejours" className="text-xs text-gray-400 hover:text-primary">
           Voir d&apos;autres séjours →
-        </a>
+        </Link>
       </div>
     </div>
   );

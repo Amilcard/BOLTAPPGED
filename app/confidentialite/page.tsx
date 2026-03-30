@@ -30,14 +30,15 @@ function TableData({ headers, rows }: { headers: string[]; rows: string[][] }) {
       <table className="w-full text-xs">
         <thead className="bg-primary text-white">
           <tr>
-            {headers.map((h, i) => (
-              <th key={i} className="text-left px-3 py-2.5 font-medium">{h}</th>
+            {headers.map((h) => (
+              <th key={h} className="text-left px-3 py-2.5 font-medium">{h}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-primary-50/40'}>
+            // deepsource-ignore JS-0437 -- no stable id in row (string[]), index is intentional
+            <tr key={row.join('|')} className={i % 2 === 0 ? 'bg-white' : 'bg-primary-50/40'}>
               {row.map((cell, j) => (
                 <td key={j} className="px-3 py-2.5 text-gray-700 border-b border-gray-50 last:border-0 align-top">{cell}</td>
               ))}

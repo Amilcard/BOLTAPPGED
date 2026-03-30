@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import { STORAGE_KEYS, formatDate } from '@/lib/utils';
 import {
   ArrowLeft, Trash2, ExternalLink, ClipboardCopy,
@@ -467,9 +468,9 @@ export default function InscriptionDetailPage() {
             <button onClick={() => navigator.clipboard.writeText(suiviUrl)} className="p-2 hover:bg-gray-100 rounded-lg" title="Copier">
               <ClipboardCopy size={16} />
             </button>
-            <a href={suiviUrl} target="_blank" rel="noopener noreferrer" className="p-2 hover:bg-gray-100 rounded-lg" title="Ouvrir">
+            <Link href={suiviUrl} target="_blank" rel="noopener noreferrer" className="p-2 hover:bg-gray-100 rounded-lg" title="Ouvrir">
               <ExternalLink size={16} />
-            </a>
+            </Link>
           </div>
         </div>
       )}

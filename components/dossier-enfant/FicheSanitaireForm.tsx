@@ -137,6 +137,7 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
       <Section title="3. Délégations (personnes autorisées à récupérer l'enfant)">
         <p className="text-xs text-gray-400 mb-3">Indiquez les personnes ayant reçu votre autorisation.</p>
         {[1, 2, 3].map(i => (
+          // deepsource-ignore JS-0437 -- static numbered delegations, i is the stable key
           <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
             <Input label="Nom" value={form[`delegation_${i}_nom`]} onChange={v => update(`delegation_${i}_nom`, v)} />
             <Input label="Prénom" value={form[`delegation_${i}_prenom`]} onChange={v => update(`delegation_${i}_prenom`, v)} />

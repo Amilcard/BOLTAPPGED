@@ -303,8 +303,8 @@ export default function AdminStructures() {
                 Inscriptions rattachées ({expandedInscriptions.length})
               </h3>
               <div className="space-y-2">
-                {expandedInscriptions.map((insc: Record<string, unknown>, i: number) => (
-                  <div key={i} className="bg-white rounded-lg px-4 py-2 text-sm flex justify-between items-center">
+                {expandedInscriptions.map((insc: Record<string, unknown>) => (
+                  <div key={insc.id as string} className="bg-white rounded-lg px-4 py-2 text-sm flex justify-between items-center">
                     <span>
                       <strong>{(insc.jeune_prenom || insc.jeunePrenom) as string}</strong>
                       {' — '}

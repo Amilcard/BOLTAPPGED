@@ -161,9 +161,12 @@ export default function AdminDemandes() {
   const handleDelete = (e: React.MouseEvent, id: string, jeune: string) => {
     e.preventDefault();
     e.stopPropagation();
+    const UUID_DEL = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!UUID_DEL.test(id)) return;
     confirm(`Supprimer définitivement l'inscription de ${jeune} ? Cette action est irréversible.`, async () => {
       try {
         const token = localStorage.getItem(STORAGE_KEYS.AUTH);
+        // nosemgrep: javascript.lang.security.audit.ssrf.http-request.js-ssrf -- relative URL, UUID validated above
         const res = await fetch(`/api/admin/inscriptions/${id}`, {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` },

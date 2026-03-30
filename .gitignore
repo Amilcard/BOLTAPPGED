@@ -26,6 +26,12 @@ _archives/
 .~lock.*
 app/debug-db/
 
+# ── Tests & caches ──
+.jest-cache/
+test-results/
+playwright-report/
+.claude/agent-memory/
+
 # ── Fichiers temporaires ──
 deploy-fixes.patch
 generate_clean_logo.js

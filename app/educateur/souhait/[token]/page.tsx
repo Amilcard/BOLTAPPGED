@@ -38,7 +38,7 @@ export default function EducateurSouhaitPage() {
 
   useEffect(() => {
     if (!token) return;
-    fetch(`/api/educateur/souhait/${token}`)
+    void fetch(`/api/educateur/souhait/${token}`)
       .then(res => res.json())
       .then(data => {
         if (data.error) { setError(data.error); return; }

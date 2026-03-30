@@ -271,7 +271,7 @@ export default function AdminDemandes() {
                   const paymentStyle = getPaymentStyle(insc.payment_status);
                   const isEnRetard = !(insc as InscriptionEnriched).ged_sent_at && daysSince(insc.created_at) > 7;
                   return (
-                    <tr key={insc.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/admin/demandes/${insc.id}`)}>
+                    <tr key={insc.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => void router.push(`/admin/demandes/${insc.id}`)}>
                       <td className="px-4 py-4 text-sm text-gray-500">
                         {formatDate(insc.created_at)}
                       </td>
@@ -320,7 +320,7 @@ export default function AdminDemandes() {
                       <td className="px-4 py-4" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-end gap-1">
                           <button
-                            onClick={() => router.push(`/admin/demandes/${insc.id}`)}
+                            onClick={() => void router.push(`/admin/demandes/${insc.id}`)}
                             className="p-2 hover:bg-gray-100 rounded"
                             title="Détails"
                             aria-label={`Voir le dossier de ${insc.jeune_prenom} ${insc.jeune_nom}`}

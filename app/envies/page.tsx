@@ -44,7 +44,7 @@ export default function EnviesPage() {
     // Charger les statuts depuis le serveur
     const kidToken = localStorage.getItem('gd_kid_session_token');
     if (kidToken) {
-      fetch(`/api/souhaits/kid/${kidToken}`)
+      void fetch(`/api/souhaits/kid/${kidToken}`)
         .then(res => res.ok ? res.json() : [])
         .then(data => setSouhaits(Array.isArray(data) ? data : []))
         .catch(() => {});

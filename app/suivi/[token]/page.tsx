@@ -100,7 +100,7 @@ export default function SuiviProPage() {
 
   useEffect(() => {
     if (!token) return;
-    fetch(`/api/suivi/${token}`)
+    void fetch(`/api/suivi/${token}`)
       .then(async (res) => {
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));

@@ -1192,13 +1192,13 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               Un email avec le lien de votre espace de suivi vous a été envoyé à <strong>{step1.email}</strong>.
             </p>
             <button
-              onClick={() => router.push(`/sejour/${stay.slug}`)}
+              onClick={() => void router.push(`/sejour/${stay.slug}`)}
               className="px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary-600 transition-colors"
             >
               Retour au séjour
             </button>
             <button
-              onClick={() => router.push('/')}
+              onClick={() => void router.push('/')}
               className="px-6 py-3 border border-primary-200 text-primary rounded-full font-medium hover:bg-primary-50 transition-colors"
             >
               Découvrir d'autres séjours

@@ -107,7 +107,7 @@ export default function StructureDashboard() {
 
   useEffect(() => {
     if (!code) return;
-    fetch(`/api/structure/${code}`)
+    void fetch(`/api/structure/${code}`)
       .then(async res => {
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));

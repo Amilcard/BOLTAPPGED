@@ -69,7 +69,7 @@ export default function InscriptionDetailPage() {
           }
         }
       } else {
-        router.replace('/admin/demandes');
+        void router.replace('/admin/demandes');
       }
     } catch {
       router.replace('/admin/demandes');
@@ -157,7 +157,7 @@ export default function InscriptionDetailPage() {
           toast(`Erreur : ${err?.error?.message || res.status}`);
           return;
         }
-        router.replace('/admin/demandes');
+        void router.replace('/admin/demandes');
       } catch {
         toast('Erreur réseau');
       }
@@ -192,7 +192,7 @@ export default function InscriptionDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button onClick={() => router.replace('/admin/demandes')} className="p-2 hover:bg-gray-100 rounded-lg transition">
+          <button onClick={() => void router.replace('/admin/demandes')} className="p-2 hover:bg-gray-100 rounded-lg transition">
             <ArrowLeft size={20} />
           </button>
           <div>
@@ -495,7 +495,7 @@ export default function InscriptionDetailPage() {
             {autresInscriptions.map(a => (
               <div
                 key={a.id}
-                onClick={() => router.push(`/admin/demandes/${a.id}`)}
+                onClick={() => void router.push(`/admin/demandes/${a.id}`)}
                 className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer transition"
               >
                 <div>

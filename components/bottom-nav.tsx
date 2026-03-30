@@ -28,7 +28,7 @@ export function BottomNav() {
   const navItems = mode === 'kids' ? kidsNavItems : proNavItems;
 
   const handleClick = (item: typeof navItems[0]) => {
-    router.push(item.route);
+    void router.push(item.route);
   };
 
   const isActive = (route: string) => {

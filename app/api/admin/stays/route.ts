@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       .select('sejour_slug')
       .is('notified_at', null);
 
-    const waitlistBySlug: Record<string, number> = {};
+    const waitlistBySlug: Record<string, number> = Object.create(null) as Record<string, number>;
     for (const w of (waitlistCounts || []) as Array<{ sejour_slug: string }>) {
       waitlistBySlug[w.sejour_slug] = (waitlistBySlug[w.sejour_slug] || 0) + 1;
     }

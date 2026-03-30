@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
 
     // 2. Compter les inscriptions par structure_id
     const structIds = (structures || []).map((s: { id: string }) => s.id);
-    let inscriptionCounts: Record<string, number> = {};
+    let inscriptionCounts: Record<string, number> = Object.create(null) as Record<string, number>;
 
     if (structIds.length > 0) {
       const { data: countRows } = await supabase

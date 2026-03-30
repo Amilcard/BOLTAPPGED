@@ -319,9 +319,9 @@ export const getAllStayThemes = async (): Promise<Record<string, string[]>> => {
   }
 
   // Regrouper par stay_slug
-  const themesMap: Record<string, string[]> = {}
+  const themesMap: Record<string, string[]> = Object.create(null) as Record<string, string[]>
   data?.forEach(row => {
-    if (!themesMap[row.stay_slug]) {
+    if (!Object.prototype.hasOwnProperty.call(themesMap, row.stay_slug)) {
       themesMap[row.stay_slug] = []
     }
     themesMap[row.stay_slug].push(row.theme)
@@ -350,11 +350,11 @@ export const getMinPricesBySlug = async (): Promise<Record<string, number>> => {
     return {}
   }
 
-  const pricesMap: Record<string, number> = {}
+  const pricesMap: Record<string, number> = Object.create(null) as Record<string, number>
   for (const row of data || []) {
     const price = row.price_ged_total
     if (price == null || !Number.isFinite(price)) continue
-    if (!pricesMap[row.stay_slug] || price < pricesMap[row.stay_slug]) {
+    if (!Object.prototype.hasOwnProperty.call(pricesMap, row.stay_slug) || price < pricesMap[row.stay_slug]) {
       pricesMap[row.stay_slug] = price
     }
   }

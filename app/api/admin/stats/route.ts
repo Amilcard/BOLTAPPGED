@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
     };
 
     // Inscriptions par jour (7 derniers jours)
-    const recentByDay: Record<string, number> = {};
+    const recentByDay: Record<string, number> = Object.create(null) as Record<string, number>;
     // Pré-remplir les 7 jours
     for (let i = 6; i >= 0; i--) {
       const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
     const recentDays = Object.entries(recentByDay).map(([date, count]) => ({ date, count }));
 
     // Top 5 séjours
-    const slugCounts: Record<string, number> = {};
+    const slugCounts: Record<string, number> = Object.create(null) as Record<string, number>;
     if (topSejoursRes.data) {
       for (const row of topSejoursRes.data as unknown as { sejour_slug: string }[]) {
         const slug = row.sejour_slug;

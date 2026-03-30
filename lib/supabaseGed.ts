@@ -37,7 +37,7 @@ function getClient() {
 // Proxy object: existing callers use `supabaseGed.from(...)` unchanged.
 export const supabaseGed = new Proxy({} as ReturnType<typeof createClient<Database>>, {
   get(_target, prop) {
-    return (getClient() as any)[prop]
+    return (getClient() as unknown as Record<string | symbol, unknown>)[prop]
   },
 })
 

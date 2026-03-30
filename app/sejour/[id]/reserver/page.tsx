@@ -58,7 +58,7 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
   const allFull = availableSessions.length === 0;
 
   // Séjours alternatifs — uniquement si allFull, 2 requêtes légères, lecture seule
-  let alternativeStays: { slug: string; marketing_title: string | null; punchline: string | null; images: any }[] = [];
+  let alternativeStays: { slug: string; marketing_title: string | null; punchline: string | null; images: unknown }[] = [];
   if (allFull && stay.carousel_group) {
     // Requête 1 : candidats même carousel_group (max 10 pour avoir de la marge au tri)
     const { data: candidates } = await supabaseGed

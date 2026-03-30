@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
 
     if (!prop) return NextResponse.json({ error: 'Proposition introuvable' }, { status: 404 });
 
-    const p = prop as Record<string, any>;
+    const p = prop as Record<string, unknown>;
 
     // Nettoyer caracteres non-WinAnsi
     const c = (str: unknown): string => {
@@ -115,7 +115,7 @@ export async function GET(req: NextRequest) {
       Y += 18;
     };
 
-    infoRow('Enfant :', `${c((p.enfant_nom || '').toUpperCase())} ${c(p.enfant_prenom || '')}`);
+    infoRow('Enfant :', `${c(String(p.enfant_nom ?? '').toUpperCase())} ${c(p.enfant_prenom)}`);
     infoRow('Sejour :', c(p.sejour_titre || p.sejour_slug || ''));
     if (p.sejour_activites) {
       w(LBL, Y, 'Activites :', regular, 10, GRAY);
@@ -123,7 +123,7 @@ export async function GET(req: NextRequest) {
       w(VAL, Y, act, bold, 9, ORANGE);
       Y += 18;
     }
-    infoRow('Periode :', `Du ${fmtDate(p.session_start)} au ${fmtDate(p.session_end)}`);
+    infoRow('Periode :', `Du ${fmtDate(p.session_start as string)} au ${fmtDate(p.session_end as string)}`);
     infoRow('Ville de depart :', c(p.ville_depart || ''));
     infoRow('N. agrement DSCS :', c(p.agrement_dscs || '069ORG0667'));
 

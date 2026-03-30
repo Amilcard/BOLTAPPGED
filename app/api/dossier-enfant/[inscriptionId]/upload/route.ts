@@ -229,7 +229,7 @@ export async function DELETE(
 // ---- Helpers ----
 
 async function verifyOwnership(
-  supabase: any,
+  supabase: ReturnType<typeof getSupabase>,
   token: string,
   inscriptionId: string
 ): Promise<{ ok: true } | { ok: false; message: string; status: number }> {

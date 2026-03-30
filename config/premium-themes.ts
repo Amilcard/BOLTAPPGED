@@ -1,4 +1,5 @@
 import { Mountain, Waves, TreePine, Zap, Bike, Gamepad2, Camera, Compass, Heart, Droplets, Fish } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 export type PremiumTheme =
   // Bleu Ocean / Nautique
@@ -16,7 +17,7 @@ interface ThemeConfig {
   color: string;
   borderColor: string;
   textColor: string;
-  icon: any; // LucideIcon type handled loosely to avoid conflicts
+  icon: LucideIcon;
 }
 
 interface ReassuranceConfig {

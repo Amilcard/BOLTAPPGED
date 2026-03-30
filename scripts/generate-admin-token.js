@@ -18,8 +18,10 @@ const jwt = require('jsonwebtoken');
 function loadSecret() {
   // Priorité : .env.local > .env (même logique que Next.js)
   const candidates = ['.env.local', '.env'];
+  const projectDir = path.resolve(__dirname, '..');
   for (const file of candidates) {
     const filepath = path.resolve(__dirname, '..', file);
+    if (!filepath.startsWith(projectDir + path.sep) && filepath !== projectDir) continue;
     if (!fs.existsSync(filepath)) continue;
     const content = fs.readFileSync(filepath, 'utf8');
     const match = content.match(/^NEXTAUTH_SECRET\s*=\s*"?([^"\r\n]+)"?/m);

@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { Building2, FileCheck, FileClock } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -142,12 +143,12 @@ export default function StructureDashboard() {
           <p className="text-gray-500 text-sm mb-6">
             {error || 'Ce code ne correspond à aucune structure active.'}
           </p>
-          <a
+          <Link
             href="/structure/login"
             className="inline-block px-6 py-2.5 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition text-sm"
           >
             Réessayer
-          </a>
+          </Link>
           <div className="mt-6 text-xs text-gray-400 space-y-1">
             <p>
               <a href="tel:0423161671" className="hover:text-primary">04 23 16 16 71</a>

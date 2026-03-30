@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { DossierEnfantPanel } from '@/components/dossier-enfant/DossierEnfantPanel';
 
@@ -140,12 +141,12 @@ export default function SuiviProPage() {
             </p>
           </div>
           <div className="print:hidden flex items-center gap-2">
-            <a
+            <Link
               href="/"
               className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition"
             >
               Découvrir des séjours
-            </a>
+            </Link>
             <button
               onClick={() => window.print()}
               className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition"

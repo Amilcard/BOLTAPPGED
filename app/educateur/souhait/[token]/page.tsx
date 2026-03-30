@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { Heart, Check, MessageCircle, X, Clock, ExternalLink } from 'lucide-react';
 
 interface Souhait {
@@ -82,9 +83,9 @@ export default function EducateurSouhaitPage() {
         <div className="text-4xl mb-4">🔒</div>
         <h1 className="text-xl font-bold text-gray-800 mb-2">Lien invalide</h1>
         <p className="text-gray-600">{error || 'Ce lien de souhait n\'est pas valide.'}</p>
-        <a href="/" className="inline-block mt-6 text-primary hover:underline text-sm">
+        <Link href="/" className="inline-block mt-6 text-primary hover:underline text-sm">
           Découvrir les séjours
-        </a>
+        </Link>
       </div>
     </div>
   );

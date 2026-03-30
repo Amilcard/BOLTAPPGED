@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 export default function GlobalError({
   reset,
@@ -37,12 +38,12 @@ export default function GlobalError({
             >
               Réessayer maintenant
             </button>
-            <a
+            <Link
               href="/"
               className="block w-full text-center text-gray-500 hover:text-primary text-sm py-2"
             >
               Retour à l&apos;accueil
-            </a>
+            </Link>
           </div>
           <p className="text-xs text-gray-400 mt-6">
             Besoin d&apos;aide&nbsp;? 04 23 16 16 71 · contact@groupeetdecouverte.fr

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
 import { z } from 'zod';
 import { sendInscriptionConfirmation, sendAdminNewInscriptionNotification, sendStructureCodeEmail, sendNewEducateurAlert } from '@/lib/email';
+import { randomBytes } from 'crypto';
 const inscriptionSchema = z.object({
   staySlug: z.string().min(1),
   sessionDate: z.string().min(1), // Date de début session
@@ -302,7 +303,7 @@ export async function POST(request: NextRequest) {
     // Phase 1 pro : organisation dédiée + dossier_ref généré côté serveur
     const now = new Date();
     const datePrefix = now.toISOString().slice(0, 10).replace(/-/g, '');
-    const randomSuffix = require('crypto').randomBytes(5).toString('hex').substring(0, 8).toUpperCase();
+    const randomSuffix = randomBytes(5).toString('hex').substring(0, 8).toUpperCase();
     const dossierRef = `DOS-${datePrefix}-${randomSuffix}`;
     // Remarques nettoyées (on ne stocke plus l'orga dedans, elle a sa propre colonne)
     const cleanRemarks = data.remarques || '';

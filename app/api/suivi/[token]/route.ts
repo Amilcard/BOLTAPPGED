@@ -69,7 +69,7 @@ export async function GET(
     // 3. Enrichir avec les noms marketing des séjours
     const rows = (dossiers || []) as unknown as Record<string, unknown>[];
     const slugs = [...new Set(rows.map(d => d.sejour_slug as string))];
-    let stayNames: Record<string, string> = Object.create(null) as Record<string, string>;
+    const stayNames: Record<string, string> = Object.create(null) as Record<string, string>;
     if (slugs.length > 0) {
       const { data: stays } = await supabase
         .from('gd_stays')

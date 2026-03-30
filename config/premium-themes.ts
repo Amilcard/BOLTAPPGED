@@ -294,7 +294,7 @@ const THEME_LOOKUP: Record<string, string> = Object.keys(THEME_STYLES).reduce((a
 }, {} as Record<string, string>);
 
 export function getThemeStyle(theme: string) {
-  const raw = theme?.toUpperCase() || '';
+  const raw = theme.toUpperCase() || '';
   // Try exact match first, then accent-stripped match
   return THEME_STYLES[raw] || THEME_STYLES[THEME_LOOKUP[stripAccents(raw)] || ''] || THEME_STYLES.ALTITUDE;
 }
@@ -306,7 +306,7 @@ const REASSURANCE_LOOKUP: Record<string, string> = Object.keys(REASSURANCE_BLOCK
 }, {} as Record<string, string>);
 
 export function getReassurancePoints(theme: string) {
-  const raw = theme?.toUpperCase() || 'DEFAULT';
+  const raw = theme.toUpperCase() || 'DEFAULT';
   const stripped = stripAccents(raw);
 
   // Check exact match first, then accent-stripped match

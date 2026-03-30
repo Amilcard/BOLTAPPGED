@@ -136,7 +136,7 @@ export default function SuiviProPage() {
           <div>
             <h1 className="text-lg font-bold">Groupe &amp; Découverte</h1>
             <p className="text-sm text-white/70 print:text-gray-500">
-              {data?.referent?.nom ? `Mon espace de suivi — ${data.referent.nom}` : 'Mon espace de suivi'}
+              {data.referent?.nom ? `Mon espace de suivi — ${data.referent.nom}` : 'Mon espace de suivi'}
             </p>
           </div>
           <div className="print:hidden flex items-center gap-2">

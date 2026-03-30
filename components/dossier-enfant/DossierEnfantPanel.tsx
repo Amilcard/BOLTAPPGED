@@ -145,7 +145,7 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
   const TABS = BASE_TABS;
 
   // Progression — 4 blocs fixes obligatoires (PJ exclues du compteur)
-  const hasPJ = (dossier?.documents_joints?.length ?? 0) > 0;
+  const hasPJ = (dossier?.documents_joints.length ?? 0) > 0;
   const totalDocs = 4;
   const completedCount = dossier
     ? [
@@ -434,7 +434,7 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
               {/* Bouton envoi GED — visible dès que le dossier existe */}
               {dossier?.exists && (
                 <div className="mt-6 pt-4 border-t border-gray-200">
-                  {(alreadySent || !!dossier?.ged_sent_at) ? (
+                  {(alreadySent || !!dossier.ged_sent_at) ? (
                     <div data-testid="bandeau-envoye" className="p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800 font-medium text-center">
                       Votre dossier a bien été envoyé à l'équipe Groupe &amp; Découverte.
                     </div>

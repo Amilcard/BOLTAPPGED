@@ -121,6 +121,9 @@ export async function POST(req: NextRequest) {
       { expiresIn: '8h' }
     );
 
+    // Reset rate limit après connexion réussie
+    getSupabaseAdmin().from('gd_login_attempts').delete().eq('ip', ip);
+
     const response = NextResponse.json({ ok: true });
     response.cookies.set('gd_session', token, {
       httpOnly: true,

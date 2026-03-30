@@ -93,6 +93,13 @@ export async function POST(request: NextRequest) {
       .eq('city_departure', data.cityDeparture)
       .limit(1);
 
+    if (priceErr1) {
+      console.error('Price DB error (tentative 1):', priceErr1);
+      return NextResponse.json(
+        { error: { code: 'PRICE_NOT_FOUND', message: 'Impossible de vérifier le prix pour cette session.' } },
+        { status: 400 }
+      );
+    }
     if (priceRows1 && priceRows1.length > 0) {
       priceRow = priceRows1[0];
     } else {
@@ -308,7 +315,7 @@ export async function POST(request: NextRequest) {
       .eq('sejour_slug', data.staySlug)
       .eq('session_date', normalizedDate)
       .eq('jeune_date_naissance', data.childBirthDate)
-      .eq('status', 'en_attente')
+      .not('status', 'eq', 'annule')
       .maybeSingle();
 
     if (existing) {
@@ -339,53 +346,66 @@ export async function POST(request: NextRequest) {
         structurePendingName = data.structureName;
       }
     } else {
-      // Pas de code → vérifier s'il existe déjà des structures sur le même CP
-      const { data: existingOnCP } = await supabase
+      // Pas de code → chercher structure existante par nom + CP (déduplication)
+      const { data: existingStruct } = await supabase
         .from('gd_structures')
-        .select('id, name, code, city')
+        .select('id')
+        .ilike('name', data.structureName)
         .eq('postal_code', data.structurePostalCode)
-        .eq('status', 'active');
+        .eq('status', 'active')
+        .maybeSingle();
 
-      // Créer la structure automatiquement
-      const { data: newStruct, error: structErr } = await supabase
-        .from('gd_structures')
-        .insert({
-          name: data.structureName,
-          address: data.structureAddress || null,
-          postal_code: data.structurePostalCode,
-          city: data.structureCity,
-          type: data.structureType || null,
-          email: data.structureEmail || null,
-          domain: null,  // Pas de domaine automatique en Phase 1
-          created_by_email: data.email,
-        })
-        .select('id, code')
-        .single();
-
-      if (newStruct && !structErr) {
-        structureId = newStruct.id;
-        // Envoyer le code par email à l'éducateur (fire-and-forget)
-        const codeRecipient = data.structureEmail || data.email;
-        sendStructureCodeEmail({
-          recipientEmail: codeRecipient,
-          structureName: data.structureName,
-          structureCode: newStruct.code,
-          educateurPrenom: data.socialWorkerName,
-        }).catch((err) => console.error('[inscriptions] sendStructureCodeEmail failed:', err));
-
-        // Si des structures existaient déjà sur ce CP → alerte admin
-        if (existingOnCP && existingOnCP.length > 0) {
-          sendNewEducateurAlert({
-            existingStructures: existingOnCP as Array<{ name: string; code: string; city: string }>,
-            newEducateurNom: data.socialWorkerName,
-            newEducateurEmail: data.email,
-            structureDeclaredName: data.structureName,
-            postalCode: data.structurePostalCode,
-          }).catch((err) => console.error('[inscriptions] sendNewEducateurAlert failed:', err));
-        }
+      if (existingStruct) {
+        structureId = existingStruct.id;
       } else {
-        console.error('[inscriptions] Erreur création structure:', structErr);
-        structurePendingName = data.structureName;
+        // Structures sur même CP (pour alerte admin si doublon potentiel)
+        const { data: existingOnCP } = await supabase
+          .from('gd_structures')
+          .select('id, name, code, city')
+          .eq('postal_code', data.structurePostalCode)
+          .eq('status', 'active');
+
+        // Créer la structure automatiquement
+        const { data: newStruct, error: structErr } = await supabase
+          .from('gd_structures')
+          .insert({
+            name: data.structureName,
+            address: data.structureAddress || null,
+            postal_code: data.structurePostalCode,
+            city: data.structureCity,
+            type: data.structureType || null,
+            email: data.structureEmail || null,
+            domain: null,  // Pas de domaine automatique en Phase 1
+            created_by_email: data.email,
+          })
+          .select('id, code')
+          .single();
+
+        if (newStruct && !structErr) {
+          structureId = newStruct.id;
+          // Envoyer le code par email à l'éducateur (fire-and-forget)
+          const codeRecipient = data.structureEmail || data.email;
+          sendStructureCodeEmail({
+            recipientEmail: codeRecipient,
+            structureName: data.structureName,
+            structureCode: newStruct.code,
+            educateurPrenom: data.socialWorkerName,
+          }).catch((err) => console.error('[inscriptions] sendStructureCodeEmail failed:', err));
+
+          // Si des structures existaient déjà sur ce CP → alerte admin
+          if (existingOnCP && existingOnCP.length > 0) {
+            sendNewEducateurAlert({
+              existingStructures: existingOnCP as Array<{ name: string; code: string; city: string }>,
+              newEducateurNom: data.socialWorkerName,
+              newEducateurEmail: data.email,
+              structureDeclaredName: data.structureName,
+              postalCode: data.structurePostalCode,
+            }).catch((err) => console.error('[inscriptions] sendNewEducateurAlert failed:', err));
+          }
+        } else {
+          console.error('[inscriptions] Erreur création structure:', structErr);
+          structurePendingName = data.structureName;
+        }
       }
     }
 

@@ -70,15 +70,18 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Sauvegarder Payment Intent ID en DB
-    const { error: updateError } = await supabase
+    // Sauvegarder Payment Intent ID en DB — atomique : WHERE stripe_payment_intent_id IS NULL
+    // Évite la race condition si deux requêtes simultanées créent deux intents
+    const { data: updatedRows, error: updateError } = await supabase
       .from('gd_inscriptions')
       .update({
         stripe_payment_intent_id: paymentIntent.id,
         payment_method: 'stripe',
         payment_status: 'pending_payment',
       })
-      .eq('id', inscriptionId);
+      .eq('id', inscriptionId)
+      .is('stripe_payment_intent_id', null)
+      .select('stripe_payment_intent_id');
 
     if (updateError) {
       console.error('Error updating inscription:', updateError);
@@ -86,6 +89,20 @@ export async function POST(req: NextRequest) {
         { error: 'Failed to update inscription' },
         { status: 500 }
       );
+    }
+
+    // Si 0 lignes mises à jour → une autre requête a déjà écrit un intent, réutiliser
+    if (!updatedRows || updatedRows.length === 0) {
+      const { data: refreshed } = await supabase
+        .from('gd_inscriptions')
+        .select('stripe_payment_intent_id')
+        .eq('id', inscriptionId)
+        .single();
+      if (refreshed?.stripe_payment_intent_id) {
+        const existing = await stripe.paymentIntents.retrieve(refreshed.stripe_payment_intent_id);
+        return NextResponse.json({ clientSecret: existing.client_secret, paymentIntentId: existing.id });
+      }
+      return NextResponse.json({ error: 'Concurrent request conflict' }, { status: 409 });
     }
 
     return NextResponse.json({

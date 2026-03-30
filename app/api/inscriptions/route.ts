@@ -17,7 +17,7 @@ const inscriptionSchema = z.object({
   optionsEducatives: z.string().optional(),
   remarques: z.string().optional(),
   priceTotal: z.number().min(0),
-  consent: z.boolean().refine(v => v === true, { message: 'Consentement requis' }),
+  consent: z.boolean().refine(v => v, { message: 'Consentement requis' }),
   paymentMethod: z.enum(['card', 'bank_transfer', 'cheque', 'transfer', 'check']).optional().default('bank_transfer'),
   // Champs structure (Phase 1 espace structure)
   structureCode: z.string().regex(/^[A-Z0-9]{6}$/).optional(),  // Code 6 chars si connu

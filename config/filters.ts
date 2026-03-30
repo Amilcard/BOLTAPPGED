@@ -66,7 +66,7 @@ export function roundBudgetToStep(value: number, step: number = BUDGET_FALLBACK.
 
 // Calculate budget range from stays (Option A)
 export function calculateBudgetRange(prices: number[]): { min: number; max: number; step: number } {
-  const validPrices = prices.filter((p) => p != null && p > 0);
+  const validPrices = prices.filter((p) => p > 0);
 
   if (validPrices.length === 0) {
     return { min: BUDGET_FALLBACK.MIN, max: BUDGET_FALLBACK.MAX, step: BUDGET_FALLBACK.STEP };

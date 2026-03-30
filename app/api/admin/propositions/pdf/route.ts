@@ -207,8 +207,8 @@ export async function GET(req: NextRequest) {
         'Content-Disposition': `inline; filename="${filename}"`,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('PDF generation error:', error);
-    return NextResponse.json({ error: error.message || 'Erreur generation PDF' }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Erreur generation PDF' }, { status: 500 });
   }
 }

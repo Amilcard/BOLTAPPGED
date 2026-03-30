@@ -37,10 +37,11 @@ export async function POST(req: NextRequest) {
         sig as string,
         webhookSecret
       );
-    } catch (err: any) {
-      console.error('Webhook signature verification failed:', err.message);
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Signature invalide';
+      console.error('Webhook signature verification failed:', errMsg);
       return NextResponse.json(
-        { error: `Webhook Error: ${err.message}` },
+        { error: `Webhook Error: ${errMsg}` },
         { status: 400 }
       );
     }
@@ -176,10 +177,10 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ received: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Webhook error:', error);
     return NextResponse.json(
-      { error: error.message || 'Webhook processing failed' },
+      { error: error instanceof Error ? error.message : 'Webhook processing failed' },
       { status: 500 }
     );
   }

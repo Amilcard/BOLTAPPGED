@@ -24,7 +24,7 @@ export default async function RecherchePage() {
     if (!sessionsMap.has(row.stay_slug)) {
       sessionsMap.set(row.stay_slug, []);
     }
-    sessionsMap.get(row.stay_slug)!.push({
+    sessionsMap.get(row.stay_slug)?.push({
       age_min: row.age_min ?? 0,
       age_max: row.age_max ?? 0,
       start_date: row.start_date ?? '',

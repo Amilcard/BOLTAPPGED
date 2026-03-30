@@ -4,6 +4,11 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+function validateUUID(s: string): string | null {
+  const match = UUID_RE.exec(s);
+  return match ? match[0] : null;
+}
+
 export interface DossierEnfant {
   exists: boolean;
   inscription_id?: string;
@@ -48,13 +53,13 @@ export function useDossierEnfant(inscriptionId: string, token: string): UseDossi
   const savedTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const load = useCallback(async () => {
-    if (!inscriptionId || !token) return;
-    if (!UUID_RE.test(inscriptionId) || !UUID_RE.test(token)) return;
+    const safeId = validateUUID(inscriptionId);
+    const safeToken = validateUUID(token);
+    if (!safeId || !safeToken) return;
     setLoading(true);
     setError(null);
     try {
-      // nosemgrep: javascript.lang.security.audit.ssrf.http-request.js-ssrf -- relative URL, same origin
-      const res = await fetch(`/api/dossier-enfant/${encodeURIComponent(inscriptionId)}?token=${encodeURIComponent(token)}`);
+      const res = await fetch(`/api/dossier-enfant/${safeId}?token=${safeToken}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body?.error?.message || 'Erreur de chargement');
@@ -82,9 +87,9 @@ export function useDossierEnfant(inscriptionId: string, token: string): UseDossi
     if (savedTimeout.current) clearTimeout(savedTimeout.current);
 
     try {
-      if (!UUID_RE.test(inscriptionId)) throw new Error('ID invalide');
-      // nosemgrep: javascript.lang.security.audit.ssrf.http-request.js-ssrf -- relative URL, same origin
-      const res = await fetch(`/api/dossier-enfant/${encodeURIComponent(inscriptionId)}`, {
+      const safeId = validateUUID(inscriptionId);
+      if (!safeId) throw new Error('ID invalide');
+      const res = await fetch(`/api/dossier-enfant/${safeId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, bloc, data, completed }),

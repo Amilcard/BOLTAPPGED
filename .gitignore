@@ -64,3 +64,14 @@ supabase_security_fix.sql
 
 # documents légaux (données sensibles)
 Documents_Legaux/
+
+# tooling IA local
+.ai-workspace/
+.claude/agent-memory/
+
+# fichiers temporaires
+.tmp-check.ts
+
+# build output & DB locale
+out/
+prisma/dev.db

@@ -147,7 +147,9 @@ export default function AdminStructures() {
       selectedId = matchingStructures[0].id;
     } else if (structId) {
       const idx = parseInt(structId) - 1;
-      if (matchingStructures[idx]) selectedId = matchingStructures[idx].id;
+      if (idx >= 0 && idx < matchingStructures.length) {
+        selectedId = matchingStructures[idx].id;
+      }
     }
 
     if (!selectedId) return;

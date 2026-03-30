@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
     if (recentRes.data) {
       for (const row of recentRes.data as unknown as { created_at: string }[]) {
         const day = row.created_at?.slice(0, 10);
-        if (day && day in recentByDay) {
+        if (day && Object.prototype.hasOwnProperty.call(recentByDay, day)) {
           recentByDay[day]++;
         }
       }

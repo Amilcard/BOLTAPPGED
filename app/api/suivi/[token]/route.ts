@@ -86,10 +86,13 @@ export async function GET(
     // 4. Mapper pour la vue pro (champs exposés uniquement)
     const result = rows.map(d => {
       const slug = d.sejour_slug as string;
+      const sejourNom = Object.prototype.hasOwnProperty.call(stayNames, slug)
+        ? stayNames[slug]
+        : slug.replace(/-/g, ' ');
       return {
         id: d.id,
         dossierRef: d.dossier_ref,
-        sejourNom: stayNames[slug] || slug.replace(/-/g, ' '),
+        sejourNom,
         sejourSlug: slug,
         sessionDate: d.session_date,
         cityDeparture: d.city_departure,
@@ -197,7 +200,7 @@ export async function PATCH(
       },
     };
 
-    if (!Object.prototype.hasOwnProperty.call(editableFields, field) || !editableFields[field]) {
+    if (!Object.prototype.hasOwnProperty.call(editableFields, field)) {
       return NextResponse.json(
         { error: { code: 'FIELD_NOT_ALLOWED', message: 'Ce champ n\'est pas modifiable.' } },
         { status: 403 }

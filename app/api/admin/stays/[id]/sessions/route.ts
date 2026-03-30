@@ -34,7 +34,7 @@ export async function GET(
       stayId: s.stay_slug,
       startDate: s.start_date,
       endDate: s.end_date,
-      seatsTotal: (s.seats_total as number) ?? 0,
+      seatsTotal: s.seats_total as number,
       seatsLeft: (s.seats_left as number) ?? -1,
     }));
 

@@ -260,7 +260,7 @@ function getCompletedColumn(bloc: string): string | null {
     fiche_liaison_jeune: 'liaison_completed',
     fiche_renseignements: 'renseignements_completed',
   };
-  return map[bloc] || null;
+  return Object.prototype.hasOwnProperty.call(map, bloc) ? map[bloc] : null;
 }
 
 async function verifyOwnership(

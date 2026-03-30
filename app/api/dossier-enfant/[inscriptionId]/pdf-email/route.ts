@@ -8,6 +8,8 @@ const DOC_LABELS: Record<string, string> = {
   liaison: 'Fiche de liaison jeune',
 };
 
+const EMAIL_FROM = 'Groupe & Découverte <noreply@groupeetdecouverte.fr>' as const;
+
 /**
  * POST /api/dossier-enfant/[inscriptionId]/pdf-email
  * Génère le PDF et l'envoie par email au référent.
@@ -77,7 +79,8 @@ export async function POST(
     }
 
     const insc = inscription as Record<string, string>;
-    const fileName = `${DOC_LABELS[type].replace(/ /g, '_')}_${insc.jeune_prenom}_${insc.jeune_nom}.pdf`;
+    const docLabel = Object.prototype.hasOwnProperty.call(DOC_LABELS, type) ? DOC_LABELS[type] : type;
+    const fileName = `${docLabel.replace(/ /g, '_')}_${insc.jeune_prenom}_${insc.jeune_nom}.pdf`;
 
     // Envoi via Resend avec pièce jointe
     const resendRes = await fetch('https://api.resend.com/emails', {
@@ -87,9 +90,9 @@ export async function POST(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Groupe & Découverte <noreply@groupeetdecouverte.fr>',
+        from: EMAIL_FROM,
         to: insc.referent_email,
-        subject: `Votre document : ${DOC_LABELS[type]} — ${insc.jeune_prenom} ${insc.jeune_nom}`,
+        subject: `Votre document : ${docLabel} — ${insc.jeune_prenom} ${insc.jeune_nom}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
@@ -97,7 +100,7 @@ export async function POST(
             </div>
             <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
               <p>Bonjour ${insc.referent_nom || ''},</p>
-              <p>Vous trouverez en pièce jointe le document <strong>${DOC_LABELS[type]}</strong> concernant <strong>${insc.jeune_prenom} ${insc.jeune_nom}</strong>.</p>
+              <p>Vous trouverez en pièce jointe le document <strong>${docLabel}</strong> concernant <strong>${insc.jeune_prenom} ${insc.jeune_nom}</strong>.</p>
               <p style="color: #6b7280; font-size: 14px;">Ce document a été envoyé suite à votre demande depuis l'espace de suivi.</p>
               <p style="margin-top: 24px; color: #6b7280; font-size: 13px;">
                 Une question ? Contactez-nous au 04 23 16 16 71 ou à contact@groupeetdecouverte.fr

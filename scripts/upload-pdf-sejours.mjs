@@ -15,7 +15,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync, readdirSync } from 'fs';
-import { join, basename } from 'path';
+import { join, basename, resolve } from 'path';
 
 // ── Config ──────────────────────────────────────────────────────────────────
 // ⚠️  Ne JAMAIS hardcoder de secrets ici — utiliser les variables d'environnement
@@ -79,7 +79,9 @@ if (staysErr) {
 console.log(`   ${stays.length} séjours trouvés en base.\n`);
 
 // Indexer par marketing_title pour lookup rapide (= titre affiché dans l'app)
-const staysByTitle = Object.fromEntries(stays.map(s => [s.marketing_title?.trim()?.toUpperCase(), s]));
+const staysByTitle = Object.fromEntries(
+  stays.map(s => [s.marketing_title?.trim()?.toUpperCase(), s]).filter(([key]) => key)
+);
 
 // 2. Vérifier / créer le bucket
 if (!DRY_RUN) {
@@ -102,7 +104,7 @@ let ok = 0, skipped = 0, errors = 0;
 for (const { title, pdf } of MAPPING) {
   const pdfPath  = join(PDF_FOLDER, pdf);
   const stayKey  = title.toUpperCase();
-  const stay     = staysByTitle[stayKey];
+  const stay     = Object.prototype.hasOwnProperty.call(staysByTitle, stayKey) ? staysByTitle[stayKey] : null;
 
   process.stdout.write(`  [${title}]\n`);
 
@@ -116,7 +118,11 @@ for (const { title, pdf } of MAPPING) {
   // Vérifier que le fichier PDF existe localement
   let fileBuffer;
   try {
-    fileBuffer = readFileSync(pdfPath);
+    const resolvedPath = resolve(pdfPath);
+    if (!resolvedPath.startsWith(resolve(PDF_FOLDER))) {
+      throw new Error(`Invalid path: ${pdfPath}`);
+    }
+    fileBuffer = readFileSync(resolvedPath);
   } catch {
     console.log(`    ❌ Fichier PDF introuvable : ${pdfPath}\n`);
     errors++;

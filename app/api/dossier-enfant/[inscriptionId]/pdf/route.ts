@@ -96,15 +96,15 @@ export async function GET(
       || '';
 
     // Charger le template PDF — path traversal guard
-    const templatesDir = path.join(process.cwd(), 'public', 'templates');
-    const templatePath = path.join(templatesDir, TEMPLATE_FILES[docType]);
-    if (!templatePath.startsWith(templatesDir + path.sep)) {
+    const baseDir = path.resolve(process.cwd(), 'public', 'templates');
+    const resolvedPath = path.resolve(baseDir, TEMPLATE_FILES[docType]);
+    if (!resolvedPath.startsWith(baseDir)) {
       return NextResponse.json(
         { error: { code: 'INVALID_PATH', message: 'Chemin de template invalide.' } },
         { status: 400 }
       );
     }
-    const templateBytes = await readFile(templatePath);
+    const templateBytes = await readFile(resolvedPath);
     const pdfDoc = await PDFDocument.load(templateBytes);
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
@@ -423,10 +423,12 @@ export async function GET(
       liaison: `Fiche_Liaison_${inscription.jeune_prenom}_${inscription.jeune_nom}.pdf`,
     };
 
+    const fileName = Object.prototype.hasOwnProperty.call(fileNames, docType) ? fileNames[docType] : `document_${inscription.jeune_prenom}_${inscription.jeune_nom}.pdf`;
+
     return new NextResponse(pdfBytes, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${fileNames[docType]}"`,
+        'Content-Disposition': `attachment; filename="${fileName}"`,
       },
     });
   } catch (error) {

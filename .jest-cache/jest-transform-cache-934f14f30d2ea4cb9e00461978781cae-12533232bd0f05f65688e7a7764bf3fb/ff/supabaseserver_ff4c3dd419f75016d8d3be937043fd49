@@ -1,0 +1,42 @@
+6e05cb65383a38d4f9ab5131ab86208d
+"use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+function _export(target, all) {
+    for(var name in all)Object.defineProperty(target, name, {
+        enumerable: true,
+        get: all[name]
+    });
+}
+_export(exports, {
+    getSupabase: function() {
+        return getSupabase;
+    },
+    getSupabaseAdmin: function() {
+        return getSupabaseAdmin;
+    }
+});
+const _supabasejs = require("@supabase/supabase-js");
+/**
+ * Client Supabase côté serveur (Service Role Key).
+ * Remplace les ~25 fonctions getSupabase() / getSupabaseAdmin() dupliquées
+ * dans chaque route API.
+ *
+ * Usage :
+ *   import { getSupabaseAdmin } from '@/lib/supabase-server';
+ *   const supabase = getSupabaseAdmin();
+ */ let _client = null;
+function getSupabaseAdmin() {
+    if (_client) return _client;
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) {
+        throw new Error("❌ NEXT_PUBLIC_SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY manquante.\n" + "V\xe9rifiez vos variables d'environnement (.env.local ou Vercel).");
+    }
+    _client = (0, _supabasejs.createClient)(url, key);
+    return _client;
+}
+const getSupabase = getSupabaseAdmin;
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi9zZXNzaW9ucy9iZWF1dGlmdWwtbWFnaWNhbC1hcmNoaW1lZGVzL21udC9HRURfQVBQL2xpYi9zdXBhYmFzZS1zZXJ2ZXIudHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgY3JlYXRlQ2xpZW50LCB0eXBlIFN1cGFiYXNlQ2xpZW50IH0gZnJvbSAnQHN1cGFiYXNlL3N1cGFiYXNlLWpzJztcblxuLyoqXG4gKiBDbGllbnQgU3VwYWJhc2UgY8O0dMOpIHNlcnZldXIgKFNlcnZpY2UgUm9sZSBLZXkpLlxuICogUmVtcGxhY2UgbGVzIH4yNSBmb25jdGlvbnMgZ2V0U3VwYWJhc2UoKSAvIGdldFN1cGFiYXNlQWRtaW4oKSBkdXBsaXF1w6llc1xuICogZGFucyBjaGFxdWUgcm91dGUgQVBJLlxuICpcbiAqIFVzYWdlIDpcbiAqICAgaW1wb3J0IHsgZ2V0U3VwYWJhc2VBZG1pbiB9IGZyb20gJ0AvbGliL3N1cGFiYXNlLXNlcnZlcic7XG4gKiAgIGNvbnN0IHN1cGFiYXNlID0gZ2V0U3VwYWJhc2VBZG1pbigpO1xuICovXG5cbmxldCBfY2xpZW50OiBTdXBhYmFzZUNsaWVudCB8IG51bGwgPSBudWxsO1xuXG5leHBvcnQgZnVuY3Rpb24gZ2V0U3VwYWJhc2VBZG1pbigpOiBTdXBhYmFzZUNsaWVudCB7XG4gIGlmIChfY2xpZW50KSByZXR1cm4gX2NsaWVudDtcblxuICBjb25zdCB1cmwgPSBwcm9jZXNzLmVudi5ORVhUX1BVQkxJQ19TVVBBQkFTRV9VUkw7XG4gIGNvbnN0IGtleSA9IHByb2Nlc3MuZW52LlNVUEFCQVNFX1NFUlZJQ0VfUk9MRV9LRVk7XG5cbiAgaWYgKCF1cmwgfHwgIWtleSkge1xuICAgIHRocm93IG5ldyBFcnJvcihcbiAgICAgICfinYwgTkVYVF9QVUJMSUNfU1VQQUJBU0VfVVJMIG91IFNVUEFCQVNFX1NFUlZJQ0VfUk9MRV9LRVkgbWFucXVhbnRlLlxcbicgK1xuICAgICAgJ1bDqXJpZmlleiB2b3MgdmFyaWFibGVzIGRcXCdlbnZpcm9ubmVtZW50ICguZW52LmxvY2FsIG91IFZlcmNlbCkuJ1xuICAgICk7XG4gIH1cblxuICBfY2xpZW50ID0gY3JlYXRlQ2xpZW50KHVybCwga2V5KTtcbiAgcmV0dXJuIF9jbGllbnQ7XG59XG5cbi8vIEFsaWFzIHBvdXIgY29tcGF0aWJpbGl0w6kgYXZlYyBsZXMgcm91dGVzIHF1aSB1dGlsaXNhaWVudCBnZXRTdXBhYmFzZSgpXG5leHBvcnQgY29uc3QgZ2V0U3VwYWJhc2UgPSBnZXRTdXBhYmFzZUFkbWluO1xuIl0sIm5hbWVzIjpbImdldFN1cGFiYXNlIiwiZ2V0U3VwYWJhc2VBZG1pbiIsIl9jbGllbnQiLCJ1cmwiLCJwcm9jZXNzIiwiZW52IiwiTkVYVF9QVUJMSUNfU1VQQUJBU0VfVVJMIiwia2V5IiwiU1VQQUJBU0VfU0VSVklDRV9ST0xFX0tFWSIsIkVycm9yIiwiY3JlYXRlQ2xpZW50Il0sIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7OztJQWdDYUEsV0FBVztlQUFYQTs7SUFsQkdDLGdCQUFnQjtlQUFoQkE7Ozs0QkFka0M7QUFFbEQ7Ozs7Ozs7O0NBUUMsR0FFRCxJQUFJQyxVQUFpQztBQUU5QixTQUFTRDtJQUNkLElBQUlDLFNBQVMsT0FBT0E7SUFFcEIsTUFBTUMsTUFBTUMsUUFBUUMsR0FBRyxDQUFDQyx3QkFBd0I7SUFDaEQsTUFBTUMsTUFBTUgsUUFBUUMsR0FBRyxDQUFDRyx5QkFBeUI7SUFFakQsSUFBSSxDQUFDTCxPQUFPLENBQUNJLEtBQUs7UUFDaEIsTUFBTSxJQUFJRSxNQUNSLHlFQUNBO0lBRUo7SUFFQVAsVUFBVVEsSUFBQUEsd0JBQVksRUFBQ1AsS0FBS0k7SUFDNUIsT0FBT0w7QUFDVDtBQUdPLE1BQU1GLGNBQWNDIn0=

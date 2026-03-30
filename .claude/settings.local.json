@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(npm run dev)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(xargs cat:*)",
+      "Bash(curl -s http://localhost:300)",
+      "Bash(curl -s http://localhost:3000/api/health)",
+      "Bash(ls:*)",
+      "Bash(curl:*)",
+      "Bash(lsof:*)",
+      "Bash(npm install:*)",
+      "Bash(grep -rn \"SUPABASE_SERVICE_ROLE_KEY\\\\|NEXTAUTH_SECRET\\\\|STRIPE_SECRET\" /Users/laidhamoudi/Dev/GED_APP/.env*)",
+      "Bash(git -C /Users/laidhamoudi/Dev/GED_APP ls-files --others --ignored --exclude-standard)",
+      "Bash(git -C /Users/laidhamoudi/Dev/GED_APP ls-files)",
+      "Bash(grep -rn \"sql\\\\|SQL\\\\|raw\\\\|rawQuery\\\\|$queryRaw\" /Users/laidhamoudi/Dev/GED_APP/app/api --include=\"*.ts\")",
+      "Bash(claude:*)",
+      "Bash(grep -n \"NEXT_PUBLIC_EMAIL_STRUCTURE_LOCKED\\\\|NEXT_PUBLIC_DEFAULT_STRUCTURE_EMAIL\\\\|NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY\\\\|STRIPE_SECRET_KEY\\\\|STRIPE_WEBHOOK_SECRET\" /Users/laidhamoudi/Dev/GED_APP/.env*)",
+      "Bash(gh pr:*)",
+      "Bash(git push:*)",
+      "Bash(gh api:*)",
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "Bash(find /Users/laidhamoudi/Dev/GED_APP/app/sejour -type f -name *.tsx -o -name *.ts)"
+    ]
+  }
+}

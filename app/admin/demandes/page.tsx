@@ -149,7 +149,8 @@ export default function AdminDemandes() {
       void fetchInscriptions();
     };
     if (DESTRUCTIVE.includes(status)) {
-      confirm(`Passer cette inscription en "${LABELS[status]}" ? Cette action est difficile à annuler.`, doChange);
+      const statusLabel = Object.prototype.hasOwnProperty.call(LABELS, status) ? LABELS[status] : status;
+      confirm(`Passer cette inscription en "${statusLabel}" ? Cette action est difficile à annuler.`, doChange);
     } else {
       void doChange();
     }

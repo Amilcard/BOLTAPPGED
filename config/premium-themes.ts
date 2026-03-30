@@ -287,6 +287,10 @@ export const REASSURANCE_BLOCK_CONTENT: Record<string, ReassuranceConfig> = {
 /** Strip diacritics for accent-safe comparison (DÉCOUVERTE → DECOUVERTE) */
 const stripAccents = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
+/** Safe object property access guard */
+const safeGet = <T>(obj: Record<string, T>, key: string): T | undefined =>
+  Object.prototype.hasOwnProperty.call(obj, key) ? obj[key] : undefined;
+
 /** Pre-built lookup: accent-stripped key → original THEME_STYLES key */
 const THEME_LOOKUP: Record<string, string> = Object.keys(THEME_STYLES).reduce((acc, key) => {
   acc[stripAccents(key.toUpperCase())] = key;
@@ -296,7 +300,9 @@ const THEME_LOOKUP: Record<string, string> = Object.keys(THEME_STYLES).reduce((a
 export function getThemeStyle(theme: string) {
   const raw = theme.toUpperCase() || '';
   // Try exact match first, then accent-stripped match
-  return THEME_STYLES[raw] || THEME_STYLES[THEME_LOOKUP[stripAccents(raw)] || ''] || THEME_STYLES.ALTITUDE;
+  const lookupKey = stripAccents(raw);
+  const lookupResult = safeGet(THEME_LOOKUP, lookupKey);
+  return safeGet(THEME_STYLES, raw) || safeGet(THEME_STYLES, lookupResult || '') || THEME_STYLES.ALTITUDE;
 }
 
 /** Pre-built lookup: accent-stripped key → original REASSURANCE key */
@@ -310,9 +316,10 @@ export function getReassurancePoints(theme: string) {
   const stripped = stripAccents(raw);
 
   // Check exact match first, then accent-stripped match
-  if (REASSURANCE_BLOCK_CONTENT[raw]) return REASSURANCE_BLOCK_CONTENT[raw];
-  if (REASSURANCE_LOOKUP[stripped] && REASSURANCE_BLOCK_CONTENT[REASSURANCE_LOOKUP[stripped]]) {
-    return REASSURANCE_BLOCK_CONTENT[REASSURANCE_LOOKUP[stripped]];
+  if (safeGet(REASSURANCE_BLOCK_CONTENT, raw)) return safeGet(REASSURANCE_BLOCK_CONTENT, raw)!;
+  const lookupResult = safeGet(REASSURANCE_LOOKUP, stripped);
+  if (lookupResult && safeGet(REASSURANCE_BLOCK_CONTENT, lookupResult)) {
+    return safeGet(REASSURANCE_BLOCK_CONTENT, lookupResult)!;
   }
 
   // Catégorie OCEAN/MER (all comparisons accent-stripped)

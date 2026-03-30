@@ -1,0 +1,35 @@
+a7eef57389e0a9f54d0ace1d11141344
+/**
+ * @jest-environment node
+ *
+ * Tests API — séjours
+ *
+ * NOTE : La route publique /api/stays n'existe pas encore dans l'application.
+ * Les seules routes "stays" présentes sont :
+ *   - /api/admin/stays          (admin, auth requise)
+ *   - /api/admin/stays/[id]     (admin, auth requise)
+ *   - /api/admin/stays/slug/[slug] (admin, auth requise)
+ *
+ * Ces tests sont mis en skip jusqu'à création d'une route publique /api/stays.
+ * Pour réactiver : retirer les .skip et vérifier que la route existe.
+ */ "use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+const _globals = require("@jest/globals");
+(0, _globals.describe)("API /api/stays", ()=>{
+    _globals.it.skip("retourne liste s\xe9jours avec noms CityCrunch — route /api/stays non impl\xe9ment\xe9e", ()=>{
+    // Route publique /api/stays absente — tests désactivés
+    });
+    _globals.it.skip("tous les s\xe9jours ont un slug unique — route /api/stays non impl\xe9ment\xe9e", ()=>{
+    // Route publique /api/stays absente — tests désactivés
+    });
+    _globals.it.skip("tous les s\xe9jours ont un marketing_title ou title_kids — route /api/stays non impl\xe9ment\xe9e", ()=>{
+    // Route publique /api/stays absente — tests désactivés
+    });
+    _globals.it.skip("retourne s\xe9jour sp\xe9cifique par slug — route /api/stays/[slug] non impl\xe9ment\xe9e", ()=>{
+    // Route publique /api/stays/[slug] absente — tests désactivés
+    });
+});
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi9zZXNzaW9ucy9iZWF1dGlmdWwtbWFnaWNhbC1hcmNoaW1lZGVzL21udC9HRURfQVBQL3Rlc3RzL2FwaS9zdGF5cy50ZXN0LnRzIl0sInNvdXJjZXNDb250ZW50IjpbIi8qKlxuICogQGplc3QtZW52aXJvbm1lbnQgbm9kZVxuICpcbiAqIFRlc3RzIEFQSSDigJQgc8Opam91cnNcbiAqXG4gKiBOT1RFIDogTGEgcm91dGUgcHVibGlxdWUgL2FwaS9zdGF5cyBuJ2V4aXN0ZSBwYXMgZW5jb3JlIGRhbnMgbCdhcHBsaWNhdGlvbi5cbiAqIExlcyBzZXVsZXMgcm91dGVzIFwic3RheXNcIiBwcsOpc2VudGVzIHNvbnQgOlxuICogICAtIC9hcGkvYWRtaW4vc3RheXMgICAgICAgICAgKGFkbWluLCBhdXRoIHJlcXVpc2UpXG4gKiAgIC0gL2FwaS9hZG1pbi9zdGF5cy9baWRdICAgICAoYWRtaW4sIGF1dGggcmVxdWlzZSlcbiAqICAgLSAvYXBpL2FkbWluL3N0YXlzL3NsdWcvW3NsdWddIChhZG1pbiwgYXV0aCByZXF1aXNlKVxuICpcbiAqIENlcyB0ZXN0cyBzb250IG1pcyBlbiBza2lwIGp1c3F1J8OgIGNyw6lhdGlvbiBkJ3VuZSByb3V0ZSBwdWJsaXF1ZSAvYXBpL3N0YXlzLlxuICogUG91ciByw6lhY3RpdmVyIDogcmV0aXJlciBsZXMgLnNraXAgZXQgdsOpcmlmaWVyIHF1ZSBsYSByb3V0ZSBleGlzdGUuXG4gKi9cblxuaW1wb3J0IHsgZGVzY3JpYmUsIGl0IH0gZnJvbSAnQGplc3QvZ2xvYmFscyc7XG5cbmRlc2NyaWJlKCdBUEkgL2FwaS9zdGF5cycsICgpID0+IHtcbiAgaXQuc2tpcCgncmV0b3VybmUgbGlzdGUgc8Opam91cnMgYXZlYyBub21zIENpdHlDcnVuY2gg4oCUIHJvdXRlIC9hcGkvc3RheXMgbm9uIGltcGzDqW1lbnTDqWUnLCAoKSA9PiB7XG4gICAgLy8gUm91dGUgcHVibGlxdWUgL2FwaS9zdGF5cyBhYnNlbnRlIOKAlCB0ZXN0cyBkw6lzYWN0aXbDqXNcbiAgfSk7XG5cbiAgaXQuc2tpcCgndG91cyBsZXMgc8Opam91cnMgb250IHVuIHNsdWcgdW5pcXVlIOKAlCByb3V0ZSAvYXBpL3N0YXlzIG5vbiBpbXBsw6ltZW50w6llJywgKCkgPT4ge1xuICAgIC8vIFJvdXRlIHB1YmxpcXVlIC9hcGkvc3RheXMgYWJzZW50ZSDigJQgdGVzdHMgZMOpc2FjdGl2w6lzXG4gIH0pO1xuXG4gIGl0LnNraXAoJ3RvdXMgbGVzIHPDqWpvdXJzIG9udCB1biBtYXJrZXRpbmdfdGl0bGUgb3UgdGl0bGVfa2lkcyDigJQgcm91dGUgL2FwaS9zdGF5cyBub24gaW1wbMOpbWVudMOpZScsICgpID0+IHtcbiAgICAvLyBSb3V0ZSBwdWJsaXF1ZSAvYXBpL3N0YXlzIGFic2VudGUg4oCUIHRlc3RzIGTDqXNhY3RpdsOpc1xuICB9KTtcblxuICBpdC5za2lwKCdyZXRvdXJuZSBzw6lqb3VyIHNww6ljaWZpcXVlIHBhciBzbHVnIOKAlCByb3V0ZSAvYXBpL3N0YXlzL1tzbHVnXSBub24gaW1wbMOpbWVudMOpZScsICgpID0+IHtcbiAgICAvLyBSb3V0ZSBwdWJsaXF1ZSAvYXBpL3N0YXlzL1tzbHVnXSBhYnNlbnRlIOKAlCB0ZXN0cyBkw6lzYWN0aXbDqXNcbiAgfSk7XG59KTtcbiJdLCJuYW1lcyI6WyJkZXNjcmliZSIsIml0Iiwic2tpcCJdLCJtYXBwaW5ncyI6IkFBQUE7Ozs7Ozs7Ozs7Ozs7Q0FhQzs7Ozt5QkFFNEI7QUFFN0JBLElBQUFBLGlCQUFRLEVBQUMsa0JBQWtCO0lBQ3pCQyxXQUFFLENBQUNDLElBQUksQ0FBQywyRkFBa0Y7SUFDeEYsdURBQXVEO0lBQ3pEO0lBRUFELFdBQUUsQ0FBQ0MsSUFBSSxDQUFDLG1GQUEwRTtJQUNoRix1REFBdUQ7SUFDekQ7SUFFQUQsV0FBRSxDQUFDQyxJQUFJLENBQUMscUdBQTRGO0lBQ2xHLHVEQUF1RDtJQUN6RDtJQUVBRCxXQUFFLENBQUNDLElBQUksQ0FBQyw2RkFBaUY7SUFDdkYsOERBQThEO0lBQ2hFO0FBQ0YifQ==

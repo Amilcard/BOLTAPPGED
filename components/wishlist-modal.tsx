@@ -236,10 +236,9 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
               value={emailStructure}
               onChange={(e) => setEmailStructure(e.target.value)}
               onBlur={() => {
-                const finalEmail = emailLocked ? defaultEmail : emailStructure;
-                if (!finalEmail.trim()) {
+                if (!emailStructure.trim()) {
                   setErrors(prev => ({ ...prev, email: 'L\'email de ton éducateur est requis.' }));
-                } else if (!validateEmail(finalEmail)) {
+                } else if (!validateEmail(emailStructure)) {
                   setErrors(prev => ({ ...prev, email: 'Il manque le @ ou le domaine dans l\'email.' }));
                 } else {
                   setErrors(prev => { const { email, ...rest } = prev; return rest; });

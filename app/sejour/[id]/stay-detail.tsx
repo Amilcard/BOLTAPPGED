@@ -163,7 +163,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
         setShareSuccess(true);
         setTimeout(() => setShareSuccess(false), 2000);
       } catch {
-        window.location.href = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`${text}\n\n${url}`)}`;
+        window.open(`mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`${text}\n\n${url}`)}`, '_self');
       }
     }
   };

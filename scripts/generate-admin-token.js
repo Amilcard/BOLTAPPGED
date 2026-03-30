@@ -16,24 +16,17 @@ const jwt = require('jsonwebtoken');
 
 // ── Charger NEXTAUTH_SECRET depuis .env / .env.local ──
 function loadSecret() {
+  // Priorité : .env.local > .env (même logique que Next.js)
+  const candidates = ['.env.local', '.env'];
   const projectDir = path.resolve(__dirname, '..');
-
-  // Chemin 1 : .env.local (prioritaire)
-  const envLocalPath = path.resolve(__dirname, '../.env.local');
-  if (envLocalPath.startsWith(projectDir + path.sep) && fs.existsSync(envLocalPath)) {
-    const content = fs.readFileSync(envLocalPath, 'utf8');
+  for (const file of candidates) {
+    const filepath = path.resolve(__dirname, '..', file);
+    if (!filepath.startsWith(projectDir + path.sep) && filepath !== projectDir) continue;
+    if (!fs.existsSync(filepath)) continue;
+    const content = fs.readFileSync(filepath, 'utf8');
     const match = content.match(/^NEXTAUTH_SECRET\s*=\s*"?([^"\r\n]+)"?/m);
-    if (match) return { secret: match[1], source: '.env.local' };
+    if (match) return { secret: match[1], source: file };
   }
-
-  // Chemin 2 : .env (fallback)
-  const envPath = path.resolve(__dirname, '../.env');
-  if (envPath.startsWith(projectDir + path.sep) && fs.existsSync(envPath)) {
-    const content = fs.readFileSync(envPath, 'utf8');
-    const match = content.match(/^NEXTAUTH_SECRET\s*=\s*"?([^"\r\n]+)"?/m);
-    if (match) return { secret: match[1], source: '.env' };
-  }
-
   return null;
 }
 

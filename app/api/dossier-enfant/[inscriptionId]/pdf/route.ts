@@ -97,16 +97,14 @@ export async function GET(
 
     // Charger le template PDF — path traversal guard
     const baseDir = path.resolve(process.cwd(), 'public', 'templates');
-    const templateFilename = TEMPLATE_FILES[docType]; // static lookup — docType already validated via whitelist above
-    const resolvedPath = path.normalize(path.join(baseDir, templateFilename));
+    const resolvedPath = path.resolve(baseDir, TEMPLATE_FILES[docType]);
     if (!resolvedPath.startsWith(baseDir + path.sep)) {
       return NextResponse.json(
         { error: { code: 'INVALID_PATH', message: 'Chemin de template invalide.' } },
         { status: 400 }
       );
     }
-    const safePath = resolvedPath; // guard confirmed above
-    const templateBytes = await readFile(safePath);
+    const templateBytes = await readFile(resolvedPath);
     const pdfDoc = await PDFDocument.load(templateBytes);
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);

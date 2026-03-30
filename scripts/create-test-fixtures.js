@@ -35,7 +35,9 @@ const BASE_URL = (() => {
 const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY   = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TEST_EMAIL    = 'test-fixtures@ged-test.internal';
-const ENV_TEST_PATH = path.join(__dirname, '..', '.env.test');
+const PROJECT_DIR   = path.resolve(__dirname, '..');
+const ENV_TEST_PATH = path.resolve(__dirname, '..', '.env.test');
+if (!ENV_TEST_PATH.startsWith(PROJECT_DIR + path.sep)) throw new Error('Chemin .env.test hors projet');
 
 // Combo séjour/session/ville valide en base (vérifié le 2026-03-25)
 const FIXTURE_PAYLOAD = {
@@ -86,9 +88,11 @@ function post(url, body) {
   });
 }
 
+const ALLOWED_TABLES = ['gd_inscriptions', 'gd_dossier_enfant'];
 function supabasePatch(table, id, data) {
+  if (!ALLOWED_TABLES.includes(table)) throw new Error(`Table non autorisée: ${table}`);
   return new Promise((resolve, reject) => {
-    const parsed  = new URL(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`);
+    const parsed  = new URL(`${SUPABASE_URL}/rest/v1/${encodeURIComponent(table)}?id=eq.${encodeURIComponent(id)}`);
     const bodyStr = JSON.stringify(data);
     const options = {
       hostname: parsed.hostname,

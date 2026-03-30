@@ -18,10 +18,10 @@ type BlocName = typeof EDITABLE_BLOCS[number];
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { inscriptionId: string } }
+  { params }: { params: Promise<{ inscriptionId: string }> }
 ) {
   try {
-    const { inscriptionId } = params;
+    const { inscriptionId } = await params;
     const token = req.nextUrl.searchParams.get('token');
 
     if (!token || !inscriptionId) {
@@ -120,10 +120,10 @@ export async function GET(
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { inscriptionId: string } }
+  { params }: { params: Promise<{ inscriptionId: string }> }
 ) {
   try {
-    const { inscriptionId } = params;
+    const { inscriptionId } = await params;
     const body = await req.json();
     const { token, bloc, data, completed } = body;
 

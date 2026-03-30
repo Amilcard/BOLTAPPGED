@@ -425,7 +425,7 @@ export async function POST(request: NextRequest) {
     if (error || !inscription) {
       console.error('Supabase insert error:', error);
       return NextResponse.json(
-        { error: { code: 'INSERT_ERROR', message: 'Impossible de créer l\'inscription.', details: error?.message } },
+        { error: { code: 'INSERT_ERROR', message: 'Impossible de créer l\'inscription.' } },
         { status: 500 }
       );
     }
@@ -477,7 +477,7 @@ export async function POST(request: NextRequest) {
     const message = error instanceof Error ? error.message : 'Erreur interne';
 
     return NextResponse.json(
-      { error: { code: 'INTERNAL_ERROR', message, details: message } },
+      { error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur.' } },
       { status: 500 }
     );
   }

@@ -108,6 +108,7 @@ export async function POST(req: NextRequest) {
 
         if (error) {
           console.error('Error updating payment status:', error);
+          shouldRecordEvent = false;
         } else {
           console.log(`Payment succeeded for inscription ${inscriptionId}`);
           // Notification admin non-bloquante

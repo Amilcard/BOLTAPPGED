@@ -58,7 +58,6 @@ export async function GET(req: NextRequest) {
 
     const LEFT = 50;
     const RIGHT = width - 50;
-    const COL_RIGHT = RIGHT; // right edge for price alignment
 
     // Helper write (top-down Y)
     const w = (x: number, y: number, text: string, font = regular, size = 10, color = DARK) => {

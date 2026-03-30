@@ -8,19 +8,19 @@ import {
   MapPin,
   Bus,
   Check,
-  Info,
+
   Shield,
-  Heart,
-  Star,
-  Calendar,
+
+
+
   Users,
-  Ruler,
+
   ChevronRight,
   ChevronDown,
   Home,
   Tag,
   Share2,
-  ArrowLeft,
+
   X,
   Clock,
   FileText,
@@ -29,7 +29,7 @@ import {
 import { getReassurancePoints, getThemeStyle } from '@/config/premium-themes';
 import type { Stay, StaySession, RawSessionData } from '@/lib/types';
 import { formatDateLong, getWishlistMotivation, addToWishlist } from '@/lib/utils';
-import { getPriceBreakdown, findSessionPrice, getMinSessionPrice, type EnrichmentSessionData } from '@/lib/pricing';
+import { getPriceBreakdown, findSessionPrice, getMinSessionPrice } from '@/lib/pricing';
 import { useApp } from '@/components/providers';
 import { WishlistModal } from '@/components/wishlist-modal';
 import { Button } from '@/components/ui/button';
@@ -399,7 +399,6 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
             <div className="ml-auto">
                {/* Badge émotion minimaliste */}
                {(() => {
-                 const EXCLUDED_DISPLAY_TAGS = ['MER', 'MONTAGNE', 'PLEIN_AIR', 'PLEIN AIR', 'DECOUVERTE'];
                  const emotionTag = stay?.emotionTag;
                  if (emotionTag) {
                    return (
@@ -580,11 +579,11 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                       return a.city.localeCompare(b.city);
                     })
                     .slice(0, 6)
-                    .map((dep, i) => {
+                    .map((dep) => {
                       const isCitySelected = preSelectedCity === dep.city;
                       return (
                         <button
-                          key={i}
+                          key={dep.city}
                           type="button"
                           onClick={() => setPreSelectedCity(dep.city)}
                           className={`px-3 py-1.5 text-xs font-medium rounded-full border-2 transition-all flex items-center gap-1.5 ${
@@ -799,11 +798,11 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   if (bIndex >= 0) return 1;
                   return a.city.localeCompare(b.city);
                 })
-                .map((dep, i) => {
+                .map((dep) => {
                   const isCitySelected = preSelectedCity === dep.city;
                   return (
                     <button
-                      key={i}
+                      key={dep.city}
                       type="button"
                       onClick={() => {
                         setPreSelectedCity(dep.city);

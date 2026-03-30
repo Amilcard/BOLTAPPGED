@@ -8,7 +8,7 @@ import {
   PERIODE_OPTIONS,
   THEMATIQUE_OPTIONS,
   BUDGET_FALLBACK,
-  roundBudgetToStep,
+
 } from '@/config/filters';
 
 export interface Filters {

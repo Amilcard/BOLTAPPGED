@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { STORAGE_KEYS, formatDate } from '@/lib/utils';
 import {
   ArrowLeft, Trash2, ExternalLink, ClipboardCopy,
-  FileCheck, FileClock, Download, Save, Loader2,
+  FileCheck, FileClock, Loader2,
 } from 'lucide-react';
 import { InscriptionSupabase, InscriptionEnriched, DossierEnfant } from '@/lib/types';
 import { useAdminUI } from '@/components/admin/admin-ui';

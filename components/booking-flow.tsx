@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, ChevronRight, ChevronLeft, Loader2, Info, AlertCircle, Calendar, MapPin, CreditCard } from 'lucide-react';
+import { Check, ChevronRight, ChevronLeft, Loader2, AlertCircle, Calendar, MapPin, CreditCard } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import type { Stay, StaySession, RawSessionData } from '@/lib/types';
-import { formatDate, formatDateLong, validateChildAge } from '@/lib/utils';
+import type { Stay, StaySession} from '@/lib/types';
+import { formatDateLong} from '@/lib/utils';
 
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
   ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
@@ -264,7 +264,6 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   }, [step2.childBirthDate, stay.ageMin, stay.ageMax, selectedSession]);
 
   // -1 = dispo illimité (UFOVAL source de vérité), 0 = complet
-  const validSessions = sessions?.filter(s => s?.seatsLeft === -1 || (s?.seatsLeft ?? 0) > 0) ?? [];
   const sessionsUnique = (sessions || []).filter((s, idx, arr) => {
     const key = `${s.startDate}-${s.endDate}`;
     return idx === arr.findIndex(x => `${x.startDate}-${x.endDate}` === key);
@@ -449,7 +448,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
         <div className="flex gap-2 mb-6">
           {[0, 1, 2, 3, 4].map(i => (
             <div
-              key={i}
+              key={`step-${i}`}
               className={`h-1 flex-1 rounded-full transition-colors ${
                 i <= step ? 'bg-secondary' : 'bg-primary-100'
               }`}
@@ -596,11 +595,11 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                   if (bIndex >= 0) return 1;
                   return a.city.localeCompare(b.city);
                 })
-                .map((city: DepartureCity, idx: number) => {
+                .map((city: DepartureCity) => {
                   const isCitySelected = selectedCity === city.city;
                   return (
                     <label
-                      key={idx}
+                      key={city.city}
                       className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
                         isCitySelected
                           ? 'border-secondary bg-secondary/5 ring-2 ring-secondary/20'

@@ -125,7 +125,6 @@ export default function AdminStructures() {
 
   // Rattachement orpheline
   const handleLink = (orphanId: string) => {
-    const structureOptions = structures.map(s => `${s.name} (${s.city} — ${s.code})`).join('\n');
     // Utiliser un prompt simple : on sélectionne la première structure qui match le CP
     const orphan = orphans.find(o => o.id === orphanId);
     if (!orphan) return;

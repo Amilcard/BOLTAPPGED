@@ -496,7 +496,6 @@ export async function POST(request: NextRequest) {
     );
   } catch (error: unknown) {
     console.error('POST /api/inscriptions error:', error);
-    const message = error instanceof Error ? error.message : 'Erreur interne';
 
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur.' } },

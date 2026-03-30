@@ -18,13 +18,12 @@ interface HeaderProps {
   variant?: 'default' | 'minimal';
 }
 
-export function Header({ variant = 'minimal' }: HeaderProps) {
+export function Header({ variant: _variant = 'minimal' }: HeaderProps) {
   const { mode, setMode, reset, mounted, isAuthenticated, authUser } = useApp();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // LOT GRAPHISME 1: App uses minimal header only, force minimal variant
-  const isMinimal = variant === 'minimal' || true; // Always minimal for search-only app
 
   // Admin link - only visible in authenticated context on admin page
   const isAdminPage = pathname?.startsWith('/admin');

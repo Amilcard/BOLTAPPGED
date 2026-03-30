@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Heart, Share2, X, Compass, Check, AlertCircle, Info, Loader2 } from 'lucide-react';
+import { Heart, Share2, X, Compass, AlertCircle, Info, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { updateWishlistMotivation, canAddRequest } from '@/lib/utils';
+import { updateWishlistMotivation} from '@/lib/utils';
 
 interface WishlistModalProps {
   isOpen: boolean;
@@ -129,7 +129,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
     }
   };
 
-  const handleMailtoConfirm = async () => {
+  const handleMailtoConfirm = () => {
     const text = motivation.trim()
       ? `Ce séjour m'intéresse : ${stayTitle}\nPourquoi : ${motivation.trim()}\n${stayUrl}`
       : `Ce séjour m'intéresse : ${stayTitle}\n${stayUrl}`;
@@ -187,7 +187,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
               if (prenom.trim().length > 0 && prenom.trim().length < 2) {
                 setErrors(prev => ({ ...prev, prenom: 'Ton prénom semble trop court.' }));
               } else {
-                setErrors(prev => { const { prenom, ...rest } = prev; return rest; });
+                setErrors(prev => { const { prenom: _prenom, ...rest } = prev; return rest; });
               }
             }}
             placeholder="Ex: Alex"
@@ -241,7 +241,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
                 } else if (!validateEmail(emailStructure)) {
                   setErrors(prev => ({ ...prev, email: 'Il manque le @ ou le domaine dans l\'email.' }));
                 } else {
-                  setErrors(prev => { const { email, ...rest } = prev; return rest; });
+                  setErrors(prev => { const { email: _email, ...rest } = prev; return rest; });
                 }
               }}
               placeholder="Ex: referent@structure.fr"
@@ -270,7 +270,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
               if (motivation.trim().length > 0 && motivation.trim().length < minMessageChars) {
                 setErrors(prev => ({ ...prev, motivation: `Ajoute un peu de détail (au moins ${minMessageChars} caractères).` }));
               } else {
-                setErrors(prev => { const { motivation, ...rest } = prev; return rest; });
+                setErrors(prev => { const { motivation: _motivation, ...rest } = prev; return rest; });
               }
             }}
             placeholder="Ex: avec qui tu veux partir, ce que tu veux découvrir, ce que tu veux apprendre, ce qui te fait envie…"

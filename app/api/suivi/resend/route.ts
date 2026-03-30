@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       priceTotal:     (latest.price_total as number) || 0,
       paymentMethod:  (latest.payment_method as string) || 'bank_transfer',
       dossierRef:     latest.dossier_ref as string,
-      suiviUrl:       `${appUrl}/suivi/${latest.suivi_token}`,
+      suiviUrl:       `${appUrl}/suivi/${latest.suivi_token as string}`,
     });
 
     return NextResponse.json({ ok: true });

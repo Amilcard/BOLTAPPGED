@@ -316,10 +316,12 @@ export function getReassurancePoints(theme: string) {
   const stripped = stripAccents(raw);
 
   // Check exact match first, then accent-stripped match
-  if (safeGet(REASSURANCE_BLOCK_CONTENT, raw)) return safeGet(REASSURANCE_BLOCK_CONTENT, raw)!;
+  const exactMatch = safeGet(REASSURANCE_BLOCK_CONTENT, raw);
+  if (exactMatch) return exactMatch;
   const lookupResult = safeGet(REASSURANCE_LOOKUP, stripped);
-  if (lookupResult && safeGet(REASSURANCE_BLOCK_CONTENT, lookupResult)) {
-    return safeGet(REASSURANCE_BLOCK_CONTENT, lookupResult)!;
+  if (lookupResult) {
+    const lookupMatch = safeGet(REASSURANCE_BLOCK_CONTENT, lookupResult);
+    if (lookupMatch) return lookupMatch;
   }
 
   // Catégorie OCEAN/MER (all comparisons accent-stripped)

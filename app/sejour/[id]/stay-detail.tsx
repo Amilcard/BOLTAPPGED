@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -22,7 +23,7 @@ import {
   ArrowLeft,
   X,
   Clock,
-  Download,   // Added based on usage in file
+  FileText,   // Icône consultation PDF (remplace Download)
 } from 'lucide-react';
 import { getReassurancePoints, getThemeStyle } from '@/config/premium-themes';
 import type { Stay, StaySession } from '@/lib/types';
@@ -33,6 +34,9 @@ import { BookingModal } from '@/components/booking-modal';
 import { WishlistModal } from '@/components/wishlist-modal';
 import { Button } from '@/components/ui/button';
 
+// Test Mode
+const IS_TEST_MODE = process.env.NEXT_PUBLIC_TEST_MODE === 'true';
+
 // Types
 type DepartureData = { city: string; extra_eur: number };
 type SessionData = { date_text: string; base_price_eur: number | null; promo_price_eur: number | null };
@@ -40,8 +44,9 @@ type EnrichmentData = { source_url: string; departures: DepartureData[]; session
 
 const PRIORITY_CITIES = ['paris', 'lyon', 'marseille', 'lille', 'bordeaux', 'rennes'];
 
-export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], price_base?: number | null, price_unit?: string, pro_price_note?: string, sourceUrl?: string | null, geoLabel?: string | null, geoPrecision?: string | null, accommodationLabel?: string | null, contentKids?: any, rawSessions?: any[], images?: string[] } }) {
+export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], price_base?: number | null, price_unit?: string, pro_price_note?: string, sourceUrl?: string | null, pdfUrl?: string | null, geoLabel?: string | null, geoPrecision?: string | null, accommodationLabel?: string | null, contentKids?: any, rawSessions?: any[], images?: string[] } }) {
   const { mode, mounted, refreshWishlist } = useApp();
+  const router = useRouter();
   const [showBooking, setShowBooking] = useState(false);
   const [showWishlistModal, setShowWishlistModal] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
@@ -53,6 +58,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
   // Enrichment data
   const stayUrl = String((stay as any)?.sourceUrl ?? "").trim();
+  const pdfUrl = (stay as any)?.pdfUrl ?? null;
   const contentKidsParsed = typeof stay?.contentKids === 'string' ? JSON.parse(stay.contentKids) : stay?.contentKids;
   const allDepartureCities: DepartureData[] = contentKidsParsed?.departureCities ?? [];
   const sessionsFormatted = contentKidsParsed?.sessionsFormatted ?? [];
@@ -83,20 +89,16 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
 
 
-  // === TITRE H1: Premium marketing_title > CityCrunch Kids > Legacy title ===
-  const displayTitle = (stay as any)?.marketingTitle || (stay as any)?.titleKids || stay?.title;
+  // === TITRE H1: CityCrunch marketing_title UNIQUEMENT — plus aucun fallback legacy UFOVAL ===
+  const displayTitle = (stay as any)?.marketingTitle || 'Séjour';
 
-  // === SOUS-TITRE H2: Premium punchline > CityCrunch Kids (universel) > Legacy descriptionShort ===
-  const displaySubtitle = (stay as any)?.punchline
-    || (stay as any)?.descriptionKids || stay?.descriptionShort || '';
+  // === SOUS-TITRE H2: CityCrunch punchline UNIQUEMENT ===
+  const displaySubtitle = (stay as any)?.punchline || '';
 
-  // === BODY: Premium expert_pitch > punchline > CityCrunch Kids > Legacy descriptionShort ===
-  // === BODY: Premium expert_pitch > punchline > CityCrunch Kids > Legacy descriptionShort ===
+  // === BODY: CityCrunch expert_pitch > punchline (jamais de legacy) ===
   let displayDesc = (stay as any)?.expertPitch
-    || (stay as any)?.descriptionMarketing // Ajout fallback intermédiaire
     || (stay as any)?.punchline
-    || (stay as any)?.descriptionKids
-    || stay?.descriptionShort;
+    || null;
 
   // PROTECTION ANTI-DUPLICATION
   // Si le Body est identique au H2 (à cause des fallbacks), on force un autre contenu
@@ -143,7 +145,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
   const handleShare = async () => {
     const url = typeof window !== 'undefined' ? window.location.href : '';
-    const title = stay?.title ?? 'Séjour';
+    const title = (stay as any)?.marketingTitle || stay?.title || 'Séjour';
     const motivation = getWishlistMotivation(slug);
     const text = motivation
       ? `Ce séjour m'intéresse : ${title}\nPourquoi : ${motivation}`
@@ -534,6 +536,22 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   ))}
                 </ol>
               )}
+
+              {/* === FICHE SÉJOUR PDF — conditionnel, zéro impact si pdfUrl null === */}
+              {pdfUrl && (
+                <div className="mt-5 pt-4 border-t border-gray-100">
+                  <a
+                    href={`/api/pdf/${stay.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border-2 border-primary/20 bg-primary/5 text-primary text-sm font-semibold hover:bg-primary/10 hover:border-primary/40 transition-all group"
+                  >
+                    <FileText className="w-4 h-4 group-hover:scale-105 transition-transform" />
+                    Consulter la fiche séjour
+                    <span className="text-xs text-primary/50 font-normal">PDF</span>
+                  </a>
+                </div>
+              )}
             </section>
 
             {/* Divider */}
@@ -611,13 +629,16 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
           {/* === SIDEBAR: SESSIONS & CTA === */}
           <div className="lg:col-span-1">
             <div className="sticky top-6 bg-white rounded-xl shadow-brand p-5">
-              <h3 className="font-bold text-gray-900 mb-3 text-sm">Sessions disponibles</h3>
+              <h3 className="font-bold text-gray-900 mb-1 text-sm">Sessions disponibles</h3>
+              {!isKids && (
+                <p className="text-xs text-primary-500 mb-3">Sélectionnez une session et une ville pour accéder à l'inscription.</p>
+              )}
               {sessions.length === 0 ? (
                 <p className="text-sm text-gray-500">Aucune session disponible</p>
               ) : (
                 <div className="space-y-2 mb-4">
                   {sessions.map(session => {
-                    const isFull = (session?.seatsLeft ?? 0) === 0;
+                    const isFull = IS_TEST_MODE ? false : (session?.seatsLeft !== -1 && (session?.seatsLeft ?? 0) <= 0);
                     const isSelected = preSelectedSessionId === session?.id;
                     return (
                       <button
@@ -647,7 +668,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                               au {formatDateLong(session?.endDate ?? '')}
                             </div>
                             <div className={`text-xs mt-1 ${isFull ? 'text-red-500' : 'text-green-600'}`}>
-                              {isFull ? 'Complet' : `${session?.seatsLeft ?? 0} places`}
+                              {isFull ? 'Complet' : IS_TEST_MODE ? 'Test - illimité' : (session?.seatsLeft === -1 ? 'Places disponibles' : session?.seatsLeft === 1 ? '1 place' : `${session?.seatsLeft ?? 0} places`)}
                             </div>
                           </div>
                         </div>
@@ -717,7 +738,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   className="w-full"
                   size="lg"
                 >
-                  Ce séjour m'intéresse
+                  Ajouter à mes souhaits
                 </Button>
               ) : (
                 <Button
@@ -725,9 +746,9 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                     const params = new URLSearchParams();
                     if (preSelectedSessionId) params.set('session', preSelectedSessionId);
                     if (preSelectedCity) params.set('ville', preSelectedCity);
-                    window.location.href = `/sejour/${slug}/reserver?${params.toString()}`;
+                    router.push(`/sejour/${slug}/reserver?${params.toString()}`);
                   }}
-                  disabled={sessions.filter(s => (s?.seatsLeft ?? 0) > 0).length === 0}
+                  disabled={!preSelectedSessionId || !preSelectedCity || (!IS_TEST_MODE && sessions.filter(s => s?.seatsLeft === -1 || (s?.seatsLeft ?? 0) > 0).length === 0)}
                   className="w-full"
                   size="lg"
                 >
@@ -829,14 +850,14 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
         </div>
       )}
       {/* Mobile Sticky Action Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-8 z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="flex items-center gap-4">
           <div className="flex-1">
              {priceBreakdown.minPrice ? (
                <div className="flex flex-col">
                   <span className="text-xs text-gray-500">À partir de</span>
                   <span className="text-xl font-bold text-primary">{priceBreakdown.minPrice}€</span>
-                  <span className="text-[10px] text-gray-400">sans transport</span>
+                  <span className="text-xs text-gray-500">sans transport</span>
                </div>
              ) : (
                 <span className="text-sm font-medium text-gray-500">
@@ -847,7 +868,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
           <div className="flex-1">
             {isKids ? (
               <Button onClick={handleKidsCTA} className="w-full" size="default">
-                Ça m'intéresse
+                Ajouter à mes souhaits
               </Button>
             ) : (
               <Button
@@ -855,9 +876,9 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   const params = new URLSearchParams();
                   if (preSelectedSessionId) params.set('session', preSelectedSessionId);
                   if (preSelectedCity) params.set('ville', preSelectedCity);
-                  window.location.href = `/sejour/${slug}/reserver?${params.toString()}`;
+                  router.push(`/sejour/${slug}/reserver?${params.toString()}`);
                 }}
-                disabled={sessions.filter(s => (s?.seatsLeft ?? 0) > 0).length === 0}
+                disabled={sessions.filter(s => s?.seatsLeft === -1 || (s?.seatsLeft ?? 0) > 0).length === 0}
                 className="w-full"
                 size="default"
               >

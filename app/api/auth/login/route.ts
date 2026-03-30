@@ -1,63 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import bcrypt from 'bcryptjs';
+import { createClient } from '@supabase/supabase-js';
 import jwt from 'jsonwebtoken';
-import { z } from 'zod';
 
-export const dynamic = 'force-dynamic';
-
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
-});
-
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json();
-    const parsed = loginSchema.safeParse(body);
+    const body = await req.json();
+    const { email, password } = body;
 
-    if (!parsed.success) {
+    // Validation basique des entrées
+    if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
       return NextResponse.json(
-        { error: { code: 'VALIDATION_ERROR', message: 'Email ou mot de passe invalide' } },
+        { error: 'Email et mot de passe requis.' },
         { status: 400 }
       );
     }
 
-    const { email, password } = parsed.data;
-
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      return NextResponse.json(
-        { error: { code: 'INVALID_CREDENTIALS', message: 'Identifiants incorrects' } },
-        { status: 401 }
-      );
+    const secret = process.env.NEXTAUTH_SECRET;
+    if (!secret) {
+      console.error('[auth/login] NEXTAUTH_SECRET manquant');
+      return NextResponse.json({ error: 'Erreur de configuration serveur.' }, { status: 500 });
     }
 
-    const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid) {
-      return NextResponse.json(
-        { error: { code: 'INVALID_CREDENTIALS', message: 'Identifiants incorrects' } },
-        { status: 401 }
-      );
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('[auth/login] Variables Supabase manquantes');
+      return NextResponse.json({ error: 'Erreur de configuration serveur.' }, { status: 500 });
     }
 
-    const secret = process.env.NEXTAUTH_SECRET ?? 'fallback-secret';
-    const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      secret,
-      { expiresIn: '7d' }
-    );
-
-    return NextResponse.json({
-      token,
-      user: { id: user.id, email: user.email, role: user.role },
+    // Authentification via Supabase Auth
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.toLowerCase().trim(),
+      password,
     });
 
-  } catch (error) {
-    console.error('POST /api/auth/login error:', error);
-    return NextResponse.json(
-      { error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur' } },
-      { status: 500 }
+    // Réponse générique pour éviter l'énumération des comptes
+    if (error || !data.user) {
+      return NextResponse.json({ error: 'Identifiants invalides.' }, { status: 401 });
+    }
+
+    // Rôle depuis app_metadata (défini via SQL : raw_app_meta_data)
+    const role = data.user.app_metadata?.role || 'VIEWER';
+
+    // Génération du JWT applicatif (compatible auth-middleware.ts)
+    const token = jwt.sign(
+      { userId: data.user.id, email: data.user.email, role },
+      secret,
+      { expiresIn: '8h' }
     );
+
+    return NextResponse.json({ token });
+  } catch (error) {
+    console.error('[auth/login] Erreur:', error);
+    return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }
 }

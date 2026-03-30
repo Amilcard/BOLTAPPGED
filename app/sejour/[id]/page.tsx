@@ -11,8 +11,40 @@ import { Header } from '@/components/header';
 import { BottomNav } from '@/components/bottom-nav';
 import { StayDetail } from './stay-detail';
 import { getStayAgeData, getStayDurationDays, getStayPeriod } from '@/lib/age-utils';
+import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
+
+// SEO — Meta tags dynamiques pour chaque séjour
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const stay = await getSejourBySlug(id).catch(() => null);
+
+  if (!stay) {
+    return { title: 'Séjour introuvable — Groupe & Découverte' };
+  }
+
+  const title = stay.marketing_title || 'Séjour';
+  const description = stay.punchline || stay.expert_pitch || `Séjour ${title} avec Groupe & Découverte`;
+  const image = Array.isArray(stay.images) && stay.images.length > 0 ? (stay.images as string[])[0] : undefined;
+
+  return {
+    title: `${title} — Groupe & Découverte`,
+    description,
+    openGraph: {
+      title: `${title} — Groupe & Découverte`,
+      description,
+      type: 'website',
+      ...(image ? { images: [{ url: image, width: 1200, height: 630, alt: title }] } : {}),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      ...(image ? { images: [image] } : {}),
+    },
+  };
+}
 
 export default async function StayPage({ params }: { params: Promise<{ id: string }> }) {
   // Verification Round 5 - Force Revalidation: 2026-02-06 13:20
@@ -33,9 +65,15 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
   ]);
 
   // Sprint 1: Calcul unifié âges + durée via helpers centralisés
-  const sessionAgeData = staySessions.map(s => ({ age_min: s.age_min, age_max: s.age_max }));
-  const { ageMin, ageMax, ageRangesDisplay } = getStayAgeData(sessionAgeData);
-  const sessionDateData = staySessions.map(s => ({ start_date: s.start_date, end_date: s.end_date }));
+  // FIX BUG-1: Fallback vers gd_stays.age_min/age_max si aucune session dans gd_stay_sessions
+  // FIX BUG-2: ?? 0 au lieu de ?? 6/17 — évite l'affichage fantôme "6-17 ANS" si age null en BDD
+  const sessionAgeData = staySessions.map(s => ({ age_min: s.age_min ?? 0, age_max: s.age_max ?? 0 }));
+  const { ageMin, ageMax, ageRangesDisplay } = getStayAgeData(
+    sessionAgeData,
+    stay.age_min ?? 0,
+    stay.age_max ?? 0
+  );
+  const sessionDateData = staySessions.map(s => ({ start_date: s.start_date ?? '', end_date: s.end_date ?? '' }));
   const durationDays = getStayDurationDays(sessionDateData, 7);
 
   // Dédupliquer sessions par dates (éviter doublons ville)
@@ -51,20 +89,20 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
   // Parse price_includes_features (jsonb → string[])
   const priceIncludesRaw = stay.price_includes_features;
   const priceIncludesFeatures: string[] | null = Array.isArray(priceIncludesRaw)
-    ? priceIncludesRaw
+    ? (priceIncludesRaw as unknown[]).filter((x): x is string => typeof x === 'string')
     : null;
 
   // Mapper vers le format attendu par StayDetail
   const stayData = {
     id: stay.slug,
     slug: stay.slug,
-    title: stay.title || 'Sans titre',
-    descriptionShort: stay.accroche || '',
-    // CityCrunch: titres/descriptions Pro/Kids (optionnel, fallback côté client)
-    titlePro: stay.title_pro || undefined,
-    titleKids: stay.title_kids || undefined,
-    descriptionPro: stay.description_pro || undefined,
-    descriptionKids: stay.description_kids || undefined,
+    // NEUTRALISÉ: Les champs legacy UFOVAL ne sont plus transmis au front
+    title: stay.marketing_title || 'Séjour', // CityCrunch uniquement, jamais l'ancien UFOVAL
+    descriptionShort: stay.punchline || stay.expert_pitch || '',
+    titlePro: undefined, // ARCHIVE ONLY — neutralisé
+    titleKids: undefined, // ARCHIVE ONLY — neutralisé
+    descriptionPro: undefined, // ARCHIVE ONLY — neutralisé
+    descriptionKids: undefined, // ARCHIVE ONLY — neutralisé
     programme: stay.programme ? stay.programme.split('\n').filter(Boolean) : [],
     geography: stay.location_region || stay.location_city || '',
     accommodation: stay.centre_name || '',
@@ -75,8 +113,8 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
     ageMax,
     ageRangesDisplay, // NEW: Detailed age ranges for display
     themes: themesMap[stay.slug] || [], // Multi-thèmes depuis gd_stay_themes
-    imageCover: stay.images?.[0] || '',
-    images: stay.images || [],
+    imageCover: (Array.isArray(stay.images) ? (stay.images as string[])[0] : '') || '',
+    images: Array.isArray(stay.images) ? (stay.images as string[]) : [],
     published: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -84,23 +122,24 @@ export default async function StayPage({ params }: { params: Promise<{ id: strin
     educationalOption: null,
     geoLabel: stay.location_city || null,
     geoPrecision: stay.location_region || null,
-    accommodationLabel: stay.centre_name || null,
+    accommodationLabel: stay.centre_name || undefined,
     // Nouveau format: villes avec extra_eur + sessions formatées pour le prix
     contentKids: {
       departureCities, // {city, extra_eur}[]
       sessionsFormatted: sessionPricesFormatted // Pour matching prix
     },
     sourceUrl: stay.source_url || null,
-    pdfUrl: null,
+    pdfUrl: stay.pdf_url || null,
     price_base: uniqueSessions[0]?.price_ged_total || null,
     price_unit: '€',
     pro_price_note: 'Tarif communiqué aux professionnels',
-    sessions: uniqueSessions.map((s, idx) => ({
-      id: `${stay.slug}-${idx}`,
+    sessions: uniqueSessions.map((s) => ({
+      id: `${stay.slug}__${s.start_date}__${s.end_date}`,
       stayId: stay.slug,
       startDate: s.start_date,
       endDate: s.end_date,
-      seatsLeft: 30,
+      // is_full mis à jour par n8n via UFOVAL — 0 = complet, -1 = dispo (illimité)
+      seatsLeft: (s as any).is_full === true ? 0 : -1,
     })),
     rawSessions: staySessions, // Prop "NO CASCADE" pour passer les âges sans modifier les types globaux
 

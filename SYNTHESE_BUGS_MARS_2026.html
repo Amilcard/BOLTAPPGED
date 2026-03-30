@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synthèse Bugs GED — Mars 2026</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --border: #2a2d3a;
+    --text: #e4e4e7;
+    --muted: #9ca3af;
+    --red: #ef4444;
+    --orange: #f97316;
+    --green: #22c55e;
+    --blue: #3b82f6;
+    --purple: #a855f7;
+    --yellow: #eab308;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 1.8rem; margin-bottom: 0.3rem; }
+  h2 { font-size: 1.3rem; margin: 2rem 0 1rem; color: var(--blue); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+  h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+  .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .severity {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-left: 0.5rem;
+  }
+  .critical { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid var(--red); }
+  .major { background: rgba(249,115,22,0.15); color: var(--orange); border: 1px solid var(--orange); }
+  .minor { background: rgba(234,179,8,0.15); color: var(--yellow); border: 1px solid var(--yellow); }
+  .false-positive { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid var(--green); }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-right: 4px;
+  }
+  .tag-front { background: rgba(168,85,247,0.2); color: var(--purple); }
+  .tag-n8n { background: rgba(59,130,246,0.2); color: var(--blue); }
+  .tag-data { background: rgba(249,115,22,0.2); color: var(--orange); }
+  .tag-env { background: rgba(234,179,8,0.2); color: var(--yellow); }
+
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  th { text-align: left; padding: 8px 12px; background: rgba(59,130,246,0.1); border-bottom: 1px solid var(--border); color: var(--blue); font-weight: 600; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  code {
+    background: rgba(59,130,246,0.1);
+    color: var(--blue);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.8rem;
+  }
+  pre {
+    background: #12141d;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    margin: 0.8rem 0;
+    color: #d4d4d8;
+  }
+  .highlight { color: var(--yellow); }
+  .comment { color: #6b7280; }
+  .keyword { color: var(--purple); }
+  .string { color: var(--green); }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  .summary-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.2rem;
+    text-align: center;
+  }
+  .summary-item .number { font-size: 2rem; font-weight: 800; }
+  .summary-item .label { font-size: 0.8rem; color: var(--muted); margin-top: 0.3rem; }
+  .red { color: var(--red); }
+  .orange { color: var(--orange); }
+  .green { color: var(--green); }
+  .yellow { color: var(--yellow); }
+  .arrow { color: var(--green); font-weight: 700; }
+
+  .fix-box {
+    background: rgba(34,197,94,0.05);
+    border: 1px solid rgba(34,197,94,0.3);
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 0.8rem 0;
+  }
+  .fix-box h4 { color: var(--green); font-size: 0.9rem; margin-bottom: 0.5rem; }
+
+  .question-box {
+    background: rgba(234,179,8,0.05);
+    border: 1px solid rgba(234,179,8,0.3);
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 0.8rem 0;
+  }
+  .question-box h4 { color: var(--yellow); font-size: 0.9rem; margin-bottom: 0.5rem; }
+
+  ul { padding-left: 1.5rem; margin: 0.5rem 0; }
+  li { margin-bottom: 0.3rem; }
+  p { margin: 0.5rem 0; }
+</style>
+</head>
+<body>
+
+<h1>Synthèse Audit GED — Mars 2026</h1>
+<p class="subtitle">Analyse après vérification Supabase · 5 mars 2026 · Données vérifiées sur gd_stays, gd_session_prices, gd_stay_sessions</p>
+
+<!-- RÉSUMÉ -->
+<div class="summary-grid">
+  <div class="summary-item">
+    <div class="number red">3</div>
+    <div class="label">Vrais bugs confirmés</div>
+  </div>
+  <div class="summary-item">
+    <div class="number green">1</div>
+    <div class="label">Faux positif écarté</div>
+  </div>
+  <div class="summary-item">
+    <div class="number yellow">1</div>
+    <div class="label">Point à clarifier (âges inversés ?)</div>
+  </div>
+  <div class="summary-item">
+    <div class="number orange">7</div>
+    <div class="label">Séjours audités</div>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<h2>BUG 1 — Affichage "6-17 ANS" sur les carousels <span class="severity critical">Critique</span></h2>
+<!-- ================================================================== -->
+<div class="card">
+  <p><span class="tag tag-front">FRONT</span> <span class="tag tag-data">DATA FLOW</span></p>
+
+  <h3>Symptôme observé</h3>
+  <p>Sur la page d'accueil, ALPINE SKY CAMP et WEST COAST SURF CAMP affichent <strong>"6-17 ANS"</strong> au lieu de leurs vraies tranches d'âge.</p>
+
+  <h3>Données Supabase vérifiées</h3>
+  <table>
+    <tr><th>Séjour</th><th>gd_stays.age_min</th><th>gd_stays.age_max</th><th>gd_stay_sessions</th></tr>
+    <tr><td>ALPINE SKY CAMP</td><td>12</td><td>17</td><td>Aucune entrée (ou sans age_min/age_max)</td></tr>
+    <tr><td>WEST COAST SURF CAMP</td><td>15</td><td>17</td><td>Aucune entrée (ou sans age_min/age_max)</td></tr>
+  </table>
+  <p>Les âges sont <strong>corrects dans <code>gd_stays</code></strong> (12-17 et 15-17), mais le front ne les utilise jamais.</p>
+
+  <h3>Cause racine</h3>
+  <p><strong>Fichier :</strong> <code>app/page.tsx</code> (lignes 15-16, 41)</p>
+  <p>La page d'accueil charge les âges <strong>uniquement depuis <code>gd_stay_sessions</code></strong> :</p>
+  <pre><span class="comment">// app/page.tsx — ligne 15-16</span>
+<span class="keyword">const</span> agesData = <span class="keyword">await</span> supabaseGed.from(<span class="string">'gd_stay_sessions'</span>)
+  .select(<span class="string">'stay_slug, age_min, age_max, start_date, end_date'</span>)</pre>
+
+  <p>Puis à la ligne 41, <code>getStayAgeData(sessions)</code> est appelé avec ce tableau. Si un séjour n'a <strong>aucune entrée</strong> dans <code>gd_stay_sessions</code>, le tableau est vide.</p>
+
+  <p><strong>Fichier :</strong> <code>lib/age-utils.ts</code> (lignes 152-159)</p>
+  <p>La fonction <code>calculateGlobalAgeRange()</code> retourne alors les <strong>valeurs par défaut hardcodées</strong> :</p>
+  <pre><span class="keyword">export function</span> calculateGlobalAgeRange(
+  sessions: SessionAgeData[],
+  <span class="highlight">defaultMin: number = 6</span>,   <span class="comment">// ← Problème ici</span>
+  <span class="highlight">defaultMax: number = 17</span>   <span class="comment">// ← Problème ici</span>
+): { ageMin: number; ageMax: number } {
+  <span class="keyword">if</span> (!sessions || sessions.length === 0) {
+    <span class="keyword">return</span> { ageMin: <span class="highlight">defaultMin</span>, ageMax: <span class="highlight">defaultMax</span> }; <span class="comment">// → 6-17 !</span>
+  }
+  ...
+}</pre>
+
+  <p>Au lieu d'utiliser <code>gd_stays.age_min/age_max</code> (12/17 ou 15/17), le code retourne <strong>6-17</strong>.</p>
+
+  <div class="fix-box">
+    <h4>Correction proposée</h4>
+    <p><strong>1. Dans <code>app/page.tsx</code></strong> — Passer age_min/age_max de gd_stays comme fallback :</p>
+    <pre><span class="comment">// Ligne 41 — Avant</span>
+<span class="keyword">const</span> { ageMin, ageMax, ageRangesDisplay } = getStayAgeData(sessions);
+
+<span class="comment">// Ligne 41 — Après</span>
+<span class="keyword">const</span> { ageMin, ageMax, ageRangesDisplay } = getStayAgeData(
+  sessions,
+  <span class="highlight">sejour.age_min ?? 6</span>,  <span class="comment">// fallback depuis gd_stays</span>
+  <span class="highlight">sejour.age_max ?? 17</span>  <span class="comment">// fallback depuis gd_stays</span>
+);</pre>
+
+    <p><strong>2. Dans <code>lib/age-utils.ts</code></strong> — Accepter les fallbacks dans <code>getStayAgeData()</code> :</p>
+    <pre><span class="keyword">export function</span> getStayAgeData(
+  sessions: SessionAgeData[],
+  <span class="highlight">fallbackMin: number = 6</span>,
+  <span class="highlight">fallbackMax: number = 17</span>
+) {
+  <span class="keyword">const</span> { ageMin, ageMax } = calculateGlobalAgeRange(sessions, <span class="highlight">fallbackMin</span>, <span class="highlight">fallbackMax</span>);
+  ...
+}</pre>
+
+    <p><strong>3. Même correction dans <code>app/sejour/[id]/page.tsx</code></strong> (ligne 37) :</p>
+    <pre><span class="keyword">const</span> { ageMin, ageMax, ageRangesDisplay } = getStayAgeData(
+  sessionAgeData,
+  <span class="highlight">stay.age_min ?? 6</span>,
+  <span class="highlight">stay.age_max ?? 17</span>
+);</pre>
+  </div>
+
+  <p><strong>Impact :</strong> Tous les séjours sans entrée dans <code>gd_stay_sessions</code> afficheront désormais les âges de <code>gd_stays</code> au lieu de "6-17 ANS".</p>
+</div>
+
+<!-- ================================================================== -->
+<h2>BUG 2 — ALPOO KIDS : Complet non affiché <span class="severity major">Majeur</span></h2>
+<!-- ================================================================== -->
+<div class="card">
+  <p><span class="tag tag-env">ENV</span> <span class="tag tag-front">FRONT</span></p>
+
+  <h3>Symptôme observé</h3>
+  <p>Session 05/07 → 11/07 marquée "complet" sur UFOVAL, mais affichée "disponible" sur GED.</p>
+
+  <h3>Données Supabase vérifiées</h3>
+  <p><code>gd_session_prices</code> pour <code>croc-marmotte</code>, session 05/07→11/07 : <strong><code>is_full = true</code></strong></p>
+  <p>La donnée est correcte en BDD. Le problème est côté affichage.</p>
+
+  <h3>Cause probable</h3>
+  <p><strong>Fichier :</strong> <code>app/sejour/[id]/stay-detail.tsx</code> (ligne ~639)</p>
+  <pre><span class="keyword">const</span> IS_TEST_MODE = process.env.NEXT_PUBLIC_TEST_MODE === <span class="string">'true'</span>;
+...
+<span class="keyword">const</span> isFull = <span class="highlight">IS_TEST_MODE ? false</span> : (session?.seatsLeft !== -1 && (session?.seatsLeft ?? 0) <= 0);</pre>
+  <p>Si <code>NEXT_PUBLIC_TEST_MODE=true</code> en production, <strong>toutes les sessions apparaissent disponibles</strong>, même celles marquées <code>is_full=true</code> en BDD.</p>
+
+  <div class="fix-box">
+    <h4>Actions à mener</h4>
+    <ul>
+      <li><strong>Vérifier</strong> la variable <code>NEXT_PUBLIC_TEST_MODE</code> dans le <code>.env</code> du VPS de production</li>
+      <li>Si elle est à <code>true</code> → la passer à <code>false</code> et redéployer</li>
+      <li>Si elle est déjà à <code>false</code> → vérifier le cache ISR / SSR (redémarrer le process Next.js)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<h2>BUG 3 — WEST COAST : Sync n8n échouée <span class="severity major">Majeur</span></h2>
+<!-- ================================================================== -->
+<div class="card">
+  <p><span class="tag tag-n8n">N8N</span> <span class="tag tag-data">DATA</span></p>
+
+  <h3>Symptôme observé</h3>
+  <p>Session 05/07 → 16/07 marquée "complet" sur UFOVAL, mais <code>is_full = false</code> dans Supabase.</p>
+
+  <h3>Données Supabase vérifiées</h3>
+  <p><code>gd_session_prices</code> pour <code>surf-sur-le-bassin</code>, session 05/07→16/07 : <strong><code>is_full = false</code></strong></p>
+  <p>Contrairement à ALPOO KIDS, ici la donnée BDD est <strong>fausse</strong>. Le workflow n8n n'a pas synchronisé.</p>
+
+  <h3>Cause probable</h3>
+  <p>Le workflow n8n (<code>01_UFOVAL_IS_FULL_SESSIONS_v4.json</code>) fait un PATCH sur <code>gd_session_prices</code> en matchant sur <code>stay_slug + start_date + end_date</code>. Si les dates scrapées sur UFOVAL diffèrent d'un jour par rapport à celles en BDD (convention inclusive vs exclusive), le match échoue silencieusement.</p>
+
+  <div class="fix-box">
+    <h4>Actions à mener</h4>
+    <ul>
+      <li><strong>Correction immédiate :</strong> UPDATE manuel dans Supabase :</li>
+    </ul>
+    <pre><span class="keyword">UPDATE</span> gd_session_prices
+<span class="keyword">SET</span> is_full = <span class="highlight">true</span>, updated_at = NOW()
+<span class="keyword">WHERE</span> stay_slug = <span class="string">'surf-sur-le-bassin'</span>
+  <span class="keyword">AND</span> start_date = <span class="string">'2026-07-05'</span>
+  <span class="keyword">AND</span> end_date = <span class="string">'2026-07-16'</span>;</pre>
+    <ul>
+      <li><strong>Correction pérenne :</strong> Vérifier les logs n8n pour <code>surf-sur-le-bassin</code>, ajuster le matching de dates si nécessaire (tolerance ±1 jour)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<h2>FAUX POSITIF — Dates "erronées" <span class="severity false-positive">Écarté</span></h2>
+<!-- ================================================================== -->
+<div class="card">
+  <p><span class="tag tag-data">DATA</span></p>
+
+  <h3>Signalement initial</h3>
+  <p>Dates GED ne correspondent pas aux dates UFOVAL pour les 7 séjours audités.</p>
+
+  <h3>Résultat de l'audit Supabase</h3>
+  <p><strong>Les dates en BDD sont correctes.</strong> UFOVAL propose des séjours en <strong>multi-durées</strong> (7j, 12j, 14j, 21j). Toutes les sessions existent dans <code>gd_session_prices</code> et <code>gd_stay_sessions</code>.</p>
+  <p>L'écart observé vient de la comparaison de sessions de durées différentes (ex : voir la fin d'une session 14j au 30/07 alors qu'on compare avec une session 7j finissant le 11/07).</p>
+
+  <table>
+    <tr><th>Séjour</th><th>Durées en BDD</th><th>Verdict</th></tr>
+    <tr><td>MY LITTLE FOREST</td><td>7j, 14j, 21j</td><td>✅ Correct</td></tr>
+    <tr><td>ALPOO KIDS</td><td>7j</td><td>✅ Correct</td></tr>
+    <tr><td>DUNE & OCEAN KIDS</td><td>7j, 12j, 14j</td><td>✅ Correct</td></tr>
+    <tr><td>DUAL CAMP</td><td>7j, 14j</td><td>✅ Correct</td></tr>
+    <tr><td>ADRENALINE & CHILL</td><td>7j, 14j, 21j</td><td>✅ Correct</td></tr>
+    <tr><td>ALPINE SKY CAMP</td><td>7j, 14j</td><td>✅ Correct</td></tr>
+    <tr><td>WEST COAST SURF CAMP</td><td>7j, 12j</td><td>✅ Correct</td></tr>
+  </table>
+</div>
+
+<!-- ================================================================== -->
+<h2>POINT À CLARIFIER — Âges Alpine Sky / West Coast inversés ? <span class="severity minor">À vérifier</span></h2>
+<!-- ================================================================== -->
+<div class="card">
+  <p><span class="tag tag-data">DATA</span></p>
+
+  <h3>Constat</h3>
+  <p>Il y a une divergence entre ton signalement et les données Supabase :</p>
+
+  <table>
+    <tr><th>Séjour</th><th>Tu as signalé</th><th>Supabase (gd_stays)</th></tr>
+    <tr>
+      <td>ALPINE SKY CAMP</td>
+      <td>Devrait être <strong>15-17 ans</strong></td>
+      <td><code>age_min=12, age_max=17</code></td>
+    </tr>
+    <tr>
+      <td>WEST COAST SURF CAMP</td>
+      <td>Devrait être <strong>12-17 ans</strong></td>
+      <td><code>age_min=15, age_max=17</code></td>
+    </tr>
+  </table>
+
+  <div class="question-box">
+    <h4>Question</h4>
+    <p>Les âges semblent <strong>inversés</strong> entre les deux séjours. Est-ce que :</p>
+    <ul>
+      <li><strong>Option A :</strong> Les valeurs Supabase sont correctes (Alpine=12-17, West Coast=15-17) et ton signalement contenait une inversion ?</li>
+      <li><strong>Option B :</strong> Les valeurs Supabase sont fausses et il faut les corriger (Alpine→15-17, West Coast→12-17) ?</li>
+    </ul>
+    <p>Merci de vérifier sur le PDF UFOVAL (source de vérité) avant qu'on touche aux données.</p>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<h2>Résumé des actions</h2>
+<!-- ================================================================== -->
+<div class="card">
+  <table>
+    <tr><th>#</th><th>Action</th><th>Fichier(s)</th><th>Priorité</th><th>Type</th></tr>
+    <tr>
+      <td>1</td>
+      <td>Ajouter fallback age_min/age_max depuis gd_stays dans getStayAgeData()</td>
+      <td><code>lib/age-utils.ts</code>, <code>app/page.tsx</code>, <code>app/sejour/[id]/page.tsx</code></td>
+      <td style="color:var(--red)">P0</td>
+      <td>Code</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>Vérifier NEXT_PUBLIC_TEST_MODE sur le VPS production</td>
+      <td><code>.env</code> (production)</td>
+      <td style="color:var(--orange)">P1</td>
+      <td>Config</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>UPDATE is_full=true pour West Coast 05/07→16/07</td>
+      <td>Supabase SQL Editor</td>
+      <td style="color:var(--orange)">P1</td>
+      <td>Data</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>Investiguer logs n8n pour comprendre l'échec de sync West Coast</td>
+      <td>n8n Dashboard</td>
+      <td style="color:var(--yellow)">P2</td>
+      <td>Ops</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>Clarifier âges Alpine Sky Camp vs West Coast (inversés ?)</td>
+      <td>PDF UFOVAL</td>
+      <td style="color:var(--yellow)">P2</td>
+      <td>Vérif</td>
+    </tr>
+  </table>
+</div>
+
+<p class="subtitle" style="margin-top: 3rem; text-align: center;">
+  Rapport généré le 5 mars 2026 · Audit basé sur les résultats SQL du 5 mars 2026
+</p>
+
+</body>
+</html>

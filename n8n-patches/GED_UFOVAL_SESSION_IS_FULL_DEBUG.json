@@ -1,0 +1,62 @@
+{
+  "name": "GED_UFOVAL_SESSION_IS_FULL_DEBUG_v4",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-manual",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [-200, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { slug: 'dh-experience-11-13-ans', source_url: 'https://ufoval.fol74.org/sejours-colonies-de-vacances-a-la-montagne/dh-experience-11-13-ans' } }];"
+      },
+      "id": "node-test-data",
+      "name": "Test Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [20, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const url = $input.all()[0].json.source_url;\nconst diag = { url };\n\n// GET avec returnFullResponse pour capturer les cookies\nlet html, cookies;\ntry {\n  const resp = await this.helpers.httpRequest({\n    method: 'GET',\n    url,\n    json: false,\n    returnFullResponse: true\n  });\n  \n  diag.respKeys = Object.keys(resp);\n  diag.statusCode = resp.statusCode;\n  \n  // Extraire les cookies depuis les headers\n  const setCookie = resp.headers && resp.headers['set-cookie'];\n  diag.hasCookieHeader = !!setCookie;\n  diag.cookieType = typeof setCookie;\n  \n  if (Array.isArray(setCookie)) {\n    cookies = setCookie.map(c => c.split(';')[0]).join('; ');\n  } else if (typeof setCookie === 'string') {\n    cookies = setCookie.split(';')[0];\n  } else {\n    cookies = '';\n  }\n  diag.cookiesExtracted = cookies.length > 0;\n  diag.cookiesPreview = cookies.substring(0, 80);\n  \n  html = String(resp.body);\n  diag.htmlLen = html.length;\n} catch(e) {\n  diag.getError = e.message;\n  return [{ json: diag }];\n}\n\n// FormAction + Token\nconst fa = html.match(/action=\"(\\/fr\\/stay\\/\\d+\\/update-availabilities-cart-form)\"/i);\nconst tk = html.match(/name=\"stay_duration\\[_token\\]\"\\s+value=\"([^\"]+)\"/i);\ndiag.formAction = fa ? 'https://ufoval.fol74.org' + fa[1] : 'NOT_FOUND';\ndiag.tokenFound = !!tk;\n\n// Default session (6j)\nconst labels = html.match(/<label[^>]*>[\\s\\S]*?<\\/label>/gi) || [];\nconst sLabels = labels.filter(l => l.includes('cart_step_availability_availability'));\ndiag.defaultSessions = sLabels.length;\ndiag.defaultParsed = sLabels.map(l => {\n  const t = l.replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim();\n  return t.substring(0, 120);\n});\n\n// Passer au noeud suivant\ndiag.token = tk ? tk[1] : '';\ndiag.cookies = cookies;\n\nreturn [{ json: diag }];"
+      },
+      "id": "node-diag-get",
+      "name": "DIAG 1 - GET + Cookies",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [260, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $input.all()[0].json;\nconst diag = {};\n\nif (prev.formAction === 'NOT_FOUND' || !prev.tokenFound) {\n  diag.skip = 'No formAction or token';\n  return [{ json: diag }];\n}\n\nconst formAction = prev.formAction;\nconst token = prev.token;\nconst cookies = prev.cookies;\n\ndiag.postUrl = formAction;\ndiag.hasCookies = cookies.length > 0;\n\n// POST AVEC le cookie de session\ntry {\n  const headers = {\n    'Content-Type': 'application/x-www-form-urlencoded',\n    'X-Requested-With': 'XMLHttpRequest'\n  };\n  if (cookies) headers['Cookie'] = cookies;\n  \n  const resp = await this.helpers.httpRequest({\n    method: 'POST',\n    url: formAction,\n    headers,\n    body: 'stay_duration[duration]=7&stay_duration[_token]=' + encodeURIComponent(token),\n    json: false\n  });\n  \n  diag.postStatus = 'OK';\n  diag.respType = typeof resp;\n  diag.respLen = String(resp).length;\n  \n  // Parser\n  let h = '';\n  if (typeof resp === 'string') {\n    try { h = JSON.parse(resp).html || ''; } catch(e) { h = resp; }\n  } else if (resp && resp.html) { h = resp.html; }\n  \n  diag.htmlLen = h.length;\n  \n  const labels = h.match(/<label[^>]*>[\\s\\S]*?<\\/label>/gi) || [];\n  const sessions = [];\n  for (const l of labels) {\n    const t = l.replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim();\n    if (!t.includes(' au ')) continue;\n    sessions.push({ text: t.substring(0, 100), full: l.includes('availability-status-full') });\n  }\n  diag.sessionsFound = sessions.length;\n  diag.sessions = sessions;\n} catch(e) {\n  diag.postWithCookiesError = e.message;\n  \n  // Fallback: POST SANS cookie pour comparer\n  try {\n    const resp2 = await this.helpers.httpRequest({\n      method: 'POST',\n      url: formAction,\n      headers: {\n        'Content-Type': 'application/x-www-form-urlencoded',\n        'X-Requested-With': 'XMLHttpRequest'\n      },\n      body: 'stay_duration[duration]=7&stay_duration[_token]=' + encodeURIComponent(token),\n      json: false\n    });\n    diag.postWithoutCookiesStatus = 'OK (!!)';\n  } catch(e2) {\n    diag.postWithoutCookiesError = e2.message;\n  }\n}\n\nreturn [{ json: diag }];"
+      },
+      "id": "node-diag-post",
+      "name": "DIAG 2 - POST avec Cookies",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 100]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "Test Data", "type": "main", "index": 0 }]]
+    },
+    "Test Data": {
+      "main": [[{ "node": "DIAG 1 - GET + Cookies", "type": "main", "index": 0 }]]
+    },
+    "DIAG 1 - GET + Cookies": {
+      "main": [[{ "node": "DIAG 2 - POST avec Cookies", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "instanceId": "f8a23de1fd68d15e22ee36407dd306822e85dc7b64af1d83197e124084435d56"
+  },
+  "id": "session_is_full_debug_v4",
+  "tags": []
+}

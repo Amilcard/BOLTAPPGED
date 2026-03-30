@@ -1,28 +1,35 @@
+export const dynamic = 'force-dynamic';
 import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
-});
+function getStripe() {
+  return new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: '2026-01-28.clover',
+  });
+}
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 export async function POST(req: NextRequest) {
   try {
-    const { inscriptionId, amount } = await req.json();
+    const stripe = getStripe();
+    const supabase = getSupabase();
+    const { inscriptionId } = await req.json();
 
-    if (!inscriptionId || !amount) {
+    if (!inscriptionId) {
       return NextResponse.json(
-        { error: 'Missing inscriptionId or amount' },
+        { error: 'Missing inscriptionId' },
         { status: 400 }
       );
     }
 
-    // Vérifier que l'inscription existe
+    // Récupérer l'inscription ET son price_total vérifié en DB
     const { data: inscription, error: fetchError } = await supabase
       .from('gd_inscriptions')
       .select('*')
@@ -36,17 +43,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Créer Payment Intent Stripe
+    // SÉCURITÉ : utiliser le price_total de la DB (vérifié par /api/inscriptions)
+    // Ne JAMAIS faire confiance au montant envoyé par le frontend
+    const verifiedAmount = inscription.price_total;
+    if (!verifiedAmount || verifiedAmount <= 0) {
+      return NextResponse.json(
+        { error: 'Invalid price in inscription record' },
+        { status: 400 }
+      );
+    }
+
+    // Créer Payment Intent Stripe avec le montant vérifié
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Convertir en centimes
+      amount: Math.round(verifiedAmount * 100), // Convertir en centimes
       currency: 'eur',
+      payment_method_types: ['card'],
       metadata: {
         inscriptionId,
         jeune_prenom: inscription.jeune_prenom,
         sejour_slug: inscription.sejour_slug,
-      },
-      automatic_payment_methods: {
-        enabled: true,
       },
     });
 

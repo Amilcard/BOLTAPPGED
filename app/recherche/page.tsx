@@ -25,10 +25,10 @@ export default async function RecherchePage() {
       sessionsMap.set(row.stay_slug, []);
     }
     sessionsMap.get(row.stay_slug)!.push({
-      age_min: row.age_min,
-      age_max: row.age_max,
-      start_date: row.start_date,
-      end_date: row.end_date,
+      age_min: row.age_min ?? 0,
+      age_max: row.age_max ?? 0,
+      start_date: row.start_date ?? '',
+      end_date: row.end_date ?? '',
     });
   }
 
@@ -37,7 +37,12 @@ export default async function RecherchePage() {
     const sessions = sessionsMap.get(sejour.slug) || [];
 
     // Sprint 1+2: Calcul unifié âges + durée + période via helpers centralisés
-    const { ageMin, ageMax, ageRangesDisplay } = getStayAgeData(sessions);
+    // FIX BUG-1: Fallback vers gd_stays.age_min/age_max si aucune session dans gd_stay_sessions
+    const { ageMin, ageMax, ageRangesDisplay } = getStayAgeData(
+      sessions,
+      sejour.age_min ?? 6,
+      sejour.age_max ?? 17
+    );
     const durationDays = getStayDurationDays(sessions, 7);
 
     // Récupérer les thèmes depuis gd_stay_themes
@@ -46,12 +51,13 @@ export default async function RecherchePage() {
     return {
       id: sejour.slug,
       slug: sejour.slug,
-      title: sejour.title || 'Sans titre',
-      descriptionShort: sejour.accroche || '',
-      titlePro: sejour.title_pro || undefined,
-      titleKids: sejour.title_kids || undefined,
-      descriptionPro: sejour.description_pro || undefined,
-      descriptionKids: sejour.description_kids || undefined,
+      // NEUTRALISÉ: Les champs legacy UFOVAL ne sont plus transmis au front
+      title: sejour.marketing_title || 'Séjour', // CityCrunch uniquement
+      descriptionShort: sejour.punchline || sejour.expert_pitch || '',
+      titlePro: undefined, // ARCHIVE ONLY — neutralisé
+      titleKids: undefined, // ARCHIVE ONLY — neutralisé
+      descriptionPro: undefined, // ARCHIVE ONLY — neutralisé
+      descriptionKids: undefined, // ARCHIVE ONLY — neutralisé
       programme: sejour.programme ? sejour.programme.split('\n').filter(Boolean) : [],
       geography: sejour.location_region || sejour.location_city || '',
       accommodation: sejour.centre_name || '',
@@ -71,12 +77,12 @@ export default async function RecherchePage() {
       // P1 FIX: Sessions réelles pour calcul durée dans StayCard
       sessions: sessions
         .filter(s => s.start_date && s.end_date)
-        .map((s, idx) => ({
-          id: `${sejour.slug}-${idx}`,
+        .map((s) => ({
+          id: `${sejour.slug}__${s.start_date}__${s.end_date}`,
           stayId: sejour.slug,
           startDate: s.start_date,
           endDate: s.end_date,
-          seatsLeft: 30,
+          seatsLeft: -1, // gd_stay_sessions n'a pas seats_left — jamais bloquer
         })),
       // === CHAMPS PREMIUM MARKETING ===
       marketingTitle: sejour.marketing_title || undefined,

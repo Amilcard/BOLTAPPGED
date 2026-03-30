@@ -5,7 +5,7 @@ import { HomeContent } from '@/app/home-content';
 import type { Stay } from '@/lib/types';
 import { getStayAgeData, getStayDurationDays, getStayPeriod } from '@/lib/age-utils';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60; // ISR: refresh every 60s (n8n image updates)
 
 export default async function HomePage() {
   // Force revalidation timestamp: 2026-02-06 13:10 (Verification Round 4)
@@ -26,10 +26,10 @@ export default async function HomePage() {
       sessionsMap.set(row.stay_slug, []);
     }
     sessionsMap.get(row.stay_slug)!.push({
-      age_min: row.age_min,
-      age_max: row.age_max,
-      start_date: row.start_date,
-      end_date: row.end_date,
+      age_min: row.age_min ?? 0,
+      age_max: row.age_max ?? 0,
+      start_date: row.start_date ?? '',
+      end_date: row.end_date ?? '',
     });
   }
 
@@ -38,7 +38,14 @@ export default async function HomePage() {
     const sessions = sessionsMap.get(sejour.slug) || [];
 
     // Sprint 1: Calcul unifié âges + durée via helpers centralisés
-    const { ageMin, ageMax, ageRangesDisplay } = getStayAgeData(sessions);
+    // FIX BUG-1: Fallback vers gd_stays.age_min/age_max si aucune session dans gd_stay_sessions
+    // FIX BUG-2: ?? 0 au lieu de ?? 6/17 — évite l'affichage fantôme "6-17 ANS" si age null en BDD
+    //            StayCard affichera 'ENFANTS' (0 est falsy) plutôt qu'une tranche incorrecte
+    const { ageMin, ageMax, ageRangesDisplay } = getStayAgeData(
+      sessions,
+      sejour.age_min ?? 0,
+      sejour.age_max ?? 0
+    );
     const durationDays = getStayDurationDays(sessions, 7);
 
     // Récupérer les thèmes depuis gd_stay_themes (multi-thèmes)
@@ -53,12 +60,14 @@ export default async function HomePage() {
     return {
       id: sejour.slug,
       slug: sejour.slug,
-      title: sejour.title || 'Sans titre',
-      descriptionShort: sejour.accroche || '',
-      titlePro: sejour.title_pro || undefined,
-      titleKids: sejour.title_kids || undefined,
-      descriptionPro: sejour.description_pro || undefined,
-      descriptionKids: sejour.description_kids || undefined,
+      // NEUTRALISÉ: Les champs legacy UFOVAL ne sont plus transmis au front
+      // On garde la structure Stay mais avec valeurs CityCrunch uniquement
+      title: sejour.marketing_title || 'Séjour', // CityCrunch title, jamais l'ancien nom UFOVAL
+      descriptionShort: sejour.punchline || sejour.expert_pitch || '',
+      titlePro: undefined, // ARCHIVE ONLY — neutralisé
+      titleKids: undefined, // ARCHIVE ONLY — neutralisé
+      descriptionPro: undefined, // ARCHIVE ONLY — neutralisé
+      descriptionKids: undefined, // ARCHIVE ONLY — neutralisé
       programme: sejour.programme ? sejour.programme.split('\n').filter(Boolean) : [],
       geography: sejour.location_region || sejour.location_city || '',
       accommodation: sejour.centre_name || '',
@@ -78,12 +87,12 @@ export default async function HomePage() {
       // P1 FIX: Sessions réelles pour calcul durée dans StayCard
       sessions: sessions
         .filter(s => s.start_date && s.end_date)
-        .map((s, idx) => ({
-          id: `${sejour.slug}-${idx}`,
+        .map((s) => ({
+          id: `${sejour.slug}__${s.start_date}__${s.end_date}`,
           stayId: sejour.slug,
           startDate: s.start_date,
           endDate: s.end_date,
-          seatsLeft: 30,
+          seatsLeft: -1, // gd_stay_sessions n'a pas seats_left — jamais bloquer
         })),
 
       // === CHAMPS PREMIUM (fallback null = le front utilise les champs legacy) ===

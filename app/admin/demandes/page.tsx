@@ -1,132 +1,229 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { STORAGE_KEYS, formatDate } from '@/lib/utils';
-import { Eye } from 'lucide-react';
-import { Booking } from '@/lib/types';
+import { Eye, FileCheck, FileClock, Trash2 } from 'lucide-react';
+import { InscriptionSupabase } from '@/lib/types';
 
 const STATUS_OPTIONS = [
-  { value: 'new', label: 'Nouvelle', color: 'bg-blue-100 text-blue-700' },
-  { value: 'in_review', label: 'En cours', color: 'bg-yellow-100 text-yellow-700' },
-  { value: 'accepted', label: 'Acceptée', color: 'bg-green-100 text-green-700' },
-  { value: 'refused', label: 'Refusée', color: 'bg-red-100 text-red-700' },
+  { value: 'en_attente', label: 'En attente', color: 'bg-blue-100 text-blue-700' },
+  { value: 'validee', label: 'Validée', color: 'bg-green-100 text-green-700' },
+  { value: 'refusee', label: 'Refusée', color: 'bg-red-100 text-red-700' },
+  { value: 'annulee', label: 'Annulée', color: 'bg-gray-100 text-gray-500' },
 ];
 
-export default function AdminDemandes() {
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+const PAYMENT_STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  pending_payment: { label: 'En attente', color: 'bg-orange-100 text-orange-700' },
+  paid: { label: 'Payé', color: 'bg-green-100 text-green-700' },
+  failed: { label: 'Échoué', color: 'bg-red-100 text-red-700' },
+};
 
-  const fetchBookings = async () => {
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH);
-    const res = await fetch('/api/admin/bookings', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (res.ok) setBookings(await res.json());
-  };
+function DossierBadge({ completude }: { completude: any }) {
+  if (!completude) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+        <FileClock size={12} /> Non commence
+      </span>
+    );
+  }
 
-  useEffect(() => { fetchBookings(); }, []);
+  const fiches = [completude.bulletin, completude.sanitaire, completude.liaison].filter(Boolean).length;
+  const total = 3;
+  const hasPJ = completude.pj_count > 0;
+  const hasVaccins = completude.pj_vaccins;
 
-  const handleStatusChange = async (id: string, status: string) => {
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH);
-    await fetch(`/api/admin/bookings/${id}`, {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    });
-    fetchBookings();
-  };
-
-  const getStatusStyle = (status: string) => STATUS_OPTIONS.find(s => s.value === status) || STATUS_OPTIONS[0];
+  if (fiches === total && hasPJ && hasVaccins) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+        <FileCheck size={12} /> Complet
+      </span>
+    );
+  }
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold text-primary mb-8">Demandes de réservation</h1>
-
-      {selectedBooking && (
-        <BookingDetail booking={selectedBooking} onClose={() => setSelectedBooking(null)} />
-      )}
-
-      <div className="bg-white rounded-xl shadow overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Date</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Enfant</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Organisation</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Email</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Statut</th>
-              <th className="px-6 py-4 text-right text-sm font-semibold text-gray-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {bookings.map((booking) => {
-              const statusStyle = getStatusStyle(booking.status);
-              return (
-                <tr key={booking.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm">{formatDate(booking.createdAt)}</td>
-                  <td className="px-6 py-4 font-medium">{booking.childFirstName} {booking.childLastName}</td>
-                  <td className="px-6 py-4 text-gray-600">{booking.organisation}</td>
-                  <td className="px-6 py-4 text-gray-600">{booking.email}</td>
-                  <td className="px-6 py-4">
-                    <select
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${statusStyle.color}`}
-                      value={booking.status}
-                      onChange={(e) => handleStatusChange(booking.id, e.target.value)}
-                    >
-                      {STATUS_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex justify-end">
-                      <button onClick={() => setSelectedBooking(booking)} className="p-2 hover:bg-gray-100 rounded" title="Détails">
-                        <Eye size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+    <div className="flex flex-col items-center gap-1">
+      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+        {fiches}/{total} fiches
+      </span>
+      <div className="flex gap-0.5">
+        <span className={`w-2 h-2 rounded-full ${completude.bulletin ? 'bg-green-500' : 'bg-gray-300'}`} title="Bulletin" />
+        <span className={`w-2 h-2 rounded-full ${completude.sanitaire ? 'bg-green-500' : 'bg-gray-300'}`} title="Sanitaire" />
+        <span className={`w-2 h-2 rounded-full ${completude.liaison ? 'bg-green-500' : 'bg-gray-300'}`} title="Liaison" />
+        <span className={`w-2 h-2 rounded-full ${hasVaccins ? 'bg-green-500' : 'bg-gray-300'}`} title="Vaccins" />
+        <span className={`w-2 h-2 rounded-full ${hasPJ ? 'bg-blue-500' : 'bg-gray-300'}`} title="PJ" />
       </div>
     </div>
   );
 }
 
-function BookingDetail({ booking, onClose }: { booking: Booking; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-lg w-full">
-        <div className="p-6 border-b flex justify-between items-center">
-          <h2 className="text-xl font-bold">Détail de la demande</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">&times;</button>
-        </div>
-        <div className="p-6 space-y-4">
-          <div>
-            <h3 className="font-semibold text-primary mb-2">Travailleur social</h3>
-            <p><strong>Nom :</strong> {booking.socialWorkerName}</p>
-            <p><strong>Organisation :</strong> {booking.organisation}</p>
-            <p><strong>Email :</strong> {booking.email}</p>
-            <p><strong>Téléphone :</strong> {booking.phone}</p>
-          </div>
-          <div>
-            <h3 className="font-semibold text-primary mb-2">Enfant</h3>
-            <p><strong>Prénom :</strong> {booking.childFirstName}</p>
-            {booking.childLastName && <p><strong>Nom :</strong> {booking.childLastName}</p>}
-            <p><strong>Date de naissance :</strong> {booking.childBirthDate ? formatDate(booking.childBirthDate) : '-'}</p>
-          </div>
-          {(booking.notes || booking.childNotes) && (
-            <div>
-              <h3 className="font-semibold text-primary mb-2">Notes</h3>
-              {booking.notes && <p><strong>Général :</strong> {booking.notes}</p>}
-              {booking.childNotes && <p><strong>Enfant :</strong> {booking.childNotes}</p>}
-            </div>
-          )}
-          <p className="text-sm text-gray-500">Créée le {formatDate(booking.createdAt)}</p>
-        </div>
+export default function AdminDemandes() {
+  const router = useRouter();
+  const [inscriptions, setInscriptions] = useState<InscriptionSupabase[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchInscriptions = async () => {
+    try {
+      const token = localStorage.getItem(STORAGE_KEYS.AUTH);
+      const res = await fetch('/api/admin/inscriptions', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setInscriptions(await res.json());
+      }
+    } catch (err) {
+      console.error('Erreur chargement inscriptions:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchInscriptions(); }, []);
+
+  const handleStatusChange = async (id: string, status: string) => {
+    const token = localStorage.getItem(STORAGE_KEYS.AUTH);
+    await fetch(`/api/admin/inscriptions/${id}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    fetchInscriptions();
+  };
+
+  const handleDelete = async (e: React.MouseEvent, id: string, jeune: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm(`Supprimer definitivement l'inscription de ${jeune} ? Cette action est irreversible.`)) return;
+    try {
+      const token = localStorage.getItem(STORAGE_KEYS.AUTH);
+      const res = await fetch(`/api/admin/inscriptions/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        window.alert(`Erreur suppression: ${err?.error?.message || res.status}`);
+        return;
+      }
+      fetchInscriptions();
+    } catch (err) {
+      window.alert('Erreur reseau lors de la suppression');
+    }
+  };
+
+  const getStatusStyle = (status: string) =>
+    STATUS_OPTIONS.find(s => s.value === status) || STATUS_OPTIONS[0];
+
+  const getPaymentStyle = (paymentStatus?: string) =>
+    PAYMENT_STATUS_LABELS[paymentStatus || 'pending_payment'] || PAYMENT_STATUS_LABELS.pending_payment;
+
+  if (loading) {
+    return (
+      <div>
+        <h1 className="text-3xl font-bold text-primary mb-8">Inscriptions</h1>
+        <p className="text-gray-500">Chargement...</p>
       </div>
+    );
+  }
+
+  return (
+    <div>
+      <h1 className="text-3xl font-bold text-primary mb-8">
+        Inscriptions ({inscriptions.length})
+      </h1>
+
+      {inscriptions.length === 0 ? (
+        <div className="bg-white rounded-xl shadow p-8 text-center text-gray-500">
+          Aucune inscription pour le moment.
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Date</th>
+                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Ref.</th>
+                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Jeune</th>
+                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Séjour</th>
+                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Référent</th>
+                  <th className="px-4 py-4 text-center text-sm font-semibold text-gray-600">Dossier</th>
+                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Prix</th>
+                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Paiement</th>
+                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Statut</th>
+                  <th className="px-4 py-4 text-right text-sm font-semibold text-gray-600">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {inscriptions.map((insc) => {
+                  const statusStyle = getStatusStyle(insc.status);
+                  const paymentStyle = getPaymentStyle(insc.payment_status);
+                  return (
+                    <tr key={insc.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/admin/demandes/${insc.id}`)}>
+                      <td className="px-4 py-4 text-sm text-gray-500">
+                        {formatDate(insc.created_at)}
+                      </td>
+                      <td className="px-4 py-4 text-xs font-mono text-gray-500">
+                        {insc.dossier_ref || '—'}
+                      </td>
+                      <td className="px-4 py-4 font-medium">
+                        {insc.jeune_prenom} {insc.jeune_nom}
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-600">
+                        {(insc as any).sejour_titre || insc.sejour_slug}
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-600">
+                        {insc.organisation ? `${insc.referent_nom} (${insc.organisation})` : insc.referent_nom}
+                      </td>
+                      <td className="px-4 py-4">
+                        <DossierBadge completude={(insc as any).dossier_completude} />
+                      </td>
+                      <td className="px-4 py-4 text-sm font-medium">
+                        {insc.price_total} €
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${paymentStyle.color}`}>
+                          {paymentStyle.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4" onClick={e => e.stopPropagation()}>
+                        <select
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${statusStyle.color} cursor-pointer`}
+                          value={insc.status}
+                          onChange={(e) => handleStatusChange(insc.id, e.target.value)}
+                        >
+                          {STATUS_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-4 py-4" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-end gap-1">
+                          <button
+                            onClick={() => router.push(`/admin/demandes/${insc.id}`)}
+                            className="p-2 hover:bg-gray-100 rounded"
+                            title="Détails"
+                          >
+                            <Eye size={18} />
+                          </button>
+                          <button
+                            onClick={(e) => handleDelete(e, insc.id, `${insc.jeune_prenom} ${insc.jeune_nom}`)}
+                            className="p-2 hover:bg-red-50 rounded text-gray-400 hover:text-red-600 transition"
+                            title="Supprimer"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

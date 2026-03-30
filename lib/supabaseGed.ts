@@ -23,7 +23,9 @@ function getClient() {
           const inputUrl = typeof input === 'string' ? input
             : input instanceof URL ? input.href
             : (input as Request).url;
-          if (!inputUrl.startsWith(url)) {
+          const allowedOrigin = new URL(url).origin;
+          const requestOrigin = new URL(inputUrl).origin;
+          if (requestOrigin !== allowedOrigin) {
             throw new Error('URL fetch Supabase non autorisée');
           }
           return fetch(input, { ...init, cache: 'no-store' });

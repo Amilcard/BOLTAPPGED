@@ -209,8 +209,9 @@ async function main() {
 
   // Lire le token admin existant si dispo
   let existingAdminToken = '';
-  if (fs.existsSync(ENV_TEST_PATH)) {
-    const existing = fs.readFileSync(ENV_TEST_PATH, 'utf-8');
+  const safeEnvPath = ENV_TEST_PATH.startsWith(PROJECT_DIR + path.sep) ? ENV_TEST_PATH : null;
+  if (safeEnvPath && fs.existsSync(safeEnvPath)) {
+    const existing = fs.readFileSync(safeEnvPath, 'utf-8');
     const match = existing.match(/TEST_ADMIN_SESSION=(.+)/);
     if (match) existingAdminToken = match[1].trim();
   }
@@ -235,7 +236,8 @@ TEST_SENT_SUIVI_TOKEN=${insc2.suivi_token}
 TEST_ADMIN_SESSION=${existingAdminToken}
 `;
 
-  fs.writeFileSync(ENV_TEST_PATH, envContent, 'utf-8');
+  if (!safeEnvPath) throw new Error('Chemin .env.test hors projet — écriture refusée');
+  fs.writeFileSync(safeEnvPath, envContent, 'utf-8');
   console.log(`   ✅ .env.test écrit`);
 
   // ── Résumé ─────────────────────────────────────────────────────────────

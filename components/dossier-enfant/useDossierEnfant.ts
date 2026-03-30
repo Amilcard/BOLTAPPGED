@@ -50,10 +50,12 @@ export function useDossierEnfant(inscriptionId: string, token: string): UseDossi
   const load = useCallback(async () => {
     if (!inscriptionId || !token) return;
     if (!UUID_RE.test(inscriptionId) || !UUID_RE.test(token)) return;
+    const safeId = UUID_RE.exec(inscriptionId)![0];
+    const safeToken = UUID_RE.exec(token)![0];
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/dossier-enfant/${encodeURIComponent(inscriptionId)}?token=${encodeURIComponent(token)}`);
+      const res = await fetch(`/api/dossier-enfant/${safeId}?token=${safeToken}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body?.error?.message || 'Erreur de chargement');
@@ -82,7 +84,8 @@ export function useDossierEnfant(inscriptionId: string, token: string): UseDossi
 
     try {
       if (!UUID_RE.test(inscriptionId)) throw new Error('ID invalide');
-      const res = await fetch(`/api/dossier-enfant/${encodeURIComponent(inscriptionId)}`, {
+      const safeId = UUID_RE.exec(inscriptionId)![0];
+      const res = await fetch(`/api/dossier-enfant/${safeId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, bloc, data, completed }),

@@ -134,11 +134,12 @@ export default function AdminDemandes() {
   const handleStatusChange = async (id: string, status: string) => {
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!UUID_RE.test(id)) return;
+    const safeId = UUID_RE.exec(id)![0];
     const DESTRUCTIVE = ['refusee', 'annulee'];
     const LABELS: Record<string, string> = { refusee: 'Refusée', annulee: 'Annulée' };
     const doChange = async () => {
       const token = localStorage.getItem(STORAGE_KEYS.AUTH);
-      const res = await fetch(`/api/admin/inscriptions/${id}`, {
+      const res = await fetch(`/api/admin/inscriptions/${safeId}`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),

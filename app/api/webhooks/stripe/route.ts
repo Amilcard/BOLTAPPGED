@@ -6,7 +6,9 @@ import { headers } from 'next/headers';
 import { sendPaymentConfirmedAdminNotification } from '@/lib/email';
 
 function getStripe() {
-  return new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeKey) throw new Error('STRIPE_SECRET_KEY is not configured');
+  return new Stripe(stripeKey, {
     apiVersion: '2026-01-28.clover',
   });
 }
@@ -26,12 +28,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Vérifier la signature Stripe
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret) throw new Error('STRIPE_WEBHOOK_SECRET is not configured');
     let event: Stripe.Event;
     try {
       event = stripe.webhooks.constructEvent(
         body,
         sig as string,
-        process.env.STRIPE_WEBHOOK_SECRET!
+        webhookSecret
       );
     } catch (err: any) {
       console.error('Webhook signature verification failed:', err.message);

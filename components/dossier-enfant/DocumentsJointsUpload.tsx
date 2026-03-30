@@ -106,8 +106,8 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess }:
       onUploadSuccess?.();
 
       setTimeout(() => setSuccess(''), 3000);
-    } catch (err: any) {
-      setError(err.message || 'Erreur lors de l\'envoi.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erreur lors de l\'envoi.');
     } finally {
       setUploading(false);
     }

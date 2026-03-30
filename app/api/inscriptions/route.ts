@@ -81,8 +81,9 @@ export async function POST(request: NextRequest) {
     // Normaliser la date envoyée par le front (peut être ISO ou date pure)
     const normalizedDate = data.sessionDate.split('T')[0]; // "2026-07-05T00:00:00Z" → "2026-07-05"
     // Stratégie: chercher par date pure d'abord, fallback par plage si timestamptz
-    let priceRow: any = null;
-    let priceError: any = null;
+    interface PriceRow { price_ged_total: number; transport_surcharge_ged: number; city_departure: string; }
+    let priceRow: PriceRow | null = null;
+    let priceError: unknown = null;
 
     // Tentative 1: match exact date pure
     const { data: priceRows1, error: priceErr1 } = await supabase

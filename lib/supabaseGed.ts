@@ -98,6 +98,7 @@ export const getSejours = async (filters: StayFilters = {}) => {
   if (error) throw error
 
   // Mapping manuel snake_case → camelCase pour les champs premium
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return data?.map((stay: any) => ({
     ...stay,
     marketingTitle: stay.marketing_title,
@@ -174,7 +175,7 @@ export const getCitiesDeparture = async (slug: string) => {
     .eq('stay_slug', slug)
 
   if (error) throw error
-  return [...new Set(data.map((d: any) => d.city_departure))].sort((a: string, b: string) => a.localeCompare(b, 'fr'))
+  return [...new Set(data.map((d: { city_departure: string }) => d.city_departure))].sort((a: string, b: string) => a.localeCompare(b, 'fr'))
 }
 
 // API SESSIONS AVEC ÂGES

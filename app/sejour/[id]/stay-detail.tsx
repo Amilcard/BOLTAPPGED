@@ -181,9 +181,9 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
     ? ageRangesFromProps.replace(' ans', '').split(' / ')
     : Array.from(new Set(
         rawSessions
-          .filter((s: any) => s.age_min != null && s.age_max != null)
-          .map((s: any) => `${s.age_min}-${s.age_max}`)
-      )).sort((a: any, b: any) => {
+          .filter((s: RawSessionData) => s.age_min != null && s.age_max != null)
+          .map((s: RawSessionData) => `${s.age_min}-${s.age_max}`)
+      )).sort((a: string, b: string) => {
         const minA = parseInt(a.split('-')[0]);
         const minB = parseInt(b.split('-')[0]);
         return minA - minB;
@@ -191,7 +191,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
   // Durée: Math.ceil cohérent avec le serveur (Sprint 1)
   const uniqueDurations = Array.from(new Set(
-    sessions.map((s: any) => {
+    sessions.map((s: { startDate: string; endDate: string }) => {
       const start = new Date(s.startDate);
       const end = new Date(s.endDate);
       return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
@@ -375,7 +375,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                <Users className="w-5 h-5 text-primary" />
                <span className="font-bold text-primary font-heading">
                  {uniqueAgeRanges.length > 0
-                    ? uniqueAgeRanges.map((r: any) => `${r} ans`).join(' / ')
+                    ? uniqueAgeRanges.map((r: string) => `${r} ans`).join(' / ')
                     : (stay?.ageMin && stay?.ageMax ? `${stay.ageMin}-${stay.ageMax} ans` : 'Enfants')
                  }
                </span>

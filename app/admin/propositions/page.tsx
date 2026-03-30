@@ -167,8 +167,8 @@ export default function PropositionsPage() {
         encadrement: false,
       });
       void loadPropositions();
-    } catch (err: any) {
-      setError(err.message || 'Erreur lors de la création');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erreur lors de la création');
     } finally {
       setSubmitting(false);
     }

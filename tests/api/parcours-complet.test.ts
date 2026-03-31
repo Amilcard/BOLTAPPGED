@@ -18,24 +18,26 @@ import { describe, it, expect, beforeAll } from '@jest/globals';
 import { config } from 'dotenv';
 import { resolve } from 'path';
 
-// Charger .env (Supabase URL + service key)
+// Charger .env (Supabase URL + service key + NEXTAUTH_SECRET)
 config({ path: resolve(__dirname, '../../.env'), override: true });
-// Injecter TEST_ADMIN_SESSION depuis .env.test (lecture directe pour éviter les problèmes de hoisting)
-{
-  const fs = require('fs');
-  const testEnvPath = resolve(__dirname, '../../.env.test');
-  if (fs.existsSync(testEnvPath)) {
-    const content = fs.readFileSync(testEnvPath, 'utf8');
-    const m = content.match(/^TEST_ADMIN_SESSION\s*=\s*"?([^"\r\n]+)"?/m);
-    if (m) process.env.TEST_ADMIN_SESSION = m[1].trim();
-  }
+
+// Générer dynamiquement le token admin depuis NEXTAUTH_SECRET
+// → pas de token statique expirant dans .env.test
+import jwt from 'jsonwebtoken';
+function generateAdminToken(): string {
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) return '';
+  return jwt.sign(
+    { userId: '00000000-0000-0000-0000-000000000000', email: 'admin-test@groupeetdecouverte.fr', role: 'ADMIN' },
+    secret,
+    { expiresIn: '1h' }
+  );
 }
 
 const BASE_URL     = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000').replace(/\/$/, '');
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-// Lu à la volée pour éviter le hoisting Jest (la constante serait vide si évaluée avant le bloc env)
-const getAdminToken = () => process.env.TEST_ADMIN_SESSION || '';
+const getAdminToken = () => generateAdminToken();
 const TEST_EMAIL   = 'test-parcours@ged-test.internal';
 
 let serverReachable = false;
@@ -284,24 +286,30 @@ describe('P4 — Upload pièce jointe (chemin nominal)', () => {
 
 // ─── P5 — Statut admin ───────────────────────────────────────────────────────
 
+// P5 ne peut tourner qu'en local (le token est signé avec NEXTAUTH_SECRET local,
+// différent du secret production → 401 si BASE_URL pointe vers prod)
+const isLocalServer = BASE_URL.includes('localhost') || BASE_URL.includes('127.0.0.1');
+
 describe('P5 — Changement de statut admin', () => {
   it('passe en "validee"', async () => {
     if (skip('P5-validee') || !inscriptionId) return;
-    if (!getAdminToken()) { console.warn('[SKIP] P5 — TEST_ADMIN_SESSION manquant'); return; }
+    if (!isLocalServer) { console.warn('[SKIP] P5 — test admin disponible uniquement en local'); return; }
+    if (!getAdminToken()) { console.warn('[SKIP] P5 — NEXTAUTH_SECRET manquant'); return; }
 
     const res = await put(`/api/admin/inscriptions/${inscriptionId}`, { status: 'validee' }, getAdminToken());
     expect(res.status).toBe(200);
   });
 
   it('passe en "refusee"', async () => {
-    if (skip('P5-refusee') || !inscriptionId || !getAdminToken()) return;
+    if (skip('P5-refusee') || !inscriptionId) return;
+    if (!isLocalServer || !getAdminToken()) { console.warn('[SKIP] P5 — test admin disponible uniquement en local'); return; }
 
     const res = await put(`/api/admin/inscriptions/${inscriptionId}`, { status: 'refusee' }, getAdminToken());
     expect(res.status).toBe(200);
   });
 
   it('statut "refusee" persisté en base', async () => {
-    if (skip('P5-base') || !inscriptionId) return;
+    if (skip('P5-base') || !inscriptionId || !isLocalServer) return;
 
     const res  = await supabase(`gd_inscriptions?id=eq.${inscriptionId}&select=status`);
     const data = await res.json();

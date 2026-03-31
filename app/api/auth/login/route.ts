@@ -114,15 +114,32 @@ export async function POST(req: NextRequest) {
     // Rôle depuis app_metadata (défini via SQL : raw_app_meta_data)
     const role = data.user.app_metadata?.role || 'VIEWER';
 
-    // Génération du JWT applicatif (compatible auth-middleware.ts)
+    // Reset rate limit après connexion réussie
+    getSupabaseAdmin().from('gd_login_attempts').delete().eq('ip', ip);
+
+    // Vérifier si la 2FA est activée pour cet utilisateur
+    const { data: twoFaRow } = await getSupabaseAdmin()
+      .from('gd_admin_2fa')
+      .select('enabled')
+      .eq('user_id', data.user.id)
+      .single();
+
+    if (twoFaRow?.enabled) {
+      // Émettre un token temporaire (5 min) pour la vérification 2FA
+      const pendingToken = jwt.sign(
+        { userId: data.user.id, email: data.user.email, role, pending2fa: true },
+        secret,
+        { expiresIn: '5m' }
+      );
+      return NextResponse.json({ requires2fa: true, pendingToken });
+    }
+
+    // Pas de 2FA — session normale 8h
     const token = jwt.sign(
       { userId: data.user.id, email: data.user.email, role },
       secret,
       { expiresIn: '8h' }
     );
-
-    // Reset rate limit après connexion réussie
-    getSupabaseAdmin().from('gd_login_attempts').delete().eq('ip', ip);
 
     const response = NextResponse.json({ ok: true });
     response.cookies.set('gd_session', token, {

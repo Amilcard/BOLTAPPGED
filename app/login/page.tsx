@@ -12,6 +12,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [requires2fa, setRequires2fa] = useState(false);
+  const [pendingToken, setPendingToken] = useState('');
+  const [totpCode, setTotpCode] = useState('');
 
   useEffect(() => {
     if (getStoredAuth()) router.replace('/admin');
@@ -30,12 +33,41 @@ export default function LoginPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error?.message ?? 'Identifiants incorrects');
+      if (!res.ok) throw new Error(data?.error ?? 'Identifiants incorrects');
+
+      if (data.requires2fa) {
+        setPendingToken(data.pendingToken);
+        setRequires2fa(true);
+        return;
+      }
 
       setStoredAuth(data?.token ?? '');
       router.replace('/admin');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erreur de connexion');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handle2faSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/auth/2fa/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pendingToken, code: totpCode }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? 'Code invalide');
+
+      router.replace('/admin');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erreur de vérification');
     } finally {
       setLoading(false);
     }
@@ -54,41 +86,84 @@ export default function LoginPage() {
             <span className="text-xl font-bold">Administration</span>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-primary-600 mb-1">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                className="w-full px-4 py-3 border border-primary-200 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-primary-600 mb-1">Mot de passe</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                className="w-full px-4 py-3 border border-primary-200 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
-              />
-            </div>
+          {!requires2fa ? (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-primary-600 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 border border-primary-200 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-primary-600 mb-1">Mot de passe</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 border border-primary-200 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
+                />
+              </div>
 
-            {error && (
-              <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>
-            )}
+              {error && (
+                <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>
+              )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {loading ? 'Connexion...' : 'Se connecter'}
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {loading ? 'Connexion...' : 'Se connecter'}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handle2faSubmit} className="space-y-4">
+              <p className="text-sm text-primary-600 mb-2">
+                Saisissez le code à 6 chiffres de votre application d&apos;authentification.
+              </p>
+              <div>
+                <label className="block text-sm font-medium text-primary-600 mb-1">Code 2FA</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={totpCode}
+                  onChange={e => setTotpCode(e.target.value.replace(/\D/g, ''))}
+                  required
+                  autoFocus
+                  className="w-full px-4 py-3 border border-primary-200 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent text-center text-xl tracking-widest"
+                  placeholder="000000"
+                />
+              </div>
+
+              {error && (
+                <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading || totpCode.length !== 6}
+                className="w-full py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {loading ? 'Vérification...' : 'Vérifier'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setRequires2fa(false); setPendingToken(''); setError(''); }}
+                className="w-full text-sm text-primary-500 hover:text-primary"
+              >
+                Retour à la connexion
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>

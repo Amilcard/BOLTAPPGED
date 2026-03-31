@@ -6,13 +6,22 @@
 | ONPE | https://onpe.france-enfance-protegee.fr/feed/ |
 | Les Pros de la Petite Enfance | https://www.lesprosdelapetiteenfance.fr/feed |
 | Vie-publique.fr | https://www.vie-publique.fr/actualites-feeds.xml |
+| Le Media Social | https://www.lemediasocial.fr/rss |
+| La Gazette des Communes | https://www.lagazettedescommunes.com/feed/ |
+| Solidarités.gouv.fr | https://solidarites.gouv.fr/rss |
+| Education.gouv.fr | https://www.education.gouv.fr/rss |
 
 ## Recherches site: de secours
 - site:laligue.org
 - site:apprentis-auteuil.org
 - site:cnape.fr
+- site:anpase.fr
 - site:lemediasocial.fr
 - site:lesprosdelapetiteenfance.fr
+- site:service-public.gouv.fr
+- site:enfancejeunesseinfos.fr
+- site:fondationdefrance.org
+- site:has-sante.fr
 
 ## Mots-clés
 

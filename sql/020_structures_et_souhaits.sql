@@ -182,15 +182,10 @@ CREATE POLICY "service_role_all" ON gd_souhaits
   USING (auth.role() = 'service_role')
   WITH CHECK (auth.role() = 'service_role');
 
--- Policy lecture anon : uniquement via suivi_token_kid
--- (le kid peut consulter ses souhaits avec son token)
-CREATE POLICY "anon_read_own_souhaits" ON gd_souhaits
-  FOR SELECT
-  USING (true);
-  -- Note : le filtrage réel se fait dans l'API route (WHERE suivi_token_kid = ?)
-  -- Cette policy est ouverte en lecture car le backend filtre déjà
-
--- Pas de policy INSERT/UPDATE/DELETE pour anon → bloqué par défaut
+-- Pas de policy anon : aucun accès direct Supabase n'est légitime.
+-- Tous les accès passent par l'API Next.js (service_role, bypass RLS).
+-- Policy "anon_read_own_souhaits" supprimée le 2026-03-31 (USING true = toute la table lisible via clé anon publique).
+-- DROP POLICY IF EXISTS "anon_read_own_souhaits" ON gd_souhaits; -- déjà exécuté en prod
 
 
 -- ============================================================

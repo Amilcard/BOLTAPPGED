@@ -94,6 +94,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ id: existing.id, updated: false, message: 'Souhait déjà traité.' });
     }
 
+    const tokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
     // Créer le souhait
     const { data: souhait, error } = await supabase
       .from('gd_souhaits')
@@ -109,6 +111,7 @@ export async function POST(req: NextRequest) {
         structure_domain: structureDomain,
         structure_id: structureId,
         status: 'emis',
+        educateur_token_expires_at: tokenExpiresAt,
       })
       .select('id, educateur_token, suivi_token_kid')
       .single();

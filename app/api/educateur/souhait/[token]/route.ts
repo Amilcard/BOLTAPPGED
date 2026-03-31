@@ -21,12 +21,16 @@ export async function GET(
     const supabase = getSupabase();
     const { data, error } = await supabase
       .from('gd_souhaits')
-      .select('id, kid_prenom, kid_prenom_referent, sejour_slug, sejour_titre, motivation, status, reponse_educateur, reponse_date, educateur_prenom, created_at')
+      .select('id, kid_prenom, kid_prenom_referent, sejour_slug, sejour_titre, motivation, status, reponse_educateur, reponse_date, educateur_prenom, created_at, educateur_token_expires_at')
       .eq('educateur_token', token)
       .single();
 
     if (error || !data) {
       return NextResponse.json({ error: 'Souhait introuvable.' }, { status: 404 });
+    }
+
+    if (data.educateur_token_expires_at && new Date(data.educateur_token_expires_at) < new Date()) {
+      return NextResponse.json({ error: 'Ce lien a expiré.' }, { status: 410 });
     }
 
     // Marquer comme vu si encore emis
@@ -74,11 +78,19 @@ export async function PATCH(
     // Bloquer la modification d'un souhait déjà traité
     const { data: current } = await supabase
       .from('gd_souhaits')
-      .select('status')
+      .select('status, educateur_token_expires_at')
       .eq('educateur_token', token)
       .single();
 
-    if (current && ['valide', 'refuse'].includes(current.status)) {
+    if (!current) {
+      return NextResponse.json({ error: 'Souhait introuvable.' }, { status: 404 });
+    }
+
+    if (current.educateur_token_expires_at && new Date(current.educateur_token_expires_at) < new Date()) {
+      return NextResponse.json({ error: 'Ce lien a expiré.' }, { status: 410 });
+    }
+
+    if (['valide', 'refuse'].includes(current.status)) {
       return NextResponse.json({ error: 'Ce souhait a déjà été traité.' }, { status: 409 });
     }
 

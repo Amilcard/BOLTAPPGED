@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
     let query = supabase
       .from('gd_inscriptions')
       .select('*, gd_dossier_enfant(bulletin_completed, sanitaire_completed, liaison_completed, renseignements_completed, documents_joints, ged_sent_at), gd_stays!fk_inscriptions_stay(marketing_title, title)')
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(limit);
 

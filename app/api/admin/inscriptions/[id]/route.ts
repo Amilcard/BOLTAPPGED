@@ -23,6 +23,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       .from('gd_inscriptions')
       .select('*')
       .eq('id', id)
+      .is('deleted_at', null)
       .single();
 
     if (error || !data) {
@@ -116,6 +117,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       );
     }
 
+    // Lire le statut actuel pour l'audit log (uniquement si status change)
+    let oldStatus: string | null = null;
+    if (status) {
+      const { data: current } = await supabase
+        .from('gd_inscriptions')
+        .select('status')
+        .eq('id', id)
+        .single();
+      oldStatus = current?.status ?? null;
+    }
+
     const { data, error } = await supabase
       .from('gd_inscriptions')
       .update(updateData)
@@ -126,6 +138,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (error) {
       console.error('PUT /api/admin/inscriptions/[id] Supabase error:', error);
       throw error;
+    }
+
+    // Audit log non-bloquant si le statut a changé
+    if (status && oldStatus !== status) {
+      supabase.from('gd_inscription_status_logs').insert({
+        inscription_id: id,
+        old_status: oldStatus,
+        new_status: status,
+        changed_by_email: auth.email,
+      }).then(({ error: logError }) => {
+        if (logError) console.error('Audit log error:', logError);
+      });
     }
 
     // Email non-bloquant si le statut a changé
@@ -165,14 +189,12 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       );
     }
 
-    // Supprimer le dossier enfant lie
-    await supabase.from('gd_dossier_enfant').delete().eq('inscription_id', inscriptionId);
-
-    // Supprimer les propositions tarifaires liees
-    await supabase.from('gd_propositions_tarifaires').delete().eq('inscription_id', inscriptionId);
-
-    // Supprimer l'inscription
-    const { error } = await supabase.from('gd_inscriptions').delete().eq('id', inscriptionId);
+    // Soft delete : marquer deleted_at plutôt que supprimer physiquement
+    const { error } = await supabase
+      .from('gd_inscriptions')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', inscriptionId)
+      .is('deleted_at', null);
 
     if (error) {
       console.error('DELETE /api/admin/inscriptions/[id] error:', error);

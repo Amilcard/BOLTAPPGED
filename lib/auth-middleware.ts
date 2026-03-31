@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 
 export interface AuthPayload {
@@ -39,8 +39,5 @@ export function requireEditor(request: NextRequest): AuthPayload | null {
 }
 
 export function unauthorizedResponse() {
-  return new (require('next/server').NextResponse)(
-    JSON.stringify({ error: 'Non autorisé' }),
-    { status: 401, headers: { 'Content-Type': 'application/json' } }
-  );
+  return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 }

@@ -39,16 +39,19 @@ jest.mock('@/lib/supabase-server', () => ({
 import jwt from 'jsonwebtoken';
 import { NextRequest } from 'next/server';
 
+const TEST_SECRET = process.env.NEXTAUTH_SECRET;
+if (!TEST_SECRET) throw new Error('NEXTAUTH_SECRET manquant dans les tests');
+
 // Generate valid JWT tokens for tests
 const ADMIN_TOKEN = jwt.sign(
   { userId: 'admin-1', email: 'admin@ged.fr', role: 'ADMIN' },
-  process.env.NEXTAUTH_SECRET!,
+  TEST_SECRET,
   { expiresIn: '1h' }
 );
 
 const EDITOR_TOKEN = jwt.sign(
   { userId: 'editor-1', email: 'editor@ged.fr', role: 'EDITOR' },
-  process.env.NEXTAUTH_SECRET!,
+  TEST_SECRET,
   { expiresIn: '1h' }
 );
 
@@ -97,17 +100,23 @@ function mockSelectOrder(result: { data: unknown; error: unknown }) {
 import { GET as getStays } from '@/app/api/admin/stays/route';
 
 // Dynamic route imports need special handling
-let putStay: ((req: unknown, ctx: unknown) => Promise<Response>) | undefined, deleteStay: ((req: unknown, ctx: unknown) => Promise<Response>) | undefined, getSlug: ((req: unknown, ctx: unknown) => Promise<Response>) | undefined;
-try {
-  const stayIdRoute = require('@/app/api/admin/stays/[id]/route');
-  putStay = stayIdRoute.PUT;
-  deleteStay = stayIdRoute.DELETE;
-} catch { /* route may not exist */ }
+type RouteHandler = (req: unknown, ctx: unknown) => Promise<Response>;
+let putStay: RouteHandler | undefined;
+let deleteStay: RouteHandler | undefined;
+let getSlug: RouteHandler | undefined;
 
-try {
-  const slugRoute = require('@/app/api/admin/stays/slug/[slug]/route');
-  getSlug = slugRoute.GET;
-} catch { /* route may not exist */ }
+beforeAll(async () => {
+  try {
+    const stayIdRoute = await import('@/app/api/admin/stays/[id]/route');
+    putStay = stayIdRoute.PUT as RouteHandler;
+    deleteStay = stayIdRoute.DELETE as RouteHandler;
+  } catch { /* route may not exist */ }
+
+  try {
+    const slugRoute = await import('@/app/api/admin/stays/slug/[slug]/route');
+    getSlug = slugRoute.GET as RouteHandler;
+  } catch { /* route may not exist */ }
+});
 
 // ── Tests GET /api/admin/stays ───────────────────────────────────────────────
 

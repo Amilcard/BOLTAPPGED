@@ -100,7 +100,6 @@ function setupHappyPath() {
   mockRpc.mockResolvedValue({ data: { allowed: true, age_min: 6, age_max: 8 }, error: null });
 
   // Price check
-  let callCount = 0;
   mockFrom.mockImplementation((table: string) => {
     if (table === 'gd_session_prices') {
       return {

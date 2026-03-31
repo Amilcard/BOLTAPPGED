@@ -2,7 +2,7 @@
 export const dynamic = 'force-dynamic';
 
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { STORAGE_KEYS, formatDate } from '@/lib/utils';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,7 @@ export default function AdminSessions() {
   const [editingSession, setEditingSession] = useState<StaySession | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
-  const fetchStays = async () => {
+  const fetchStays = useCallback(async () => {
     const token = localStorage.getItem(STORAGE_KEYS.AUTH);
     const res = await fetch('/api/admin/stays', {
       headers: { Authorization: `Bearer ${token}` },
@@ -27,19 +27,19 @@ export default function AdminSessions() {
       setStays(data);
       if (data.length && !selectedStay) setSelectedStay(data[0].id);
     }
-  };
+  }, [selectedStay]);
 
-  const fetchSessions = async () => {
+  const fetchSessions = useCallback(async () => {
     if (!selectedStay) return;
     const token = localStorage.getItem(STORAGE_KEYS.AUTH);
     const res = await fetch(`/api/admin/stays/${selectedStay}/sessions`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (res.ok) setSessions(await res.json());
-  };
+  }, [selectedStay]);
 
-  useEffect(() => { void fetchStays(); }, []);
-  useEffect(() => { void fetchSessions(); }, [selectedStay]);
+  useEffect(() => { void fetchStays(); }, [fetchStays]);
+  useEffect(() => { void fetchSessions(); }, [fetchSessions]);
 
   const handleDelete = (sessionId: string) => {
     confirm('Supprimer cette session ? Cette action est irréversible.', async () => {

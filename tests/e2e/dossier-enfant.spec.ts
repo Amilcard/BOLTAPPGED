@@ -152,10 +152,11 @@ test.describe('Dossier enfant — back-office admin', () => {
     // pas un cookie de session. On l'injecte via une page neutre AVANT de naviguer
     // vers /admin — sinon le layout AdminLayout lit localStorage vide, redirige vers
     // /login, et le reload() atterrit sur /login au lieu de /admin/demandes.
+    const adminSession = process.env.TEST_ADMIN_SESSION ?? '';
     await page.goto('/');
     await page.evaluate((adminToken) => {
       localStorage.setItem('gd_auth', adminToken);
-    }, process.env.TEST_ADMIN_SESSION!);
+    }, adminSession);
     // Le middleware Next.js (/admin/:path*) vérifie le cookie gd_session côté serveur
     // AVANT que le composant React ne s'exécute. Sans ce cookie, il redirige vers /login
     // même si localStorage est correctement rempli.
@@ -164,7 +165,7 @@ test.describe('Dossier enfant — back-office admin', () => {
     //   - gd_auth localStorage → AdminLayout + fetch API (composant client)
     await page.context().addCookies([{
       name: 'gd_session',
-      value: process.env.TEST_ADMIN_SESSION!,
+      value: adminSession,
       domain: 'localhost',
       path: '/',
       httpOnly: false,

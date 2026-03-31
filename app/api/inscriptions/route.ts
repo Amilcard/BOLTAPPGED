@@ -317,7 +317,7 @@ export async function POST(request: NextRequest) {
       .eq('sejour_slug', data.staySlug)
       .eq('session_date', normalizedDate)
       .eq('jeune_date_naissance', data.childBirthDate)
-      .not('status', 'eq', 'annule')
+      .not('status', 'eq', 'annulee')
       .maybeSingle();
 
     if (existing) {

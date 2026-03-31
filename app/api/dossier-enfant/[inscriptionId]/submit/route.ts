@@ -98,15 +98,15 @@ export async function POST(
       throw updateErr;
     }
 
-    // 6. Récupérer les infos inscription pour les emails (fire-and-forget)
-    Promise.resolve(
-      supabase
-        .from('gd_inscriptions')
-        .select('referent_email, referent_nom, jeune_prenom, jeune_nom, dossier_ref, sejour_slug, session_date')
-        .eq('id', inscriptionId)
-        .single()
-    ).then(({ data: insc }) => {
-      if (!insc) return;
+    // 6. Récupérer les infos inscription et envoyer les emails AVANT le return
+    // (en serverless, les Promise après return ne sont pas garanties d'être exécutées)
+    const { data: insc } = await supabase
+      .from('gd_inscriptions')
+      .select('referent_email, referent_nom, jeune_prenom, jeune_nom, dossier_ref, sejour_slug, session_date')
+      .eq('id', inscriptionId)
+      .single();
+
+    if (insc) {
       const i = insc as {
         referent_email: string;
         referent_nom: string;
@@ -116,30 +116,31 @@ export async function POST(
         sejour_slug?: string;
         session_date?: string;
       };
-
-      // Email accusé de réception au référent
-      sendDossierCompletEmail({
-        referentEmail: i.referent_email,
-        referentNom: i.referent_nom,
-        jeunePrenom: i.jeune_prenom,
-        jeuneNom: i.jeune_nom,
-        dossierRef: i.dossier_ref ?? undefined,
-      }).catch((err) => { console.error('[GED submit email] sendDossierCompletEmail failed', { inscriptionId, err }); });
-
-      // Notification admin GED avec liens PDF
       const base = process.env.NEXT_PUBLIC_APP_URL || 'https://app.groupeetdecouverte.fr';
-      sendDossierGedAdminNotification({
-        referentNom: i.referent_nom,
-        referentEmail: i.referent_email,
-        jeunePrenom: i.jeune_prenom,
-        jeuneNom: i.jeune_nom,
-        dossierRef: i.dossier_ref ?? undefined,
-        sejourSlug: i.sejour_slug ?? '',
-        sessionDate: i.session_date ?? '',
-        inscriptionId,
-        adminUrl: `${base}/admin/demandes`,
-      }).catch((err) => { console.error('[GED submit email] sendDossierGedAdminNotification failed', { inscriptionId, err }); });
-    }).catch((err) => { console.error('[GED submit email] fetch inscription for email failed', { inscriptionId, err }); });
+
+      await Promise.allSettled([
+        sendDossierCompletEmail({
+          referentEmail: i.referent_email,
+          referentNom: i.referent_nom,
+          jeunePrenom: i.jeune_prenom,
+          jeuneNom: i.jeune_nom,
+          dossierRef: i.dossier_ref ?? undefined,
+        }),
+        sendDossierGedAdminNotification({
+          referentNom: i.referent_nom,
+          referentEmail: i.referent_email,
+          jeunePrenom: i.jeune_prenom,
+          jeuneNom: i.jeune_nom,
+          dossierRef: i.dossier_ref ?? undefined,
+          sejourSlug: i.sejour_slug ?? '',
+          sessionDate: i.session_date ?? '',
+          inscriptionId,
+          adminUrl: `${base}/admin/demandes`,
+        }),
+      ]);
+    } else {
+      console.error('[GED submit email] inscription non trouvée pour envoi emails', { inscriptionId });
+    }
 
     return NextResponse.json({ ok: true, gedSentAt: new Date().toISOString() });
   } catch (error) {

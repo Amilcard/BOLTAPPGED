@@ -85,10 +85,19 @@ export async function GET(req: NextRequest) {
         if (slug) slugCounts[slug] = (slugCounts[slug] || 0) + 1;
       }
     }
-    const topSejours = Object.entries(slugCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([slug, count]) => ({ slug, label: slug.replace(/-/g, ' '), count }));
+    const topSlugs = Object.entries(slugCounts).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([slug]) => slug);
+    const { data: stayTitles } = topSlugs.length > 0
+      ? await supabase.from('gd_stays').select('slug, marketing_title, title').in('slug', topSlugs)
+      : { data: [] };
+    const titleMap = Object.fromEntries(
+      ((stayTitles ?? []) as { slug: string; marketing_title?: string; title?: string }[])
+        .map(s => [s.slug, s.marketing_title || s.title || s.slug])
+    );
+    const topSejours = topSlugs.map(slug => ({
+      slug,
+      label: titleMap[slug] ?? slug.replace(/-/g, ' '),
+      count: slugCounts[slug],
+    }));
 
     return NextResponse.json({
       stays: staysRes.count ?? 0,

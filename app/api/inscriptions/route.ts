@@ -15,6 +15,7 @@ const inscriptionSchema = z.object({
   childFirstName: z.string().min(1),
   childLastName: z.string().optional().default(''),
   childBirthDate: z.string().min(1),
+  childSex: z.enum(['M', 'F']).optional(),
   optionsEducatives: z.string().optional(),
   remarques: z.string().optional(),
   priceTotal: z.number().min(0),
@@ -235,7 +236,19 @@ export async function POST(request: NextRequest) {
 
     if (rpcError) {
       console.error('Capacity check RPC error:', rpcError);
-      // En cas d'erreur RPC, fallback sur la vérification non-atomique
+      // Fallback non-atomique sur gd_stay_sessions.seats_left
+      const { data: sessionFallback } = await supabase
+        .from('gd_stay_sessions')
+        .select('seats_left')
+        .eq('stay_slug', data.staySlug)
+        .eq('start_date', normalizedDate)
+        .maybeSingle();
+      if (sessionFallback && sessionFallback.seats_left !== null && sessionFallback.seats_left !== -1 && sessionFallback.seats_left <= 0) {
+        return NextResponse.json(
+          { error: { code: 'SESSION_FULL', message: 'Cette session est complète. Plus de places disponibles.' } },
+          { status: 400 }
+        );
+      }
     } else if (capacityCheck && !capacityCheck.allowed) {
       return NextResponse.json(
         { error: { code: 'SESSION_FULL', message: 'Cette session est complète. Plus de places disponibles.' } },
@@ -427,6 +440,7 @@ export async function POST(request: NextRequest) {
         dossier_ref: dossierRef,
         // suivi_token est auto-généré par Supabase (DEFAULT gen_random_uuid())
         options_educatives: data.optionsEducatives || null,
+        jeune_sexe: data.childSex || null,
         remarques: cleanRemarks,
         price_total: Math.round(data.priceTotal),
         status: 'en_attente',

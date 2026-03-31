@@ -369,6 +369,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
           childFirstName: step2.childFirstName,
           childLastName: '',
           childBirthDate: step2.childBirthDate,
+          childSex: step2.childSex || undefined,
           remarques,
           priceTotal: totalPrice ?? 0,
           consent: step2.consent,

@@ -321,6 +321,59 @@ describe('P5 — Changement de statut admin', () => {
 
 // ─── P6 — Badge "En retard" ──────────────────────────────────────────────────
 
+// ─── P6b — Anti-doublon après annulation ─────────────────────────────────────
+
+describe('P6b — Anti-doublon après annulation', () => {
+  it('une inscription annulee ne bloque pas une nouvelle inscription', async () => {
+    if (skip('P6b') || !inscriptionId || !SERVICE_KEY) return;
+
+    // Annuler l'inscription créée en P1
+    if (isLocalServer && getAdminToken()) {
+      await put(`/api/admin/inscriptions/${inscriptionId}`, { status: 'annulee' }, getAdminToken());
+    } else {
+      // Via Supabase direct si pas de serveur local
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/gd_inscriptions?id=eq.${inscriptionId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            apikey: SERVICE_KEY,
+            Authorization: `Bearer ${SERVICE_KEY}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal',
+          },
+          body: JSON.stringify({ status: 'annulee' }),
+        }
+      );
+    }
+
+    // Retenter la même inscription → doit être autorisé (pas 409)
+    const res = await post('/api/inscriptions', {
+      staySlug: 'test-sejour-p1',
+      sessionDate: '2026-09-01',
+      cityDeparture: 'sans_transport',
+      organisation: 'MECS Test',
+      socialWorkerName: 'Référent Test',
+      email: TEST_EMAIL,
+      phone: '0612345678',
+      childFirstName: 'TestEnfant',
+      childBirthDate: '2017-01-15',
+      priceTotal: 0,
+      consent: true,
+      paymentMethod: 'bank_transfer',
+      structureName: 'MECS Test',
+      structurePostalCode: '75001',
+      structureCity: 'Paris',
+    });
+
+    // Doit passer (201) ou échouer pour une raison autre que DUPLICATE (400 prix, etc.)
+    // L'essentiel : pas 409 DUPLICATE
+    expect(res.status).not.toBe(409);
+  });
+});
+
+// ─── P6 — Badge "En retard" ──────────────────────────────────────────────────
+
 describe('P6 — Badge En retard (condition en base)', () => {
   it('détecte les inscriptions > 7j sans dossier soumis', async () => {
     if (skip('P6') || !SERVICE_KEY) return;

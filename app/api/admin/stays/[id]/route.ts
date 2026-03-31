@@ -70,7 +70,15 @@ export async function DELETE(
       .delete()
       .eq('slug', id);
 
-    if (error) throw error;
+    if (error) {
+      if ((error as { code?: string }).code === '23503') {
+        return NextResponse.json(
+          { error: { code: 'FK_VIOLATION', message: 'Ce séjour a des inscriptions actives. Annulez-les avant de supprimer le séjour.' } },
+          { status: 409 }
+        );
+      }
+      throw error;
+    }
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('DELETE /api/admin/stays/[id] error:', error);

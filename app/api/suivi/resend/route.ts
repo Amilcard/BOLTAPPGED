@@ -32,9 +32,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // Renvoyer uniquement le lien de la plus récente inscription
+    // Renvoyer uniquement le lien de la plus récente inscription (fire-and-forget)
     const latest = inscriptions[0] as Record<string, unknown>;
-    await sendInscriptionConfirmation({
+    sendInscriptionConfirmation({
       referentNom:    (latest.referent_nom as string) || '',
       referentEmail:  latest.referent_email as string,
       jeunePrenom:    latest.jeune_prenom as string,
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       paymentMethod:  (latest.payment_method as string) || 'bank_transfer',
       dossierRef:     latest.dossier_ref as string,
       suiviUrl:       `${appUrl}/suivi/${latest.suivi_token as string}`,
-    });
+    }).catch((err) => console.error('[suivi/resend] email failed:', err?.message));
 
     return NextResponse.json({ ok: true });
   } catch (err) {

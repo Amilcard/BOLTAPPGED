@@ -32,6 +32,7 @@ export async function GET(
       .from('gd_inscriptions')
       .select('referent_email, organisation')
       .eq('suivi_token', token)
+      .is('deleted_at', null)
       .single();
 
     const source = sourceRaw as { referent_email: string; organisation?: string } | null;

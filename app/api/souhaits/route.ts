@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
         sejourTitre: sejourTitre || sejourSlug,
         motivation,
         lienReponse: `${baseUrl}/educateur/souhait/${existing.educateur_token}`,
-      }).catch(() => {});
+      }).catch((e) => console.error('[EMAIL] Souhait update non envoyé:', e?.message));
 
       return NextResponse.json({ id: existing.id, updated: true });
     }

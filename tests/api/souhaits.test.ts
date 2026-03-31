@@ -84,8 +84,8 @@ function setupCreatePath(opts: {
     if (table === 'gd_souhaits') {
       return {
         select: () => ({
-          eq: (_col1: string, val1: unknown) => ({
-            eq: (_col2: string, val2: unknown) => ({
+          eq: (_col1: string, _val1: unknown) => ({
+            eq: (_col2: string, _val2: unknown) => ({
               single: () => ({
                 data: opts.existingSouhait || null,
                 error: opts.existingSouhait ? null : { code: 'PGRST116' },

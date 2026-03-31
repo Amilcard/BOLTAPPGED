@@ -88,8 +88,6 @@ test.describe('Flux Réservation - Virement Bancaire', () => {
     }
 
     // Récupérer prix avant ville
-    const priceBefore = await page.locator('text=/\\d+€/').first().textContent();
-
     // Sélectionner ville avec supplément
     const citySelect = page.locator('select[name="cityDeparture"]').first();
     if (await citySelect.isVisible()) {

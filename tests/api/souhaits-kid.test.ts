@@ -30,7 +30,7 @@ const mockSelect  = jest.fn();
 const mockOrder   = jest.fn();
 const mockEq      = jest.fn();
 const mockFrom    = jest.fn();
-const mockSingle  = jest.fn();
+
 const mockUpsert  = jest.fn();
 const mockInsert  = jest.fn();
 

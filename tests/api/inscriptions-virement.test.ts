@@ -23,7 +23,6 @@ process.env.NEXT_PUBLIC_SITE_URL = 'http://localhost:3000';
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
 let lastInsertData: Record<string, unknown> | null = null;
-let mockEmailData: Record<string, unknown> | null = null;
 
 const mockSingle = jest.fn();
 const mockEq = jest.fn().mockReturnValue({ single: mockSingle });
@@ -53,10 +52,7 @@ const mockSendStructureCode = jest.fn().mockResolvedValue(undefined);
 const mockSendNewEducAlert = jest.fn().mockResolvedValue(undefined);
 
 jest.mock('@/lib/email', () => ({
-  sendInscriptionConfirmation: (...args: unknown[]) => {
-    mockEmailData = args[0] as Record<string, unknown>;
-    return mockSendConfirmation(...args);
-  },
+  sendInscriptionConfirmation: (...args: unknown[]) => mockSendConfirmation(...args),
   sendAdminNewInscriptionNotification: (...args: unknown[]) => mockSendAdminNotif(...args),
   sendStructureCodeEmail: (...args: unknown[]) => mockSendStructureCode(...args),
   sendNewEducateurAlert: (...args: unknown[]) => mockSendNewEducAlert(...args),
@@ -211,7 +207,6 @@ describe('POST /api/inscriptions — virement & chèque', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     lastInsertData = null;
-    mockEmailData = null;
   });
 
   it('renvoie 400 si email manquant', async () => {

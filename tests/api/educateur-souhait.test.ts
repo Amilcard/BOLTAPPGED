@@ -65,17 +65,6 @@ function mockSelectSingle(result: { data: unknown; error: unknown }) {
   });
 }
 
-function mockUpdateChain(result: { error: unknown }) {
-  mockUpdate.mockReturnValue({
-    eq: jest.fn().mockReturnValue({
-      select: jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({ data: { status: 'vu' }, error: null }),
-      }),
-      ...result,
-    }),
-  });
-}
-
 // ── GET Tests ────────────────────────────────────────────────────────────────
 
 describe('GET /api/educateur/souhait/[token]', () => {

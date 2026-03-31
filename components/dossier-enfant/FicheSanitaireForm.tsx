@@ -23,6 +23,14 @@ const VACCINS = [
   { key: 'pneumocoque', label: 'Pneumocoque' },
 ];
 
+// Formate automatiquement une saisie de date en JJ/MM/AAAA
+function formatDateInput(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
 export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom, jeuneDateNaissance }: Props) {
   const [form, setForm] = useState<Record<string, unknown>>({
     // Enfant
@@ -185,7 +193,9 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
                     <input type="text" className="w-full border rounded px-2 py-1 text-xs"
                       placeholder="JJ/MM/AAAA"
                       value={(form[`vaccin_${v.key}_date`] as string) || ''}
-                      onChange={e => update(`vaccin_${v.key}_date`, e.target.value)}
+                      onChange={e => update(`vaccin_${v.key}_date`, formatDateInput(e.target.value))}
+                      maxLength={10}
+                      inputMode="numeric"
                     />
                   </td>
                 </tr>

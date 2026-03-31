@@ -4,7 +4,7 @@
  * Aucune dépendance externe.
  */
 
-import { createHmac, randomBytes } from 'crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'crypto';
 
 // ── Base32 ────────────────────────────────────────────────────────────────────
 
@@ -68,8 +68,10 @@ export function generateToken(secret: string, time = Date.now()): string {
 /** Vérifie le code TOTP avec une fenêtre de ±1 step (±30s) pour la dérive d'horloge */
 export function verifyToken(token: string, secret: string, time = Date.now()): boolean {
   const counter = Math.floor(time / 1000 / 30);
+  const tokenBuf = Buffer.from(token.padStart(6, '0'));
   for (const delta of [-1, 0, 1]) {
-    if (hotp(secret, counter + delta) === token) return true;
+    const expected = Buffer.from(hotp(secret, counter + delta));
+    if (expected.length === tokenBuf.length && timingSafeEqual(expected, tokenBuf)) return true;
   }
   return false;
 }

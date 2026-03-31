@@ -46,6 +46,7 @@ export async function GET(
       '*, gd_dossier_enfant(bulletin_completed, sanitaire_completed, liaison_completed, renseignements_completed, documents_joints, ged_sent_at), gd_stays!fk_inscriptions_stay(marketing_title, title)'
     )
     .eq('structure_id', structure.id)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false });
 
   if (inscErr) {
@@ -75,6 +76,7 @@ export async function GET(
             sanitaire: !!dossier.sanitaire_completed,
             liaison: !!dossier.liaison_completed,
             renseignements: !!dossier.renseignements_completed,
+            renseignements_required: !!dossier.renseignements_required,
             pj_count: docs.length,
           }
         : null,

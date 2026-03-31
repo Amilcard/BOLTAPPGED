@@ -132,6 +132,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       .from('gd_inscriptions')
       .update(updateData)
       .eq('id', id)
+      .is('deleted_at', null)
       .select()
       .single();
 

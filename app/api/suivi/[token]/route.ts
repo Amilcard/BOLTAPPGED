@@ -59,6 +59,7 @@ export async function GET(
         'created_at, updated_at'
       )
       .eq('referent_email', source.referent_email)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     if (dossiersErr) {

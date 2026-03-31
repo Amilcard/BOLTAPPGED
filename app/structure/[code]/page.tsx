@@ -23,6 +23,7 @@ interface DossierCompletude {
   sanitaire: boolean;
   liaison: boolean;
   renseignements: boolean;
+  renseignements_required: boolean;
   pj_count: number;
 }
 
@@ -85,10 +86,12 @@ function Badge({ label, color, bg }: { label: string; color: string; bg: string 
 function DossierBadge({ c, gedSentAt }: { c: DossierCompletude | null; gedSentAt?: string | null }) {
   if (!c) return <span className="inline-flex items-center gap-1 text-xs text-gray-400"><FileClock size={12} /> Non commencé</span>;
   if (gedSentAt) return <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700"><FileCheck size={12} /> Envoyé GED</span>;
-  const done = [c.bulletin, c.sanitaire, c.liaison, c.renseignements].filter(Boolean).length;
-  if (done === 4) return <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700"><FileCheck size={12} /> Complet</span>;
+  const required = [c.bulletin, c.sanitaire, c.liaison, ...(c.renseignements_required ? [c.renseignements] : [])];
+  const done = required.filter(Boolean).length;
+  const total = required.length;
+  if (done === total) return <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700"><FileCheck size={12} /> Complet</span>;
   return (
-    <span className="text-xs font-medium text-orange-600">{done}/4 fiches</span>
+    <span className="text-xs font-medium text-orange-600">{done}/{total} fiches</span>
   );
 }
 

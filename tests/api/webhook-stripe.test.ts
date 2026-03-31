@@ -89,6 +89,7 @@ jest.mock('@/lib/email', () => ({
 // ── Import route AFTER mocks ────────────────────────────────────────────────
 import { POST } from '@/app/api/webhooks/stripe/route';
 import type { NextRequest } from 'next/server';
+import { headers } from 'next/headers';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -151,14 +152,12 @@ describe('Webhook Stripe — /api/webhooks/stripe', () => {
     // Par défaut : event pas encore traité
     selectSingleResult = { data: null, error: null };
     // Reset headers mock to return signature
-    const { headers } = require('next/headers');
     (headers as jest.Mock).mockResolvedValue({
       get: (name: string) => (name === 'stripe-signature' ? 'sig_test_valid' : null),
     });
   });
 
   it('retourne 400 si stripe-signature est absent', async () => {
-    const { headers } = require('next/headers');
     (headers as jest.Mock).mockResolvedValueOnce({
       get: () => null,
     });

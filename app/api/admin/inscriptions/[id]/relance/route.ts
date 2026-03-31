@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '@/lib/auth-middleware';
+import { requireEditor } from '@/lib/auth-middleware';
 import { getSupabase } from '@/lib/supabase-server';
 import { sendRappelDossierIncomplet, sendRelanceAdminNotification } from '@/lib/email';
 /**
@@ -16,7 +16,7 @@ export async function POST(
     const { id } = await params;
     const supabase = getSupabase();
 
-    const auth = verifyAuth(req);
+    const auth = requireEditor(req);
     if (!auth) {
       return NextResponse.json(
         { error: 'Non autorisé' },

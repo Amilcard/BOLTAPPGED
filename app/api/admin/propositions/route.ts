@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
-import { verifyAuth } from '@/lib/auth-middleware';
+import { verifyAuth, requireEditor } from '@/lib/auth-middleware';
 /**
  * GET /api/admin/propositions — Liste toutes les propositions tarifaires
  */
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
-    const auth = verifyAuth(req);
+    const auth = requireEditor(req);
     if (!auth) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
  */
 export async function PATCH(req: NextRequest) {
   try {
-    const auth = verifyAuth(req);
+    const auth = requireEditor(req);
     if (!auth) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
@@ -191,9 +191,9 @@ export async function PATCH(req: NextRequest) {
  */
 export async function DELETE(req: NextRequest) {
   try {
-    const auth = verifyAuth(req);
+    const auth = requireEditor(req);
     if (!auth) {
-      return NextResponse.json({ error: 'Non autorise' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
     const supabase = getSupabase();

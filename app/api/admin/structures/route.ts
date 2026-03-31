@@ -55,7 +55,8 @@ export async function GET(request: NextRequest) {
       const { data: countRows } = await supabase
         .from('gd_inscriptions')
         .select('structure_id')
-        .in('structure_id', structIds);
+        .in('structure_id', structIds)
+        .is('deleted_at', null);
 
       if (countRows) {
         for (const row of countRows as { structure_id: string }[]) {
@@ -85,6 +86,7 @@ export async function GET(request: NextRequest) {
       .select('id, dossier_ref, structure_pending_name, structure_postal_code, structure_city, structure_type, referent_nom, referent_email, jeune_prenom, created_at')
       .is('structure_id', null)
       .not('structure_pending_name', 'is', null)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     if (orphErr) {

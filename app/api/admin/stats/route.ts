@@ -32,15 +32,15 @@ export async function GET(req: NextRequest) {
     ] = await Promise.all([
       supabase.from('gd_stays').select('*', { count: 'exact', head: true }).eq('published', true),
       supabase.from('gd_stay_sessions').select('*', { count: 'exact', head: true }),
-      supabase.from('gd_inscriptions').select('*', { count: 'exact', head: true }),
-      supabase.from('gd_inscriptions').select('*', { count: 'exact', head: true }).eq('status', 'en_attente'),
-      supabase.from('gd_inscriptions').select('*', { count: 'exact', head: true }).eq('status', 'validee'),
-      supabase.from('gd_inscriptions').select('*', { count: 'exact', head: true }).eq('status', 'refusee'),
-      supabase.from('gd_inscriptions').select('*', { count: 'exact', head: true }).eq('status', 'annulee'),
+      supabase.from('gd_inscriptions').select('*', { count: 'exact', head: true }).is('deleted_at', null),
+      supabase.from('gd_inscriptions').select('*', { count: 'exact', head: true }).eq('status', 'en_attente').is('deleted_at', null),
+      supabase.from('gd_inscriptions').select('*', { count: 'exact', head: true }).eq('status', 'validee').is('deleted_at', null),
+      supabase.from('gd_inscriptions').select('*', { count: 'exact', head: true }).eq('status', 'refusee').is('deleted_at', null),
+      supabase.from('gd_inscriptions').select('*', { count: 'exact', head: true }).eq('status', 'annulee').is('deleted_at', null),
       // Inscriptions des 7 derniers jours avec date pour graph
-      supabase.from('gd_inscriptions').select('created_at').gte('created_at', sevenDaysAgo).order('created_at', { ascending: true }),
+      supabase.from('gd_inscriptions').select('created_at').gte('created_at', sevenDaysAgo).is('deleted_at', null).order('created_at', { ascending: true }),
       // Top séjours (on récupère tous les sejour_slug et on compte côté serveur)
-      supabase.from('gd_inscriptions').select('sejour_slug'),
+      supabase.from('gd_inscriptions').select('sejour_slug').is('deleted_at', null),
     ]);
 
     // Vérifier les erreurs critiques (compteurs)

@@ -8,7 +8,7 @@ import { getSupabase } from '@/lib/supabase-server';
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { inscriptionId: string } }
+  { params }: { params: Promise<{ inscriptionId: string }> }
 ) {
   try {
     const auth = requireEditor(req);
@@ -19,7 +19,7 @@ export async function GET(
       );
     }
 
-    const { inscriptionId } = params;
+    const { inscriptionId } = await params;
     const supabase = getSupabase();
 
     const { data: dossier, error: err } = await supabase

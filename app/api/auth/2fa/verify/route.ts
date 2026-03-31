@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { verifyToken } from '@/lib/totp';
+import { setSessionCookie } from '@/lib/auth-cookies';
 import jwt from 'jsonwebtoken';
 
 /**
@@ -50,15 +51,7 @@ export async function POST(req: NextRequest) {
       { expiresIn: '8h' }
     );
 
-    const response = NextResponse.json({ ok: true });
-    response.cookies.set('gd_session', fullToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
-      maxAge: 60 * 60 * 8,
-    });
-    return response;
+    return setSessionCookie(NextResponse.json({ ok: true }), fullToken);
   } catch (error) {
     console.error('POST /api/auth/2fa/verify error:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });

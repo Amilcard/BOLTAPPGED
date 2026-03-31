@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireEditor } from '@/lib/auth-middleware';
 import { getSupabase } from '@/lib/supabase-server';
+import { enrichInscriptions, type InscriptionRaw } from '@/lib/inscription-enrichment';
 /**
  * GET /api/admin/inscriptions
  * Liste les inscriptions depuis Supabase gd_inscriptions (source de vérité).
@@ -47,36 +48,7 @@ export async function GET(req: NextRequest) {
       throw error;
     }
 
-    // Enrichir avec les infos de completude dossier + titre sejour
-    interface InscriptionRaw {
-      gd_dossier_enfant?: Array<{ bulletin_completed?: boolean; sanitaire_completed?: boolean; liaison_completed?: boolean; renseignements_completed?: boolean; documents_joints?: Array<{ type: string }> | null; ged_sent_at?: string | null }>;
-      gd_stays?: { marketing_title?: string; title?: string };
-      sejour_slug: string;
-      [key: string]: unknown;
-    }
-    const enriched = (data || []).map((insc: InscriptionRaw) => {
-      const dossier = insc.gd_dossier_enfant?.[0] ?? null;
-      const docs = dossier && Array.isArray(dossier.documents_joints) ? dossier.documents_joints : [];
-      const stay = insc.gd_stays;
-
-      return {
-        ...insc,
-        gd_dossier_enfant: undefined,
-        gd_stays: undefined,
-        sejour_titre: stay?.marketing_title || stay?.title || insc.sejour_slug,
-        ged_sent_at: dossier?.ged_sent_at ?? null,
-        dossier_completude: dossier ? {
-          bulletin: !!dossier.bulletin_completed,
-          sanitaire: !!dossier.sanitaire_completed,
-          liaison: !!dossier.liaison_completed,
-          renseignements: !!dossier.renseignements_completed,
-          pj_count: docs.length,
-          pj_vaccins: docs.some((d: { type?: string }) => d.type === 'vaccins'),
-        } : null,
-      };
-    });
-
-    return NextResponse.json(enriched);
+    return NextResponse.json(enrichInscriptions((data || []) as InscriptionRaw[]));
   } catch (error) {
     console.error('GET /api/admin/inscriptions error:', error);
     return NextResponse.json(

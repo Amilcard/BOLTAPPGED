@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
+import { enrichInscriptions, type InscriptionRaw } from '@/lib/inscription-enrichment';
 
 /**
  * GET /api/structure/[code]
@@ -57,31 +58,8 @@ export async function GET(
     );
   }
 
-  // 3. Enrichir (même logique que /api/admin/inscriptions)
-  const enriched = (inscriptions || []).map((insc: Record<string, unknown>) => {
-    const dossierArr = insc.gd_dossier_enfant as Record<string, unknown>[] | null;
-    const dossier = Array.isArray(dossierArr) ? dossierArr[0] : null;
-    const docs = dossier && Array.isArray(dossier.documents_joints) ? dossier.documents_joints as Record<string, unknown>[] : [];
-    const stay = insc.gd_stays as Record<string, unknown> | null;
-
-    return {
-      ...insc,
-      gd_dossier_enfant: undefined,
-      gd_stays: undefined,
-      sejour_titre: (stay?.marketing_title || stay?.title || insc.sejour_slug) as string,
-      ged_sent_at: (dossier?.ged_sent_at as string) ?? null,
-      dossier_completude: dossier
-        ? {
-            bulletin: !!dossier.bulletin_completed,
-            sanitaire: !!dossier.sanitaire_completed,
-            liaison: !!dossier.liaison_completed,
-            renseignements: !!dossier.renseignements_completed,
-            renseignements_required: !!dossier.renseignements_required,
-            pj_count: docs.length,
-          }
-        : null,
-    };
-  });
+  // 3. Enrichir (logique partagée avec /api/admin/inscriptions)
+  const enriched = enrichInscriptions((inscriptions || []) as InscriptionRaw[]);
 
   return NextResponse.json({
     structure: {

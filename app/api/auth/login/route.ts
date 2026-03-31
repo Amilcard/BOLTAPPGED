@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { setSessionCookie } from '@/lib/auth-cookies';
 import jwt from 'jsonwebtoken';
 
 const MAX_ATTEMPTS = 5;
@@ -141,15 +142,7 @@ export async function POST(req: NextRequest) {
       { expiresIn: '8h' }
     );
 
-    const response = NextResponse.json({ ok: true });
-    response.cookies.set('gd_session', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
-      maxAge: 60 * 60 * 8,
-    });
-    return response;
+    return setSessionCookie(NextResponse.json({ ok: true }), token);
   } catch (error) {
     console.error('[auth/login] Erreur:', error);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });

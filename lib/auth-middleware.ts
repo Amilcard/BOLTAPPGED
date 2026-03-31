@@ -37,3 +37,10 @@ export function requireEditor(request: NextRequest): AuthPayload | null {
   if (!auth || !['ADMIN', 'EDITOR'].includes(auth.role)) return null;
   return auth;
 }
+
+export function unauthorizedResponse() {
+  return new (require('next/server').NextResponse)(
+    JSON.stringify({ error: 'Non autorisé' }),
+    { status: 401, headers: { 'Content-Type': 'application/json' } }
+  );
+}

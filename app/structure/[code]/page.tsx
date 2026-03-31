@@ -29,6 +29,7 @@ interface DossierCompletude {
 interface Inscription {
   id: string;
   dossier_ref?: string;
+  suivi_token?: string;
   jeune_prenom: string;
   jeune_nom: string;
   referent_nom: string;
@@ -272,7 +273,7 @@ export default function StructureDashboard() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>
-                    {['Date', 'Réf.', 'Jeune', 'Séjour', 'Référent', 'Documents', 'Prix', 'Paiement', 'Statut'].map(h => (
+                    {['Date', 'Réf.', 'Jeune', 'Séjour', 'Référent', 'Documents', 'Prix', 'Paiement', 'Statut', 'Suivi'].map(h => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">
                         {h}
                       </th>
@@ -305,6 +306,13 @@ export default function StructureDashboard() {
                         </td>
                         <td className="px-4 py-3"><Badge {...ps} /></td>
                         <td className="px-4 py-3"><Badge {...st} /></td>
+                        <td className="px-4 py-3">
+                          {insc.suivi_token ? (
+                            <Link href={`/suivi/${insc.suivi_token}`} className="text-xs text-primary hover:underline whitespace-nowrap">
+                              Voir le dossier →
+                            </Link>
+                          ) : <span className="text-gray-300 text-xs">—</span>}
+                        </td>
                       </tr>
                     );
                   })}

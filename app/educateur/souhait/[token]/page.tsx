@@ -81,9 +81,17 @@ export default function EducateurSouhaitPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="bg-white rounded-2xl shadow-lg max-w-md w-full p-8 text-center">
         <div className="text-4xl mb-4">🔒</div>
-        <h1 className="text-xl font-bold text-gray-800 mb-2">Lien invalide</h1>
-        <p className="text-gray-600">{error || 'Ce lien de souhait n\'est pas valide.'}</p>
-        <Link href="/" className="inline-block mt-6 text-primary hover:underline text-sm">
+        <h1 className="text-xl font-bold text-gray-800 mb-2">Lien invalide ou expiré</h1>
+        <p className="text-gray-600 mb-6">{error || 'Ce lien de souhait n\'est pas valide ou a expiré.'}</p>
+        <div className="bg-gray-50 rounded-xl p-4 text-left text-sm text-gray-600 mb-4">
+          <p className="font-medium text-gray-700 mb-1">Besoin d&apos;aide ?</p>
+          <p>Contactez Groupe &amp; Découverte pour recevoir un nouveau lien :</p>
+          <a href="mailto:contact@groupeetdecouverte.fr" className="text-primary hover:underline font-medium">
+            contact@groupeetdecouverte.fr
+          </a>
+          <p className="mt-1 text-xs text-gray-400">Tél : 04 23 16 16 71</p>
+        </div>
+        <Link href="/" className="inline-block text-primary hover:underline text-sm">
           Découvrir les séjours
         </Link>
       </div>

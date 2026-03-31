@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { STORAGE_KEYS, formatDate } from '@/lib/utils';
@@ -53,7 +53,7 @@ export default function InscriptionDetailPage() {
     return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
   };
 
-  const loadInscription = async () => {
+  const loadInscription = useCallback(async () => {
     try {
       const res = await fetch(`/api/admin/inscriptions/${inscriptionId}`, {
         headers: authHeaders(),
@@ -61,7 +61,6 @@ export default function InscriptionDetailPage() {
       if (res.ok) {
         const data = await res.json();
         setInsc(data);
-        // Charger les autres inscriptions du même référent
         if (data.referent_email) {
           const allRes = await fetch('/api/admin/inscriptions', { headers: authHeaders() });
           if (allRes.ok) {
@@ -77,9 +76,9 @@ export default function InscriptionDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [inscriptionId, router]);
 
-  const loadDossier = async () => {
+  const loadDossier = useCallback(async () => {
     setDossierLoading(true);
     try {
       const res = await fetch(`/api/admin/dossier-enfant/${inscriptionId}`, {
@@ -88,12 +87,12 @@ export default function InscriptionDetailPage() {
       if (res.ok) setDossier(await res.json());
     } catch { /* silent */ }
     finally { setDossierLoading(false); }
-  };
+  }, [inscriptionId]);
 
   useEffect(() => {
     void loadInscription();
     void loadDossier();
-  }, [inscriptionId]);
+  }, [loadInscription, loadDossier]);
 
   const patchField = async (field: string, value: unknown) => {
     setSaving(true);

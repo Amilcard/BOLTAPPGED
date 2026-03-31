@@ -68,7 +68,8 @@ export default function AdminDashboard() {
         void router.replace('/login');
       })
       .finally(() => setIsLoading(false));
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Init unique au montage — router est stable (useRouter)
 
   if (isLoading) {
     return (

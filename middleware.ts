@@ -7,8 +7,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
+  const rawSecret = process.env.NEXTAUTH_SECRET;
+  if (!rawSecret) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
   try {
-    const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET!);
+    const secret = new TextEncoder().encode(rawSecret);
     await jwtVerify(token, secret);
     return NextResponse.next();
   } catch {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface DocJoint {
   type: string;
@@ -47,7 +47,7 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess }:
   const [success, setSuccess] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const loadDocuments = async () => {
+  const loadDocuments = useCallback(async () => {
     try {
       const res = await fetch(
         `/api/dossier-enfant/${inscriptionId}/upload?token=${token}`
@@ -61,11 +61,11 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess }:
     } finally {
       setLoading(false);
     }
-  };
+  }, [inscriptionId, token]);
 
   useEffect(() => {
     void loadDocuments();
-  }, [inscriptionId, token]);
+  }, [loadDocuments]);
 
   const handleUpload = async () => {
     const file = fileRef.current?.files?.[0];

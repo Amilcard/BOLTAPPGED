@@ -1,7 +1,7 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { STORAGE_KEYS, formatDate } from '@/lib/utils';
 import { Eye, FileCheck, FileClock, Trash2, Building2 } from 'lucide-react';
@@ -90,7 +90,7 @@ export default function AdminDemandes() {
   const [structures, setStructures] = useState<StructureOption[]>([]);
   const [selectedStructure, setSelectedStructure] = useState('');
 
-  const fetchInscriptions = async () => {
+  const fetchInscriptions = useCallback(async () => {
     try {
       const token = localStorage.getItem(STORAGE_KEYS.AUTH);
       const params = new URLSearchParams();
@@ -109,9 +109,9 @@ export default function AdminDemandes() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedStructure, toast]);
 
-  useEffect(() => { void fetchInscriptions(); }, [selectedStructure]);
+  useEffect(() => { void fetchInscriptions(); }, [fetchInscriptions]);
 
   useEffect(() => {
     const loadStructures = async () => {

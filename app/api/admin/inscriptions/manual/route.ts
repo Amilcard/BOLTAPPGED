@@ -111,30 +111,40 @@ export async function POST(request: NextRequest) {
     }
 
     // Résolution structure (même logique que le flux standard)
+    // On récupère aussi le code pour le retourner au chef de service
     let structureId: string | null = null;
+    let structureCode: string | null = null;
+    let structureCreated = false;
 
     if (data.structureCode) {
       const { data: struct } = await supabase
         .from('gd_structures')
-        .select('id')
+        .select('id, code')
         .eq('code', data.structureCode.toUpperCase())
         .eq('status', 'active')
         .single();
-      if (struct) structureId = (struct as { id: string }).id;
+      if (struct) {
+        const s = struct as { id: string; code: string };
+        structureId   = s.id;
+        structureCode = s.code;
+      }
     }
 
     if (!structureId) {
       const { data: existingStruct } = await supabase
         .from('gd_structures')
-        .select('id')
+        .select('id, code')
         .ilike('name', data.structureName)
         .eq('postal_code', data.structurePostalCode)
         .eq('status', 'active')
         .maybeSingle();
 
       if (existingStruct) {
-        structureId = (existingStruct as { id: string }).id;
+        const s = existingStruct as { id: string; code: string };
+        structureId   = s.id;
+        structureCode = s.code;
       } else {
+        // Création de la structure — génère un code à 6 chars
         const { data: newStruct } = await supabase
           .from('gd_structures')
           .insert({
@@ -144,9 +154,14 @@ export async function POST(request: NextRequest) {
             city: data.structureCity,
             created_by_email: data.referentEmail,
           })
-          .select('id')
+          .select('id, code')
           .single();
-        if (newStruct) structureId = (newStruct as { id: string }).id;
+        if (newStruct) {
+          const s = newStruct as { id: string; code: string };
+          structureId     = s.id;
+          structureCode   = s.code;
+          structureCreated = true;
+        }
       }
     }
 
@@ -225,12 +240,18 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        id:             inscription.id,
-        dossier_ref:    dossierRef,
-        suivi_token:    inscription.suivi_token,
-        suivi_url:      suiviUrl,
-        status:         inscription.status,
-        payment_status: inscription.payment_status,
+        id:              inscription.id,
+        dossier_ref:     dossierRef,
+        suivi_token:     inscription.suivi_token,
+        suivi_url:       suiviUrl,
+        status:          inscription.status,
+        payment_status:  inscription.payment_status,
+        // Code structure pour accès chef de service → /structure/[code]
+        structure_code:    structureCode,
+        structure_created: structureCreated,
+        structure_url:     structureCode
+          ? `${process.env.NEXTAUTH_URL || 'https://app.groupeetdecouverte.fr'}/structure/${structureCode}`
+          : null,
       },
       { status: 201 }
     );

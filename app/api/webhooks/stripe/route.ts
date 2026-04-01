@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
               sejourSlug: (rec.sejour_slug as string) || '',
               dossierRef: (rec.dossier_ref as string) || '',
               amount: paymentIntent.amount / 100,
-            }).catch(() => {});
+            }).catch((err) => { console.error('[webhook/stripe] sendPaymentConfirmedAdminNotification failed', err); });
           }
         }
         break;

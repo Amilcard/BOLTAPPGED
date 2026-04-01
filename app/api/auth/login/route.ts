@@ -102,13 +102,16 @@ export async function POST(req: NextRequest) {
 
     // Authentification via Supabase Auth
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    console.log('[auth/login] tentative pour:', email.toLowerCase().trim());
     const { data, error } = await supabase.auth.signInWithPassword({
       email: email.toLowerCase().trim(),
       password,
     });
+    console.log('[auth/login] supabase result:', { user: !!data?.user, error: error?.message ?? null });
 
     // Réponse générique pour éviter l'énumération des comptes
     if (error || !data.user) {
+      console.error('[auth/login] echec:', error?.message);
       return NextResponse.json({ error: 'Identifiants invalides.' }, { status: 401 });
     }
 
@@ -142,7 +145,7 @@ export async function POST(req: NextRequest) {
       { expiresIn: '8h' }
     );
 
-    return setSessionCookie(NextResponse.json({ ok: true }), token);
+    return setSessionCookie(NextResponse.json({ ok: true, token }), token);
   } catch (error) {
     console.error('[auth/login] Erreur:', error);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });

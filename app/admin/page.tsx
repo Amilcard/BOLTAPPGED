@@ -65,6 +65,8 @@ export default function AdminDashboard() {
       })
       .then((data) => { if (data) setStats(data); })
       .catch(() => {
+        // Vider le token invalide avant de rediriger — évite la boucle infinie
+        localStorage.removeItem(STORAGE_KEYS.AUTH);
         void router.replace('/login');
       })
       .finally(() => setIsLoading(false));

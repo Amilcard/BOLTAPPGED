@@ -37,6 +37,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         if (parts.length !== 3) throw new Error('Invalid token');
         const payload = JSON.parse(atob(parts[1]));
         if (!payload.role) throw new Error('Missing role');
+        if (payload.exp && payload.exp * 1000 < Date.now()) throw new Error('Token expired');
         setUserRole(payload.role);
         setAuthState('authenticated');
       } catch {

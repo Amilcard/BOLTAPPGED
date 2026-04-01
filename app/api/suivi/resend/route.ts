@@ -3,6 +3,35 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
 import { sendInscriptionConfirmation } from '@/lib/email';
 
+const RESEND_MAX = 3;
+const RESEND_WINDOW_MIN = 10;
+
+async function isResendRateLimited(ip: string): Promise<boolean> {
+  try {
+    const supabase = getSupabase();
+    const windowStart = new Date(Date.now() - RESEND_WINDOW_MIN * 60 * 1000);
+    const { data } = await supabase
+      .from('gd_login_attempts')
+      .select('attempt_count, window_start')
+      .eq('ip', `resend:${ip}`)
+      .single();
+    if (!data || new Date(data.window_start) < windowStart) {
+      await supabase.from('gd_login_attempts').upsert(
+        { ip: `resend:${ip}`, attempt_count: 1, window_start: new Date().toISOString() },
+        { onConflict: 'ip' }
+      );
+      return false;
+    }
+    if (data.attempt_count >= RESEND_MAX) return true;
+    await supabase.from('gd_login_attempts')
+      .update({ attempt_count: data.attempt_count + 1 })
+      .eq('ip', `resend:${ip}`);
+    return false;
+  } catch {
+    return false; // fail-open
+  }
+}
+
 /**
  * POST /api/suivi/resend
  * Renvoie le(s) lien(s) de suivi à l'email fourni.
@@ -10,6 +39,11 @@ import { sendInscriptionConfirmation } from '@/lib/email';
  */
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown';
+    if (await isResendRateLimited(ip)) {
+      return NextResponse.json({ ok: true }); // réponse générique — pas de fuite d'info
+    }
+
     const { email } = await req.json();
 
     if (!email || typeof email !== 'string' || !email.includes('@')) {

@@ -23,7 +23,11 @@ const clientSchema = z.object({
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().startsWith('pk_').optional(),
   NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
-  NEXT_PUBLIC_TEST_MODE: z.enum(['true', 'false']).optional(),
+  NEXT_PUBLIC_TEST_MODE: z.enum(['true', 'false']).optional()
+    .refine(
+      v => !(v === 'true' && process.env.NODE_ENV === 'production'),
+      { message: 'NEXT_PUBLIC_TEST_MODE ne peut pas être "true" en production.' }
+    ),
   NEXT_PUBLIC_EMAIL_STRUCTURE_LOCKED: z.enum(['true', 'false']).optional(),
   NEXT_PUBLIC_DEFAULT_STRUCTURE_EMAIL: z.string().email().optional(),
 });

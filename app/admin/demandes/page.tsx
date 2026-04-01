@@ -33,7 +33,7 @@ const PAYMENT_STATUS_LABELS: Record<string, { label: string; color: string }> = 
 };
 
 interface Completude { bulletin?: boolean | null; sanitaire?: boolean | null; liaison?: boolean | null; renseignements?: boolean | null; pj_count?: number; pj_vaccins?: boolean | null; }
-function DossierBadge({ completude, gedSentAt }: { completude: Completude | null | undefined; gedSentAt?: string | null }) {
+export function DossierBadge({ completude, gedSentAt }: { completude: Completude | null | undefined; gedSentAt?: string | null }) {
   if (!completude) {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">

@@ -16,6 +16,7 @@ const customJestConfig = {
   },
   testMatch: [
     `${PROJECT_ROOT}/tests/unit/**/*.test.ts`,
+    `${PROJECT_ROOT}/tests/unit/**/*.test.tsx`,
     `${PROJECT_ROOT}/tests/api/**/*.test.ts`,
   ],
   collectCoverageFrom: [

@@ -161,7 +161,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         data.jeune_prenom,
         data.jeune_nom,
         status
-      ).catch(() => {});
+      ).catch((err) => { console.error('[admin/inscriptions] sendStatusChangeEmail failed', err); });
     }
 
     return NextResponse.json(data);

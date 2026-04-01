@@ -12,9 +12,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // 2FA
   const [requires2fa, setRequires2fa] = useState(false);
   const [pendingToken, setPendingToken] = useState('');
   const [totpCode, setTotpCode] = useState('');
+  // Reset password
+  const [resetMode, setResetMode] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   useEffect(() => {
     if (getStoredAuth()) router.replace('/admin');
@@ -73,6 +78,30 @@ export default function LoginPage() {
     }
   };
 
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) { setError('Saisissez votre email ci-dessus.'); return; }
+    setResetLoading(true);
+    setError('');
+
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/login/reset`,
+      });
+      if (err) throw err;
+      setResetSent(true);
+    } catch {
+      setError('Erreur lors de l\'envoi. Vérifiez l\'email saisi.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -86,7 +115,54 @@ export default function LoginPage() {
             <span className="text-xl font-bold">Administration</span>
           </div>
 
-          {!requires2fa ? (
+          {resetSent ? (
+            <div className="text-center space-y-4">
+              <div className="p-4 bg-green-50 text-green-700 rounded-lg text-sm">
+                Email envoyé à <strong>{email}</strong>.<br />
+                Vérifiez votre boîte mail et cliquez le lien pour réinitialiser votre mot de passe.
+              </div>
+              <button
+                onClick={() => { setResetMode(false); setResetSent(false); }}
+                className="text-sm text-primary hover:underline"
+              >
+                Retour à la connexion
+              </button>
+            </div>
+          ) : resetMode ? (
+            <form onSubmit={handleReset} className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Saisissez votre email et nous vous enverrons un lien de réinitialisation.
+              </p>
+              <div>
+                <label className="block text-sm font-medium text-primary-600 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 border border-primary-200 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
+                />
+              </div>
+              {error && (
+                <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>
+              )}
+              <button
+                type="submit"
+                disabled={resetLoading}
+                className="w-full py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {resetLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {resetLoading ? 'Envoi...' : 'Envoyer le lien'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setResetMode(false); setError(''); }}
+                className="w-full text-sm text-gray-500 hover:text-gray-700"
+              >
+                Retour à la connexion
+              </button>
+            </form>
+          ) : !requires2fa ? (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-primary-600 mb-1">Email</label>
@@ -120,6 +196,14 @@ export default function LoginPage() {
               >
                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                 {loading ? 'Connexion...' : 'Se connecter'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setResetMode(true); setError(''); }}
+                className="w-full text-sm text-gray-500 hover:text-primary transition-colors"
+              >
+                Mot de passe oublié ?
               </button>
             </form>
           ) : (

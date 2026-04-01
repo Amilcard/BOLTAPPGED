@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useId } from 'react';
 
 interface Props {
   data: Record<string, unknown>;
@@ -99,7 +99,7 @@ export function FicheLiaisonJeuneForm({ data, saving, onSave, jeunePrenom, jeune
 
         <RadioYesNo label="Es-tu déjà parti(e) en séjour de vacances ?" value={form.deja_parti as string} onChange={v => update('deja_parti', v)} />
         {form.deja_parti === 'oui' && (
-          <div className="mt-2 ml-4">
+          <div className="mt-2 pl-4 border-l-2 border-gray-200">
             <Input label="Si oui, où et quand ?" value={form.deja_parti_detail} onChange={v => update('deja_parti_detail', v)} />
           </div>
         )}
@@ -127,7 +127,7 @@ export function FicheLiaisonJeuneForm({ data, saving, onSave, jeunePrenom, jeune
           et les meilleures conditions de vie collective. Tout comportement de nature à nuire à la sécurité
           ou pouvant compromettre la qualité des vacances pourra donner lieu à une décision de renvoi.
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+        <div className="mb-3 max-w-xs">
           <Input label="Fait à" value={form.signature_fait_a} onChange={v => update('signature_fait_a', v)} />
         </div>
         <Checkbox
@@ -197,15 +197,16 @@ function Checkbox({ label, checked, onChange }: { label: string; checked: boolea
 }
 
 function RadioYesNo({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const name = useId();
   return (
     <div>
       <label className="text-xs text-gray-500 block mb-1">{label}</label>
       <div className="flex gap-3">
         <label className="flex items-center gap-1 text-sm cursor-pointer">
-          <input type="radio" checked={value === 'oui'} onChange={() => onChange('oui')} /> Oui
+          <input type="radio" name={name} value="oui" checked={value === 'oui'} onChange={() => onChange('oui')} /> Oui
         </label>
         <label className="flex items-center gap-1 text-sm cursor-pointer">
-          <input type="radio" checked={value === 'non'} onChange={() => onChange('non')} /> Non
+          <input type="radio" name={name} value="non" checked={value === 'non'} onChange={() => onChange('non')} /> Non
         </label>
       </div>
     </div>

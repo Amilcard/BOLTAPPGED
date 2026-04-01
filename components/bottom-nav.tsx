@@ -1,20 +1,19 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Search, Info, Heart } from 'lucide-react';
+import { Home, Search, Heart, FolderOpen } from 'lucide-react';
 import { useApp } from './providers';
 
 const proNavItems = [
-  { key: 'home', label: 'Accueil', route: '/', icon: Home },
-  { key: 'search', label: 'Recherche', route: '/recherche', icon: Search },
-  { key: 'help', label: 'Infos', route: '/infos', icon: Info },
+  { key: 'home',     label: 'Accueil',     route: '/',          icon: Home },
+  { key: 'search',   label: 'Recherche',   route: '/recherche', icon: Search },
+  { key: 'dossiers', label: 'Dossiers',    route: '/recherche', icon: FolderOpen },
 ];
 
 const kidsNavItems = [
-  { key: 'home', label: 'Accueil', route: '/', icon: Home },
-  { key: 'search', label: 'Recherche', route: '/recherche', icon: Search },
-  { key: 'help', label: 'Infos', route: '/infos', icon: Info },
-  { key: 'envies', label: 'Mes souhaits', route: '/envies', icon: Heart },
+  { key: 'home',   label: 'Accueil',      route: '/',          icon: Home },
+  { key: 'search', label: 'Recherche',    route: '/recherche', icon: Search },
+  { key: 'envies', label: 'Mes souhaits', route: '/envies',    icon: Heart },
 ];
 
 export function BottomNav() {
@@ -31,9 +30,10 @@ export function BottomNav() {
     void router.push(item.route);
   };
 
-  const isActive = (route: string) => {
-    if (route === '/') return pathname === '/';
-    return pathname?.startsWith(route);
+  const isActive = (item: typeof navItems[0]): boolean => {
+    if (item.key === 'suivi' || item.key === 'dossiers') return pathname?.startsWith('/suivi') ?? false;
+    if (item.route === '/') return pathname === '/';
+    return pathname?.startsWith(item.route) ?? false;
   };
 
   if (!mounted) return <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 md:hidden pb-safe h-16" />;
@@ -43,7 +43,7 @@ export function BottomNav() {
       <div className="flex justify-around items-center h-16">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const active = isActive(item.route);
+          const active = isActive(item);
           const showBadge = item.key === 'envies' && wishlist.length > 0;
           return (
             <button

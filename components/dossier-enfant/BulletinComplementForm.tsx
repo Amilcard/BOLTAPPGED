@@ -153,7 +153,7 @@ export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeun
           les renseignements ci-dessus et avoir pris connaissance et accepté les conditions générales des séjours.
           J&apos;autorise l&apos;enfant à participer au centre de vacances et à toutes les activités proposées dans le cadre du séjour.
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+        <div className="mb-3 max-w-xs">
           <Input label="Fait à" value={form.autorisation_fait_a} onChange={v => update('autorisation_fait_a', v)} />
         </div>
         <Checkbox

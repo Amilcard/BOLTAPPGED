@@ -114,6 +114,11 @@ export async function GET(
     const smallFontSize = 8;
     const textColor = rgb(0.1, 0.1, 0.1);
 
+    // Date de référence pour les signatures : date de création du dossier (fallback: aujourd'hui)
+    const dossierDate = dossier.created_at
+      ? new Date(dossier.created_at as string).toLocaleDateString('fr-FR')
+      : new Date().toLocaleDateString('fr-FR');
+
     /**
      * Écrire du texte sur le PDF.
      * Les coordonnées (x, y) sont en top-down (origine en haut à gauche),
@@ -212,7 +217,7 @@ export async function GET(
       // --- AUTORISATION LÉGALE ---
       writeText(0, 102, 703, s(d.soussigne_nom) || inscription.referent_nom);
       writeText(0, 56,  743, s(d.autorisation_fait_a));
-      writeText(0, 280, 743, s(d.date_signature) || new Date().toLocaleDateString('fr-FR'));
+      writeText(0, 280, 743, s(d.date_signature) || dossierDate);
 
     // ========================================================================
     // FICHE SANITAIRE DE LIAISON
@@ -245,8 +250,10 @@ export async function GET(
       writeText(0, 27,  411, s(d.resp1_adresse_suite),  { size: smallFontSize });
       writeText(0, 27,  427, s(d.resp1_cp_ville),       { size: smallFontSize });
       writeText(0, 100, 444, s(d.resp1_profession));
-      writeText(0, 230, 472, s(d.resp1_email),          { size: smallFontSize });
-      writeText(0, 27,  490, s(d.resp1_email),          { size: smallFontSize }); // continuation si long
+      const email1 = s(d.resp1_email);
+      const emailBreak = 45;
+      writeText(0, 230, 472, email1.slice(0, emailBreak),                    { size: smallFontSize });
+      if (email1.length > emailBreak) writeText(0, 27, 490, email1.slice(emailBreak), { size: smallFontSize });
       writeText(0, 98,  507, s(d.resp1_tel_domicile));
       writeText(0, 97,  523, s(d.resp1_tel_portable));
       writeText(0, 100, 540, s(d.resp1_tel_travail));
@@ -258,8 +265,9 @@ export async function GET(
       writeText(0, 309, 392, s(d.resp2_adresse_suite),  { size: smallFontSize });
       writeText(0, 309, 420, s(d.resp2_cp_ville),       { size: smallFontSize });
       writeText(0, 380, 448, s(d.resp2_profession));
-      writeText(0, 345, 462, s(d.resp2_email),          { size: smallFontSize });
-      writeText(0, 309, 477, s(d.resp2_email),          { size: smallFontSize }); // continuation
+      const email2 = s(d.resp2_email);
+      writeText(0, 345, 462, email2.slice(0, emailBreak),                    { size: smallFontSize });
+      if (email2.length > emailBreak) writeText(0, 309, 477, email2.slice(emailBreak), { size: smallFontSize });
       writeText(0, 382, 493, s(d.resp2_tel_domicile));
       writeText(0, 381, 510, s(d.resp2_tel_portable));
       writeText(0, 395, 526, s(d.resp2_tel_travail));
@@ -355,7 +363,7 @@ export async function GET(
       // Autorisation de soins
       writeText(1, 102, 727, s(d.autorisation_soins_soussigne));
       writeText(1, 100, 755, s(d.fait_a));
-      writeText(1, 300, 755, s(d.date_signature) || new Date().toLocaleDateString('fr-FR'));
+      writeText(1, 300, 755, s(d.date_signature) || dossierDate);
 
     // ========================================================================
     // FICHE DE LIAISON — PAGE 1 (Jeune / Éducateur/trice)
@@ -429,7 +437,7 @@ export async function GET(
     return new NextResponse(pdfBytes, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
       },
     });
   } catch (error) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useId } from 'react';
 
 interface Props {
   data: Record<string, unknown>;
@@ -136,17 +136,19 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
         <ResponsableFields prefix="resp2" form={form} update={update} />
       </Section>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Input label="N° Allocataire CAF ou MSA *" value={form.allocataire_caf_msa} onChange={v => update('allocataire_caf_msa', v)} required />
-        <Input label="Quotient Familial *" value={form.quotient_familial} onChange={v => update('quotient_familial', v)} required />
-      </div>
+      <Section title="Numéro allocataire">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Input label="N° Allocataire CAF ou MSA *" value={form.allocataire_caf_msa} onChange={v => update('allocataire_caf_msa', v)} required />
+          <Input label="Quotient Familial *" value={form.quotient_familial} onChange={v => update('quotient_familial', v)} required />
+        </div>
+      </Section>
 
       {/* 3. Délégations */}
       <Section title="3. Délégations (personnes autorisées à récupérer l'enfant)">
         <p className="text-xs text-gray-400 mb-3">Indiquez les personnes ayant reçu votre autorisation.</p>
         {[1, 2, 3].map(i => (
           // deepsource-ignore JS-0437 -- static numbered delegations, i is the stable key
-          <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+          <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-2">
             <Input label="Nom" value={form[`delegation_${i}_nom`]} onChange={v => update(`delegation_${i}_nom`, v)} />
             <Input label="Prénom" value={form[`delegation_${i}_prenom`]} onChange={v => update(`delegation_${i}_prenom`, v)} />
             <Input label="Lien" value={form[`delegation_${i}_lien`]} onChange={v => update(`delegation_${i}_lien`, v)} />
@@ -224,7 +226,7 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
         </div>
 
         <p className="text-sm font-medium text-gray-700 mb-2">Allergies et difficultés de santé</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <RadioYesNo label="Asthme" value={form.allergie_asthme as string} onChange={v => update('allergie_asthme', v)} />
           <RadioYesNo label="Alimentaires" value={form.allergie_alimentaire as string} onChange={v => update('allergie_alimentaire', v)} />
           <RadioYesNo label="Médicamenteuses" value={form.allergie_medicamenteuse as string} onChange={v => update('allergie_medicamenteuse', v)} />
@@ -342,15 +344,16 @@ function Checkbox({ label, checked, onChange }: { label: string; checked: boolea
 }
 
 function RadioYesNo({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const name = useId();
   return (
     <div>
       <label className="text-xs text-gray-500 block mb-1">{label}</label>
       <div className="flex gap-3">
         <label className="flex items-center gap-1 text-sm cursor-pointer">
-          <input type="radio" checked={value === 'oui'} onChange={() => onChange('oui')} /> Oui
+          <input type="radio" name={name} value="oui" checked={value === 'oui'} onChange={() => onChange('oui')} /> Oui
         </label>
         <label className="flex items-center gap-1 text-sm cursor-pointer">
-          <input type="radio" checked={value === 'non'} onChange={() => onChange('non')} /> Non
+          <input type="radio" name={name} value="non" checked={value === 'non'} onChange={() => onChange('non')} /> Non
         </label>
       </div>
     </div>

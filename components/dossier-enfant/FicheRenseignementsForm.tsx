@@ -146,7 +146,7 @@ export function FicheRenseignementsForm({ data, saving, onSave, jeunePrenom, jeu
         <button
           onClick={() => handleSave(false)}
           disabled={saving}
-          className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition disabled:opacity-50"
+          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-medium transition disabled:opacity-50"
         >
           {saving ? 'Enregistrement...' : 'Enregistrer'}
         </button>
@@ -159,7 +159,7 @@ export function FicheRenseignementsForm({ data, saving, onSave, jeunePrenom, jeu
         </button>
       </div>
       {(!form.type_situation || !form.contact_urgence_nom || !form.contact_urgence_tel) && (
-        <p className="text-xs text-purple-600 mt-1">Remplissez la situation familiale et le contact d'urgence pour pouvoir valider ce bloc.</p>
+        <p className="text-xs text-purple-600 mt-1">Remplissez la situation particulière et le contact d'urgence pour pouvoir valider ce bloc.</p>
       )}
     </div>
   );

@@ -7,7 +7,7 @@ import { STORAGE_KEYS, formatDate } from '@/lib/utils';
 import { Eye, Trash2, Building2 } from 'lucide-react';
 import { InscriptionSupabase, InscriptionEnriched } from '@/lib/types';
 import { useAdminUI } from '@/components/admin/admin-ui';
-import { DossierBadge, Completude } from '@/components/admin/DossierBadge';
+import { DossierBadge } from '@/components/admin/DossierBadge';
 
 interface StructureOption {
   id: string;

@@ -12,7 +12,7 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { DossierBadge } from '@/app/admin/demandes/page';
+import { DossierBadge } from '@/components/admin/DossierBadge';
 
 describe('DossierBadge', () => {
   it('completude null → "Non commencé"', () => {

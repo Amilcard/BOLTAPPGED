@@ -620,3 +620,59 @@ export async function sendStructureCodeEmail(data: StructureCodeEmailData) {
     return null;
   }
 }
+
+/**
+ * Invitation chef de service — accès au tableau de bord structure
+ * Envoyé lors d'un import administratif de dossiers pré-validés.
+ */
+export async function sendChefDeServiceInvitation(data: {
+  recipientEmail: string;
+  structureName: string;
+  structureCode: string;
+  structureUrl: string;
+  nbDossiers?: number;
+}) {
+  try {
+    const resend = getResend();
+    if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') return null;
+
+    const result = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: data.recipientEmail,
+      subject: `Accès à votre tableau de bord structure — Groupe & Découverte`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #1A5276; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 22px;">Groupe &amp; Découverte</h1>
+          </div>
+          <div style="padding: 30px; background: #f9f9f9; border-radius: 0 0 8px 8px;">
+            <p>Bonjour,</p>
+            <p>Les dossiers de la structure <strong>${data.structureName}</strong> ont été intégrés dans notre plateforme.</p>
+            ${data.nbDossiers ? `<p>Nombre de dossiers : <strong>${data.nbDossiers}</strong></p>` : ''}
+            <p>En tant que responsable, vous pouvez suivre l'ensemble des dossiers depuis votre tableau de bord :</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${data.structureUrl}"
+                 style="background: #1A5276; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
+                Accéder au tableau de bord
+              </a>
+            </div>
+            <p style="color: #555; font-size: 13px;">Lien direct : <a href="${data.structureUrl}">${data.structureUrl}</a></p>
+            <div style="background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 16px; margin-top: 20px;">
+              <p style="margin: 0 0 8px 0; font-size: 13px; color: #666;">Code structure (à transmettre aux éducateurs) :</p>
+              <p style="margin: 0; font-size: 24px; font-weight: bold; letter-spacing: 4px; color: #1A5276; text-align: center;">${data.structureCode}</p>
+            </div>
+            <p style="color: #888; font-size: 12px; margin-top: 24px;">
+              Les éducateurs de votre structure accèdent à leurs dossiers via leur lien de suivi personnel.<br>
+              Vous seul(e) voyez l'ensemble des dossiers via ce tableau de bord.
+            </p>
+          </div>
+        </div>
+      `,
+    });
+    console.log('[EMAIL] Invitation chef de service envoyée à:', data.recipientEmail);
+    return result;
+  } catch (error) {
+    console.error('[EMAIL] Erreur envoi invitation chef de service:', error);
+    return null;
+  }
+}

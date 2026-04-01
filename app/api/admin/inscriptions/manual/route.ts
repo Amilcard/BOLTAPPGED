@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireEditor } from '@/lib/auth-middleware';
 import { getSupabase } from '@/lib/supabase-server';
-import { sendInscriptionConfirmation } from '@/lib/email';
+import { sendInscriptionConfirmation, sendChefDeServiceInvitation } from '@/lib/email';
 import { z } from 'zod';
 import { randomBytes } from 'crypto';
 
@@ -49,6 +49,8 @@ const schema = z.object({
   paymentMethod:     z.enum(['transfer', 'check', 'stripe']).default('transfer'),
   // Si true → envoie le lien /suivi/[token] à referentEmail
   sendSuiviLink: z.boolean().default(false),
+  // Email de la chef de service → invitation /structure/[code] (vue globale)
+  chefDeServiceEmail: z.string().email().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -214,10 +216,21 @@ export async function POST(request: NextRequest) {
     }
 
     const inscription = row as Record<string, unknown>;
-    const appBaseUrl = process.env.NEXTAUTH_URL || 'https://app.groupeetdecouverte.fr';
+    const appBaseUrl  = process.env.NEXTAUTH_URL || 'https://app.groupeetdecouverte.fr';
+    const structureUrl = structureCode ? `${appBaseUrl}/structure/${structureCode}` : null;
     const suiviUrl = inscription.suivi_token
       ? `${appBaseUrl}/suivi/${inscription.suivi_token}`
       : null;
+
+    // Invitation chef de service (vue globale /structure/[code])
+    if (data.chefDeServiceEmail && structureCode && structureUrl) {
+      await sendChefDeServiceInvitation({
+        recipientEmail: data.chefDeServiceEmail,
+        structureName:  data.structureName,
+        structureCode,
+        structureUrl,
+      }).catch(err => console.error('[admin/inscriptions/manual] sendChefDeServiceInvitation error:', err));
+    }
 
     // Envoi optionnel du lien suivi à l'éducateur
     if (data.sendSuiviLink && suiviUrl) {
@@ -249,9 +262,7 @@ export async function POST(request: NextRequest) {
         // Code structure pour accès chef de service → /structure/[code]
         structure_code:    structureCode,
         structure_created: structureCreated,
-        structure_url:     structureCode
-          ? `${process.env.NEXTAUTH_URL || 'https://app.groupeetdecouverte.fr'}/structure/${structureCode}`
-          : null,
+        structure_url:     structureUrl,
       },
       { status: 201 }
     );

@@ -95,6 +95,9 @@ describe('GET /api/suivi/[token]', () => {
     mockFrom.mockReturnValue({
       select: jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
+          is: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({ data: null, error: { message: 'not found' } }),
+          }),
           single: jest.fn().mockResolvedValue({ data: null, error: { message: 'not found' } }),
         }),
       }),
@@ -115,6 +118,12 @@ describe('GET /api/suivi/[token]', () => {
           return {
             select: jest.fn().mockReturnValue({
               eq: jest.fn().mockReturnValue({
+                is: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: { referent_email: 'ref@structure.fr', organisation: 'CAF Paris' },
+                    error: null,
+                  }),
+                }),
                 single: jest.fn().mockResolvedValue({
                   data: { referent_email: 'ref@structure.fr', organisation: 'CAF Paris' },
                   error: null,
@@ -127,6 +136,9 @@ describe('GET /api/suivi/[token]', () => {
         return {
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
+              is: jest.fn().mockReturnValue({
+                order: jest.fn().mockResolvedValue({ data: [SAMPLE_INSCRIPTION], error: null }),
+              }),
               order: jest.fn().mockResolvedValue({ data: [SAMPLE_INSCRIPTION], error: null }),
             }),
           }),

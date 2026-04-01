@@ -60,14 +60,17 @@ import { GET as adminDossierGet }  from '@/app/api/admin/dossier-enfant/[inscrip
 
 describe('GET /api/admin/stats', () => {
   beforeEach(() => {
-    // Stub : toutes les requêtes Supabase retournent count=0 ou tableau vide
+    const mockResolvedEmpty = { count: 0, data: [], error: null };
     mockFrom.mockReturnValue({
       select: jest.fn().mockReturnValue({
-        eq: jest.fn().mockResolvedValue({ count: 0, data: [], error: null }),
+        eq: jest.fn().mockReturnValue({
+          is: jest.fn().mockResolvedValue(mockResolvedEmpty),
+        }),
+        is: jest.fn().mockResolvedValue(mockResolvedEmpty),
         gte: jest.fn().mockReturnValue({
           order: jest.fn().mockResolvedValue({ data: [], error: null }),
         }),
-        head: true,
+        ...mockResolvedEmpty,
       }),
     });
   });
@@ -78,35 +81,26 @@ describe('GET /api/admin/stats', () => {
   });
 
   it('EDITOR → 200 + structure clés attendues', async () => {
-    // Mock multi-appels Promise.all (9 requêtes parallèles dans la route)
-    mockFrom.mockReturnValue({
-      select: jest.fn().mockReturnValue({
-        eq: jest.fn().mockReturnValue({
-          single: jest.fn().mockResolvedValue({ count: 5, data: null, error: null }),
-        }),
-        gte: jest.fn().mockReturnValue({
+    // 9 requêtes parallèles — mock générique qui couvre toutes les chaînes
+    const empty = { count: 0, data: [], error: null };
+    const chainMock: Record<string, unknown> = {
+      eq: jest.fn().mockReturnValue({
+        is: jest.fn().mockResolvedValue(empty),
+      }),
+      is: jest.fn().mockResolvedValue(empty),
+      gte: jest.fn().mockReturnValue({
+        is: jest.fn().mockReturnValue({
           order: jest.fn().mockResolvedValue({ data: [], error: null }),
         }),
-        // head:true queries retournent { count, error }
-        count: 5,
-        error: null,
-        data: [],
+        order: jest.fn().mockResolvedValue({ data: [], error: null }),
       }),
-    });
-
-    // Approche directe : mocker à un niveau plus haut pour retourner les données attendues
-    const mockRes = { count: 3, data: null, error: null };
-    mockFrom.mockReturnValue({
-      select: jest.fn().mockReturnValue({
-        eq:  jest.fn().mockResolvedValue(mockRes),
-        gte: jest.fn().mockReturnValue({ order: jest.fn().mockResolvedValue({ data: [], error: null }) }),
-      }),
-    });
+      ...empty,
+    };
+    mockFrom.mockReturnValue({ select: jest.fn().mockReturnValue(chainMock) });
 
     const res = await statsGet(r('/api/admin/stats', { token: EDITOR }));
     expect(res.status).toBe(200);
     const body = await res.json();
-    // Vérifie que les clés métriques attendues sont présentes
     expect(body).toHaveProperty('stays');
     expect(body).toHaveProperty('bookings');
     expect(body).toHaveProperty('byStatus');

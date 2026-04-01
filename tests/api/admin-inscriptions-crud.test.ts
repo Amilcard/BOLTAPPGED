@@ -83,8 +83,10 @@ import { GET as getInscription, PUT as putInscription, DELETE as deleteInscripti
 
 describe('GET /api/admin/inscriptions', () => {
   beforeEach(() => {
+    // Chaîne : .select().is().order().limit() [.eq() si filtre]
     mockFrom.mockReturnValue({
       select: jest.fn().mockReturnThis(),
+      is: jest.fn().mockReturnThis(),
       order: jest.fn().mockReturnThis(),
       limit: jest.fn().mockResolvedValue({ data: [SAMPLE_INSCRIPTION], error: null }),
       eq: jest.fn().mockReturnThis(),
@@ -109,13 +111,15 @@ describe('GET /api/admin/inscriptions', () => {
   });
 
   it('filtre ?status appliqué (ADMIN)', async () => {
-    // La chaîne réelle : from().select().order().limit().eq('status','validee')
+    // Chaîne : select().is().order().limit().eq()
     const eqMock = jest.fn().mockResolvedValue({ data: [], error: null });
     mockFrom.mockReturnValue({
       select: jest.fn().mockReturnValue({
-        order: jest.fn().mockReturnValue({
-          limit: jest.fn().mockReturnValue({
-            eq: eqMock,
+        is: jest.fn().mockReturnValue({
+          order: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue({
+              eq: eqMock,
+            }),
           }),
         }),
       }),
@@ -139,7 +143,9 @@ describe('GET /api/admin/inscriptions/[id]', () => {
     mockFrom.mockReturnValue({
       select: jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
-          single: jest.fn().mockResolvedValue({ data: null, error: { message: 'not found' } }),
+          is: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({ data: null, error: { message: 'not found' } }),
+          }),
         }),
       }),
     });
@@ -153,7 +159,9 @@ describe('GET /api/admin/inscriptions/[id]', () => {
     mockFrom.mockReturnValue({
       select: jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
-          single: jest.fn().mockResolvedValue({ data: SAMPLE_INSCRIPTION, error: null }),
+          is: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({ data: SAMPLE_INSCRIPTION, error: null }),
+          }),
         }),
       }),
     });
@@ -172,12 +180,22 @@ describe('GET /api/admin/inscriptions/[id]', () => {
 describe('PUT /api/admin/inscriptions/[id]', () => {
   const mockUpdateChain = (returnData: object) => {
     mockFrom.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({ data: SAMPLE_INSCRIPTION, error: null }),
+        }),
+      }),
       update: jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
-          select: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({ data: { ...SAMPLE_INSCRIPTION, ...returnData }, error: null }),
+          is: jest.fn().mockReturnValue({
+            select: jest.fn().mockReturnValue({
+              single: jest.fn().mockResolvedValue({ data: { ...SAMPLE_INSCRIPTION, ...returnData }, error: null }),
+            }),
           }),
         }),
+      }),
+      insert: jest.fn().mockReturnValue({
+        then: jest.fn(),
       }),
     });
   };
@@ -222,9 +240,12 @@ describe('PUT /api/admin/inscriptions/[id]', () => {
 
 describe('DELETE /api/admin/inscriptions/[id]', () => {
   const mockDeleteChain = () => {
+    // Soft delete: .update().eq().is()
     mockFrom.mockReturnValue({
-      delete: jest.fn().mockReturnValue({
-        eq: jest.fn().mockResolvedValue({ error: null }),
+      update: jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          is: jest.fn().mockResolvedValue({ error: null }),
+        }),
       }),
     });
   };

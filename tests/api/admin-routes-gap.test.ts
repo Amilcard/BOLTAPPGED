@@ -195,7 +195,7 @@ describe('POST /api/admin/stays/[id]/notify-waitlist', () => {
 describe('GET /api/admin/dossier-enfant/[inscriptionId]', () => {
   it('sans auth → 401', async () => {
     const res = await adminDossierGet(r(`/api/admin/dossier-enfant/${INSC_ID}`), {
-      params: { inscriptionId: INSC_ID },
+      params: Promise.resolve({ inscriptionId: INSC_ID }),
     });
     expect(res.status).toBe(401);
   });
@@ -209,7 +209,7 @@ describe('GET /api/admin/dossier-enfant/[inscriptionId]', () => {
       }),
     });
     const res = await adminDossierGet(r(`/api/admin/dossier-enfant/${INSC_ID}`, { token: EDITOR }), {
-      params: { inscriptionId: INSC_ID },
+      params: Promise.resolve({ inscriptionId: INSC_ID }),
     });
     expect(res.status).toBe(200);
     const body = await res.json();

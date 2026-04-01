@@ -42,7 +42,11 @@ const schema = z.object({
   structureCode:       z.string().regex(/^[A-Z0-9]{6}$/).optional(),
   structureAddress:    z.string().optional(),
   // Prix figé (montant réellement facturé — pas de validation UFOVAL)
-  priceTotal:    z.number().min(0),
+  priceTotal:       z.number().min(0),
+  // Décomposition tarifaire (devis validé)
+  prixSejour:       z.number().min(0).optional(),
+  prixTransport:    z.number().min(0).optional(),
+  prixEncadrement:  z.number().min(0).optional(),
   // Métadonnées optionnelles
   optionsEducatives: z.string().optional(),
   remarques:         z.string().optional(),
@@ -196,6 +200,11 @@ export async function POST(request: NextRequest) {
         options_educatives:   data.optionsEducatives || null,
         remarques:            remarquesWithSource,
         price_total:          Math.round(data.priceTotal),
+        prix_sejour:          data.prixSejour    ? Math.round(data.prixSejour)    : null,
+        prix_transport:       data.prixTransport ? Math.round(data.prixTransport) : null,
+        prix_encadrement:     data.prixEncadrement ? Math.round(data.prixEncadrement) : null,
+        price_locked:         true,
+        price_source:         'devis_externe',
         status:               'validee',
         payment_status:       'paid',
         payment_method:       data.paymentMethod,

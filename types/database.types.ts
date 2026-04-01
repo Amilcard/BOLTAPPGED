@@ -294,6 +294,11 @@ export type Database = {
           pref_canal_contact: string | null
           pref_nouvelles_sejour: string | null
           price_total: number | null
+          price_locked: boolean | null
+          price_source: string | null
+          prix_sejour: number | null
+          prix_transport: number | null
+          prix_encadrement: number | null
           referent_email: string | null
           referent_fonction: string | null
           referent_nom: string | null
@@ -340,6 +345,11 @@ export type Database = {
           pref_canal_contact?: string | null
           pref_nouvelles_sejour?: string | null
           price_total?: number | null
+          price_locked?: boolean | null
+          price_source?: string | null
+          prix_sejour?: number | null
+          prix_transport?: number | null
+          prix_encadrement?: number | null
           referent_email?: string | null
           referent_fonction?: string | null
           referent_nom?: string | null
@@ -386,6 +396,11 @@ export type Database = {
           pref_canal_contact?: string | null
           pref_nouvelles_sejour?: string | null
           price_total?: number | null
+          price_locked?: boolean | null
+          price_source?: string | null
+          prix_sejour?: number | null
+          prix_transport?: number | null
+          prix_encadrement?: number | null
           referent_email?: string | null
           referent_fonction?: string | null
           referent_nom?: string | null

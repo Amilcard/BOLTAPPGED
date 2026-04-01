@@ -57,6 +57,10 @@ WHERE slug ILIKE '%high%ranch%';
 UPDATE gd_stays SET documents_requis = '["fiche_sanitaire","fiche_informations"]'::jsonb
 WHERE slug ILIKE '%little%forest%';
 
+-- ADRENALINE & CHILL
+UPDATE gd_stays SET documents_requis = '["fiche_sanitaire","fiche_informations","pass_nautique"]'::jsonb
+WHERE slug ILIKE '%adrenaline%chill%' OR slug = 'adrenaline-and-chill';
+
 -- LAKE & SKY EXTREME (parapente — médical + assurance obligatoires)
 UPDATE gd_stays SET documents_requis = '["fiche_sanitaire","fiche_informations","pass_nautique","autorisation_parentale","certificat_medical","attestation_assurance"]'::jsonb
 WHERE slug ILIKE '%lake%sky%' OR slug ILIKE '%sky%extreme%';

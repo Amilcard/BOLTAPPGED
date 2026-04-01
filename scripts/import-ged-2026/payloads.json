@@ -335,7 +335,7 @@
     "sendSuiviLink": false
   },
   {
-    "_meta": { "id": 18, "structure": "La Cordée Éducative", "groupe": "Grands", "encadrement": false, "note": "Documents ADRENALINE & CHILL à confirmer" },
+    "_meta": { "id": 18, "structure": "La Cordée Éducative", "groupe": "Grands", "encadrement": false },
     "childFirstName": "Johanna",
     "childLastName": "CERISIER",
     "childBirthDate": "2012-08-20",

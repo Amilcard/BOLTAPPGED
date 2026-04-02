@@ -182,13 +182,14 @@ export async function POST(
       }
     }
 
-    const { data: { publicUrl } } = supabase.storage
+    // Bucket privé → signed URL temporaire (1h) au lieu de getPublicUrl (retournerait 403)
+    const { data: signedData } = await supabase.storage
       .from('dossier-documents')
-      .getPublicUrl(storagePath);
+      .createSignedUrl(storagePath, 3600);
 
     return NextResponse.json({
       success: true,
-      document: { ...newDoc, url: publicUrl },
+      document: { ...newDoc, url: signedData?.signedUrl ?? null },
     }, { status: 201 });
   } catch (error: unknown) {
     console.error('Upload error:', error);

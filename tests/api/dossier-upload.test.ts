@@ -26,7 +26,7 @@ process.env.SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.fa
 const mockFrom = jest.fn();
 const mockStorageUpload = jest.fn();
 const mockStorageRemove = jest.fn();
-const mockStorageGetPublicUrl = jest.fn();
+const mockStorageCreateSignedUrl = jest.fn();
 
 jest.mock('@/lib/supabase-server', () => ({
   getSupabase: () => ({
@@ -35,7 +35,7 @@ jest.mock('@/lib/supabase-server', () => ({
       from: () => ({
         upload: mockStorageUpload,
         remove: mockStorageRemove,
-        getPublicUrl: mockStorageGetPublicUrl,
+        createSignedUrl: mockStorageCreateSignedUrl,
       }),
     },
   }),
@@ -45,7 +45,7 @@ jest.mock('@/lib/supabase-server', () => ({
       from: () => ({
         upload: mockStorageUpload,
         remove: mockStorageRemove,
-        getPublicUrl: mockStorageGetPublicUrl,
+        createSignedUrl: mockStorageCreateSignedUrl,
       }),
     },
   }),
@@ -127,7 +127,7 @@ describe('POST /api/dossier-enfant/[id]/upload', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockStorageUpload.mockResolvedValue({ error: null });
-    mockStorageGetPublicUrl.mockReturnValue({ data: { publicUrl: 'https://cdn.test/doc.pdf' } });
+    mockStorageCreateSignedUrl.mockResolvedValue({ data: { signedUrl: 'https://cdn.test/signed/doc.pdf' }, error: null });
   });
 
   it('retourne 400 si type de document invalide', async () => {

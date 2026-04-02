@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { SignaturePad } from './SignaturePad';
 
 interface Props {
   data: Record<string, unknown>;
@@ -161,6 +162,14 @@ export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeun
           checked={!!form.autorisation_accepte}
           onChange={v => update('autorisation_accepte', v)}
         />
+        <div className="mt-3">
+          <SignaturePad
+            label="Signature du responsable légal"
+            value={form.signature_image_url as string | null}
+            onChange={dataUrl => update('signature_image_url', dataUrl)}
+            disabled={saving}
+          />
+        </div>
       </Section>
 
       {/* Boutons */}

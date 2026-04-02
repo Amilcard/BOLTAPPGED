@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useId } from 'react';
+import { SignaturePad } from './SignaturePad';
 
 interface Props {
   data: Record<string, unknown>;
@@ -135,6 +136,14 @@ export function FicheLiaisonJeuneForm({ data, saving, onSave, jeunePrenom, jeune
           checked={!!form.engagement_accepte}
           onChange={v => update('engagement_accepte', v)}
         />
+        <div className="mt-3">
+          <SignaturePad
+            label="Signature du jeune et du responsable"
+            value={form.signature_image_url as string | null}
+            onChange={dataUrl => update('signature_image_url', dataUrl)}
+            disabled={saving}
+          />
+        </div>
       </Section>
 
       {/* Boutons */}

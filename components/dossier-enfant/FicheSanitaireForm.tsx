@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useId } from 'react';
+import { SignaturePad } from './SignaturePad';
 
 interface Props {
   data: Record<string, unknown>;
@@ -278,6 +279,14 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
             label="J'atteste l'exactitude des renseignements et j'autorise les soins d'urgence"
             checked={!!form.autorisation_soins_accepte}
             onChange={v => update('autorisation_soins_accepte', v)}
+          />
+        </div>
+        <div className="mt-3">
+          <SignaturePad
+            label="Signature du responsable légal"
+            value={form.signature_image_url as string | null}
+            onChange={dataUrl => update('signature_image_url', dataUrl)}
+            disabled={saving}
           />
         </div>
       </Section>

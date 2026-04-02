@@ -1,8 +1,20 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
-const ALLOWED_TYPES = ['vaccins', 'ordonnance', 'pass_nautique', 'certificat_plongee', 'certificat_medical', 'attestation_assurance', 'signature_parentale', 'autre'] as const;
+const ALLOWED_TYPES = [
+  'vaccins', 'ordonnance', 'pass_nautique', 'certificat_plongee',
+  'certificat_medical', 'attestation_assurance', 'signature_parentale',
+  'bulletin_signe', 'sanitaire_signe', 'liaison_signe',
+  'autre',
+] as const;
 const MAX_SIZE = 5 * 1024 * 1024; // 5 Mo
+
+// Types de PDF signés physiquement → colonne completed correspondante
+const SIGNED_TO_COMPLETED: Record<string, string> = {
+  bulletin_signe: 'bulletin_completed',
+  sanitaire_signe: 'sanitaire_completed',
+  liaison_signe: 'liaison_completed',
+};
 
 /**
  * POST /api/dossier-enfant/[inscriptionId]/upload
@@ -108,18 +120,36 @@ export async function POST(
         await supabase.storage.from('dossier-documents').remove([storagePath]);
         throw updateError;
       }
+
+      // Si PDF signé physiquement → marquer le bloc comme complété
+      if (SIGNED_TO_COMPLETED[docType]) {
+        await supabase
+          .from('gd_dossier_enfant')
+          .update({ [SIGNED_TO_COMPLETED[docType]]: true })
+          .eq('id', dossier.id);
+      }
     } else {
       // Dossier n'existe pas encore : le creer avec le document
-      const { error: insertError } = await supabase
+      const { data: newDossier, error: insertError } = await supabase
         .from('gd_dossier_enfant')
         .insert({
           inscription_id: inscriptionId,
           documents_joints: [newDoc],
-        });
+        })
+        .select('id')
+        .single();
 
       if (insertError) {
         await supabase.storage.from('dossier-documents').remove([storagePath]);
         throw insertError;
+      }
+
+      // Si PDF signé physiquement → marquer le bloc comme complété
+      if (SIGNED_TO_COMPLETED[docType] && newDossier) {
+        await supabase
+          .from('gd_dossier_enfant')
+          .update({ [SIGNED_TO_COMPLETED[docType]]: true })
+          .eq('id', newDossier.id);
       }
     }
 

@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
-const ALLOWED_TYPES = ['vaccins', 'ordonnance', 'pass_nautique', 'certificat_plongee', 'certificat_medical', 'attestation_assurance', 'autre'] as const;
+const ALLOWED_TYPES = ['vaccins', 'ordonnance', 'pass_nautique', 'certificat_plongee', 'certificat_medical', 'attestation_assurance', 'signature_parentale', 'autre'] as const;
 const MAX_SIZE = 5 * 1024 * 1024; // 5 Mo
 
 /**
@@ -123,9 +123,13 @@ export async function POST(
       }
     }
 
+    const { data: { publicUrl } } = supabase.storage
+      .from('dossier-documents')
+      .getPublicUrl(storagePath);
+
     return NextResponse.json({
       success: true,
-      document: newDoc,
+      document: { ...newDoc, url: publicUrl },
     }, { status: 201 });
   } catch (error: unknown) {
     console.error('Upload error:', error);

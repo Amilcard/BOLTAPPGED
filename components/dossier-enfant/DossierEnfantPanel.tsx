@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useDossierEnfant } from './useDossierEnfant';
 import { BulletinComplementForm } from './BulletinComplementForm';
@@ -131,12 +131,175 @@ function PdfDownloadButton({ inscriptionId, token, docType, label }: {
   );
 }
 
+// ─── Sélecteur de mode de signature ───────────────────────────────────────────
+
+function SignatureModeSelector({
+  selectorId,
+  mode,
+  onChange,
+  alreadyCompleted,
+}: {
+  selectorId: string;
+  mode: 'online' | 'offline';
+  onChange: (m: 'online' | 'offline') => void;
+  alreadyCompleted: boolean;
+}) {
+  // Si déjà complété : ne pas masquer — afficher un lien discret "Remplacer"
+  // (changement de responsable légal possible à tout moment : placement, tutelle, ASE)
+  if (alreadyCompleted) {
+    return (
+      <div className="mb-4 p-2 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
+        <span className="text-xs text-green-700">Document validé</span>
+        <button
+          onClick={() => onChange('offline')}
+          className="text-xs text-gray-400 underline hover:text-gray-600"
+        >
+          Remplacer (situation administrative modifiée)
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-xl">
+      <p className="text-xs font-medium text-gray-600 mb-2">Qui va signer ce document ?</p>
+      <div className="flex flex-wrap gap-4">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="radio"
+            name={selectorId}
+            checked={mode === 'online'}
+            onChange={() => onChange('online')}
+            className="accent-orange-500"
+          />
+          <span className="text-sm text-gray-700">Responsable légal présent — signature en ligne</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="radio"
+            name={selectorId}
+            checked={mode === 'offline'}
+            onChange={() => onChange('offline')}
+            className="accent-orange-500"
+          />
+          <span className="text-sm text-gray-700">Parent / responsable absent — imprimer et faire signer</span>
+        </label>
+      </div>
+    </div>
+  );
+}
+
+// ─── Zone de signature physique (télécharger → faire signer → uploader) ───────
+
+function OfflineSignatureZone({
+  inscriptionId,
+  token,
+  docType,
+  docLabel,
+  signedType,
+  onUploadSuccess,
+}: {
+  inscriptionId: string;
+  token: string;
+  docType: string;
+  docLabel: string;
+  signedType: string;
+  onUploadSuccess: () => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [uploaded, setUploaded] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleUpload = async () => {
+    const file = fileRef.current?.files?.[0];
+    if (!file) { setUploadError('Sélectionnez un fichier PDF.'); return; }
+    if (file.size > 5 * 1024 * 1024) { setUploadError('Fichier trop volumineux (max 5 Mo).'); return; }
+    setUploading(true);
+    setUploadError('');
+    try {
+      const fd = new FormData();
+      fd.append('token', token);
+      fd.append('type', signedType);
+      fd.append('file', file);
+      const res = await fetch(`/api/dossier-enfant/${inscriptionId}/upload`, { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur upload');
+      setUploaded(true);
+      onUploadSuccess();
+    } catch (err: unknown) {
+      setUploadError(err instanceof Error ? err.message : 'Erreur upload');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  if (uploaded) {
+    return (
+      <div className="p-4 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800 text-center">
+        Document signé intégré au dossier.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+        <p className="text-sm font-medium text-blue-800 mb-1">Étape 1 — Télécharger le document pré-rempli</p>
+        <p className="text-xs text-blue-600 mb-3">
+          Le document sera généré avec les données déjà saisies dans le dossier. Imprimez-le, faites-le signer
+          par le parent ou responsable légal, puis uploadez-le à l&apos;étape 2.
+        </p>
+        <PdfDownloadButton
+          inscriptionId={inscriptionId}
+          token={token}
+          docType={docType}
+          label={`Télécharger ${docLabel}`}
+        />
+      </div>
+      <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
+        <p className="text-sm font-medium text-orange-800 mb-1">Étape 2 — Uploader le document signé</p>
+        <p className="text-xs text-orange-600 mb-3">
+          Une fois le document signé récupéré, uploadez le PDF ici. Il sera automatiquement intégré au dossier.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".pdf"
+            className="text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-orange-100 file:text-orange-700 hover:file:bg-orange-200"
+          />
+          <button
+            onClick={handleUpload}
+            disabled={uploading}
+            className="px-4 py-1.5 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition disabled:opacity-50 flex items-center gap-2"
+          >
+            {uploading ? (
+              <>
+                <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Envoi...
+              </>
+            ) : 'Intégrer au dossier'}
+          </button>
+        </div>
+        {uploadError && <p className="mt-2 text-xs text-red-600">{uploadError}</p>}
+      </div>
+    </div>
+  );
+}
+
+// ─── Panel principal ───────────────────────────────────────────────────────────
+
 export function DossierEnfantPanel({ inscription, token }: Props) {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('bulletin');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [alreadySent, setAlreadySent] = useState(false);
+  const [signatureMode, setSignatureMode] = useState<Record<string, 'online' | 'offline'>>({
+    bulletin: 'online',
+    sanitaire: 'online',
+    liaison: 'online',
+  });
 
   const {
     dossier, loading, saving, saved, error, saveBloc, reload,
@@ -336,76 +499,122 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                 })}
               </div>
 
-              {/* Boutons téléchargement PDF */}
+              {/* Boutons téléchargement PDF — toujours visibles pour permettre le flux signature physique */}
               {dossier?.exists && (
                 <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500 mb-2">Télécharger les documents remplis (format officiel PDF) :</p>
+                  <p className="text-xs text-gray-500 mb-2">Télécharger les documents (pré-remplis avec les données saisies) :</p>
                   <div className="flex flex-wrap gap-2">
-                    {dossier.bulletin_completed && (
-                      <PdfDownloadButton
-                        inscriptionId={inscription.id}
-                        token={token}
-                        docType="bulletin"
-                        label="Bulletin d'inscription"
-                      />
-                    )}
-                    {dossier.sanitaire_completed && (
-                      <PdfDownloadButton
-                        inscriptionId={inscription.id}
-                        token={token}
-                        docType="sanitaire"
-                        label="Fiche sanitaire"
-                      />
-                    )}
-                    {dossier.liaison_completed && (
-                      <PdfDownloadButton
-                        inscriptionId={inscription.id}
-                        token={token}
-                        docType="liaison"
-                        label="Fiche de liaison"
-                      />
-                    )}
-                    {!dossier.bulletin_completed && !dossier.sanitaire_completed && !dossier.liaison_completed && (
-                      <p className="text-xs text-gray-400 italic">
-                        Les PDF seront disponibles au téléchargement une fois les fiches validées.
-                      </p>
-                    )}
+                    <PdfDownloadButton
+                      inscriptionId={inscription.id}
+                      token={token}
+                      docType="bulletin"
+                      label={dossier.bulletin_completed ? "Bulletin d'inscription" : "Bulletin (à faire signer)"}
+                    />
+                    <PdfDownloadButton
+                      inscriptionId={inscription.id}
+                      token={token}
+                      docType="sanitaire"
+                      label={dossier.sanitaire_completed ? 'Fiche sanitaire' : 'Fiche sanitaire (à faire signer)'}
+                    />
+                    <PdfDownloadButton
+                      inscriptionId={inscription.id}
+                      token={token}
+                      docType="liaison"
+                      label={dossier.liaison_completed ? 'Fiche de liaison' : 'Fiche de liaison (à faire signer)'}
+                    />
                   </div>
                 </div>
               )}
 
               {/* Contenu de l'onglet actif */}
               {activeTab === 'bulletin' && (
-                <BulletinComplementForm
-                  data={(dossier?.bulletin_complement || {}) as Record<string, unknown>}
-                  saving={saving}
-                  onSave={(data, completed) => saveBloc('bulletin_complement', data, completed)}
-                  jeunePrenom={inscription.jeunePrenom}
-                  jeuneNom={inscription.jeuneNom}
-                />
+                <>
+                  <SignatureModeSelector
+                    selectorId="sig-bulletin"
+                    mode={signatureMode.bulletin}
+                    onChange={m => setSignatureMode(prev => ({ ...prev, bulletin: m }))}
+                    alreadyCompleted={!!dossier?.bulletin_completed}
+                  />
+                  {signatureMode.bulletin === 'offline' ? (
+                    <OfflineSignatureZone
+                      inscriptionId={inscription.id}
+                      token={token}
+                      docType="bulletin"
+                      docLabel="Bulletin d'inscription"
+                      signedType="bulletin_signe"
+                      onUploadSuccess={reload}
+                    />
+                  ) : (
+                    <BulletinComplementForm
+                      data={(dossier?.bulletin_complement || {}) as Record<string, unknown>}
+                      saving={saving}
+                      onSave={(data, completed) => saveBloc('bulletin_complement', data, completed)}
+                      jeunePrenom={inscription.jeunePrenom}
+                      jeuneNom={inscription.jeuneNom}
+                    />
+                  )}
+                </>
               )}
 
               {activeTab === 'sanitaire' && (
-                <FicheSanitaireForm
-                  data={(dossier?.fiche_sanitaire || {}) as Record<string, unknown>}
-                  saving={saving}
-                  onSave={(data, completed) => saveBloc('fiche_sanitaire', data, completed)}
-                  jeunePrenom={inscription.jeunePrenom}
-                  jeuneNom={inscription.jeuneNom}
-                  jeuneDateNaissance={inscription.jeuneDateNaissance ?? ''}
-                />
+                <>
+                  <SignatureModeSelector
+                    selectorId="sig-sanitaire"
+                    mode={signatureMode.sanitaire}
+                    onChange={m => setSignatureMode(prev => ({ ...prev, sanitaire: m }))}
+                    alreadyCompleted={!!dossier?.sanitaire_completed}
+                  />
+                  {signatureMode.sanitaire === 'offline' ? (
+                    <OfflineSignatureZone
+                      inscriptionId={inscription.id}
+                      token={token}
+                      docType="sanitaire"
+                      docLabel="Fiche sanitaire"
+                      signedType="sanitaire_signe"
+                      onUploadSuccess={reload}
+                    />
+                  ) : (
+                    <FicheSanitaireForm
+                      data={(dossier?.fiche_sanitaire || {}) as Record<string, unknown>}
+                      saving={saving}
+                      onSave={(data, completed) => saveBloc('fiche_sanitaire', data, completed)}
+                      jeunePrenom={inscription.jeunePrenom}
+                      jeuneNom={inscription.jeuneNom}
+                      jeuneDateNaissance={inscription.jeuneDateNaissance ?? ''}
+                    />
+                  )}
+                </>
               )}
 
               {activeTab === 'liaison' && (
-                <FicheLiaisonJeuneForm
-                  data={(dossier?.fiche_liaison_jeune || {}) as Record<string, unknown>}
-                  saving={saving}
-                  onSave={(data, completed) => saveBloc('fiche_liaison_jeune', data, completed)}
-                  jeunePrenom={inscription.jeunePrenom}
-                  jeuneNom={inscription.jeuneNom}
-                  sejourNom={inscription.sejourNom}
-                  sessionDate={inscription.sessionDate}
-                />
+                <>
+                  <SignatureModeSelector
+                    selectorId="sig-liaison"
+                    mode={signatureMode.liaison}
+                    onChange={m => setSignatureMode(prev => ({ ...prev, liaison: m }))}
+                    alreadyCompleted={!!dossier?.liaison_completed}
+                  />
+                  {signatureMode.liaison === 'offline' ? (
+                    <OfflineSignatureZone
+                      inscriptionId={inscription.id}
+                      token={token}
+                      docType="liaison"
+                      docLabel="Fiche de liaison"
+                      signedType="liaison_signe"
+                      onUploadSuccess={reload}
+                    />
+                  ) : (
+                    <FicheLiaisonJeuneForm
+                      data={(dossier?.fiche_liaison_jeune || {}) as Record<string, unknown>}
+                      saving={saving}
+                      onSave={(data, completed) => saveBloc('fiche_liaison_jeune', data, completed)}
+                      jeunePrenom={inscription.jeunePrenom}
+                      jeuneNom={inscription.jeuneNom}
+                      sejourNom={inscription.sejourNom}
+                      sessionDate={inscription.sessionDate}
+                    />
+                  )}
+                </>
               )}
 
               {activeTab === 'renseignements' && (

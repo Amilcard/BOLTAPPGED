@@ -117,6 +117,7 @@ export async function POST(
         .eq('id', dossier.id);
 
       if (updateError) {
+        // Rollback storage : DB a échoué, supprimer le fichier uploadé
         await supabase.storage.from('dossier-documents').remove([storagePath]);
         throw updateError;
       }
@@ -130,11 +131,33 @@ export async function POST(
       }
     } else {
       // Dossier n'existe pas encore : le creer avec le document
+      // Initialiser renseignements_required depuis gd_stays.documents_requis
+      let renseignementsRequired = false;
+      const { data: inscRaw } = await supabase
+        .from('gd_inscriptions')
+        .select('sejour_slug')
+        .eq('id', inscriptionId)
+        .single();
+      if (inscRaw) {
+        const { data: stayRaw } = await supabase
+          .from('gd_stays')
+          .select('documents_requis')
+          .eq('slug', (inscRaw as { sejour_slug?: string }).sejour_slug)
+          .maybeSingle();
+        if (stayRaw) {
+          const docs = Array.isArray((stayRaw as { documents_requis?: unknown[] }).documents_requis)
+            ? (stayRaw as { documents_requis: unknown[] }).documents_requis
+            : [];
+          renseignementsRequired = docs.includes('renseignements');
+        }
+      }
+
       const { data: newDossier, error: insertError } = await supabase
         .from('gd_dossier_enfant')
         .insert({
           inscription_id: inscriptionId,
           documents_joints: [newDoc],
+          renseignements_required: renseignementsRequired,
         })
         .select('id')
         .single();

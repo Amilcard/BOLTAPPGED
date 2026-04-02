@@ -262,7 +262,20 @@ describe('POST /api/dossier-enfant/[id]/upload', () => {
     });
     const mockUpdate = jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ error: null }) });
     mockFrom.mockImplementation((table: string) => {
-      if (table === 'gd_inscriptions') return { select: () => ({ eq: () => ({ single: () => ({ data: { referent_email: REFERENT_EMAIL }, error: null }) }) }) };
+      if (table === 'gd_inscriptions') return {
+        select: () => ({
+          eq: () => ({
+            single: () => ({ data: { referent_email: REFERENT_EMAIL, sejour_slug: 'sejour-test' }, error: null }),
+          }),
+        }),
+      };
+      if (table === 'gd_stays') return {
+        select: () => ({
+          eq: () => ({
+            maybeSingle: () => ({ data: { documents_requis: [] }, error: null }),
+          }),
+        }),
+      };
       if (table === 'gd_dossier_enfant') return {
         select: () => ({ eq: () => ({ single: () => ({ data: null, error: null }) }) }),
         insert: mockInsert,

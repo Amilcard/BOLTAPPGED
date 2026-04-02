@@ -55,14 +55,16 @@ export async function POST(
       return NextResponse.json({ error: 'Accès non autorisé.' }, { status: 403 });
     }
 
-    // Appel interne — base URL hardcodée, paramètres encodés
-    const INTERNAL_BASE = process.env.NODE_ENV === 'production'
-      ? 'https://app.groupeetdecouverte.fr'
-      : 'http://localhost:3000';
+    // Appel interne — résolution URL compatible Vercel preview + prod
+    const INTERNAL_BASE = process.env.NEXT_PUBLIC_APP_URL
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+      || (process.env.NODE_ENV === 'production' ? 'https://app.groupeetdecouverte.fr' : 'http://localhost:3000');
     const pdfUrl = new URL(`/api/dossier-enfant/${encodeURIComponent(inscriptionId)}/pdf`, INTERNAL_BASE);
     pdfUrl.searchParams.set('token', token);
     pdfUrl.searchParams.set('type', type);
-    const pdfRes = await fetch(pdfUrl.toString());
+    const pdfRes = await fetch(pdfUrl.toString(), {
+      signal: AbortSignal.timeout(8000),
+    });
 
     if (!pdfRes.ok) {
       return NextResponse.json({ error: 'Génération PDF échouée.' }, { status: 500 });

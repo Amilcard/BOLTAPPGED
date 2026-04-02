@@ -2,6 +2,15 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
 import { sendDossierCompletEmail, sendDossierGedAdminNotification } from '@/lib/email';
+
+// Mapping documents_requis (gd_stays) → type dans documents_joints
+const REQUIS_TO_JOINT: Record<string, string> = {
+  pass_nautique: 'pass_nautique',
+  certificat_medical: 'certificat_medical',
+  attestation_assurance: 'attestation_assurance',
+  autorisation_parentale: 'signature_parentale',
+  certificat_plongee: 'certificat_plongee',
+};
 /**
  * POST /api/dossier-enfant/[inscriptionId]/submit
  * Soumet le dossier enfant complet à l'équipe GED.
@@ -87,7 +96,41 @@ export async function POST(
       );
     }
 
-    // 5. Marquer comme envoyé
+    // 5. Vérifier documents optionnels requis par le séjour
+    const { data: inscForStay } = await supabase
+      .from('gd_inscriptions')
+      .select('sejour_slug')
+      .eq('id', inscriptionId)
+      .single();
+
+    if (inscForStay) {
+      const { data: stayForDocs } = await supabase
+        .from('gd_stays')
+        .select('documents_requis')
+        .eq('slug', (inscForStay as { sejour_slug?: string }).sejour_slug)
+        .maybeSingle();
+
+      if (stayForDocs) {
+        const docsRequis = Array.isArray((stayForDocs as { documents_requis?: unknown[] }).documents_requis)
+          ? ((stayForDocs as { documents_requis: unknown[] }).documents_requis as string[])
+          : [];
+        const uploadedTypes = new Set(
+          (dossier.documents_joints as Array<{ type: string }>).map(d => d.type)
+        );
+        const manquants = docsRequis
+          .filter(k => REQUIS_TO_JOINT[k])
+          .filter(k => !uploadedTypes.has(REQUIS_TO_JOINT[k]));
+
+        if (manquants.length > 0) {
+          return NextResponse.json(
+            { error: 'Documents requis manquants.', docs_manquants: manquants },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
+    // 6. Marquer comme envoyé
     const { error: updateErr } = await supabase
       .from('gd_dossier_enfant')
       .update({ ged_sent_at: new Date().toISOString() })

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { REQUIS_TO_JOINT, DOC_OPT_LABELS } from '@/lib/dossier-shared';
 
 interface DocJoint {
   type: string;
@@ -17,22 +18,7 @@ interface Props {
   requiredTypes?: string[]; // docs requis par le séjour (valeurs de documents_requis)
 }
 
-// Mapping documents_requis → type dans documents_joints (dupliqué côté client pour l'affichage)
-const REQUIS_TO_JOINT: Record<string, string> = {
-  pass_nautique: 'pass_nautique',
-  certificat_medical: 'certificat_medical',
-  attestation_assurance: 'attestation_assurance',
-  autorisation_parentale: 'signature_parentale',
-  certificat_plongee: 'certificat_plongee',
-};
-
-const DOC_OPT_LABELS: Record<string, string> = {
-  pass_nautique: 'Pass nautique / aisance aquatique',
-  certificat_medical: 'Certificat médical (sport à risque)',
-  attestation_assurance: "Attestation d'assurance",
-  autorisation_parentale: 'Autorisation parentale',
-  certificat_plongee: 'Certificat de plongée',
-};
+// REQUIS_TO_JOINT et DOC_OPT_LABELS importés depuis @/lib/dossier-shared
 
 const DOC_TYPES = [
   { value: 'vaccins', label: 'Carnet de vaccination', required: true },

@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
+import { REQUIS_TO_JOINT } from '@/lib/dossier-shared';
 // Blocs JSONB éditables (whitelist)
 const EDITABLE_BLOCS = [
   'bulletin_complement',
@@ -267,15 +268,7 @@ export async function PATCH(
 
 // === Helpers ===
 
-// Mapping documents_requis (gd_stays) → type dans documents_joints
-// Les entrées 'fiche_sanitaire', 'renseignements', 'bulletin' sont gérées par *_completed — pas ici.
-const REQUIS_TO_JOINT: Record<string, string> = {
-  pass_nautique: 'pass_nautique',
-  certificat_medical: 'certificat_medical',
-  attestation_assurance: 'attestation_assurance',
-  autorisation_parentale: 'signature_parentale',
-  certificat_plongee: 'certificat_plongee',
-};
+// REQUIS_TO_JOINT importé depuis @/lib/dossier-shared
 
 async function getDocsOptionnelsManquants(
   supabase: ReturnType<typeof getSupabase>,

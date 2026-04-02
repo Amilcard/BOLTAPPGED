@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import Link from 'next/link';
+import { DOC_OPT_LABELS } from '@/lib/dossier-shared';
 import { useDossierEnfant } from './useDossierEnfant';
 import { BulletinComplementForm } from './BulletinComplementForm';
 import { FicheSanitaireForm } from './FicheSanitaireForm';
@@ -330,14 +331,7 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
   const isComplete = completedCount === totalDocs &&
     (dossier?.docs_optionnels_manquants?.length ?? 0) === 0;
 
-  // Labels lisibles pour les docs optionnels requis par le séjour
-  const DOC_OPT_LABELS: Record<string, string> = {
-    pass_nautique: 'Pass nautique / aisance aquatique',
-    certificat_medical: 'Certificat médical (sport à risque)',
-    attestation_assurance: "Attestation d'assurance",
-    autorisation_parentale: 'Autorisation parentale',
-    certificat_plongee: 'Certificat de plongée',
-  };
+  // DOC_OPT_LABELS importé depuis @/lib/dossier-shared
 
   // Documents manquants pour l'alerte
   const missing: string[] = [];

@@ -2,15 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
 import { sendDossierCompletEmail, sendDossierGedAdminNotification } from '@/lib/email';
-
-// Mapping documents_requis (gd_stays) → type dans documents_joints
-const REQUIS_TO_JOINT: Record<string, string> = {
-  pass_nautique: 'pass_nautique',
-  certificat_medical: 'certificat_medical',
-  attestation_assurance: 'attestation_assurance',
-  autorisation_parentale: 'signature_parentale',
-  certificat_plongee: 'certificat_plongee',
-};
+import { REQUIS_TO_JOINT } from '@/lib/dossier-shared';
 /**
  * POST /api/dossier-enfant/[inscriptionId]/submit
  * Soumet le dossier enfant complet à l'équipe GED.

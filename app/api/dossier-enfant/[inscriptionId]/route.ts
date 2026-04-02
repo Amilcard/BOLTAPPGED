@@ -77,6 +77,10 @@ export async function GET(
         }
       }
 
+      // Docs optionnels requis (dossier vide → aucun doc uploadé encore)
+      const { requis: docs_optionnels_requis, manquants: docs_optionnels_manquants } =
+        await getDocsOptionnelsManquants(supabase, inscriptionId, []);
+
       return NextResponse.json({
         exists: false,
         inscriptionId,
@@ -90,12 +94,22 @@ export async function GET(
         liaison_completed: false,
         renseignements_completed: false,
         renseignements_required: renseignementsRequired,
+        docs_optionnels_requis,
+        docs_optionnels_manquants,
       });
     }
+
+    const docsJoints = Array.isArray((dossier as { documents_joints?: unknown[] }).documents_joints)
+      ? ((dossier as { documents_joints: Array<{ type: string }> }).documents_joints)
+      : [];
+    const { requis: docs_optionnels_requis, manquants: docs_optionnels_manquants } =
+      await getDocsOptionnelsManquants(supabase, inscriptionId, docsJoints);
 
     return NextResponse.json({
       exists: true,
       ...dossier,
+      docs_optionnels_requis,
+      docs_optionnels_manquants,
     });
   } catch (error) {
     console.error('GET /api/dossier-enfant error:', error);
@@ -252,6 +266,53 @@ export async function PATCH(
 }
 
 // === Helpers ===
+
+// Mapping documents_requis (gd_stays) → type dans documents_joints
+// Les entrées 'fiche_sanitaire', 'renseignements', 'bulletin' sont gérées par *_completed — pas ici.
+const REQUIS_TO_JOINT: Record<string, string> = {
+  pass_nautique: 'pass_nautique',
+  certificat_medical: 'certificat_medical',
+  attestation_assurance: 'attestation_assurance',
+  autorisation_parentale: 'signature_parentale',
+  certificat_plongee: 'certificat_plongee',
+};
+
+async function getDocsOptionnelsManquants(
+  supabase: ReturnType<typeof getSupabase>,
+  inscriptionId: string,
+  documentsJoints: Array<{ type: string }>
+): Promise<{ requis: string[]; manquants: string[] }> {
+  const { data: inscRaw } = await supabase
+    .from('gd_inscriptions')
+    .select('sejour_slug')
+    .eq('id', inscriptionId)
+    .single();
+  if (!inscRaw) return { requis: [], manquants: [] };
+
+  const { data: stayRaw } = await supabase
+    .from('gd_stays')
+    .select('documents_requis')
+    .eq('slug', (inscRaw as { sejour_slug?: string }).sejour_slug)
+    .maybeSingle();
+  if (!stayRaw) return { requis: [], manquants: [] };
+
+  const docsRequis = Array.isArray((stayRaw as { documents_requis?: unknown[] }).documents_requis)
+    ? ((stayRaw as { documents_requis: unknown[] }).documents_requis as string[])
+    : [];
+
+  const uploadedTypes = new Set(documentsJoints.map(d => d.type));
+  const requis: string[] = [];
+  const manquants: string[] = [];
+
+  for (const key of docsRequis) {
+    const jointType = REQUIS_TO_JOINT[key];
+    if (!jointType) continue;
+    requis.push(key);
+    if (!uploadedTypes.has(jointType)) manquants.push(key);
+  }
+
+  return { requis, manquants };
+}
 
 function getCompletedColumn(bloc: string): string | null {
   const map: Record<string, string> = {

@@ -28,6 +28,8 @@ export interface DossierEnfant {
   renseignements_completed: boolean;
   renseignements_required: boolean;
   ged_sent_at?: string | null;
+  docs_optionnels_requis?: string[];
+  docs_optionnels_manquants?: string[];
 }
 
 interface UseDossierEnfantReturn {

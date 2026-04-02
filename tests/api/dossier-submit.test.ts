@@ -15,6 +15,8 @@
  *  7. Dossier incomplet (bloc manquant) → 400
  *  8. Dossier complet → 200 + ged_sent_at
  *  9. Renseignements non-requis → OK même sans renseignements_completed
+ * 10. Doc optionnel requis par séjour manquant → 400 + docs_manquants
+ * 11. Doc optionnel requis présent dans documents_joints → 200
  */
 
 // ── Env ──────────────────────────────────────────────────────────────────────
@@ -70,39 +72,51 @@ function completeDossier(overrides: Record<string, unknown> = {}) {
 /**
  * Configure mockFrom for the full submit flow.
  * ownership: 'ok' | 'not_found' | 'mismatch'
+ * documentsRequis: types requis par le séjour (ex: ['pass_nautique'])
  */
 function setupMocks(opts: {
   ownership?: 'ok' | 'not_found' | 'mismatch';
-  dossier?: Record<string, unknown> | null; // null = not found, object = dossier data
+  dossier?: Record<string, unknown> | null;
   updateError?: unknown;
+  documentsRequis?: string[]; // ce que gd_stays.documents_requis retourne
 } = {}) {
-  const { ownership = 'ok', dossier = completeDossier(), updateError = null } = opts;
+  const {
+    ownership = 'ok',
+    dossier = completeDossier(),
+    updateError = null,
+    documentsRequis = [], // par défaut aucun doc optionnel requis
+  } = opts;
 
-  // Track which call index per table to differentiate
-  // gd_inscriptions calls (ownership check has 2 calls)
   let inscriptionCallCount = 0;
 
   mockFrom.mockImplementation((table: string) => {
     if (table === 'gd_inscriptions') {
       return {
         select: () => ({
-          eq: (col: string, val: unknown) => ({
+          eq: () => ({
             single: () => {
               inscriptionCallCount++;
-              if (ownership === 'not_found') {
-                return { data: null, error: null };
-              }
+              if (ownership === 'not_found') return { data: null, error: null };
               if (ownership === 'mismatch') {
-                // First call (suivi_token lookup) → returns one email
-                // Second call (id lookup) → returns different email
-                if (inscriptionCallCount <= 1) {
-                  return { data: { referent_email: REFERENT_EMAIL }, error: null };
-                }
+                if (inscriptionCallCount <= 1) return { data: { referent_email: REFERENT_EMAIL }, error: null };
                 return { data: { referent_email: 'autre@autre.fr' }, error: null };
               }
-              // ok — both calls return same email
-              return { data: { referent_email: REFERENT_EMAIL }, error: null };
+              // ok — retourne email ET sejour_slug pour toutes les requêtes
+              return { data: { referent_email: REFERENT_EMAIL, sejour_slug: 'test-sejour' }, error: null };
             },
+          }),
+        }),
+      };
+    }
+
+    if (table === 'gd_stays') {
+      return {
+        select: () => ({
+          eq: () => ({
+            maybeSingle: () => ({
+              data: { documents_requis: documentsRequis },
+              error: null,
+            }),
           }),
         }),
       };
@@ -215,6 +229,37 @@ describe('POST /api/dossier-enfant/[inscriptionId]/submit', () => {
       dossier: completeDossier({
         renseignements_required: false,
         renseignements_completed: false,
+      }),
+    });
+    const req = makeRequest({ token: VALID_TOKEN });
+    const res = await POST(req, makeParams(VALID_INSCRIPTION_ID));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.ok).toBe(true);
+  });
+
+  // ─── Docs optionnels requis par séjour ───────────────────────────────
+
+  it('doc optionnel requis manquant → 400 + docs_manquants', async () => {
+    setupMocks({
+      // pass_nautique requis par le séjour mais absent des documents_joints
+      documentsRequis: ['pass_nautique'],
+      dossier: completeDossier({ documents_joints: [] }),
+    });
+    const req = makeRequest({ token: VALID_TOKEN });
+    const res = await POST(req, makeParams(VALID_INSCRIPTION_ID));
+    const json = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(json.docs_manquants).toContain('pass_nautique');
+  });
+
+  it('doc optionnel requis présent dans documents_joints → 200', async () => {
+    setupMocks({
+      documentsRequis: ['pass_nautique'],
+      dossier: completeDossier({
+        documents_joints: [{ type: 'pass_nautique', filename: 'pass.pdf', storage_path: 'x/y.pdf', uploaded_at: '2026-04-02' }],
       }),
     });
     const req = makeRequest({ token: VALID_TOKEN });

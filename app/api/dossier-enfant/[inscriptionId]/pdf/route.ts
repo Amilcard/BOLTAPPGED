@@ -423,6 +423,44 @@ export async function GET(
       writeText(0, 280, 740, new Date().toLocaleDateString('fr-FR'));
     }
 
+    // Embedding signature parentale (base64 stocké dans le JSONB du formulaire)
+    const sigDataByType: Record<string, unknown> = {
+      bulletin:  dossier.bulletin_complement,
+      sanitaire: dossier.fiche_sanitaire,
+      liaison:   dossier.fiche_liaison_jeune,
+    };
+    const sigData = (sigDataByType[docType] ?? {}) as Record<string, unknown>;
+    const signatureDataUrl = typeof sigData.signature_image_url === 'string' ? sigData.signature_image_url : '';
+
+    if (signatureDataUrl.startsWith('data:image/png;base64,')) {
+      try {
+        const base64Data = signatureDataUrl.split(',')[1];
+        const imgBytes = Buffer.from(base64Data, 'base64');
+        const sigImage = await pdfDoc.embedPng(imgBytes);
+        const sigCoords: Record<string, { page: number; x: number; y: number; w: number; h: number }> = {
+          bulletin:  { page: 0, x: 350, y: 730, w: 120, h: 25 },
+          sanitaire: { page: 1, x: 350, y: 740, w: 120, h: 25 },
+          liaison:   { page: 0, x: 350, y: 725, w: 120, h: 25 },
+        };
+        const coords = sigCoords[docType];
+        if (coords) {
+          const targetPage = pdfDoc.getPages()[coords.page];
+          if (targetPage) {
+            const { height } = targetPage.getSize();
+            targetPage.drawImage(sigImage, {
+              x: coords.x,
+              y: height - coords.y - coords.h,
+              width: coords.w,
+              height: coords.h,
+              opacity: 1,
+            });
+          }
+        }
+      } catch {
+        // Non-bloquant : signature optionnelle dans le PDF
+      }
+    }
+
     // Générer le PDF final
     const pdfBytes = await pdfDoc.save();
 

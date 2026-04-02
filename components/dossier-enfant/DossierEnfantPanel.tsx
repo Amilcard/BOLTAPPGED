@@ -295,11 +295,18 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [alreadySent, setAlreadySent] = useState(false);
-  const [signatureMode, setSignatureMode] = useState<Record<string, 'online' | 'offline'>>({
+  // signatureModeRef persiste le choix offline entre reloads (useRef survit sans reset)
+  const signatureModeRef = useRef<Record<string, 'online' | 'offline'>>({
     bulletin: 'online',
     sanitaire: 'online',
     liaison: 'online',
   });
+  const [signatureMode, setSignatureMode] = useState(signatureModeRef.current);
+
+  const setSignatureModeAndRef = (updates: Record<string, 'online' | 'offline'>) => {
+    signatureModeRef.current = { ...signatureModeRef.current, ...updates };
+    setSignatureMode({ ...signatureModeRef.current });
+  };
 
   const {
     dossier, loading, saving, saved, error, saveBloc, reload,
@@ -545,7 +552,7 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                   <SignatureModeSelector
                     selectorId="sig-bulletin"
                     mode={signatureMode.bulletin}
-                    onChange={m => setSignatureMode(prev => ({ ...prev, bulletin: m }))}
+                    onChange={m => setSignatureModeAndRef({ bulletin: m })}
                     alreadyCompleted={!!dossier?.bulletin_completed}
                   />
                   {signatureMode.bulletin === 'offline' ? (
@@ -574,7 +581,7 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                   <SignatureModeSelector
                     selectorId="sig-sanitaire"
                     mode={signatureMode.sanitaire}
-                    onChange={m => setSignatureMode(prev => ({ ...prev, sanitaire: m }))}
+                    onChange={m => setSignatureModeAndRef({ sanitaire: m })}
                     alreadyCompleted={!!dossier?.sanitaire_completed}
                   />
                   {signatureMode.sanitaire === 'offline' ? (
@@ -604,7 +611,7 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                   <SignatureModeSelector
                     selectorId="sig-liaison"
                     mode={signatureMode.liaison}
-                    onChange={m => setSignatureMode(prev => ({ ...prev, liaison: m }))}
+                    onChange={m => setSignatureModeAndRef({ liaison: m })}
                     alreadyCompleted={!!dossier?.liaison_completed}
                   />
                   {signatureMode.liaison === 'offline' ? (

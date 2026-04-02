@@ -144,8 +144,14 @@ export async function POST(
         throw insertError;
       }
 
+      if (!newDossier) {
+        // Ne devrait pas arriver avec service-role, mais guard explicite
+        await supabase.storage.from('dossier-documents').remove([storagePath]);
+        throw new Error('Dossier créé mais ID non retourné — impossible de marquer le bloc comme complété.');
+      }
+
       // Si PDF signé physiquement → marquer le bloc comme complété
-      if (SIGNED_TO_COMPLETED[docType] && newDossier) {
+      if (SIGNED_TO_COMPLETED[docType]) {
         await supabase
           .from('gd_dossier_enfant')
           .update({ [SIGNED_TO_COMPLETED[docType]]: true })
@@ -233,10 +239,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Chemin non autorisé.' }, { status: 403 });
     }
 
-    // Supprimer du storage
-    await supabase.storage.from('dossier-documents').remove([storage_path]);
-
-    // Mettre a jour documents_joints
+    // Mettre à jour documents_joints EN PREMIER (si DB échoue, le fichier reste intact)
     const { data: dossier } = await supabase
       .from('gd_dossier_enfant')
       .select('id, documents_joints')
@@ -247,11 +250,16 @@ export async function DELETE(
       const docs = Array.isArray(dossier.documents_joints) ? dossier.documents_joints : [];
       const updatedDocs = docs.filter((d: { storage_path?: string }) => d.storage_path !== storage_path);
 
-      await supabase
+      const { error: updateError } = await supabase
         .from('gd_dossier_enfant')
         .update({ documents_joints: updatedDocs })
         .eq('id', dossier.id);
+
+      if (updateError) throw updateError;
     }
+
+    // Supprimer du storage seulement après succès DB
+    await supabase.storage.from('dossier-documents').remove([storage_path]);
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {

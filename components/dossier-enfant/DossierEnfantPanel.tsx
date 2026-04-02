@@ -320,7 +320,17 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
       ].filter(Boolean).length
     : 0;
   const progressPct = Math.round((completedCount / totalDocs) * 100);
-  const isComplete = completedCount === totalDocs;
+  const isComplete = completedCount === totalDocs &&
+    (dossier?.docs_optionnels_manquants?.length ?? 0) === 0;
+
+  // Labels lisibles pour les docs optionnels requis par le séjour
+  const DOC_OPT_LABELS: Record<string, string> = {
+    pass_nautique: 'Pass nautique / aisance aquatique',
+    certificat_medical: 'Certificat médical (sport à risque)',
+    attestation_assurance: "Attestation d'assurance",
+    autorisation_parentale: 'Autorisation parentale',
+    certificat_plongee: 'Certificat de plongée',
+  };
 
   // Documents manquants pour l'alerte
   const missing: string[] = [];
@@ -328,7 +338,10 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
   if (dossier && !dossier.sanitaire_completed) missing.push('Fiche sanitaire');
   if (dossier && !dossier.liaison_completed) missing.push('Fiche de liaison');
   if (dossier && !dossier.renseignements_completed) missing.push('Fiche de renseignements');
-  // Les pièces jointes sont optionnelles — ne pas les inclure dans les manquants bloquants
+  // Docs optionnels requis par le séjour non uploadés
+  (dossier?.docs_optionnels_manquants ?? []).forEach(k => {
+    missing.push(DOC_OPT_LABELS[k] ?? k);
+  });
 
   // Envoi GED
   const handleSubmit = async () => {
@@ -637,6 +650,7 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                     inscriptionId={inscription.id}
                     token={token}
                     onUploadSuccess={reload}
+                    requiredTypes={dossier?.docs_optionnels_requis ?? []}
                   />
                 </>
               )}

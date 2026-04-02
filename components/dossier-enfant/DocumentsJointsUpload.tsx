@@ -14,7 +14,25 @@ interface Props {
   inscriptionId: string;
   token: string;
   onUploadSuccess?: () => void;
+  requiredTypes?: string[]; // docs requis par le séjour (valeurs de documents_requis)
 }
+
+// Mapping documents_requis → type dans documents_joints (dupliqué côté client pour l'affichage)
+const REQUIS_TO_JOINT: Record<string, string> = {
+  pass_nautique: 'pass_nautique',
+  certificat_medical: 'certificat_medical',
+  attestation_assurance: 'attestation_assurance',
+  autorisation_parentale: 'signature_parentale',
+  certificat_plongee: 'certificat_plongee',
+};
+
+const DOC_OPT_LABELS: Record<string, string> = {
+  pass_nautique: 'Pass nautique / aisance aquatique',
+  certificat_medical: 'Certificat médical (sport à risque)',
+  attestation_assurance: "Attestation d'assurance",
+  autorisation_parentale: 'Autorisation parentale',
+  certificat_plongee: 'Certificat de plongée',
+};
 
 const DOC_TYPES = [
   { value: 'vaccins', label: 'Carnet de vaccination', required: true },
@@ -38,7 +56,7 @@ function formatDate(iso: string): string {
   });
 }
 
-export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess }: Props) {
+export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess, requiredTypes = [] }: Props) {
   const [documents, setDocuments] = useState<DocJoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -228,16 +246,42 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess }:
         </div>
       )}
 
-      {/* Indicateur de completude */}
-      <div className="text-xs text-gray-500 pt-2 border-t">
-        {DOC_TYPES.filter(dt => dt.required).map(dt => {
-          const uploaded = documents.some(d => d.type === dt.value);
-          return (
-            <span key={dt.value} className={`inline-flex items-center gap-1 mr-3 ${uploaded ? 'text-green-600' : 'text-gray-400'}`}>
-              {uploaded ? '✓' : '○'} {dt.label}
-            </span>
-          );
-        })}
+      {/* Indicateur de complétude — docs toujours requis (vaccins) */}
+      <div className="text-xs text-gray-500 pt-2 border-t space-y-2">
+        <div>
+          {DOC_TYPES.filter(dt => dt.required).map(dt => {
+            const uploaded = documents.some(d => d.type === dt.value);
+            return (
+              <span key={dt.value} className={`inline-flex items-center gap-1 mr-3 ${uploaded ? 'text-green-600' : 'text-gray-400'}`}>
+                {uploaded ? '✓' : '○'} {dt.label}
+              </span>
+            );
+          })}
+        </div>
+
+        {/* Docs requis par ce séjour spécifique */}
+        {requiredTypes.length > 0 && (
+          <div>
+            <p className="font-medium text-gray-600 mb-1">Requis pour ce séjour :</p>
+            <div className="flex flex-wrap gap-2">
+              {requiredTypes.map(reqType => {
+                const jointType = REQUIS_TO_JOINT[reqType] ?? reqType;
+                const uploaded = documents.some(d => d.type === jointType);
+                const label = DOC_OPT_LABELS[reqType] ?? reqType;
+                return (
+                  <span
+                    key={reqType}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                      uploaded ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}
+                  >
+                    {uploaded ? '✓' : '!'} {label}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -72,10 +72,10 @@ export default function EnviesPage() {
         </Link>
         <div className="flex items-center gap-2">
           <Heart className="w-5 h-5 text-red-400 fill-current" />
-          <h1 className="text-lg font-bold text-primary">Mes souhaits</h1>
+          <h1 className="text-lg font-bold text-primary">Mes colos préférées</h1>
         </div>
         {items.length > 0 && (
-          <span className="ml-auto text-sm text-gray-400">{items.length} séjour{items.length > 1 ? 's' : ''}</span>
+          <span className="ml-auto text-sm text-gray-400">{items.length} séjour{items.length !== 1 ? 's' : ''}</span>
         )}
       </div>
 
@@ -166,7 +166,7 @@ export default function EnviesPage() {
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-50 text-primary rounded-full text-sm font-medium hover:bg-primary-100 transition"
               >
                 <Compass className="w-4 h-4" />
-                Trouver d'autres séjours
+                D&apos;autres colos m&apos;attendent
               </Link>
             </div>
           </div>

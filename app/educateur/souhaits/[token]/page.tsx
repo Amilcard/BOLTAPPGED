@@ -70,7 +70,7 @@ export default function EducateurSouhaitsPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-gray-500">Chargement de vos souhaits...</p>
+          <p className="text-gray-500">On récupère les souhaits...</p>
         </div>
       </div>
     );
@@ -81,9 +81,9 @@ export default function EducateurSouhaitsPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-8 text-center">
           <div className="text-4xl mb-4">🔗</div>
-          <h1 className="text-xl font-bold text-gray-800 mb-2">Lien expiré ou invalide</h1>
+          <h1 className="text-xl font-bold text-gray-800 mb-2">Ce lien ne fonctionne plus</h1>
           <p className="text-gray-500 text-sm mb-6">
-            Ce lien n&apos;est plus actif. Vérifiez votre boîte mail pour un lien plus récent.
+            Ce lien a expiré. Consultez votre boîte mail pour retrouver un lien actif.
           </p>
           <Link
             href="/"
@@ -131,9 +131,9 @@ export default function EducateurSouhaitsPage() {
         {souhaits.length === 0 ? (
           <div className="text-center py-16">
             <Heart className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h2 className="text-lg font-semibold text-gray-700 mb-2">Aucun souhait reçu</h2>
+            <h2 className="text-lg font-semibold text-gray-700 mb-2">Aucun souhait pour l&apos;instant</h2>
             <p className="text-sm text-gray-500">
-              Les jeunes que vous accompagnez n&apos;ont pas encore exprimé de souhaits.
+              Les jeunes n&apos;ont pas encore exprimé de souhaits. Partagez l&apos;application avec eux pour démarrer.
             </p>
           </div>
         ) : (
@@ -141,7 +141,7 @@ export default function EducateurSouhaitsPage() {
             {/* À traiter en premier */}
             {pending.length > 0 && (
               <>
-                <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">À traiter</h2>
+                <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">En attente de réponse</h2>
                 {pending.map((s) => (
                   <SouhaitCard key={s.id} souhait={s} />
                 ))}
@@ -151,7 +151,7 @@ export default function EducateurSouhaitsPage() {
             {/* Déjà traités */}
             {resolved.length > 0 && (
               <>
-                <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mt-6">Traités</h2>
+                <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mt-6">Déjà répondus</h2>
                 {resolved.map((s) => (
                   <SouhaitCard key={s.id} souhait={s} />
                 ))}
@@ -214,7 +214,7 @@ function SouhaitCard({ souhait }: { souhait: Souhait }) {
         {/* Réponse éducateur si existante */}
         {souhait.reponse_educateur && (
           <div className="mt-2 bg-blue-50 p-3 rounded-lg">
-            <p className="text-xs text-blue-500 font-medium mb-0.5">Votre réponse</p>
+            <p className="text-xs text-blue-500 font-medium mb-0.5">Votre message pour ce jeune</p>
             <p className="text-sm text-blue-800">{souhait.reponse_educateur}</p>
           </div>
         )}
@@ -231,7 +231,7 @@ function SouhaitCard({ souhait }: { souhait: Souhait }) {
               href={`/educateur/souhait/${souhait.educateur_token}`}
               className="inline-flex items-center gap-1 text-xs font-medium text-secondary hover:text-secondary/80 transition"
             >
-              Répondre <ChevronRight className="w-3.5 h-3.5" />
+              Répondre à ce souhait <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           ) : (
             <span className="text-xs text-gray-400">

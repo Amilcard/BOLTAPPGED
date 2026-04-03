@@ -157,7 +157,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
         </div>
 
         <h2 className="text-lg font-bold text-primary text-center mb-1">
-          {saved ? "C'est noté !" : "Mon souhait"}
+          {saved ? "Super choix 👌" : "Mon souhait"}
         </h2>
         <p className="text-sm text-primary-500 text-center mb-6">{stayTitle}</p>
 
@@ -166,8 +166,8 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
           <p className="text-sm text-primary">
             <span className="font-medium">
               {saved
-                ? `C'est noté ! Pour que ton accompagnant·e le sache, clique sur "Envoyer à mon accompagnant·e".`
-                : 'Note ce séjour dans tes souhaits pour en parler avec ton accompagnant·e.'
+                ? `Super choix 👌 Pour que ton éducateur·trice le sache, clique sur "Envoyer à mon éducateur·trice".`
+                : 'Dis-nous ce qui t\'attire. Ton éducateur·trice recevra ton choix.'
               }
             </span>
           </p>
@@ -185,7 +185,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
             onChange={(e) => setPrenom(e.target.value.slice(0, 30))}
             onBlur={() => {
               if (prenom.trim().length > 0 && prenom.trim().length < 2) {
-                setErrors(prev => ({ ...prev, prenom: 'Ton prénom semble trop court.' }));
+                setErrors(prev => ({ ...prev, prenom: 'Ton prénom, c\'est plus long non ?' }));
               } else {
                 setErrors(prev => { const { prenom: _prenom, ...rest } = prev; return rest; });
               }
@@ -206,7 +206,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
         {/* Prénom référent field — optionnel, masqué par défaut */}
         <details className="mb-4 group">
           <summary className="text-xs text-primary-400 cursor-pointer hover:text-primary-600 transition list-none flex items-center gap-1">
-            <span>+ Ajouter le prénom de ton accompagnant·e (optionnel)</span>
+            <span>+ Ajouter le prénom de ton éducateur·trice (optionnel)</span>
           </summary>
           <div className="mt-2">
             <input
@@ -229,7 +229,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
         {!emailLocked && (
           <div className="mb-4">
             <label className="block text-sm font-medium text-primary mb-2">
-              Email de ton accompagnant·e (éducateur·trice, animateur·trice…) <span className="text-red-500">*</span>
+              Email de ton éducateur·trice <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
@@ -237,7 +237,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
               onChange={(e) => setEmailStructure(e.target.value)}
               onBlur={() => {
                 if (!emailStructure.trim()) {
-                  setErrors(prev => ({ ...prev, email: 'L\'email de ton éducateur est requis.' }));
+                  setErrors(prev => ({ ...prev, email: 'L\'email de ton éducateur·trice est requis.' }));
                 } else if (!validateEmail(emailStructure)) {
                   setErrors(prev => ({ ...prev, email: 'Il manque le @ ou le domaine dans l\'email.' }));
                 } else {
@@ -268,7 +268,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
             onChange={(e) => setMotivation(e.target.value.slice(0, maxChars))}
             onBlur={() => {
               if (motivation.trim().length > 0 && motivation.trim().length < minMessageChars) {
-                setErrors(prev => ({ ...prev, motivation: `Ajoute un peu de détail (au moins ${minMessageChars} caractères).` }));
+                setErrors(prev => ({ ...prev, motivation: 'Dis-nous en un peu plus !' }));
               } else {
                 setErrors(prev => { const { motivation: _motivation, ...rest } = prev; return rest; });
               }
@@ -286,7 +286,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
             </p>
           )}
           <div className="flex justify-between items-center mt-1">
-            <span className="text-xs text-primary-400">N'écris pas de nom de famille, d'adresse ou d'infos perso.</span>
+            <span className="text-xs text-primary-400">Pas besoin de ton nom complet — juste ce qui t&apos;attire !</span>
             <span className={`text-xs ${motivation.length >= maxChars ? 'text-red-500 font-medium' : motivation.length >= maxChars * 0.85 ? 'text-orange-500' : 'text-primary-400'}`}>{motivation.length}/{maxChars}</span>
           </div>
         </div>
@@ -307,9 +307,9 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
             className="w-full mb-4 py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> Enregistrement...</>
+              <><Loader2 className="w-4 h-4 animate-spin" /> On note ça...</>
             ) : (
-              'Enregistrer ce souhait'
+              'Je veux ce séjour !'
             )}
           </button>
         )}
@@ -321,7 +321,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
               onClick={handleShare}
               className="w-full py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary/90 transition"
             >
-              <Share2 className="w-4 h-4" /> Envoyer à mon accompagnant·e
+              <Share2 className="w-4 h-4" /> Envoyer à mon éducateur·trice
             </button>
             <Link
               href="/envies"
@@ -333,7 +333,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
               onClick={onClose}
               className="w-full py-3 text-primary-500 rounded-full font-medium flex items-center justify-center gap-2 hover:bg-primary-50 transition"
             >
-              <Compass className="w-4 h-4" /> Continuer à explorer
+              <Compass className="w-4 h-4" /> Je regarde d&apos;autres colos
             </button>
           </div>
         )}
@@ -351,7 +351,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
               onClick={onClose}
               className="w-full py-3 text-primary-500 rounded-full font-medium flex items-center justify-center gap-2 hover:bg-primary-50 transition"
             >
-              <Compass className="w-4 h-4" /> Continuer à explorer
+              <Compass className="w-4 h-4" /> Je regarde d&apos;autres colos
             </button>
           </div>
         )}
@@ -368,7 +368,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
                 <h3 className="font-semibold text-primary">Envoyer par messagerie</h3>
               </div>
               <p className="text-sm text-primary-600 mb-6">
-                Ton téléphone va ouvrir ton appli de messagerie pour envoyer ce séjour à ton accompagnant·e. C'est normal !
+                Ton téléphone va ouvrir ton appli de messagerie pour envoyer ce séjour à ton éducateur·trice. C&apos;est normal !
               </p>
               <div className="flex gap-3">
                 <button

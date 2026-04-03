@@ -185,7 +185,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
             onChange={(e) => setPrenom(e.target.value.slice(0, 30))}
             onBlur={() => {
               if (prenom.trim().length > 0 && prenom.trim().length < 2) {
-                setErrors(prev => ({ ...prev, prenom: 'Ton prénom, c\'est plus long non ?' }));
+                setErrors(prev => ({ ...prev, prenom: 'Ton prénom doit faire au moins 2 lettres.' }));
               } else {
                 setErrors(prev => { const { prenom: _prenom, ...rest } = prev; return rest; });
               }

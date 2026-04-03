@@ -740,7 +740,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                 <div className="border-t border-gray-100 pt-3 mb-3">
                   <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 text-center">
                     <p className="text-sm font-semibold text-gray-800 mb-1">
-                      Les prix ? C&apos;est le taf de ton éducateur.
+                      Les tarifs ? Ton éducateur s&apos;en occupe.
                     </p>
                     <p className="text-xs text-gray-500">
                       Toi, dis-nous juste ce qui t&apos;attire.

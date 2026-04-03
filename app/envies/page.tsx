@@ -166,7 +166,7 @@ export default function EnviesPage() {
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-50 text-primary rounded-full text-sm font-medium hover:bg-primary-100 transition"
               >
                 <Compass className="w-4 h-4" />
-                D&apos;autres colos m&apos;attendent
+                Je cherche d&apos;autres séjours
               </Link>
             </div>
           </div>

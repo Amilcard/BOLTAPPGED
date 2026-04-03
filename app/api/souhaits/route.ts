@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
         sejourTitre: sejourTitre || sejourSlug,
         motivation,
         lienReponse: `${baseUrl}/educateur/souhait/${existing.educateur_token}`,
-        lienTousSouhaits: `${baseUrl}/educateur/souhaits/${aggregateToken}`,
+        lienTousSouhaits: aggregateToken ? `${baseUrl}/educateur/souhaits/${aggregateToken}` : undefined,
       }).catch((e) => console.error('[EMAIL] Souhait update non envoyé:', e?.message));
 
       return NextResponse.json({ id: existing.id, updated: true });
@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
       sejourTitre: sejourTitre || sejourSlug,
       motivation,
       lienReponse: `${baseUrl}/educateur/souhait/${souhait.educateur_token}`,
-      lienTousSouhaits: `${baseUrl}/educateur/souhaits/${aggregateToken}`,
+      lienTousSouhaits: aggregateToken ? `${baseUrl}/educateur/souhaits/${aggregateToken}` : undefined,
     }).catch((e) => console.error('[EMAIL] Souhait non envoyé:', e?.message));
 
     return NextResponse.json({

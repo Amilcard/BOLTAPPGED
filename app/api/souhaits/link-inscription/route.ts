@@ -1,14 +1,20 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
+import { verifyAuth } from '@/lib/auth-middleware';
 
 /**
  * POST /api/souhaits/link-inscription
  * Lie un souhait validé à l'inscription créée.
- * Appelé en fire-and-forget par le booking flow.
+ * Protégé par JWT — seul un pro authentifié peut lier.
  */
 export async function POST(req: NextRequest) {
   try {
+    const auth = verifyAuth(req);
+    if (!auth) {
+      return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
+    }
+
     const { souhaitId, inscriptionId } = await req.json();
 
     if (!souhaitId || !inscriptionId) {
@@ -16,11 +22,28 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = getSupabase();
+
+    // Vérifier que le souhait est bien validé et pas déjà lié
+    const { data: souhait } = await supabase
+      .from('gd_souhaits')
+      .select('id, status, inscription_id')
+      .eq('id', souhaitId)
+      .single();
+
+    if (!souhait || souhait.status !== 'valide') {
+      return NextResponse.json({ error: 'Souhait non valide.' }, { status: 400 });
+    }
+
+    if (souhait.inscription_id) {
+      return NextResponse.json({ error: 'Souhait déjà lié.' }, { status: 409 });
+    }
+
     const { error } = await supabase
       .from('gd_souhaits')
       .update({ inscription_id: inscriptionId })
       .eq('id', souhaitId)
-      .eq('status', 'valide');
+      .eq('status', 'valide')
+      .is('inscription_id', null);
 
     if (error) {
       console.error('POST /api/souhaits/link-inscription error:', error);

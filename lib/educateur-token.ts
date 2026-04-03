@@ -6,9 +6,9 @@ const EDUCATEUR_TOKEN_EXPIRY = '30d';
  * Génère un JWT signé contenant l'email éducateur.
  * Utilisé pour le lien agrégé "Voir tous mes souhaits".
  */
-export function generateEducateurAggregateToken(email: string): string {
+export function generateEducateurAggregateToken(email: string): string | null {
   const secret = process.env.NEXTAUTH_SECRET;
-  if (!secret) throw new Error('NEXTAUTH_SECRET manquant');
+  if (!secret) return null;
   return jwt.sign(
     { educateurEmail: email.toLowerCase().trim(), purpose: 'souhaits-aggregate' },
     secret,

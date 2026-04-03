@@ -267,6 +267,7 @@ interface SouhaitEmailData {
   sejourTitre: string;
   motivation: string;
   lienReponse: string;
+  lienTousSouhaits?: string;
 }
 
 export async function sendSouhaitNotificationEducateur(data: SouhaitEmailData) {
@@ -300,6 +301,14 @@ export async function sendSouhaitNotificationEducateur(data: SouhaitEmailData) {
                 Voir le souhait et répondre
               </a>
             </div>
+            ${data.lienTousSouhaits ? `
+            <div style="text-align: center; margin: 8px 0 24px;">
+              <a href="${data.lienTousSouhaits}"
+                 style="color: #6b7280; font-size: 13px; text-decoration: underline;">
+                Voir tous mes souhaits reçus
+              </a>
+            </div>
+            ` : ''}
             <p style="color: #9ca3af; font-size: 12px; margin-top: 24px;">
               Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br/>
               <span style="color: #6b7280;">${data.lienReponse}</span>

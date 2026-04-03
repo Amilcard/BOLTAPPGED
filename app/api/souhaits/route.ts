@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
 import { sendSouhaitNotificationEducateur } from '@/lib/email';
+import { generateEducateurAggregateToken } from '@/lib/educateur-token';
 /**
  * POST /api/souhaits
  * Crée un souhait côté serveur et envoie un email à l'éducateur.
@@ -78,6 +79,7 @@ export async function POST(req: NextRequest) {
       }).eq('id', existing.id);
 
       const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.groupeetdecouverte.fr';
+      const aggregateToken = generateEducateurAggregateToken(educateurEmail);
       sendSouhaitNotificationEducateur({
         educateurEmail,
         educateurPrenom: educateurPrenom || undefined,
@@ -85,6 +87,7 @@ export async function POST(req: NextRequest) {
         sejourTitre: sejourTitre || sejourSlug,
         motivation,
         lienReponse: `${baseUrl}/educateur/souhait/${existing.educateur_token}`,
+        lienTousSouhaits: `${baseUrl}/educateur/souhaits/${aggregateToken}`,
       }).catch((e) => console.error('[EMAIL] Souhait update non envoyé:', e?.message));
 
       return NextResponse.json({ id: existing.id, updated: true });
@@ -127,6 +130,7 @@ export async function POST(req: NextRequest) {
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.groupeetdecouverte.fr';
+    const aggregateToken = generateEducateurAggregateToken(educateurEmail);
     sendSouhaitNotificationEducateur({
       educateurEmail,
       educateurPrenom: educateurPrenom || undefined,
@@ -134,6 +138,7 @@ export async function POST(req: NextRequest) {
       sejourTitre: sejourTitre || sejourSlug,
       motivation,
       lienReponse: `${baseUrl}/educateur/souhait/${souhait.educateur_token}`,
+      lienTousSouhaits: `${baseUrl}/educateur/souhaits/${aggregateToken}`,
     }).catch((e) => console.error('[EMAIL] Souhait non envoyé:', e?.message));
 
     return NextResponse.json({

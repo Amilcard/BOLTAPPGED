@@ -60,7 +60,7 @@ export function StayCard({ stay }: { stay: Stay }) {
           <div className="mb-3 text-[10px] font-heading font-bold uppercase tracking-widest text-dark/60 flex flex-col gap-1">
             {/* Ligne 1: Age + Durée */}
             <div className="flex items-center gap-2">
-              <span>{stay?.ageRangesDisplay || (stay?.ageMin && stay?.ageMax ? `${stay.ageMin}-${stay.ageMax} ANS` : 'ENFANTS')}</span>
+              <span>{(stay?.ageRangesDisplay && !stay.ageRangesDisplay.startsWith('0-0')) ? stay.ageRangesDisplay : (stay?.ageMin && stay?.ageMax ? `${stay.ageMin}-${stay.ageMax} ANS` : 'ENFANTS')}</span>
               <span className="w-0.5 h-2.5 bg-gray-300" />
               <span>{durationLabel.toUpperCase()}</span>
             </div>

@@ -114,8 +114,8 @@ export function getUniqueAgeRanges(sessions: SessionAgeData[]): string[] {
     const min = session.age_min;
     const max = session.age_max;
     
-    // Skip invalid ranges
-    if (min == null || max == null || min < 0 || max < 0) {
+    // Skip invalid ranges (null, negative, or 0-0)
+    if (min == null || max == null || min < 0 || max < 0 || (min === 0 && max === 0)) {
       continue;
     }
     
@@ -163,7 +163,7 @@ export function calculateGlobalAgeRange(
   }
 
   const validSessions = sessions.filter(
-    s => s.age_min != null && s.age_max != null && s.age_min >= 0 && s.age_max >= 0
+    s => s.age_min != null && s.age_max != null && s.age_min > 0 && s.age_max > 0
   );
 
   if (validSessions.length === 0) {
@@ -191,5 +191,6 @@ export function getAgeDisplayString(sessions: SessionAgeData[]): string {
   
   // Fallback to global range
   const { ageMin, ageMax } = calculateGlobalAgeRange(sessions);
+  if (ageMin === 0 && ageMax === 0) return '';
   return `${ageMin}-${ageMax} ans`;
 }

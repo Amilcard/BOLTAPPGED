@@ -36,6 +36,7 @@ export default function EducateurSouhaitPage() {
   const [saving, setSaving] = useState(false);
   const [reponse, setReponse] = useState('');
   const [saved, setSaved] = useState(false);
+  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -63,6 +64,7 @@ export default function EducateurSouhaitPage() {
       if (res.ok) {
         setSouhait(s => s ? { ...s, status: data.status, reponse_educateur: reponse.trim() || null } : null);
         setSaved(true);
+        if (data.redirect_url) setRedirectUrl(data.redirect_url);
       } else {
         setError(data?.error || 'Erreur lors de l\'enregistrement. Réessayez.');
       }
@@ -203,16 +205,16 @@ export default function EducateurSouhaitPage() {
           </div>
         )}
 
-        {/* CTA inscription */}
+        {/* CTA inscription pré-remplie */}
         {souhait.status === 'valide' && (
-          <div className="bg-green-50 border border-green-200 rounded-2xl p-6 text-center">
-            <p className="text-green-800 font-semibold mb-2">Souhait validé ✓</p>
-            <p className="text-green-700 text-sm mb-4">Vous pouvez maintenant procéder à l'inscription de {souhait.kid_prenom}.</p>
+          <div className="bg-green-50 border border-green-200 rounded-2xl p-6 text-center animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <p className="text-green-800 font-semibold mb-2">Souhait validé</p>
+            <p className="text-green-700 text-sm mb-4">Vous pouvez démarrer l&apos;inscription de {souhait.kid_prenom}.</p>
             <a
-              href={`/sejour/${souhait.sejour_slug}`}
-              className="inline-block px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary/90 transition text-sm"
+              href={redirectUrl || `/sejour/${souhait.sejour_slug}/reserver?prenom=${encodeURIComponent(souhait.kid_prenom)}&souhait_id=${souhait.id}`}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-full font-medium hover:bg-green-700 transition text-sm"
             >
-              Aller à la fiche séjour →
+              Démarrer l&apos;inscription →
             </a>
           </div>
         )}

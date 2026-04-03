@@ -29,6 +29,9 @@ interface BookingFlowProps {
   sessions: StaySession[];
   initialSessionId?: string;
   initialCity?: string;
+  prefillPrenom?: string;
+  prefillEmail?: string;
+  souhaitId?: string;
 }
 
 interface Step1Data {
@@ -140,7 +143,7 @@ function StripePaymentForm({ clientSecret, onSuccess, onError }: { clientSecret:
   );
 }
 
-export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity = '' }: BookingFlowProps) {
+export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity = '', prefillPrenom, prefillEmail, souhaitId }: BookingFlowProps) {
   const router = useRouter();
   const departureCities = (stay as Stay & { departureCities?: DepartureCity[] }).departureCities || [];
   const enrichmentSessions = (stay as Stay & { enrichmentSessions?: SessionPriceData[] }).enrichmentSessions || [];
@@ -215,7 +218,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   const [step1, setStep1] = useState<Step1Data>({
     organisation: '',
     socialWorkerName: '',
-    email: '',
+    email: prefillEmail || '',
     phone: '',
     structureCode: '',
     structureName: '',
@@ -231,7 +234,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   const [structureCodeError, setStructureCodeError] = useState('');
 
   const [step2, setStep2] = useState<Step2Data>({
-    childFirstName: '',
+    childFirstName: prefillPrenom || '',
     childBirthDate: '',
     consent: false,
   });
@@ -391,6 +394,15 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
       createdInscriptionId = data?.id ?? '';
       setBookingId(createdInscriptionId);
       setBookingSuiviToken(data?.suivi_token ?? '');
+
+      // Lier le souhait à l'inscription créée
+      if (souhaitId && createdInscriptionId) {
+        fetch('/api/souhaits/link-inscription', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ souhaitId, inscriptionId: createdInscriptionId }),
+        }).catch(() => {}); // fire-and-forget, non bloquant
+      }
 
       // Si paiement CB, créer le PaymentIntent et afficher le formulaire Stripe
       if (paymentMethod === 'card' && createdInscriptionId) {

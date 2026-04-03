@@ -78,7 +78,7 @@ export async function PATCH(
     // Bloquer la modification d'un souhait déjà traité
     const { data: current } = await supabase
       .from('gd_souhaits')
-      .select('status, educateur_token_expires_at')
+      .select('id, status, educateur_token_expires_at, sejour_slug, kid_prenom, educateur_email')
       .eq('educateur_token', token)
       .single();
 
@@ -104,6 +104,17 @@ export async function PATCH(
       .eq('educateur_token', token);
 
     if (error) throw error;
+
+    // Si validé → construire l'URL de redirection vers le booking pré-rempli
+    if (status === 'valide' && current.sejour_slug) {
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.groupeetdecouverte.fr';
+      const params = new URLSearchParams();
+      if (current.kid_prenom) params.set('prenom', current.kid_prenom);
+      if (current.educateur_email) params.set('email', current.educateur_email);
+      params.set('souhait_id', current.id);
+      const redirectUrl = `${baseUrl}/sejour/${current.sejour_slug}/reserver?${params.toString()}`;
+      return NextResponse.json({ success: true, status, redirect_url: redirectUrl });
+    }
 
     return NextResponse.json({ success: true, status });
   } catch (err) {

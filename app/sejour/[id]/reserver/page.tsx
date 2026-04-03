@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: { id: string };
-  searchParams: { session?: string; ville?: string };
+  searchParams: { session?: string; ville?: string; prenom?: string; email?: string; souhait_id?: string };
 }
 
 export default async function ReserverPage({ params, searchParams }: PageProps) {
@@ -228,6 +228,9 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
               sessions={availableSessions}
               initialSessionId={searchParams.session}
               initialCity={searchParams.ville}
+              prefillPrenom={searchParams.prenom}
+              prefillEmail={searchParams.email}
+              souhaitId={searchParams.souhait_id}
             />
           )}
         </div>

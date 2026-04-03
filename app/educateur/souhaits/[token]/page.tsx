@@ -177,10 +177,30 @@ export default function EducateurSouhaitsPage() {
   );
 }
 
-function SouhaitCard({ souhait }: { souhait: Souhait }) {
+function SouhaitCard({ souhait: initialSouhait }: { souhait: Souhait }) {
+  const [souhait, setSouhait] = useState(initialSouhait);
+  const [acting, setActing] = useState(false);
+  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
   const badge = STATUT_CONFIG[souhait.status] || STATUT_CONFIG.emis;
   const isActionable = !['valide', 'refuse'].includes(souhait.status);
   const stayLabel = souhait.sejour_titre || souhait.sejour_slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+  const handleAction = async (newStatus: 'valide' | 'refuse') => {
+    setActing(true);
+    try {
+      const res = await fetch(`/api/educateur/souhait/${souhait.educateur_token}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setSouhait({ ...souhait, status: newStatus });
+      if (data.redirect_url) setRedirectUrl(data.redirect_url);
+    } finally {
+      setActing(false);
+    }
+  };
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -233,24 +253,51 @@ function SouhaitCard({ souhait }: { souhait: Souhait }) {
           </div>
         )}
 
-        {/* Footer : date + action */}
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-          <span className="flex items-center gap-1 text-xs text-gray-400">
-            <Clock className="w-3 h-3" />
-            {timeAgo(souhait.created_at)}
-          </span>
-
-          {isActionable ? (
-            <Link
-              href={`/educateur/souhait/${souhait.educateur_token}`}
-              className="inline-flex items-center gap-1 text-xs font-medium text-secondary hover:text-secondary/80 transition"
-            >
-              Répondre à ce souhait <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
-          ) : (
-            <span className="text-xs text-gray-400">
-              {souhait.reponse_date ? `Répondu ${timeAgo(souhait.reponse_date)}` : 'Traité'}
+        {/* Footer : date + actions */}
+        <div className="mt-3 pt-3 border-t border-gray-100">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1 text-xs text-gray-400">
+              <Clock className="w-3 h-3" />
+              {timeAgo(souhait.created_at)}
             </span>
+
+            {isActionable ? (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleAction('refuse')}
+                  disabled={acting}
+                  className="px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-full hover:bg-red-50 transition disabled:opacity-50"
+                >
+                  Pas cette fois
+                </button>
+                <button
+                  onClick={() => handleAction('valide')}
+                  disabled={acting}
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-full hover:bg-green-700 transition disabled:opacity-50"
+                >
+                  {acting ? 'En cours...' : 'Valider le souhait'}
+                </button>
+              </div>
+            ) : (
+              <span className="text-xs text-gray-400">
+                {souhait.reponse_date ? `Répondu ${timeAgo(souhait.reponse_date)}` : 'Traité'}
+              </span>
+            )}
+          </div>
+
+          {/* Redirect vers inscription pré-remplie après validation */}
+          {redirectUrl && (
+            <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <p className="text-sm text-green-800 font-medium mb-2">
+                Souhait validé — vous pouvez démarrer l&apos;inscription.
+              </p>
+              <a
+                href={redirectUrl}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-full hover:bg-green-700 transition"
+              >
+                Démarrer l&apos;inscription <ChevronRight className="w-4 h-4" />
+              </a>
+            </div>
           )}
         </div>
       </div>

@@ -6,8 +6,9 @@ import type { Stay } from '@/lib/types';
 import { useApp } from '@/components/providers';
 
 export function StayCard({ stay }: { stay: Stay }) {
-  const { mode } = useApp();
+  const { mode, isAuthenticated } = useApp();
   const isKids = mode === 'kids';
+  const canSeePrices = !isKids && isAuthenticated;
 
   // === TITRE: CityCrunch marketing_title UNIQUEMENT — plus aucun fallback legacy UFOVAL ===
   const displayTitle = stay?.marketingTitle || 'Séjour';
@@ -80,14 +81,12 @@ export function StayCard({ stay }: { stay: Stay }) {
           </p>
 
           <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
-            {/* Prix (PRO uniquement) */}
+            {/* Prix : visible uniquement en mode pro */}
             {!isKids && stay?.priceFrom ? (
               <div className="flex items-baseline gap-1">
-                <span className="text-xs text-gray-500 uppercase tracking-wide">Dès</span>
+                <span className="text-xs text-gray-500 uppercase tracking-wide">À partir de</span>
                 <span className="text-lg font-bold text-secondary font-heading">{stay.priceFrom}€</span>
               </div>
-            ) : !isKids ? (
-              <span className="text-xs text-gray-500">Tarif sur demande</span>
             ) : (
               <div />
             )}

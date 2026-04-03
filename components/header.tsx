@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useApp } from './providers';
 import { Logo } from './logo';
+import { ProGateModal } from './pro-gate-modal';
 import { VITRINE_LINKS } from '@/config/vitrineLinks';
 import { Users, Baby, Menu, X, RotateCcw, ArrowLeft } from 'lucide-react';
 
@@ -19,9 +20,20 @@ interface HeaderProps {
 }
 
 export function Header({ variant: _variant = 'minimal' }: HeaderProps) {
-  const { mode, setMode, reset, mounted, isAuthenticated, authUser } = useApp();
+  const { mode, setMode, reset, mounted, isAuthenticated, authUser, proEmailVerified } = useApp();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showProGate, setShowProGate] = useState(false);
+
+  const handleProToggle = () => {
+    // Si déjà authentifié ou email vérifié → switch direct
+    if (isAuthenticated || proEmailVerified) {
+      setMode('pro');
+      return;
+    }
+    // Sinon → ouvrir le gate modal
+    setShowProGate(true);
+  };
 
   // LOT GRAPHISME 1: App uses minimal header only, force minimal variant
 
@@ -73,7 +85,7 @@ export function Header({ variant: _variant = 'minimal' }: HeaderProps) {
             {mounted && (
               <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 shadow-sm">
                 <button
-                  onClick={() => setMode('pro')}
+                  onClick={handleProToggle}
                   aria-label="Mode Professionnel"
                   className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1.5 transition-all focus:outline-none focus:ring-2 ${
                     mode === 'pro'
@@ -169,6 +181,12 @@ export function Header({ variant: _variant = 'minimal' }: HeaderProps) {
           </nav>
         )}
       </div>
+
+      <ProGateModal
+        open={showProGate}
+        onClose={() => setShowProGate(false)}
+        variant="kids-block"
+      />
     </header>
   );
 }

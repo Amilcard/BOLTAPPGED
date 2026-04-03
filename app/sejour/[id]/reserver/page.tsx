@@ -1,4 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
+import jwt from 'jsonwebtoken';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import type { Stay } from '@/lib/types';
@@ -13,6 +15,17 @@ interface PageProps {
 }
 
 export default async function ReserverPage({ params, searchParams }: PageProps) {
+  // Protection : seuls les pros authentifiés accèdent à la réservation (et aux prix)
+  const cookieStore = cookies();
+  const token = cookieStore.get('gd_session')?.value;
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!token || !secret) redirect('/login');
+  try {
+    jwt.verify(token, secret);
+  } catch {
+    redirect('/login');
+  }
+
   const stay = await getSejourBySlug(params.id);
   if (!stay) notFound();
 

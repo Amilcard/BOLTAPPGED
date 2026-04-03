@@ -19,6 +19,8 @@ interface AppContextType {
   mounted: boolean;
   isAuthenticated: boolean;
   authUser: AuthUser | null;
+  proEmailVerified: boolean;
+  setProEmailVerified: (email: string) => void;
   wishlist: string[];
   toggleWishlist: (slug: string) => boolean;
   isInWishlist: (slug: string) => boolean;
@@ -38,6 +40,7 @@ export function Providers({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<ViewMode>('pro');
   const [periodFilter, setPeriodFilterState] = useState<PeriodFilter>('toutes');
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [proEmailVerified, setProEmailVerifiedState] = useState(false);
   const [wishlist, setWishlist] = useState<string[]>([]);
 
   useEffect(() => {
@@ -56,6 +59,10 @@ export function Providers({ children }: { children: ReactNode }) {
       } catch {
         setAuthUser(null);
       }
+    }
+    // Check pro email verification
+    if (localStorage.getItem(STORAGE_KEYS.PRO_EMAIL)) {
+      setProEmailVerifiedState(true);
     }
   }, []);
 
@@ -89,12 +96,18 @@ export function Providers({ children }: { children: ReactNode }) {
     setWishlist(getWishlist());
   }, []);
 
+  const setProEmailVerified = (email: string) => {
+    localStorage.setItem(STORAGE_KEYS.PRO_EMAIL, email);
+    setProEmailVerifiedState(true);
+  };
+
   const isAuthenticated = !!authUser;
 
   return (
     <AppContext.Provider value={{ 
-      mode, setMode, periodFilter, setPeriodFilter, reset, mounted, 
-      isAuthenticated, authUser, wishlist, toggleWishlist, isInWishlist, refreshWishlist
+      mode, setMode, periodFilter, setPeriodFilter, reset, mounted,
+      isAuthenticated, authUser, proEmailVerified, setProEmailVerified,
+      wishlist, toggleWishlist, isInWishlist, refreshWishlist
     }}>
       {children}
     </AppContext.Provider>

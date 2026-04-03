@@ -45,7 +45,7 @@ type EnrichmentData = { source_url: string; departures: DepartureData[]; session
 const PRIORITY_CITIES = ['paris', 'lyon', 'marseille', 'lille', 'bordeaux', 'rennes'];
 
 export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], price_base?: number | null, price_unit?: string, pro_price_note?: string, sourceUrl?: string | null, pdfUrl?: string | null, geoLabel?: string | null, geoPrecision?: string | null, accommodationLabel?: string | null, contentKids?: Record<string, unknown> | null, rawSessions?: RawSessionData[], images?: string[] } }) {
-  const { mode, mounted, refreshWishlist } = useApp();
+  const { mode, mounted, refreshWishlist, isAuthenticated, proEmailVerified } = useApp();
   const router = useRouter();
   const [showWishlistModal, setShowWishlistModal] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
@@ -76,6 +76,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
   const isKids = mode === 'kids';
   const isPro = !isKids;
+  const canSeePrices = isPro && (isAuthenticated || proEmailVerified);
   const slug = stay?.slug ?? '';
   const isAlreadyInWishlist = mounted && !!getWishlistMotivation(slug);
 
@@ -594,7 +595,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                         >
                           {isCitySelected && <Check className="w-3 h-3" />}
                           {dep.city}
-                          {!isKids && !isCitySelected && dep.extra_eur > 0 && (
+                          {canSeePrices && !isCitySelected && dep.extra_eur > 0 && (
                             <span className="text-gray-500">+{dep.extra_eur}€</span>
                           )}
                         </button>
@@ -616,7 +617,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   <div className="flex items-center gap-2 text-xs text-primary font-medium bg-primary/5 px-3 py-2 rounded-lg">
                     <Check className="w-3.5 h-3.5" />
                     Ville sélectionnée : {preSelectedCity}
-                    {!isKids && (() => {
+                    {canSeePrices && (() => {
                       const cityData = enrichment.departures.find(d => d.city === preSelectedCity);
                       return cityData && cityData.extra_eur > 0 ? ` (+${cityData.extra_eur}€)` : ' (inclus)';
                     })()}
@@ -678,9 +679,14 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                 </div>
               )}
 
-              {/* === TOTAL TTC DYNAMIQUE (PRO uniquement) === */}
-              {isPro && (
-                <div className="border-t border-gray-100 pt-3 mb-3">
+              {/* === TARIFS === */}
+              {canSeePrices ? (
+                <div className="border-t border-gray-100 pt-3 mb-3 space-y-2">
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-2.5 text-xs text-emerald-700">
+                    Ces tarifs sont visibles par les professionnels uniquement.
+                    Le jeune que vous accompagnez voit les séjours — pas les chiffres.
+                    C&apos;est vous qui ouvrez la conversation.
+                  </div>
                   <div className="bg-gradient-to-br from-primary/5 to-accent/5 border-2 border-primary/20 rounded-xl p-3">
                     <div className="flex items-center gap-2 mb-2">
                       <Tag className="w-4 h-4 text-primary" />
@@ -689,13 +695,11 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
                     {priceBreakdown.baseSession !== null ? (
                       <div className="space-y-2">
-                        {/* Base session */}
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Session</span>
                           <span className="font-semibold text-gray-900">{priceBreakdown.baseSession}€</span>
                         </div>
 
-                        {/* Transport */}
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Transport</span>
                           <span className="font-semibold text-gray-900">
@@ -706,19 +710,15 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                           </span>
                         </div>
 
-                        {/* Séparateur */}
                         <div className="border-t border-gray-200 my-2" />
 
-                        {/* Total TTC */}
                         <div className="flex justify-between items-center">
                           <span className="text-base font-bold text-gray-900">Total TTC</span>
                           <div className="text-right">
                              <span className="text-xl font-bold text-accent block tracking-tight">{priceBreakdown.total}€</span>
-                             {isPro && (
-                               <span className="text-[10px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full inline-block mt-1">
-                                 Option Suivi Individualisé Incluse
-                               </span>
-                             )}
+                             <span className="text-[10px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full inline-block mt-1">
+                               Option Suivi Individualisé Incluse
+                             </span>
                           </div>
                         </div>
                       </div>
@@ -727,6 +727,24 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                         Sélectionnez une session pour afficher le total
                       </div>
                     )}
+                  </div>
+                </div>
+              ) : isPro ? (
+                <div className="border-t border-gray-100 pt-3 mb-3">
+                  <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-800">
+                    <span className="font-bold block mb-1">Espace Pro — Tarifs réservés aux éducateurs</span>
+                    <span className="text-blue-600">Les tarifs détaillés sont visibles après authentification par e-mail. Vous pouvez ensuite choisir de les partager avec les jeunes dans un cadre éducatif.</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="border-t border-gray-100 pt-3 mb-3">
+                  <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 text-center">
+                    <p className="text-sm font-semibold text-gray-800 mb-1">
+                      Les prix ? C&apos;est le taf de ton éducateur.
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Toi, dis-nous juste ce qui t&apos;attire.
+                    </p>
                   </div>
                 </div>
               )}
@@ -838,20 +856,22 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
       )}
       {/* Mobile Sticky Action Bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-             {priceBreakdown.minPrice ? (
-               <div className="flex flex-col">
-                  <span className="text-xs text-gray-500">À partir de</span>
-                  <span className="text-xl font-bold text-primary">{priceBreakdown.minPrice}€</span>
-                  <span className="text-xs text-gray-500">prix minimum · sélectionnez une session</span>
-               </div>
-             ) : (
-                <span className="text-sm font-medium text-gray-500">
-                  {stay?.pro_price_note || "Sur devis"}
-                </span>
-             )}
-          </div>
+        <div className={`flex items-center ${isKids ? 'justify-center' : 'gap-4'}`}>
+          {canSeePrices && priceBreakdown.minPrice ? (
+            <div className="flex-1">
+              <div className="flex flex-col">
+                <span className="text-xs text-gray-500">À partir de</span>
+                <span className="text-xl font-bold text-primary">{priceBreakdown.minPrice}€</span>
+                <span className="text-xs text-gray-500">prix minimum · sélectionnez une session</span>
+              </div>
+            </div>
+          ) : canSeePrices ? (
+            <div className="flex-1">
+              <span className="text-sm font-medium text-gray-500">
+                {stay?.pro_price_note || "Sur devis"}
+              </span>
+            </div>
+          ) : null}
           <div className="flex-1">
             {isKids ? (
               <Button onClick={handleKidsCTA} className="w-full" size="default">

@@ -40,6 +40,7 @@ export const STORAGE_KEYS = {
   AUTH: 'gd_auth',
   PERIOD: 'gd_period',
   WISHLIST: 'gd_kids_wishlist',
+  PRO_EMAIL: 'gd_pro_email',
 } as const;
 
 // Kids wishlist with motivation + request data

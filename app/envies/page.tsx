@@ -24,8 +24,15 @@ const STATUT_BADGE: Record<string, { label: string; color: string; icon: React.R
 function timeAgo(dateStr: string): string {
   const date = new Date(dateStr);
   const now = new Date();
-  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return "aujourd'hui";
+  const diffMins = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+  const diffDays = Math.floor(diffMins / (60 * 24));
+
+  if (diffMins < 60) return `il y a ${diffMins} min`;
+  if (diffDays === 0) {
+    const h = date.getHours().toString().padStart(2, '0');
+    const m = date.getMinutes().toString().padStart(2, '0');
+    return `aujourd'hui à ${h}h${m}`;
+  }
   if (diffDays === 1) return 'hier';
   if (diffDays < 7) return `il y a ${diffDays} jours`;
   if (diffDays < 30) return `il y a ${Math.floor(diffDays / 7)} semaine${Math.floor(diffDays / 7) > 1 ? 's' : ''}`;
@@ -79,16 +86,16 @@ export default function EnviesPage() {
             <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <Heart className="w-10 h-10 text-red-300" />
             </div>
-            <h2 className="text-lg font-semibold text-primary mb-2">Pas encore de souhaits</h2>
+            <h2 className="text-lg font-semibold text-primary mb-2">C&apos;est quoi ta colo de rêve ?</h2>
             <p className="text-sm text-gray-500 mb-6 leading-relaxed">
-              Quand un séjour te plaît, clique sur &quot;Ajouter à mes souhaits&quot; pour l'enregistrer ici.
+              Explore les séjours et appuie sur le cœur quand quelque chose t&apos;attire. Ton éducateur verra tes choix.
             </p>
             <Link
               href="/"
               className="inline-flex items-center gap-2 px-6 py-3 bg-secondary text-white rounded-full font-medium hover:bg-secondary/90 transition"
             >
               <Compass className="w-4 h-4" />
-              Explorer les séjours
+              Je cherche ma colo
             </Link>
           </div>
         ) : (

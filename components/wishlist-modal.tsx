@@ -18,6 +18,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
   const [prenom, setPrenom] = useState('');
   const [prenomReferent, setPrenomReferent] = useState(''); // P0: Personnalisation
   const [emailStructure, setEmailStructure] = useState('');
+  const [choixMode, setChoixMode] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [showMailtoWarning, setShowMailtoWarning] = useState(false);
@@ -94,6 +95,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
           motivation: motivation.trim(),
           educateurEmail: finalEmail,
           educateurPrenom: prenomReferent.trim() || undefined,
+          choixMode: choixMode || undefined,
         }),
       });
 
@@ -258,10 +260,37 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
           </div>
         )}
 
+        {/* Comment tu as trouvé ce séjour ? */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-primary mb-2">
+            Comment tu as trouvé ce séjour ?
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {([
+              { value: 'seul', label: 'Tout seul' },
+              { value: 'ami', label: 'Avec un ami / une amie' },
+              { value: 'educateur', label: 'Mon éducateur me l\u2019a montré' },
+            ] as const).map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setChoixMode(choixMode === value ? null : value)}
+                className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all border ${
+                  choixMode === value
+                    ? 'bg-primary text-white border-primary shadow-sm'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Motivation field */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-primary mb-2">
-            Qu'est-ce qui t'attire dans ce séjour ? <span className="text-red-500">*</span>
+            Qu&apos;est-ce qui t&apos;attire dans ce séjour ? <span className="text-red-500">*</span>
           </label>
           <textarea
             value={motivation}

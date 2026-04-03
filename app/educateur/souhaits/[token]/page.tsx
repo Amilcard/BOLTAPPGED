@@ -17,8 +17,15 @@ interface Souhait {
   reponse_date: string | null;
   educateur_prenom: string | null;
   educateur_token: string;
+  choix_mode: string | null;
   created_at: string;
 }
+
+const CHOIX_MODE_LABELS: Record<string, string> = {
+  seul: 'A choisi seul·e',
+  ami: 'A choisi avec un·e ami·e',
+  educateur: 'Choix initié par l\u2019équipe',
+};
 
 const STATUT_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   emis:          { label: 'Nouveau',        color: 'text-orange-700', bg: 'bg-orange-100', icon: <Clock className="w-3.5 h-3.5" /> },
@@ -203,6 +210,13 @@ function SouhaitCard({ souhait }: { souhait: Souhait }) {
         >
           {stayLabel}
         </Link>
+
+        {/* Choix mode */}
+        {souhait.choix_mode && CHOIX_MODE_LABELS[souhait.choix_mode] && (
+          <span className="inline-block mt-1.5 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+            {CHOIX_MODE_LABELS[souhait.choix_mode]}
+          </span>
+        )}
 
         {/* Motivation */}
         <div className="mt-2 bg-gray-50 border-l-3 border-secondary/60 p-3 rounded-r-lg">

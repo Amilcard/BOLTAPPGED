@@ -24,7 +24,12 @@ export async function POST(req: NextRequest) {
       motivation,
       educateurEmail,
       educateurPrenom,
+      choixMode,         // 'seul' | 'ami' | 'educateur' (optionnel)
     } = body;
+
+    // Valider choixMode si fourni
+    const validChoixModes = ['seul', 'ami', 'educateur'];
+    const safeChoixMode = choixMode && validChoixModes.includes(choixMode) ? choixMode : null;
 
     if (!kidSessionToken || !kidPrenom || !sejourSlug || !motivation || !educateurEmail) {
       return NextResponse.json({ error: 'Champs obligatoires manquants.' }, { status: 400 });
@@ -73,6 +78,7 @@ export async function POST(req: NextRequest) {
         educateur_email: educateurEmail,
         educateur_prenom: educateurPrenom || null,
         kid_prenom_referent: kidPrenomReferent || null,
+        choix_mode: safeChoixMode,
         status: 'emis',
         reponse_educateur: null,
         reponse_date: null,
@@ -113,6 +119,7 @@ export async function POST(req: NextRequest) {
         educateur_prenom: educateurPrenom || null,
         structure_domain: structureDomain,
         structure_id: structureId,
+        choix_mode: safeChoixMode,
         status: 'emis',
         educateur_token_expires_at: tokenExpiresAt,
       })

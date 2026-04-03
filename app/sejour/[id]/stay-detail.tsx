@@ -486,7 +486,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                 <section className={`relative overflow-hidden rounded-xl bg-opacity-10 border-l-4 p-6 ${themeStyle.borderColor.replace('border-', 'bg-').replace('600', '50')} ${themeStyle.borderColor}`}>
                   <h3 className="text-lg font-bold text-[#1A2B4B] mb-4 flex items-center gap-2">
                     <Check className={`w-5 h-5 ${themeStyle.textColor}`} />
-                    Inclus dans votre tarif Sérénité
+                    {canSeePrices ? 'Inclus dans votre tarif Sérénité' : 'Inclus dans le séjour'}
                   </h3>
                   <div className="grid sm:grid-cols-2 gap-3">
                     {dynamicPoints.map((point) => (
@@ -842,7 +842,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                           {dep.city}
                         </span>
                       </div>
-                      {!isKids && (
+                      {canSeePrices && (
                         <span className={`text-sm font-semibold ${isCitySelected ? 'text-primary' : 'text-gray-600'}`}>
                           {dep.extra_eur === 0 ? 'Inclus' : `+${dep.extra_eur}€`}
                         </span>
@@ -875,7 +875,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
           <div className="flex-1">
             {isKids ? (
               <Button onClick={handleKidsCTA} className="w-full" size="default">
-                Ajouter à mes souhaits
+                {isAlreadyInWishlist ? 'Modifier mon souhait' : 'Ajouter à mes souhaits'}
               </Button>
             ) : (
               <Button

@@ -37,15 +37,20 @@ export function SignaturePad({ value, onChange, disabled = false, label }: Signa
   }, []);
 
   const getPos = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    const rect = canvasRef.current!.getBoundingClientRect();
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   };
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (disabled) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     drawing.current = true;
-    canvasRef.current!.setPointerCapture(e.pointerId);
-    const ctx = canvasRef.current!.getContext('2d')!;
+    canvas.setPointerCapture(e.pointerId);
     const { x, y } = getPos(e);
     ctx.beginPath();
     ctx.moveTo(x, y);
@@ -54,7 +59,10 @@ export function SignaturePad({ value, onChange, disabled = false, label }: Signa
 
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!drawing.current || disabled) return;
-    const ctx = canvasRef.current!.getContext('2d')!;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     const { x, y } = getPos(e);
     ctx.lineTo(x, y);
     ctx.stroke();
@@ -64,14 +72,17 @@ export function SignaturePad({ value, onChange, disabled = false, label }: Signa
   const onPointerUp = useCallback(() => {
     if (!drawing.current) return;
     drawing.current = false;
-    const dataUrl = canvasRef.current!.toDataURL('image/png');
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL('image/png');
     onChange(dataUrl);
   }, [onChange]);
 
   const clear = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     const rect = canvas.getBoundingClientRect();
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, rect.width, rect.height);

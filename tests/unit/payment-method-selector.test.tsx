@@ -38,7 +38,9 @@ describe('PaymentMethodSelector', () => {
   it('clic carte → onSelectStripe appelé, autres non', async () => {
     const user = userEvent.setup();
     const props = setup();
-    await user.click(screen.getByText('Paiement sécurisé en ligne').closest('button')!);
+    const btn = screen.getByText('Paiement sécurisé en ligne').closest('button');
+    expect(btn).not.toBeNull();
+    await user.click(btn!);
     expect(props.onSelectStripe).toHaveBeenCalledTimes(1);
     expect(props.onSelectTransfer).not.toHaveBeenCalled();
     expect(props.onSelectCheck).not.toHaveBeenCalled();
@@ -47,7 +49,9 @@ describe('PaymentMethodSelector', () => {
   it('clic virement → onSelectTransfer appelé, autres non', async () => {
     const user = userEvent.setup();
     const props = setup();
-    await user.click(screen.getByText('Virement bancaire').closest('button')!);
+    const btn = screen.getByText('Virement bancaire').closest('button');
+    expect(btn).not.toBeNull();
+    await user.click(btn!);
     expect(props.onSelectTransfer).toHaveBeenCalledTimes(1);
     expect(props.onSelectStripe).not.toHaveBeenCalled();
     expect(props.onSelectCheck).not.toHaveBeenCalled();
@@ -56,7 +60,9 @@ describe('PaymentMethodSelector', () => {
   it('clic chèque → onSelectCheck appelé, autres non', async () => {
     const user = userEvent.setup();
     const props = setup();
-    await user.click(screen.getByText('Paiement par chèque').closest('button')!);
+    const btn = screen.getByText('Paiement par chèque').closest('button');
+    expect(btn).not.toBeNull();
+    await user.click(btn!);
     expect(props.onSelectCheck).toHaveBeenCalledTimes(1);
     expect(props.onSelectStripe).not.toHaveBeenCalled();
     expect(props.onSelectTransfer).not.toHaveBeenCalled();

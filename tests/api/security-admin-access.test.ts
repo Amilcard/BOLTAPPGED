@@ -45,7 +45,8 @@ import { GET as propGet, POST as propPost, PATCH as propPatch, DELETE as propDel
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 
-const SECRET = process.env.NEXTAUTH_SECRET!;
+const SECRET = process.env.NEXTAUTH_SECRET;
+if (!SECRET) throw new Error('NEXTAUTH_SECRET must be set for tests');
 const ADMIN_TOKEN = jwt.sign({ userId: 'a', email: 'admin@ged.fr', role: 'ADMIN' }, SECRET, { expiresIn: '1h' });
 const EDITOR_TOKEN = jwt.sign({ userId: 'e', email: 'editor@ged.fr', role: 'EDITOR' }, SECRET, { expiresIn: '1h' });
 const VIEWER_TOKEN = jwt.sign({ userId: 'v', email: 'viewer@ged.fr', role: 'VIEWER' }, SECRET, { expiresIn: '1h' });

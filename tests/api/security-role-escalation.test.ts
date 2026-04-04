@@ -32,7 +32,8 @@ import {
 } from '@/app/api/admin/propositions/route';
 import { POST as relancePost } from '@/app/api/admin/inscriptions/[id]/relance/route';
 
-const S = process.env.NEXTAUTH_SECRET!;
+const S = process.env.NEXTAUTH_SECRET;
+if (!S) throw new Error('NEXTAUTH_SECRET must be set for tests');
 const VIEWER = jwt.sign({ userId: 'v1', email: 'viewer@ged.fr', role: 'VIEWER' }, S, { expiresIn: '1h' });
 const EDITOR = jwt.sign({ userId: 'e1', email: 'editor@ged.fr', role: 'EDITOR' }, S, { expiresIn: '1h' });
 const INSC_ID = 'aaa00000-0000-0000-0000-000000000001';

@@ -63,7 +63,8 @@ import { POST as verifyPOST } from '@/app/api/auth/2fa/verify/route';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-const SECRET = process.env.NEXTAUTH_SECRET!;
+const SECRET = process.env.NEXTAUTH_SECRET;
+if (!SECRET) throw new Error('NEXTAUTH_SECRET must be set for tests');
 const USER_ID = 'user_abc123';
 const USER_EMAIL = 'admin@ged.fr';
 const USER_ROLE = 'ADMIN';

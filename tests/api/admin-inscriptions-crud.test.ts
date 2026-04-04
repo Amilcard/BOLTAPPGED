@@ -43,7 +43,8 @@ jest.mock('@/lib/email', () => ({
 import jwt from 'jsonwebtoken';
 import { NextRequest } from 'next/server';
 
-const SECRET = process.env.NEXTAUTH_SECRET!;
+const SECRET = process.env.NEXTAUTH_SECRET;
+if (!SECRET) throw new Error('NEXTAUTH_SECRET must be set for tests');
 
 const ADMIN_TOKEN = jwt.sign({ userId: 'admin-1', email: 'admin@ged.fr', role: 'ADMIN' }, SECRET, { expiresIn: '1h' });
 const EDITOR_TOKEN = jwt.sign({ userId: 'editor-1', email: 'editor@ged.fr', role: 'EDITOR' }, SECRET, { expiresIn: '1h' });

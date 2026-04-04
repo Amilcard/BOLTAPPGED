@@ -15,10 +15,10 @@ export default function ResetPasswordPage() {
 
   // Supabase récupère le token depuis le hash de l'URL automatiquement
   useEffect(() => {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !key) return;
+    const supabase = createClient(url, key);
     // Écouter l'événement de session récupérée depuis le lien magique
     supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
@@ -42,10 +42,10 @@ export default function ResetPasswordPage() {
 
     setLoading(true);
     try {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (!url || !key) throw new Error('Configuration Supabase manquante');
+      const supabase = createClient(url, key);
       const { error: err } = await supabase.auth.updateUser({ password });
       if (err) throw err;
       setDone(true);

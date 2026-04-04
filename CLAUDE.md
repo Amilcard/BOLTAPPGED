@@ -229,6 +229,18 @@ npx prisma migrate reset
 
 Vérifier TypeScript avant chaque push : `npx tsc --noEmit`
 
+### Règle anti-divergence (OBLIGATOIRE)
+
+Avant tout travail, vérifier la synchronisation local/remote :
+```bash
+git fetch origin && git log origin/main..main --oneline && git log main..origin/main --oneline
+```
+- Si le local est **en retard** → `git pull --ff-only` avant de commencer
+- Si le local est **en avance** → pusher d'abord ou demander confirmation
+- Si **divergence** (commits des deux côtés) → STOP, alerter l'utilisateur, ne rien faire
+- **Après chaque commit** → `git push origin main` immédiatement
+- **Ne jamais accumuler** de commits locaux sans les pusher
+
 ## Règles de correction
 
 - Diff minimal — ne toucher qu'aux fichiers strictement nécessaires

@@ -162,8 +162,11 @@ describe('POST /api/auth/login', () => {
     const cookieHeader = res.headers.get('set-cookie') ?? '';
     const match = cookieHeader.match(/gd_session=([^;]+)/);
     expect(match).not.toBeNull();
-    const token = match![1];
-    const decoded = jwt.verify(token, process.env.NEXTAUTH_SECRET!) as { role: string; email: string };
+    const token = match?.[1];
+    expect(token).toBeDefined();
+    const secret = process.env.NEXTAUTH_SECRET;
+    expect(secret).toBeDefined();
+    const decoded = jwt.verify(token!, secret!) as { role: string; email: string };
     expect(decoded.role).toBe('EDITOR');
     expect(decoded.email).toBe('editor@ged.fr');
   });

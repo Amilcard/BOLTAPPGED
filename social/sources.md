@@ -3,13 +3,13 @@
 ## Flux RSS validés
 | Source | URL |
 |---|---|
-| ONPE | https://onpe.france-enfance-protegee.fr/feed/ |
-| Les Pros de la Petite Enfance | https://www.lesprosdelapetiteenfance.fr/feed |
-| Vie-publique.fr | https://www.vie-publique.fr/actualites-feeds.xml |
-| Le Media Social | https://www.lemediasocial.fr/rss |
-| La Gazette des Communes | https://www.lagazettedescommunes.com/feed/ |
-| Solidarités.gouv.fr | https://solidarites.gouv.fr/rss |
-| Education.gouv.fr | https://www.education.gouv.fr/rss |
+| ONPE | <https://onpe.france-enfance-protegee.fr/feed/> |
+| Les Pros de la Petite Enfance | <https://www.lesprosdelapetiteenfance.fr/feed> |
+| Vie-publique.fr | <https://www.vie-publique.fr/actualites-feeds.xml> |
+| Le Media Social | <https://www.lemediasocial.fr/rss> |
+| La Gazette des Communes | <https://www.lagazettedescommunes.com/feed/> |
+| Solidarités.gouv.fr | <https://solidarites.gouv.fr/rss> |
+| Education.gouv.fr | <https://www.education.gouv.fr/rss> |
 
 ## Recherches site: de secours
 - site:laligue.org

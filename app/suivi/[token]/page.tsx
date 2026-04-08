@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Lock } from 'lucide-react';
 import { DossierEnfantPanel } from '@/components/dossier-enfant/DossierEnfantPanel';
 
 // === Types locaux (lecture seule, pas besoin d'exporter) ===
@@ -158,6 +158,13 @@ export default function SuiviProPage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8">
+        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 mb-4 flex items-start gap-2">
+          <Lock className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+          <p className="text-xs text-blue-700">
+            Ce lien sécurisé est personnel. Il vous donne accès au suivi des dossiers sans nécessiter de mot de passe. Ne le partagez pas. Il expire automatiquement après 30 jours d&#39;inactivité.
+          </p>
+        </div>
+
         {/* Bloc référent + résumé financier */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex flex-wrap items-center gap-4 mb-4">
@@ -586,7 +593,7 @@ function ResendLinkBlock() {
         <div className="text-4xl mb-4">✉️</div>
         <h1 className="text-xl font-bold text-gray-800 mb-2">Ce lien n&apos;est plus actif</h1>
         <p className="text-gray-500 text-sm mb-1">
-          Recherchez <strong>Groupe &amp; Découverte</strong> dans votre boîte mail.
+          Ce lien a expiré pour des raisons de sécurité. Contactez votre structure pour obtenir un nouveau lien. Vos données restent protégées.
         </p>
         <p className="text-gray-400 text-xs mb-6">Pensez aussi à vérifier vos spams.</p>
 

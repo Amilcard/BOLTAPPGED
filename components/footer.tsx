@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { Shield } from 'lucide-react';
 import { Logo } from './logo';
 
 export function Footer() {
@@ -15,6 +16,17 @@ export function Footer() {
             <Logo variant="default" className="h-8" />
             <p className="text-xs">© {currentYear} Association Groupe et Découverte. Tous droits réservés.</p>
             <p className="text-xs text-gray-400">SIREN 515 225 654 — Agrément J&amp;S 069ORG0667</p>
+          </div>
+
+          {/* RGPD */}
+          <div className="flex flex-col items-center md:items-start gap-2">
+            <div className="flex items-center gap-1 text-xs text-gray-500">
+              <Shield className="w-3 h-3" />
+              <span>Application conforme RGPD — Données hébergées en Union européenne</span>
+            </div>
+            <a href="/confidentialite" className="text-xs text-gray-500 hover:text-primary underline">
+              Comment nous protégeons les données des enfants →
+            </a>
           </div>
 
           {/* Liens légaux */}

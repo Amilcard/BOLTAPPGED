@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { Lock } from 'lucide-react';
 import { REQUIS_TO_JOINT, DOC_OPT_LABELS } from '@/lib/dossier-shared';
 
 interface DocJoint {
@@ -183,6 +184,11 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess, r
             )}
           </button>
         </div>
+
+        <p className="text-xs text-gray-500 flex items-center gap-1 mt-2">
+          <Lock className="w-3 h-3" />
+          Connexion sécurisée. Formats : PDF, JPG, PNG, WebP (max 5 Mo).
+        </p>
 
         {error && <p className="text-sm text-red-600 bg-red-50 p-2 rounded-lg">{error}</p>}
         {success && <p className="text-sm text-green-600 bg-green-50 p-2 rounded-lg">{success}</p>}

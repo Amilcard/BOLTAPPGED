@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useId } from 'react';
+import { Lock, Shield } from 'lucide-react';
 import { SignaturePad } from './SignaturePad';
 
 interface Props {
@@ -94,6 +95,13 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
       <div className="flex items-center gap-2 mb-2">
         <div className="w-1.5 h-6 bg-blue-500 rounded-full" />
         <h3 className="font-bold text-gray-800">Fiche sanitaire de liaison</h3>
+      </div>
+
+      <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 mb-4 flex items-start gap-2">
+        <Lock className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+        <p className="text-xs text-blue-700">
+          Ces informations de santé sont protégées et accessibles uniquement aux personnes habilitées à encadrer le séjour. Elles sont automatiquement supprimées 3 mois après la fin du séjour.
+        </p>
       </div>
 
       {/* 1. L'enfant */}
@@ -265,6 +273,10 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
           value={(form.recommandations_parents as string) || ''}
           onChange={e => update('recommandations_parents', e.target.value)}
         />
+        <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+          <Shield className="w-3 h-3" />
+          Cette information permet d&#39;adapter l&#39;encadrement. Elle n&#39;est communiquée qu&#39;à l&#39;équipe d&#39;animation référente.
+        </p>
       </Section>
 
       {/* Autorisation soins */}

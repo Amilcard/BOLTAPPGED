@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Check, ChevronRight, ChevronLeft, Loader2, AlertCircle, Calendar, MapPin, CreditCard } from 'lucide-react';
+import { Check, ChevronRight, ChevronLeft, Loader2, AlertCircle, Calendar, MapPin, CreditCard, Shield } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import type { Stay, StaySession} from '@/lib/types';
@@ -934,6 +934,10 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                   {ageError && ` • ${ageError}`}
                 </p>
               )}
+              <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                <Shield className="w-3 h-3" />
+                La date de naissance est utilisée uniquement pour vérifier la tranche d&#39;âge du séjour.
+              </p>
             </div>
             <div>
               <label htmlFor="child-sex" className="text-sm text-primary-600 mb-1 block">Sexe *</label>

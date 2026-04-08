@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { STORAGE_KEYS } from '@/lib/utils';
 import { Map, Calendar, FileText, Users } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -41,16 +40,7 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH);
-
-    if (!token) {
-      void router.replace('/login');
-      return;
-    }
-
-    void fetch('/api/admin/stats', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    void fetch('/api/admin/stats')
       .then((res) => {
         if (res.ok) {
           setIsAuthenticated(true);
@@ -65,8 +55,6 @@ export default function AdminDashboard() {
       })
       .then((data) => { if (data) setStats(data); })
       .catch(() => {
-        // Vider le token invalide avant de rediriger — évite la boucle infinie
-        localStorage.removeItem(STORAGE_KEYS.AUTH);
         void router.replace('/login');
       })
       .finally(() => setIsLoading(false));

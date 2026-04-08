@@ -2,7 +2,6 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, useCallback } from 'react';
-import { STORAGE_KEYS } from '@/lib/utils';
 import { Building2, Search, Link2, GitMerge, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 import { useAdminUI } from '@/components/admin/admin-ui';
 
@@ -55,8 +54,7 @@ export default function AdminStructures() {
   const [mergeSource, setMergeSource] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState('');
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.AUTH) : null;
-  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const headers = { 'Content-Type': 'application/json' };
 
   const fetchData = useCallback(async () => {
     setLoading(true);

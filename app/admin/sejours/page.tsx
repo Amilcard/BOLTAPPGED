@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
-import { STORAGE_KEYS, formatPrice } from '@/lib/utils';
+import { formatPrice } from '@/lib/utils';
 import { Plus, Pencil, Trash2, Eye, EyeOff, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Stay, StayWithWaitlist } from '@/lib/types';
@@ -16,10 +16,7 @@ export default function AdminSejours() {
   const [isCreating, setIsCreating] = useState(false);
 
   const fetchStays = async () => {
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH);
-    const res = await fetch('/api/admin/stays', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await fetch('/api/admin/stays');
     if (res.ok) setStays(await res.json());
   };
 
@@ -27,10 +24,8 @@ export default function AdminSejours() {
 
   const handleDelete = (id: string) => {
     confirm('Supprimer ce séjour ? Cette action est irréversible.', async () => {
-      const token = localStorage.getItem(STORAGE_KEYS.AUTH);
       await fetch(`/api/admin/stays/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
       });
       fetchStays();
     });
@@ -39,10 +34,8 @@ export default function AdminSejours() {
   const handleNotifyWaitlist = (stay: StayWithWaitlist) => {
     const count = stay.waitlistCount;
     confirm(`Envoyer un email à ${count} personne(s) en attente pour ce séjour ?`, async () => {
-      const token = localStorage.getItem(STORAGE_KEYS.AUTH);
       const res = await fetch(`/api/admin/stays/${stay.id}/notify-waitlist`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const { sent } = await res.json();
@@ -53,10 +46,9 @@ export default function AdminSejours() {
   };
 
   const handleTogglePublish = async (stay: Stay) => {
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH);
     await fetch(`/api/admin/stays/${stay.id}`, {
       method: 'PUT',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ published: !stay.published }),
     });
     fetchStays();
@@ -160,7 +152,6 @@ function StayForm({ stay, onClose, onSave }: { stay: Stay | null; onClose: () =>
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH);
     const body = {
       ...form,
       programme: form.programme.split('\n').filter(Boolean),
@@ -170,7 +161,7 @@ function StayForm({ stay, onClose, onSave }: { stay: Stay | null; onClose: () =>
     const method = stay ? 'PUT' : 'POST';
     await fetch(url, {
       method,
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
     onSave();

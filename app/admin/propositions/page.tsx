@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { getStoredAuth } from '@/lib/utils';
 import { Plus, FileDown, Check, X, Clock, Send, Loader2, Receipt, Eye, Download, Trash2 } from 'lucide-react';
 import { useAdminUI } from '@/components/admin/admin-ui';
 
@@ -79,8 +78,7 @@ export default function PropositionsPage() {
   });
 
   const authHeaders = () => {
-    const token = getStoredAuth();
-    return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+    return { 'Content-Type': 'application/json' };
   };
 
   const loadPropositions = useCallback(async () => {

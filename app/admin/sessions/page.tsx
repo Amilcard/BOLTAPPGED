@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 
 
 import { useEffect, useState, useCallback } from 'react';
-import { STORAGE_KEYS, formatDate } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Stay, StaySession } from '@/lib/types';
@@ -18,10 +18,7 @@ export default function AdminSessions() {
   const [isCreating, setIsCreating] = useState(false);
 
   const fetchStays = useCallback(async () => {
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH);
-    const res = await fetch('/api/admin/stays', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await fetch('/api/admin/stays');
     if (res.ok) {
       const data = await res.json();
       setStays(data);
@@ -31,10 +28,7 @@ export default function AdminSessions() {
 
   const fetchSessions = useCallback(async () => {
     if (!selectedStay) return;
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH);
-    const res = await fetch(`/api/admin/stays/${selectedStay}/sessions`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await fetch(`/api/admin/stays/${selectedStay}/sessions`);
     if (res.ok) setSessions(await res.json());
   }, [selectedStay]);
 
@@ -43,10 +37,8 @@ export default function AdminSessions() {
 
   const handleDelete = (sessionId: string) => {
     confirm('Supprimer cette session ? Cette action est irréversible.', async () => {
-      const token = localStorage.getItem(STORAGE_KEYS.AUTH);
       await fetch(`/api/admin/stays/${selectedStay}/sessions/${sessionId}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
       });
       fetchSessions();
     });
@@ -132,12 +124,11 @@ function SessionForm({ session, stayId, onClose, onSave }: { session: StaySessio
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH);
     const url = session ? `/api/admin/stays/${stayId}/sessions/${session.id}` : `/api/admin/stays/${stayId}/sessions`;
     const method = session ? 'PUT' : 'POST';
     await fetch(url, {
       method,
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
     });
     onSave();

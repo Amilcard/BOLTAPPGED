@@ -95,7 +95,10 @@ export async function POST(req: NextRequest) {
       .setExpirationTime('8h')
       .sign(encodedSecret);
 
-    return setSessionCookie(NextResponse.json({ ok: true }), fullToken);
+    return setSessionCookie(
+      NextResponse.json({ ok: true, user: { email: payload.email, role: payload.role } }),
+      fullToken
+    );
   } catch (error) {
     console.error('POST /api/auth/2fa/verify error:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });

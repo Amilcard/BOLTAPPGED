@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getStoredAuth, clearStoredAuth } from '@/lib/utils';
+import { getStoredUser, clearStoredAuth } from '@/lib/utils';
 import { LayoutDashboard, Map, Calendar, FileText, Users, LogOut, Receipt, Building2, Menu, X } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { AdminUIProvider } from '@/components/admin/admin-ui';
@@ -27,23 +27,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     const checkAuth = () => {
-      const token = getStoredAuth();
-      if (!token) {
+      const user = getStoredUser();
+      if (!user) {
         setAuthState('unauthenticated');
         return;
       }
-      try {
-        const parts = token.split('.');
-        if (parts.length !== 3) throw new Error('Invalid token');
-        const payload = JSON.parse(atob(parts[1]));
-        if (!payload.role) throw new Error('Missing role');
-        if (payload.exp && payload.exp * 1000 < Date.now()) throw new Error('Token expired');
-        setUserRole(payload.role);
-        setAuthState('authenticated');
-      } catch {
-        clearStoredAuth();
-        setAuthState('unauthenticated');
-      }
+      setUserRole(user.role);
+      setAuthState('authenticated');
     };
     checkAuth();
   }, []);

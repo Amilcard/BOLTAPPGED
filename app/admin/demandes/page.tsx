@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { STORAGE_KEYS, formatDate } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { Eye, Trash2, Building2 } from 'lucide-react';
 import { InscriptionSupabase, InscriptionEnriched } from '@/lib/types';
 import { useAdminUI } from '@/components/admin/admin-ui';
@@ -44,12 +44,9 @@ export default function AdminDemandes() {
 
   const fetchInscriptions = useCallback(async () => {
     try {
-      const token = localStorage.getItem(STORAGE_KEYS.AUTH);
       const params = new URLSearchParams();
       if (selectedStructure) params.set('structure_id', selectedStructure);
-      const res = await fetch(`/api/admin/inscriptions?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(`/api/admin/inscriptions?${params.toString()}`);
       if (res.ok) {
         setInscriptions(await res.json());
       } else {
@@ -68,10 +65,7 @@ export default function AdminDemandes() {
   useEffect(() => {
     const loadStructures = async () => {
       try {
-        const token = localStorage.getItem(STORAGE_KEYS.AUTH);
-        const res = await fetch('/api/admin/structures', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await fetch('/api/admin/structures');
         if (res.ok) {
           const data = await res.json();
           setStructures((data.structures || []).map((s: { id: string; name: string; city: string; code: string }) => ({
@@ -89,11 +83,10 @@ export default function AdminDemandes() {
     const DESTRUCTIVE = ['refusee', 'annulee'];
     const LABELS: Record<string, string> = { refusee: 'Refusée', annulee: 'Annulée' };
     const doChange = async () => {
-      const token = localStorage.getItem(STORAGE_KEYS.AUTH);
       // nosemgrep: javascript.lang.security.audit.ssrf.http-request.js-ssrf -- relative URL, UUID validated above
       const res = await fetch(`/api/admin/inscriptions/${id}`, {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       });
       if (!res.ok) {
@@ -117,11 +110,9 @@ export default function AdminDemandes() {
     if (!UUID_DEL.test(id)) return;
     confirm(`Supprimer définitivement l'inscription de ${jeune} ? Cette action est irréversible.`, async () => {
       try {
-        const token = localStorage.getItem(STORAGE_KEYS.AUTH);
         // nosemgrep: javascript.lang.security.audit.ssrf.http-request.js-ssrf -- relative URL, UUID validated above
         const res = await fetch(`/api/admin/inscriptions/${id}`, {
           method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));

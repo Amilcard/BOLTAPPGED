@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { STORAGE_KEYS, formatDate } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import {
   ArrowLeft, Trash2, ExternalLink, ClipboardCopy,
   FileCheck, FileClock, Loader2,
@@ -49,8 +49,7 @@ export default function InscriptionDetailPage() {
   const [relanceAt, setRelanceAt] = useState<string | null>(null);
 
   const authHeaders = () => {
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH);
-    return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+    return { 'Content-Type': 'application/json' };
   };
 
   const loadInscription = useCallback(async () => {

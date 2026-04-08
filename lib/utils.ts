@@ -37,11 +37,17 @@ export function generateSlug(title: string): string {
 
 export const STORAGE_KEYS = {
   MODE: 'gd_mode',
-  AUTH: 'gd_auth',
+  AUTH: 'gd_auth',       // DEPRECATED — conservé pour rétrocompatibilité nettoyage
+  USER: 'gd_user',       // Métadonnées non-sensibles {email, role}
   PERIOD: 'gd_period',
   WISHLIST: 'gd_kids_wishlist',
   PRO_EMAIL: 'gd_pro_email',
 } as const;
+
+export interface StoredUser {
+  email: string;
+  role: 'ADMIN' | 'EDITOR' | 'VIEWER';
+}
 
 // Kids wishlist with motivation + request data
 export interface WishlistItem {
@@ -174,26 +180,48 @@ export function setStoredMode(mode: 'pro' | 'kids'): void {
   localStorage.setItem(STORAGE_KEYS.MODE, mode);
 }
 
+// DEPRECATED — redirige vers getStoredUser pour rétrocompatibilité
 export function getStoredAuth(): string | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem(STORAGE_KEYS.AUTH);
+  // Retourne une valeur truthy si l'utilisateur est connecté (pour les checks `if (getStoredAuth())`)
+  return getStoredUser() ? 'cookie-auth' : null;
 }
 
-export function setStoredAuth(token: string): void {
-  if (typeof window === 'undefined') return;
-  if (!token || token.trim() === '') return;
-  localStorage.setItem(STORAGE_KEYS.AUTH, token);
+// DEPRECATED — ne stocke plus le JWT, utilise setStoredUser
+export function setStoredAuth(_token: string): void {
+  // No-op : le JWT n'est plus stocké dans localStorage (RGPD)
+  // Le cookie httpOnly gd_session gère l'auth
 }
 
 export function clearStoredAuth(): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(STORAGE_KEYS.AUTH);
+  localStorage.removeItem(STORAGE_KEYS.USER);
+}
+
+export function getStoredUser(): StoredUser | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.USER);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed?.email && parsed?.role) return parsed as StoredUser;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredUser(user: StoredUser): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
 }
 
 export function resetAllStorage(): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(STORAGE_KEYS.MODE);
   localStorage.removeItem(STORAGE_KEYS.AUTH);
+  localStorage.removeItem(STORAGE_KEYS.USER);
   localStorage.removeItem(STORAGE_KEYS.PERIOD);
 }
 

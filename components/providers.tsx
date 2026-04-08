@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import type { ViewMode, PeriodFilter } from '@/lib/types';
-import { getStoredMode, setStoredMode, resetAllStorage, STORAGE_KEYS, getWishlist, toggleWishlist as toggleWishlistUtil } from '@/lib/utils';
+import { getStoredMode, setStoredMode, resetAllStorage, STORAGE_KEYS, getWishlist, toggleWishlist as toggleWishlistUtil, getStoredUser } from '@/lib/utils';
 
 interface AuthUser {
   userId: string;
@@ -50,15 +50,10 @@ export function Providers({ children }: { children: ReactNode }) {
     const storedPeriod = localStorage.getItem(STORAGE_KEYS.PERIOD);
     if (storedPeriod) setPeriodFilterState(storedPeriod as PeriodFilter);
     
-    // Check auth token
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH);
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1])) as AuthUser;
-        setAuthUser(payload);
-      } catch {
-        setAuthUser(null);
-      }
+    // Check auth user metadata (RGPD: plus de JWT dans localStorage)
+    const user = getStoredUser();
+    if (user) {
+      setAuthUser({ email: user.email, role: user.role } as AuthUser);
     }
     // Check pro email verification
     if (localStorage.getItem(STORAGE_KEYS.PRO_EMAIL)) {

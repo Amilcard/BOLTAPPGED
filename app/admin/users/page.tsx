@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic';
 
 
 import { useEffect, useState } from 'react';
-import { STORAGE_KEYS } from '@/lib/utils';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { useAdminUI } from '@/components/admin/admin-ui';
 import { Button } from '@/components/ui/button';
@@ -24,10 +23,7 @@ export default function AdminUsers() {
   const [isCreating, setIsCreating] = useState(false);
 
   const fetchUsers = async () => {
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH);
-    const res = await fetch('/api/admin/users', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await fetch('/api/admin/users');
     if (res.ok) setUsers(await res.json());
   };
 
@@ -35,10 +31,8 @@ export default function AdminUsers() {
 
   const handleDelete = (id: string) => {
     confirm('Supprimer cet utilisateur ? Cette action est irréversible.', async () => {
-      const token = localStorage.getItem(STORAGE_KEYS.AUTH);
       await fetch(`/api/admin/users/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
       });
       fetchUsers();
     });
@@ -111,13 +105,12 @@ function UserForm({ user, onClose, onSave }: { user: User | null; onClose: () =>
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH);
     const url = user ? `/api/admin/users/${user.id}` : '/api/admin/users';
     const method = user ? 'PUT' : 'POST';
     const body = user ? { email: form.email, role: form.role, ...(form.password && { password: form.password }) } : form;
     await fetch(url, {
       method,
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
     onSave();

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mountain, ArrowLeft, Loader2 } from 'lucide-react';
-import { getStoredAuth, setStoredAuth } from '@/lib/utils';
+import { getStoredAuth, setStoredUser } from '@/lib/utils';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -46,7 +46,7 @@ export default function LoginPage() {
         return;
       }
 
-      setStoredAuth(data?.token ?? '');
+      if (data?.user) setStoredUser(data.user);
       router.replace('/admin');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erreur de connexion');
@@ -70,6 +70,7 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? 'Code invalide');
 
+      if (data?.user) setStoredUser(data.user);
       router.replace('/admin');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erreur de vérification');

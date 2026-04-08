@@ -143,7 +143,11 @@ export async function POST(req: NextRequest) {
       .setExpirationTime('8h')
       .sign(encodedSecret);
 
-    return setSessionCookie(NextResponse.json({ ok: true, token }), token);
+    // RGPD : ne plus renvoyer le JWT dans le body — cookie httpOnly uniquement
+    return setSessionCookie(
+      NextResponse.json({ ok: true, user: { email: data.user.email, role } }),
+      token
+    );
   } catch (error) {
     console.error('[auth/login] Erreur:', error);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });

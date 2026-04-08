@@ -99,6 +99,17 @@ export async function POST(req: NextRequest) {
             .from('gd_inscriptions')
             .update({ payment_status: 'amount_mismatch' })
             .eq('id', inscriptionId);
+          // Alerte admin — montant divergent, intervention manuelle requise
+          sendPaymentConfirmedAdminNotification({
+            inscriptionId,
+            referentNom: (inscription.referent_nom as string) || '',
+            jeunePrenom: (inscription.jeune_prenom as string) || '',
+            jeuneNom: (inscription.jeune_nom as string) || '',
+            sejourSlug: (inscription.sejour_slug as string) || '',
+            dossierRef: (inscription.dossier_ref as string) || '',
+            amount: stripeAmountEur,
+            subject: `⚠️ AMOUNT MISMATCH — Stripe ${stripeAmountEur}€ vs DB ${dbAmount}€`,
+          }).catch((err) => { console.error('[webhook/stripe] sendAmountMismatchAlert failed', err); });
           break;
         }
 
@@ -151,6 +162,7 @@ export async function POST(req: NextRequest) {
 
         if (error) {
           console.error('Error updating failed payment status:', error);
+          shouldRecordEvent = false; // DB échoué → Stripe réessaiera
         } else {
           console.log(`Payment failed for inscription ${inscriptionId}`);
         }

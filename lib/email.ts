@@ -170,6 +170,7 @@ export async function sendPaymentConfirmedAdminNotification(data: {
   sejourSlug: string;
   dossierRef: string;
   amount: number;
+  subject?: string;
 }) {
   if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
     return null;
@@ -179,7 +180,7 @@ export async function sendPaymentConfirmedAdminNotification(data: {
     const result = await getResend().emails.send({
       from: FROM_EMAIL,
       to: ADMIN_EMAIL,
-      subject: `Paiement confirmé — ${data.jeunePrenom} ${data.jeuneNom} (${data.amount.toFixed(2)} €)`,
+      subject: data.subject || `Paiement confirmé — ${data.jeunePrenom} ${data.jeuneNom} (${data.amount.toFixed(2)} €)`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #16a34a; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">

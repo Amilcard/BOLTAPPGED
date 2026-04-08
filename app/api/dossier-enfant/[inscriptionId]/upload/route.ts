@@ -60,6 +60,14 @@ export async function POST(
       return NextResponse.json({ error: 'Type de fichier non autorisé.' }, { status: 400 });
     }
 
+    // Validation magic bytes — vérifie le contenu réel du fichier, pas le MIME déclaré
+    const fileBuffer = await file.arrayBuffer();
+    const header = new Uint8Array(fileBuffer.slice(0, 12));
+    const detectedType = detectMimeFromMagic(header);
+    if (!detectedType || !ALLOWED_MIME.has(detectedType)) {
+      return NextResponse.json({ error: 'Le contenu du fichier ne correspond pas à un type autorisé (PDF, JPEG, PNG, WebP).' }, { status: 400 });
+    }
+
     // Verifier ownership via token
     const ownership = await verifyOwnership(supabase, token, inscriptionId);
     if (!ownership.ok) {
@@ -70,9 +78,6 @@ export async function POST(
     const ext = file.name.split('.').pop()?.toLowerCase() || 'pdf';
     const timestamp = Date.now();
     const storagePath = `${inscriptionId}/${docType}_${timestamp}.${ext}`;
-
-    // Upload vers Supabase Storage
-    const fileBuffer = await file.arrayBuffer();
     const { error: uploadError } = await supabase.storage
       .from('dossier-documents')
       .upload(storagePath, fileBuffer, {
@@ -207,8 +212,7 @@ export async function POST(
     }, { status: 201 });
   } catch (error: unknown) {
     console.error('Upload error:', error);
-    const message = error instanceof Error ? error.message : 'Erreur serveur.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur serveur lors de l\'upload.' }, { status: 500 });
   }
 }
 
@@ -244,8 +248,8 @@ export async function GET(
 
     return NextResponse.json({ documents: Array.isArray(docs) ? docs : [] });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('Upload route error:', error);
+    return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }
 }
 
@@ -313,9 +317,34 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('Upload route error:', error);
+    return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }
 }
 
 // verifyOwnership importé depuis @/lib/verify-ownership (centralisé RGPD)
+
+/**
+ * Détecte le MIME réel d'un fichier via ses magic bytes (premiers octets).
+ * Empêche l'upload d'exécutables avec un MIME spoofé.
+ */
+function detectMimeFromMagic(header: Uint8Array): string | null {
+  // PDF: %PDF
+  if (header[0] === 0x25 && header[1] === 0x50 && header[2] === 0x44 && header[3] === 0x46) {
+    return 'application/pdf';
+  }
+  // JPEG: FF D8 FF
+  if (header[0] === 0xFF && header[1] === 0xD8 && header[2] === 0xFF) {
+    return 'image/jpeg';
+  }
+  // PNG: 89 50 4E 47
+  if (header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4E && header[3] === 0x47) {
+    return 'image/png';
+  }
+  // WebP: RIFF....WEBP
+  if (header[0] === 0x52 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x46
+    && header[8] === 0x57 && header[9] === 0x45 && header[10] === 0x42 && header[11] === 0x50) {
+    return 'image/webp';
+  }
+  return null;
+}

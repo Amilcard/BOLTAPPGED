@@ -113,9 +113,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: unknown) {
     console.error('Error creating payment intent:', error);
-    const message = error instanceof Error ? error.message : 'Internal server error';
+    console.error('Payment intent error detail:', error instanceof Error ? error.message : error);
     return NextResponse.json(
-      { error: message },
+      { error: 'Erreur lors de la création du paiement.' },
       { status: 500 }
     );
   }

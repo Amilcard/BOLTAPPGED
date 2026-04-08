@@ -122,15 +122,24 @@ export async function POST(
       }
     }
 
-    // 6. Marquer comme envoyé
-    const { error: updateErr } = await supabase
+    // 6. Marquer comme envoyé — UPDATE conditionnel (anti-doublon atomique)
+    const { data: updatedRows, error: updateErr } = await supabase
       .from('gd_dossier_enfant')
       .update({ ged_sent_at: new Date().toISOString() })
-      .eq('id', dossier.id);
+      .eq('id', dossier.id)
+      .is('ged_sent_at', null)
+      .select('id');
 
     if (updateErr) {
       console.error('submit: update ged_sent_at error:', updateErr);
       throw updateErr;
+    }
+
+    if (!updatedRows || updatedRows.length === 0) {
+      return NextResponse.json(
+        { error: 'Dossier déjà envoyé.', alreadySent: true },
+        { status: 409 }
+      );
     }
 
     // 6. Récupérer les infos inscription et envoyer les emails AVANT le return

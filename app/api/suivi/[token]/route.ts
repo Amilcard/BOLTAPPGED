@@ -197,6 +197,7 @@ export async function PATCH(
       .from('gd_inscriptions')
       .select('referent_email')
       .eq('suivi_token', token)
+      .is('deleted_at', null)
       .single();
     const tokenOwner = sourceRaw as { referent_email: string } | null;
 
@@ -212,6 +213,7 @@ export async function PATCH(
       .from('gd_inscriptions')
       .select('referent_email')
       .eq('id', inscriptionId)
+      .is('deleted_at', null)
       .single();
     const target = targetRaw as { referent_email: string } | null;
 
@@ -244,7 +246,8 @@ export async function PATCH(
     const { error: updateErr } = await supabase
       .from('gd_inscriptions')
       .update({ [field]: sanitizedValue })
-      .eq('id', inscriptionId);
+      .eq('id', inscriptionId)
+      .is('deleted_at', null);
 
     if (updateErr) {
       console.error('PATCH /api/suivi/[token] update error:', updateErr);

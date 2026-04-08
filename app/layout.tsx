@@ -6,8 +6,6 @@ import '@fontsource/rubik/700.css';
 import './globals.css';
 import { Providers } from '@/components/providers';
 
-export const dynamic = 'force-dynamic';
-
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXTAUTH_URL || 'http://localhost:3000'),
   title: 'Groupe & Découverte - Séjours éducatifs pour enfants',

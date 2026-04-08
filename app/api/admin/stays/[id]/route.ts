@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireEditor } from '@/lib/auth-middleware';
+import { requireEditor, requireAdmin } from '@/lib/auth-middleware';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
@@ -54,10 +54,10 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = requireEditor(request);
+  const auth = requireAdmin(request);
   if (!auth) {
     return NextResponse.json(
-      { error: { code: 'UNAUTHORIZED', message: 'Non autorisé' } },
+      { error: { code: 'UNAUTHORIZED', message: 'Non autorisé — ADMIN requis pour suppression' } },
       { status: 401 }
     );
   }

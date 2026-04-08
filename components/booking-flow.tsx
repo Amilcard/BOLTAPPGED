@@ -969,19 +969,36 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               </span>
             </label>
             {needsParentalConsent && (
-              <label className="flex items-start gap-3 p-3 bg-amber-50 rounded-xl cursor-pointer border border-amber-200">
-                <input
-                  type="checkbox"
-                  checked={step2.parentalConsent}
-                  onChange={e => setStep2({ ...step2, parentalConsent: e.target.checked })}
-                  className="w-5 h-5 mt-0.5 text-secondary rounded shrink-0"
-                />
-                <span className="text-sm text-amber-800">
-                  <strong>Consentement pour mineur de moins de 15 ans (RGPD) :</strong> Je certifie avoir recueilli
-                  l&apos;accord du titulaire de l&apos;autorité parentale ou du responsable légal (parent, tuteur, service ASE)
-                  pour le traitement des données personnelles et de santé de l&apos;enfant dans le cadre de cette inscription. *
-                </span>
-              </label>
+              <div className="space-y-2">
+                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200">
+                  <p className="text-sm font-semibold text-amber-900 mb-1">
+                    Consentement obligatoire — mineur de moins de 15 ans
+                  </p>
+                  <p className="text-xs text-amber-700 leading-relaxed">
+                    Conformément au Règlement Général sur la Protection des Données (RGPD, article 8)
+                    et aux recommandations de la CNIL, le traitement des données personnelles d&apos;un mineur
+                    de moins de 15 ans nécessite l&apos;accord préalable du titulaire de l&apos;autorité parentale
+                    ou du responsable légal. Cela inclut les données d&apos;identité, de santé, d&apos;allergies,
+                    de handicap et tout document transmis dans le dossier d&apos;inscription.
+                  </p>
+                  <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+                    Le responsable légal peut être un parent, un tuteur, un membre de la famille désigné
+                    par le juge des enfants, ou le service de l&apos;Aide Sociale à l&apos;Enfance (ASE).
+                  </p>
+                </div>
+                <label className="flex items-start gap-3 p-3 bg-amber-50 rounded-xl cursor-pointer border border-amber-300">
+                  <input
+                    type="checkbox"
+                    checked={step2.parentalConsent}
+                    onChange={e => setStep2({ ...step2, parentalConsent: e.target.checked })}
+                    className="w-5 h-5 mt-0.5 text-secondary rounded shrink-0"
+                  />
+                  <span className="text-sm text-amber-900 font-medium">
+                    Je certifie avoir recueilli l&apos;accord du titulaire de l&apos;autorité parentale
+                    ou du responsable légal pour le traitement des données de l&apos;enfant. *
+                  </span>
+                </label>
+              </div>
             )}
           </div>
           {ageError && (

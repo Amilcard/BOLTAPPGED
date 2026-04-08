@@ -95,6 +95,14 @@ export async function POST(
       if (res.ok) {
         sent++;
         notifiedIds.push(entry.id);
+      } else {
+        const errBody = await res.text().catch(() => 'no body');
+        console.error(`[notify-waitlist] Resend ${res.status} pour ${entry.email}:`, errBody);
+        // Backoff si rate-limited
+        if (res.status === 429) {
+          console.warn('[notify-waitlist] Rate-limited par Resend, pause 2s');
+          await new Promise(r => setTimeout(r, 2000));
+        }
       }
     } catch (err) {
       console.error('[notify-waitlist] Erreur envoi vers', entry.email, err);

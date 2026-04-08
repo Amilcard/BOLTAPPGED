@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Key Architecture
 
 - **Framework**: Next.js 14 with App Router (server components)
-- **Database**: SQLite (dev) / PostgreSQL (prod) via Prisma ORM
+- **Database**: PostgreSQL via Supabase (direct JS client, no ORM)
 - **Authentication**: Custom JWT-based auth (not NextAuth) with role-based access
 - **Styling**: Tailwind CSS with Radix UI primitives
 
@@ -37,12 +37,8 @@ npm start
 # Linting
 npm run lint
 
-# Database operations
-npx prisma generate          # Generate Prisma client
-npx prisma migrate dev       # Run migrations
-npx prisma db push          # Push schema without migration (dev only)
-npx prisma db seed          # Seed database
-npx prisma studio           # GUI for database
+# Database: Supabase (PostgreSQL) — schema managed via sql/*.sql migrations
+# Execute migrations manually in Supabase SQL Editor
 ```
 
 ## Database & Models

@@ -103,7 +103,7 @@ function PdfDownloadButton({ inscriptionId, token, docType, label }: {
       <button
         onClick={handleDownload}
         disabled={downloading}
-        className="px-3 py-1.5 bg-white border border-gray-300 hover:bg-gray-100 rounded-lg text-xs font-medium transition disabled:opacity-50 flex items-center gap-1"
+        className="px-3 py-2.5 min-h-[44px] bg-white border border-gray-300 hover:bg-gray-100 rounded-lg text-xs font-medium transition disabled:opacity-50 flex items-center gap-1"
       >
         📥 {downloading ? 'Téléchargement...' : label}
       </button>
@@ -375,6 +375,8 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
     <div className="border-t border-gray-100 print:hidden">
       <button
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-controls="dossier-panel-content"
         className="w-full px-6 py-3 flex items-center justify-between text-sm text-gray-600 hover:bg-gray-50 transition"
       >
         <span className="font-medium flex flex-wrap items-center gap-2">

@@ -266,6 +266,7 @@ export default function AdminDemandes() {
                       </td>
                       <td className="px-4 py-4" onClick={e => e.stopPropagation()}>
                         <select
+                          aria-label={`Statut de ${insc.jeune_prenom || ''} ${insc.jeune_nom || ''}`}
                           className={`px-3 py-1 rounded-full text-xs font-medium ${statusStyle.color} cursor-pointer`}
                           value={insc.status}
                           onChange={(e) => { void handleStatusChange(insc.id, e.target.value); }}

@@ -182,12 +182,14 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
                   <td className="px-3 py-1.5 text-gray-700">{v.label}</td>
                   <td className="text-center px-2">
                     <input type="radio" name={`vaccin_${v.key}`} value="oui"
+                      aria-label={`${v.label} — Oui`}
                       checked={form[`vaccin_${v.key}`] === 'oui'}
                       onChange={() => update(`vaccin_${v.key}`, 'oui')}
                     />
                   </td>
                   <td className="text-center px-2">
                     <input type="radio" name={`vaccin_${v.key}`} value="non"
+                      aria-label={`${v.label} — Non`}
                       checked={form[`vaccin_${v.key}`] === 'non'}
                       onChange={() => update(`vaccin_${v.key}`, 'non')}
                     />

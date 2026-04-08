@@ -908,8 +908,9 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               />
             </div>
             <div>
-              <label className="text-sm text-primary-600 mb-1 block">Date de naissance *</label>
+              <label htmlFor="child-birthdate" className="text-sm text-primary-600 mb-1 block">Date de naissance *</label>
               <input
+                id="child-birthdate"
                 ref={firstInputRef}
                 type="date"
                 value={step2.childBirthDate}
@@ -927,8 +928,9 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               )}
             </div>
             <div>
-              <label className="text-sm text-primary-600 mb-1 block">Sexe *</label>
+              <label htmlFor="child-sex" className="text-sm text-primary-600 mb-1 block">Sexe *</label>
               <select
+                id="child-sex"
                 value={step2.childSex || ''}
                 onChange={e => setStep2({ ...step2, childSex: e.target.value })}
                 className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"

@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { getSejours, supabaseGed, getAllStayThemes, getMinPricesBySlug } from '@/lib/supabaseGed';
 import { Header } from '@/components/header';
 import { BottomNav } from '@/components/bottom-nav';

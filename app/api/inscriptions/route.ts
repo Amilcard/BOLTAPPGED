@@ -20,6 +20,8 @@ const inscriptionSchema = z.object({
   remarques: z.string().optional(),
   priceTotal: z.number().min(0),
   consent: z.boolean().refine(v => v, { message: 'Consentement requis' }),
+  // RGPD Art. 8 / CNIL : consentement parental explicite pour mineurs < 15 ans
+  parentalConsent: z.boolean().optional(),
   paymentMethod: z.enum(['card', 'bank_transfer', 'cheque', 'transfer', 'check']).optional().default('bank_transfer'),
   // Champs structure (Phase 1 espace structure)
   structureCode: z.string().regex(/^[A-Z0-9]{6}$/).optional(),  // Code 6 chars si connu
@@ -75,6 +77,14 @@ export async function POST(request: NextRequest) {
     if (age < 3 || age > 17) {
       return NextResponse.json(
         { error: { code: 'AGE_INVALID', message: `Âge hors tranche (${age} ans). Les séjours sont réservés aux 3-17 ans.` } },
+        { status: 400 }
+      );
+    }
+
+    // RGPD Art. 8 / CNIL : consentement parental obligatoire pour les mineurs < 15 ans
+    if (age < 15 && !data.parentalConsent) {
+      return NextResponse.json(
+        { error: { code: 'PARENTAL_CONSENT_REQUIRED', message: 'Le consentement parental est obligatoire pour les mineurs de moins de 15 ans (RGPD Art. 8).' } },
         { status: 400 }
       );
     }
@@ -454,6 +464,9 @@ export async function POST(request: NextRequest) {
         structure_city: data.structureCity,
         structure_type: data.structureType || null,
         structure_address: data.structureAddress || null,
+        // RGPD : consentement parental pour < 15 ans
+        parental_consent_at: data.parentalConsent ? new Date().toISOString() : null,
+        parental_consent_version: data.parentalConsent ? 'v2026.1' : null,
       })
       .select();
     const inscription = inscriptionRows?.[0] ?? null;

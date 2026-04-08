@@ -14,6 +14,13 @@ Sentry.init({
     'ResizeObserver loop limit exceeded',
   ],
 
+  // RGPD : filtrer les données personnelles côté client
+  beforeSend(event) {
+    // Supprimer les données utilisateur
+    delete event.user;
+    return event;
+  },
+
   // Ne pas envoyer en développement local
   enabled: process.env.NODE_ENV === 'production',
 });

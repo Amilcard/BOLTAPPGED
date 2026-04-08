@@ -3,11 +3,61 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
 import { enrichInscriptions, type InscriptionRaw } from '@/lib/inscription-enrichment';
 
+// Rate limiting : 10 tentatives / 15 min par IP (anti brute-force code 6 chars)
+const STRUCT_MAX_ATTEMPTS = 10;
+const STRUCT_WINDOW_MINUTES = 15;
+
+function getClientIp(req: NextRequest): string {
+  return (
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip') ||
+    'unknown'
+  );
+}
+
+async function isStructureRateLimited(ip: string): Promise<boolean> {
+  try {
+    const supabase = getSupabase();
+    const now = new Date();
+    const windowStart = new Date(now.getTime() - STRUCT_WINDOW_MINUTES * 60 * 1000);
+
+    const { data: entry } = await supabase
+      .from('gd_login_attempts')
+      .select('attempt_count, window_start')
+      .eq('ip', `struct:${ip}`)
+      .single();
+
+    if (!entry || new Date(entry.window_start) < windowStart) {
+      await supabase
+        .from('gd_login_attempts')
+        .upsert(
+          { ip: `struct:${ip}`, attempt_count: 1, window_start: now.toISOString() },
+          { onConflict: 'ip' }
+        );
+      return false;
+    }
+
+    if (entry.attempt_count >= STRUCT_MAX_ATTEMPTS) {
+      return true;
+    }
+
+    await supabase
+      .from('gd_login_attempts')
+      .update({ attempt_count: entry.attempt_count + 1 })
+      .eq('ip', `struct:${ip}`);
+
+    return false;
+  } catch {
+    return false; // fail-open
+  }
+}
+
 /**
  * GET /api/structure/[code]
  *
  * Accès public — le code 6 caractères fait office de token (même principe que /suivi/[token]).
  * Retourne les infos de la structure + toutes les inscriptions rattachées.
+ * RGPD : rate limited pour empêcher le brute-force (10 req / 15 min par IP).
  */
 export async function GET(
   _req: NextRequest,
@@ -19,6 +69,15 @@ export async function GET(
     return NextResponse.json(
       { error: { code: 'INVALID_CODE', message: 'Format de code invalide.' } },
       { status: 400 }
+    );
+  }
+
+  // Rate limiting anti brute-force
+  const ip = getClientIp(_req);
+  if (await isStructureRateLimited(ip)) {
+    return NextResponse.json(
+      { error: { code: 'RATE_LIMITED', message: 'Trop de tentatives. Réessayez dans quelques minutes.' } },
+      { status: 429 }
     );
   }
 

@@ -1,6 +1,8 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
+import { verifyOwnership } from '@/lib/verify-ownership';
+import { auditLog, getClientIp } from '@/lib/audit-log';
 const ALLOWED_TYPES = [
   'vaccins', 'ordonnance', 'pass_nautique', 'certificat_plongee',
   'certificat_medical', 'attestation_assurance', 'signature_parentale',
@@ -61,7 +63,7 @@ export async function POST(
     // Verifier ownership via token
     const ownership = await verifyOwnership(supabase, token, inscriptionId);
     if (!ownership.ok) {
-      return NextResponse.json({ error: ownership.message }, { status: ownership.status });
+      return NextResponse.json({ error: { code: ownership.code, message: ownership.message } }, { status: ownership.status });
     }
 
     // Generer le path de stockage
@@ -182,6 +184,18 @@ export async function POST(
       }
     }
 
+    // Audit log : upload document (RGPD Art. 9)
+    auditLog(supabase, {
+      action: 'upload',
+      resourceType: 'document',
+      resourceId: storagePath,
+      inscriptionId,
+      actorType: 'referent',
+      actorId: ownership.ok ? (ownership as { referentEmail: string }).referentEmail : undefined,
+      ipAddress: getClientIp(req),
+      metadata: { docType, filename: file.name, size: file.size },
+    });
+
     // Bucket privé → signed URL temporaire (1h) au lieu de getPublicUrl (retournerait 403)
     const { data: signedData } = await supabase.storage
       .from('dossier-documents')
@@ -217,7 +231,7 @@ export async function GET(
     const supabase = getSupabase();
     const ownership = await verifyOwnership(supabase, token, inscriptionId);
     if (!ownership.ok) {
-      return NextResponse.json({ error: ownership.message }, { status: ownership.status });
+      return NextResponse.json({ error: { code: ownership.code, message: ownership.message } }, { status: ownership.status });
     }
 
     const { data: dossier } = await supabase
@@ -255,7 +269,7 @@ export async function DELETE(
     const supabase = getSupabase();
     const ownership = await verifyOwnership(supabase, token, inscriptionId);
     if (!ownership.ok) {
-      return NextResponse.json({ error: ownership.message }, { status: ownership.status });
+      return NextResponse.json({ error: { code: ownership.code, message: ownership.message } }, { status: ownership.status });
     }
 
     // Garde IDOR : vérifier que le chemin appartient bien à cette inscription
@@ -285,6 +299,18 @@ export async function DELETE(
     // Supprimer du storage seulement après succès DB
     await supabase.storage.from('dossier-documents').remove([storage_path]);
 
+    // Audit log : suppression document (RGPD)
+    auditLog(supabase, {
+      action: 'delete',
+      resourceType: 'document',
+      resourceId: storage_path,
+      inscriptionId,
+      actorType: 'referent',
+      actorId: ownership.ok ? (ownership as { referentEmail: string }).referentEmail : undefined,
+      ipAddress: getClientIp(req),
+      metadata: { storage_path },
+    });
+
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -292,34 +318,4 @@ export async function DELETE(
   }
 }
 
-// ---- Helpers ----
-
-async function verifyOwnership(
-  supabase: ReturnType<typeof getSupabase>,
-  token: string,
-  inscriptionId: string
-): Promise<{ ok: true } | { ok: false; message: string; status: number }> {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (!uuidRegex.test(token)) return { ok: false, message: 'Token invalide.', status: 400 };
-  if (!uuidRegex.test(inscriptionId)) return { ok: false, message: 'ID invalide.', status: 400 };
-
-  const { data: source } = await supabase
-    .from('gd_inscriptions')
-    .select('referent_email')
-    .eq('suivi_token', token)
-    .single();
-
-  if (!source) return { ok: false, message: 'Token non trouve.', status: 404 };
-
-  const { data: target } = await supabase
-    .from('gd_inscriptions')
-    .select('referent_email')
-    .eq('id', inscriptionId)
-    .single();
-
-  if (!target || target.referent_email !== source.referent_email) {
-    return { ok: false, message: 'Acces non autorise.', status: 403 };
-  }
-
-  return { ok: true };
-}
+// verifyOwnership importé depuis @/lib/verify-ownership (centralisé RGPD)

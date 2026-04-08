@@ -2,6 +2,8 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
 import { REQUIS_TO_JOINT } from '@/lib/dossier-shared';
+import { verifyOwnership } from '@/lib/verify-ownership';
+import { auditLog, getClientIp } from '@/lib/audit-log';
 // Blocs JSONB éditables (whitelist)
 const EDITABLE_BLOCS = [
   'bulletin_complement',
@@ -42,6 +44,17 @@ export async function GET(
         { status: ownership.status }
       );
     }
+
+    // Audit log : accès lecture dossier enfant (RGPD Art. 9)
+    auditLog(supabase, {
+      action: 'read',
+      resourceType: 'dossier_enfant',
+      resourceId: inscriptionId,
+      inscriptionId,
+      actorType: 'referent',
+      actorId: ownership.ok ? ownership.referentEmail : undefined,
+      ipAddress: getClientIp(req),
+    });
 
     // Chercher le dossier enfant existant
     const { data: dossier, error: err } = await supabase
@@ -175,6 +188,18 @@ export async function PATCH(
         { status: ownership.status }
       );
     }
+
+    // Audit log : modification dossier enfant (RGPD Art. 9)
+    auditLog(supabase, {
+      action: 'update',
+      resourceType: 'dossier_enfant',
+      resourceId: inscriptionId,
+      inscriptionId,
+      actorType: 'referent',
+      actorId: ownership.ok ? ownership.referentEmail : undefined,
+      ipAddress: getClientIp(req),
+      metadata: { bloc, completed },
+    });
 
     // Vérifier si le dossier existe déjà
     const { data: existing } = await supabase
@@ -317,44 +342,4 @@ function getCompletedColumn(bloc: string): string | null {
   return Object.prototype.hasOwnProperty.call(map, bloc) ? map[bloc] : null;
 }
 
-async function verifyOwnership(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
-  token: string,
-  inscriptionId: string
-): Promise<{ ok: true } | { ok: false; code: string; message: string; status: number }> {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-  if (!uuidRegex.test(token)) {
-    return { ok: false, code: 'INVALID_TOKEN', message: 'Token invalide.', status: 400 };
-  }
-  if (!uuidRegex.test(inscriptionId)) {
-    return { ok: false, code: 'INVALID_ID', message: 'ID inscription invalide.', status: 400 };
-  }
-
-  // Trouver le referent_email du token
-  const { data: sourceRaw } = await supabase
-    .from('gd_inscriptions')
-    .select('referent_email')
-    .eq('suivi_token', token)
-    .single();
-  const source = sourceRaw as { referent_email: string } | null;
-
-  if (!source) {
-    return { ok: false, code: 'NOT_FOUND', message: 'Token non trouvé.', status: 404 };
-  }
-
-  // Vérifier que l'inscription ciblée appartient au même référent
-  const { data: targetRaw } = await supabase
-    .from('gd_inscriptions')
-    .select('referent_email')
-    .eq('id', inscriptionId)
-    .single();
-  const target = targetRaw as { referent_email: string } | null;
-
-  if (!target || target.referent_email !== source.referent_email) {
-    return { ok: false, code: 'FORBIDDEN', message: 'Accès non autorisé.', status: 403 };
-  }
-
-  return { ok: true };
-}
+// verifyOwnership importé depuis @/lib/verify-ownership (centralisé RGPD)

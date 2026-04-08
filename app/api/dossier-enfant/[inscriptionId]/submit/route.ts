@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
 import { sendDossierCompletEmail, sendDossierGedAdminNotification } from '@/lib/email';
 import { REQUIS_TO_JOINT } from '@/lib/dossier-shared';
+import { verifyOwnership } from '@/lib/verify-ownership';
+import { auditLog, getClientIp } from '@/lib/audit-log';
 /**
  * POST /api/dossier-enfant/[inscriptionId]/submit
  * Soumet le dossier enfant complet à l'équipe GED.
@@ -36,11 +38,11 @@ export async function POST(
 
     const supabase = getSupabase();
 
-    // 1. Vérifier ownership
+    // 1. Vérifier ownership + expiration token (RGPD centralisé)
     const ownership = await verifyOwnership(supabase, token, inscriptionId);
     if (!ownership.ok) {
       return NextResponse.json(
-        { error: ownership.message },
+        { error: { code: ownership.code, message: ownership.message } },
         { status: ownership.status }
       );
     }
@@ -186,6 +188,17 @@ export async function POST(
       console.error('[GED submit email] inscription non trouvée pour envoi emails', { inscriptionId });
     }
 
+    // Audit log : soumission dossier complet (RGPD)
+    auditLog(supabase, {
+      action: 'submit',
+      resourceType: 'dossier_enfant',
+      resourceId: inscriptionId,
+      inscriptionId,
+      actorType: 'referent',
+      actorId: ownership.ok ? ownership.referentEmail : undefined,
+      ipAddress: getClientIp(req),
+    });
+
     return NextResponse.json({ ok: true, gedSentAt: new Date().toISOString() });
   } catch (error) {
     console.error('POST /submit error:', error);
@@ -196,35 +209,4 @@ export async function POST(
   }
 }
 
-// ─── Helpers ───
-
-async function verifyOwnership(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
-  token: string,
-  inscriptionId: string
-): Promise<{ ok: true } | { ok: false; message: string; status: number }> {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (!uuidRegex.test(token)) return { ok: false, message: 'Token invalide.', status: 400 };
-  if (!uuidRegex.test(inscriptionId)) return { ok: false, message: 'ID invalide.', status: 400 };
-
-  const { data: source } = await supabase
-    .from('gd_inscriptions')
-    .select('referent_email')
-    .eq('suivi_token', token)
-    .single();
-
-  if (!source) return { ok: false, message: 'Token non trouvé.', status: 404 };
-
-  const { data: target } = await supabase
-    .from('gd_inscriptions')
-    .select('referent_email')
-    .eq('id', inscriptionId)
-    .single();
-
-  if (!target || target.referent_email !== source.referent_email) {
-    return { ok: false, message: 'Accès non autorisé.', status: 403 };
-  }
-
-  return { ok: true };
-}
+// verifyOwnership importé depuis @/lib/verify-ownership (centralisé RGPD)

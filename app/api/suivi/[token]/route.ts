@@ -1,6 +1,8 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
+import { verifyToken, verifyOwnership } from '@/lib/verify-ownership';
+import { auditLog, getClientIp } from '@/lib/audit-log';
 /**
  * GET /api/suivi/[token]
  * Vue lecture seule : retourne tous les dossiers liés au même référent
@@ -8,6 +10,7 @@ import { getSupabase } from '@/lib/supabase-server';
  *
  * Sécurité : pas d'auth classique, le token UUID est le secret (magic link).
  * On ne retourne QUE les champs utiles au référent, jamais les données admin internes.
+ * RGPD : vérification expiration token + audit log.
  */
 export async function GET(
   _req: NextRequest,
@@ -16,33 +19,18 @@ export async function GET(
   try {
     const { token } = await params;
 
-    // Validation basique UUID
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!token || !uuidRegex.test(token)) {
-      return NextResponse.json(
-        { error: { code: 'INVALID_TOKEN', message: 'Lien de suivi invalide.' } },
-        { status: 400 }
-      );
-    }
-
     const supabase = getSupabase();
 
-    // 1. Trouver l'inscription source par suivi_token
-    const { data: sourceRaw, error: sourceErr } = await supabase
-      .from('gd_inscriptions')
-      .select('referent_email, organisation')
-      .eq('suivi_token', token)
-      .is('deleted_at', null)
-      .single();
-
-    const source = sourceRaw as { referent_email: string; organisation?: string } | null;
-
-    if (sourceErr || !source) {
+    // 1. Vérifier le token (validité + expiration RGPD) avec renouvellement sliding window
+    const tokenCheck = await verifyToken(supabase, token, { renew: true });
+    if (!tokenCheck.ok) {
       return NextResponse.json(
-        { error: { code: 'NOT_FOUND', message: 'Dossier non trouvé. Ce lien est peut-être expiré ou invalide.' } },
-        { status: 404 }
+        { error: { code: tokenCheck.code, message: tokenCheck.message } },
+        { status: tokenCheck.status }
       );
     }
+
+    const source = { referent_email: tokenCheck.referentEmail, organisation: tokenCheck.organisation };
 
     // 2. Récupérer TOUS les dossiers du même référent (même email)
     // → colonnes explicites (RGPD : ne pas exposer remarques, stripe_id, etc.)
@@ -124,6 +112,17 @@ export async function GET(
       };
     });
 
+    // Audit log : accès lecture dossiers (RGPD)
+    auditLog(supabase, {
+      action: 'read',
+      resourceType: 'inscription',
+      resourceId: 'batch',
+      actorType: 'referent',
+      actorId: source.referent_email,
+      ipAddress: getClientIp(_req),
+      metadata: { count: result.length, token_prefix: token.slice(0, 8) },
+    });
+
     return NextResponse.json({
       referent: {
         nom: source.organisation || (rows[0]?.referent_nom as string ?? ''),
@@ -155,18 +154,11 @@ export async function PATCH(
 ) {
   try {
     const { token } = await params;
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!token || !uuidRegex.test(token)) {
-      return NextResponse.json(
-        { error: { code: 'INVALID_TOKEN', message: 'Lien invalide.' } },
-        { status: 400 }
-      );
-    }
-
     const supabase = getSupabase();
     const body = await req.json();
     const { inscriptionId, field, value } = body;
 
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!inscriptionId || !uuidRegex.test(inscriptionId)) {
       return NextResponse.json(
         { error: { code: 'INVALID_PARAMS', message: 'Paramètres invalides.' } },
@@ -174,7 +166,7 @@ export async function PATCH(
       );
     }
 
-    if (!inscriptionId || !field) {
+    if (!field) {
       return NextResponse.json(
         { error: { code: 'MISSING_PARAMS', message: 'Paramètres manquants.' } },
         { status: 400 }
@@ -192,35 +184,12 @@ export async function PATCH(
       );
     }
 
-    // Vérifier que le token correspond à un dossier du même référent
-    const { data: sourceRaw } = await supabase
-      .from('gd_inscriptions')
-      .select('referent_email')
-      .eq('suivi_token', token)
-      .is('deleted_at', null)
-      .single();
-    const tokenOwner = sourceRaw as { referent_email: string } | null;
-
-    if (!tokenOwner) {
+    // Vérifier ownership + expiration token (RGPD centralisé)
+    const ownership = await verifyOwnership(supabase, token, inscriptionId);
+    if (!ownership.ok) {
       return NextResponse.json(
-        { error: { code: 'NOT_FOUND', message: 'Token invalide.' } },
-        { status: 404 }
-      );
-    }
-
-    // Vérifier que l'inscription ciblée appartient au même référent
-    const { data: targetRaw } = await supabase
-      .from('gd_inscriptions')
-      .select('referent_email')
-      .eq('id', inscriptionId)
-      .is('deleted_at', null)
-      .single();
-    const target = targetRaw as { referent_email: string } | null;
-
-    if (!target || target.referent_email !== tokenOwner.referent_email) {
-      return NextResponse.json(
-        { error: { code: 'FORBIDDEN', message: 'Accès non autorisé à ce dossier.' } },
-        { status: 403 }
+        { error: { code: ownership.code, message: ownership.message } },
+        { status: ownership.status }
       );
     }
 

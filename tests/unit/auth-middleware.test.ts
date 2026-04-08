@@ -76,7 +76,7 @@ describe('verifyAuth', () => {
     const { verifyAuth } = await import('@/lib/auth-middleware');
     const token = makeToken(PAYLOAD, SECRET, { expiresIn: -1 });
     const req = makeRequest(token);
-    expect(verifyAuth(req)).toBeNull();
+    await expect(verifyAuth(req)).resolves.toBeNull();
   });
 
   it('retourne null si NEXTAUTH_SECRET absent (fail-safe)', async () => {
@@ -84,14 +84,14 @@ describe('verifyAuth', () => {
     const { verifyAuth } = await import('@/lib/auth-middleware');
     const token = makeToken(PAYLOAD);
     const req = makeRequest(token);
-    expect(verifyAuth(req)).toBeNull();
+    await expect(verifyAuth(req)).resolves.toBeNull();
   });
 
   it('retourne payload si Bearer header valide', async () => {
     const { verifyAuth } = await import('@/lib/auth-middleware');
     const token = makeToken(PAYLOAD);
     const req = makeRequest(token, 'header');
-    const result = verifyAuth(req);
+    const result = await verifyAuth(req);
     expect(result).not.toBeNull();
     expect(result?.userId).toBe('user-1');
     expect(result?.role).toBe('ADMIN');
@@ -101,7 +101,7 @@ describe('verifyAuth', () => {
     const { verifyAuth } = await import('@/lib/auth-middleware');
     const token = makeToken(PAYLOAD);
     const req = makeRequest(token, 'cookie');
-    const result = verifyAuth(req);
+    const result = await verifyAuth(req);
     expect(result).not.toBeNull();
     expect(result?.email).toBe('admin@ged.fr');
   });
@@ -110,7 +110,7 @@ describe('verifyAuth', () => {
     const { verifyAuth } = await import('@/lib/auth-middleware');
     const token = makeToken(PAYLOAD, OTHER_SECRET);
     const req = makeRequest(token);
-    expect(verifyAuth(req)).toBeNull();
+    await expect(verifyAuth(req)).resolves.toBeNull();
   });
 });
 
@@ -122,19 +122,19 @@ describe('requireAdmin', () => {
   it('retourne null si role VIEWER', async () => {
     const { requireAdmin } = await import('@/lib/auth-middleware');
     const token = makeToken({ ...PAYLOAD, role: 'VIEWER' });
-    expect(requireAdmin(makeRequest(token))).toBeNull();
+    await expect(requireAdmin(makeRequest(token))).resolves.toBeNull();
   });
 
   it('retourne null si role EDITOR', async () => {
     const { requireAdmin } = await import('@/lib/auth-middleware');
     const token = makeToken({ ...PAYLOAD, role: 'EDITOR' });
-    expect(requireAdmin(makeRequest(token))).toBeNull();
+    await expect(requireAdmin(makeRequest(token))).resolves.toBeNull();
   });
 
   it('retourne payload si role ADMIN', async () => {
     const { requireAdmin } = await import('@/lib/auth-middleware');
     const token = makeToken({ ...PAYLOAD, role: 'ADMIN' });
-    const result = requireAdmin(makeRequest(token));
+    const result = await requireAdmin(makeRequest(token));
     expect(result?.role).toBe('ADMIN');
   });
 });
@@ -147,20 +147,20 @@ describe('requireEditor', () => {
   it('retourne null si role VIEWER', async () => {
     const { requireEditor } = await import('@/lib/auth-middleware');
     const token = makeToken({ ...PAYLOAD, role: 'VIEWER' });
-    expect(requireEditor(makeRequest(token))).toBeNull();
+    await expect(requireEditor(makeRequest(token))).resolves.toBeNull();
   });
 
   it('retourne payload si role EDITOR', async () => {
     const { requireEditor } = await import('@/lib/auth-middleware');
     const token = makeToken({ ...PAYLOAD, role: 'EDITOR' });
-    const result = requireEditor(makeRequest(token));
+    const result = await requireEditor(makeRequest(token));
     expect(result?.role).toBe('EDITOR');
   });
 
   it('retourne payload si role ADMIN (accès éditeur inclus)', async () => {
     const { requireEditor } = await import('@/lib/auth-middleware');
     const token = makeToken({ ...PAYLOAD, role: 'ADMIN' });
-    const result = requireEditor(makeRequest(token));
+    const result = await requireEditor(makeRequest(token));
     expect(result?.role).toBe('ADMIN');
   });
 });

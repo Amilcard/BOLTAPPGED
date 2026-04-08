@@ -17,7 +17,7 @@ import { requireAdmin } from '@/lib/auth-middleware';
  * Sécurité : ADMIN uniquement.
  */
 export async function POST(request: NextRequest) {
-  if (!requireAdmin(request)) {
+  if (!await requireAdmin(request)) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
   }
 

@@ -14,7 +14,7 @@ import { verifyAuth } from '@/lib/auth-middleware';
  * Accès : verifyAuth — tout membre GED (ADMIN, EDITOR, VIEWER).
  */
 export async function GET(request: NextRequest) {
-  if (!verifyAuth(request)) {
+  if (!await verifyAuth(request)) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
   }
 

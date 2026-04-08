@@ -14,7 +14,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!requireEditor(req)) {
+  if (!await requireEditor(req)) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
   }
 

@@ -8,7 +8,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; sessionId: string }> }
 ) {
-  const auth = requireAdmin(request);
+  const auth = await requireAdmin(request);
   if (!auth) {
     return NextResponse.json(
       { error: { code: 'UNAUTHORIZED', message: 'Non autorisé' } },

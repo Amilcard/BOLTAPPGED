@@ -5,7 +5,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-server';
 export const dynamic = 'force-dynamic';
 // GET all stays from Supabase (source de vérité)
 export async function GET(request: NextRequest) {
-  const auth = verifyAuth(request);
+  const auth = await verifyAuth(request);
   if (!auth) {
     return NextResponse.json(
       { error: { code: 'UNAUTHORIZED', message: 'Non autorisé' } },

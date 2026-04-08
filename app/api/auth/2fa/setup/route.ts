@@ -11,7 +11,7 @@ import { generateSecret, generateOtpAuthUrl, getQrCodeUrl } from '@/lib/totp';
  */
 export async function POST(req: NextRequest) {
   try {
-    const auth = verifyAuth(req);
+    const auth = await verifyAuth(req);
     if (!auth) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
     const secret = generateSecret();

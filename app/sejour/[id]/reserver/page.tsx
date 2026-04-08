@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
+import { jwtVerify } from 'jose';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import type { Stay } from '@/lib/types';
@@ -21,7 +21,8 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
   const secret = process.env.NEXTAUTH_SECRET;
   if (!token || !secret) redirect('/login');
   try {
-    jwt.verify(token, secret);
+    const encodedSecret = new TextEncoder().encode(secret);
+    await jwtVerify(token, encodedSecret);
   } catch {
     redirect('/login');
   }

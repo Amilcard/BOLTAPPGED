@@ -21,7 +21,7 @@ function fmtPrice(amount: number): string {
 
 export async function GET(req: NextRequest) {
   try {
-    const auth = verifyAuth(req);
+    const auth = await verifyAuth(req);
     if (!auth) return NextResponse.json({ error: 'Non autorise' }, { status: 401 });
 
     const id = req.nextUrl.searchParams.get('id');

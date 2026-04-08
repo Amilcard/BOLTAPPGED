@@ -11,7 +11,7 @@ import { enrichInscriptions, type InscriptionRaw } from '@/lib/inscription-enric
 export async function GET(req: NextRequest) {
   try {
     const supabase = getSupabase();
-    const auth = requireEditor(req);
+    const auth = await requireEditor(req);
     if (!auth) {
       return NextResponse.json(
         { error: { code: 'unauthorized', message: 'Non autorisé' } },

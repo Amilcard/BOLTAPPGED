@@ -10,7 +10,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!requireAdmin(request)) {
+  if (!await requireAdmin(request)) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
   }
 
@@ -52,7 +52,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = requireAdmin(request);
+  const auth = await requireAdmin(request);
   if (!auth) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
   }

@@ -14,7 +14,7 @@ export async function GET(
   try {
     const { token } = await params;
 
-    const email = verifyEducateurAggregateToken(token);
+    const email = await verifyEducateurAggregateToken(token);
     if (!email) {
       return NextResponse.json({ error: 'Lien invalide ou expiré.' }, { status: 401 });
     }

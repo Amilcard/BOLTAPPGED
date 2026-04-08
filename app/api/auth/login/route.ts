@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { setSessionCookie } from '@/lib/auth-cookies';
-import jwt from 'jsonwebtoken';
+import { SignJWT } from 'jose';
 
 const MAX_ATTEMPTS = 5;
 const WINDOW_MINUTES = 15;
@@ -126,22 +126,22 @@ export async function POST(req: NextRequest) {
       .eq('user_id', data.user.id)
       .single();
 
+    const encodedSecret = new TextEncoder().encode(secret);
+
     if (twoFaRow?.enabled) {
       // Émettre un token temporaire (5 min) pour la vérification 2FA
-      const pendingToken = jwt.sign(
-        { userId: data.user.id, email: data.user.email, role, pending2fa: true },
-        secret,
-        { expiresIn: '5m' }
-      );
+      const pendingToken = await new SignJWT({ userId: data.user.id, email: data.user.email, role, pending2fa: true })
+        .setProtectedHeader({ alg: 'HS256' })
+        .setExpirationTime('5m')
+        .sign(encodedSecret);
       return NextResponse.json({ requires2fa: true, pendingToken });
     }
 
     // Pas de 2FA — session normale 8h
-    const token = jwt.sign(
-      { userId: data.user.id, email: data.user.email, role },
-      secret,
-      { expiresIn: '8h' }
-    );
+    const token = await new SignJWT({ userId: data.user.id, email: data.user.email, role })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('8h')
+      .sign(encodedSecret);
 
     return setSessionCookie(NextResponse.json({ ok: true, token }), token);
   } catch (error) {

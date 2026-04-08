@@ -13,7 +13,7 @@ import { getSupabase } from '@/lib/supabase-server';
 export async function GET(req: NextRequest) {
   try {
     const supabase = getSupabase();
-    const auth = requireEditor(req);
+    const auth = await requireEditor(req);
     if (!auth) return NextResponse.json({ error: { code: 'unauthorized', message: 'Non autorisé' } }, { status: 401 });
 
     // Date il y a 7 jours (ISO)

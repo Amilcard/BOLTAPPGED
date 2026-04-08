@@ -8,7 +8,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = verifyAuth(request);
+  const auth = await verifyAuth(request);
   if (!auth) {
     return NextResponse.json(
       { error: { code: 'UNAUTHORIZED', message: 'Non autorisé' } },

@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
       }).eq('id', existing.id);
 
       const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.groupeetdecouverte.fr';
-      const aggregateToken = generateEducateurAggregateToken(educateurEmail);
+      const aggregateToken = await generateEducateurAggregateToken(educateurEmail);
       sendSouhaitNotificationEducateur({
         educateurEmail,
         educateurPrenom: educateurPrenom || undefined,
@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.groupeetdecouverte.fr';
-    const aggregateToken = generateEducateurAggregateToken(educateurEmail);
+    const aggregateToken = await generateEducateurAggregateToken(educateurEmail);
     sendSouhaitNotificationEducateur({
       educateurEmail,
       educateurPrenom: educateurPrenom || undefined,

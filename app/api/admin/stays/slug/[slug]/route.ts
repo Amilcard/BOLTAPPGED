@@ -7,7 +7,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  const auth = requireAdmin(request);
+  const auth = await requireAdmin(request);
   if (!auth) {
     return NextResponse.json(
       { error: { code: 'UNAUTHORIZED', message: 'Non autorisé' } },

@@ -11,7 +11,7 @@ export async function GET(
   { params }: { params: Promise<{ inscriptionId: string }> }
 ) {
   try {
-    const auth = requireEditor(req);
+    const auth = await requireEditor(req);
     if (!auth) {
       return NextResponse.json(
         { error: { code: 'unauthorized', message: 'Non autorisé' } },

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { verifyToken } from '@/lib/totp';
 import { setSessionCookie } from '@/lib/auth-cookies';
-import jwt from 'jsonwebtoken';
+import { SignJWT, jwtVerify } from 'jose';
 
 const MAX_2FA_ATTEMPTS = 5;
 const WINDOW_MINUTES = 5;
@@ -62,10 +62,12 @@ export async function POST(req: NextRequest) {
 
     const secret = process.env.NEXTAUTH_SECRET;
     if (!secret) return NextResponse.json({ error: 'Erreur configuration serveur' }, { status: 500 });
+    const encodedSecret = new TextEncoder().encode(secret);
 
     let payload: { userId: string; email: string; role: string; pending2fa: boolean };
     try {
-      payload = jwt.verify(pendingToken, secret) as typeof payload;
+      const { payload: p } = await jwtVerify(pendingToken, encodedSecret);
+      payload = p as unknown as typeof payload;
     } catch {
       return NextResponse.json({ error: 'Token invalide ou expiré' }, { status: 401 });
     }
@@ -88,11 +90,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Code invalide' }, { status: 400 });
     }
 
-    const fullToken = jwt.sign(
-      { userId: payload.userId, email: payload.email, role: payload.role },
-      secret,
-      { expiresIn: '8h' }
-    );
+    const fullToken = await new SignJWT({ userId: payload.userId, email: payload.email, role: payload.role })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('8h')
+      .sign(encodedSecret);
 
     return setSessionCookie(NextResponse.json({ ok: true }), fullToken);
   } catch (error) {

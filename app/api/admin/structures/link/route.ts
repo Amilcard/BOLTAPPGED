@@ -15,7 +15,7 @@ import { requireEditor } from '@/lib/auth-middleware';
  * Sécurité : EDITOR ou ADMIN (action qui modifie des données).
  */
 export async function PATCH(request: NextRequest) {
-  if (!requireEditor(request)) {
+  if (!await requireEditor(request)) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
   }
 

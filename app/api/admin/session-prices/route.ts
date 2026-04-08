@@ -8,7 +8,7 @@ import { requireEditor } from '@/lib/auth-middleware';
  */
 export async function GET(request: NextRequest) {
   try {
-    const auth = requireEditor(request);
+    const auth = await requireEditor(request);
     if (!auth) {
       return NextResponse.json({ error: 'Non autorisé — rôle EDITOR requis' }, { status: 401 });
     }

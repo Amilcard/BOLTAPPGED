@@ -7,7 +7,7 @@ import { verifyAuth, requireEditor } from '@/lib/auth-middleware';
  */
 export async function GET(request: NextRequest) {
   try {
-    const auth = verifyAuth(request);
+    const auth = await verifyAuth(request);
     if (!auth) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
-    const auth = requireEditor(req);
+    const auth = await requireEditor(req);
     if (!auth) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
  */
 export async function PATCH(req: NextRequest) {
   try {
-    const auth = requireEditor(req);
+    const auth = await requireEditor(req);
     if (!auth) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
@@ -191,7 +191,7 @@ export async function PATCH(req: NextRequest) {
  */
 export async function DELETE(req: NextRequest) {
   try {
-    const auth = requireEditor(req);
+    const auth = await requireEditor(req);
     if (!auth) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }

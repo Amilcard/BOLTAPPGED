@@ -16,7 +16,7 @@ export async function POST(
     const { id } = await params;
     const supabase = getSupabase();
 
-    const auth = requireEditor(req);
+    const auth = await requireEditor(req);
     if (!auth) {
       return NextResponse.json(
         { error: 'Non autorisé' },

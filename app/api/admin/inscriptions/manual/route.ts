@@ -58,7 +58,7 @@ const schema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const auth = requireEditor(request);
+  const auth = await requireEditor(request);
   if (!auth) {
     return NextResponse.json(
       { error: { code: 'UNAUTHORIZED', message: 'Accès réservé aux administrateurs.' } },

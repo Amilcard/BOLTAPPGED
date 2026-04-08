@@ -5,7 +5,7 @@ import { requireAdmin } from '@/lib/auth-middleware';
 
 // GET /api/admin/users — liste tous les utilisateurs admin
 export async function GET(request: NextRequest) {
-  if (!requireAdmin(request)) {
+  if (!await requireAdmin(request)) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
   }
 
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/admin/users — créer un utilisateur admin
 export async function POST(request: NextRequest) {
-  if (!requireAdmin(request)) {
+  if (!await requireAdmin(request)) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
   }
 

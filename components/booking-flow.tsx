@@ -495,7 +495,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               </div>
             </div>
             <div className="text-right">
-              <div className="text-xs text-primary-500 mb-1">Total estimé</div>
+              <div className="text-xs text-primary-500 mb-1">Total</div>
               <div className="text-2xl font-bold text-secondary">{totalPrice} €</div>
             </div>
           </div>
@@ -1018,7 +1018,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               </div>
             </div>
             <div className="mt-4 pt-3 border-t border-primary-200 flex items-center justify-between">
-              <span className="font-bold text-primary">Total estimé</span>
+              <span className="font-bold text-primary">Total</span>
               {totalPrice !== null ? (
                 <span className="text-xl font-bold text-secondary">{totalPrice} €</span>
               ) : (

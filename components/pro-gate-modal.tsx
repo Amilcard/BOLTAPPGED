@@ -46,7 +46,7 @@ export function ProGateModal({ open, onClose, variant }: ProGateModalProps) {
           </DialogHeader>
 
           <div className="border-t border-gray-100 pt-4 mt-2 space-y-3">
-            <p className="text-xs text-gray-500">Vous êtes professionnel ?</p>
+            <p className="text-xs text-gray-500 font-medium">Vous êtes un professionnel ?</p>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input

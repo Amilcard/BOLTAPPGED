@@ -1,16 +1,16 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
-import { verifyAuth } from '@/lib/auth-middleware';
+import { requireEditor } from '@/lib/auth-middleware';
 /**
  * GET /api/admin/session-prices?stay_slug=xxx
  * Retourne les tarifs de sessions pour un séjour donné
  */
 export async function GET(request: NextRequest) {
   try {
-    const auth = verifyAuth(request);
+    const auth = requireEditor(request);
     if (!auth) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé — rôle EDITOR requis' }, { status: 401 });
     }
 
     const staySlug = request.nextUrl.searchParams.get('stay_slug');

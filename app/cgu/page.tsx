@@ -38,7 +38,7 @@ export default function CguPage() {
           </nav>
           <h1 className="text-2xl font-bold text-primary">Conditions Générales d&apos;Utilisation</h1>
           <p className="text-xs text-gray-400 mt-1">
-            Application app.groupeetdecouverte.fr — Version en vigueur au 25 février 2026
+            Application app.groupeetdecouverte.fr — Version en vigueur au 8 avril 2026
           </p>
         </div>
       </div>
@@ -85,7 +85,7 @@ export default function CguPage() {
             <p>L&apos;accès à l&apos;espace professionnel est conditionné à :</p>
             <ol className="list-decimal list-inside space-y-1 pl-2">
               <li>La détention d&apos;un compte créé ou validé par l&apos;Association Groupe et Découverte</li>
-              <li>La signature du contrat de sous-traitance RGPD avec l&apos;association</li>
+              <li>L&apos;engagement au respect de la politique de protection des données de l&apos;association</li>
               <li>L&apos;acceptation sans réserve des présentes CGU</li>
             </ol>
             <p>
@@ -118,7 +118,7 @@ export default function CguPage() {
               <li>Ne saisir que des données exactes, liées à l&apos;exercice de ses fonctions professionnelles</li>
               <li>Utiliser la plateforme exclusivement à des fins d&apos;organisation d&apos;activités et de séjours</li>
               <li>Ne pas tenter d&apos;accéder aux données d&apos;autres structures</li>
-              <li>Signaler sans délai toute anomalie ou accès suspect à : <a href="mailto:groupeetdecouverte@gmail.com" className="text-secondary underline">groupeetdecouverte@gmail.com</a></li>
+              <li>Signaler sans délai toute anomalie ou accès suspect à : <a href="mailto:contact@groupeetdecouverte.fr" className="text-secondary underline">contact@groupeetdecouverte.fr</a></li>
             </ul>
           </Section>
 
@@ -137,7 +137,39 @@ export default function CguPage() {
             </p>
           </Section>
 
-          <Section title="8. Loi applicable">
+          <Section title="8. Protection des données et sécurité">
+            <p>
+              L&apos;application traite des données personnelles sensibles de mineurs (identité, santé, handicap,
+              contexte familial) dans le cadre strict de l&apos;organisation des séjours éducatifs. Ce traitement
+              est conforme au RGPD et aux recommandations de la CNIL relatives aux données de mineurs.
+            </p>
+            <InfoBox variant="green">
+              <p className="font-semibold mb-2">Mesures de protection en place</p>
+              <ul className="space-y-1">
+                <li>🔒 Authentification sécurisée par cookie chiffré (pas de mot de passe stocké en clair)</li>
+                <li>👤 Consentement du responsable légal obligatoire pour les mineurs de moins de 15 ans</li>
+                <li>📋 Traçabilité complète des accès aux données sensibles (journal d&apos;audit)</li>
+                <li>🗑 Suppression automatique des données de santé 3 mois après la fin du séjour</li>
+                <li>🇪🇺 Données hébergées exclusivement en Union européenne</li>
+                <li>🔐 Liens de suivi sécurisés avec expiration automatique (30 jours)</li>
+              </ul>
+            </InfoBox>
+            <p>
+              <strong>Délégué à la Protection des Données :</strong>{' '}
+              <a href="mailto:dpo@groupeetdecouverte.fr" className="text-secondary underline">
+                dpo@groupeetdecouverte.fr
+              </a>
+            </p>
+            <p>
+              Pour connaître le détail des données collectées, leurs durées de conservation et exercer vos droits,
+              consultez notre{' '}
+              <Link href="/confidentialite" className="text-secondary underline">
+                politique de confidentialité
+              </Link>.
+            </p>
+          </Section>
+
+          <Section title="9. Loi applicable">
             <p>
               Les présentes CGU sont soumises au droit français. En cas de litige, les parties rechercheront une
               solution amiable. À défaut, les tribunaux compétents seront ceux de Saint-Étienne.

@@ -56,7 +56,7 @@ export default function CgvPage() {
           </nav>
           <h1 className="text-2xl font-bold text-primary">Conditions Générales de Vente</h1>
           <p className="text-xs text-gray-400 mt-1">
-            Association Groupe et Découverte — Version en vigueur au 25 février 2026
+            Association Groupe et Découverte — Version en vigueur au 8 avril 2026
           </p>
         </div>
       </div>
@@ -182,7 +182,7 @@ export default function CgvPage() {
             />
             <p className="text-xs text-gray-400 italic">
               Demandes de remboursement à adresser à :{' '}
-              <a href="mailto:groupeetdecouverte@gmail.com" className="underline">groupeetdecouverte@gmail.com</a>{' '}
+              <a href="mailto:contact@groupeetdecouverte.fr" className="underline">contact@groupeetdecouverte.fr</a>{' '}
               avec la référence d&apos;inscription.
             </p>
           </Section>
@@ -199,11 +199,43 @@ export default function CgvPage() {
           <Section title="9. Litiges">
             <p>
               En cas de litige, la structure est invitée à contacter l&apos;association à{' '}
-              <a href="mailto:groupeetdecouverte@gmail.com" className="text-secondary underline">
-                groupeetdecouverte@gmail.com
+              <a href="mailto:contact@groupeetdecouverte.fr" className="text-secondary underline">
+                contact@groupeetdecouverte.fr
               </a>.
               En l&apos;absence de règlement amiable sous 30 jours, les tribunaux compétents seront ceux de
               Saint-Étienne, loi française applicable.
+            </p>
+          </Section>
+
+          <Section title="10. Protection des données personnelles">
+            <p>
+              Dans le cadre de l&apos;inscription, des données personnelles relatives aux mineurs (identité, date
+              de naissance, données de santé) et à leurs référents professionnels sont collectées. Ces données
+              sont traitées conformément au Règlement Général sur la Protection des Données (RGPD) et aux
+              recommandations de la CNIL relatives aux données de mineurs.
+            </p>
+            <InfoBox>
+              <p className="font-semibold mb-2">Engagements de l&apos;association</p>
+              <ul className="space-y-1">
+                <li>🔒 Données hébergées exclusivement en Union européenne (Francfort, Allemagne)</li>
+                <li>👤 Consentement du responsable légal recueilli pour les mineurs de moins de 15 ans</li>
+                <li>🗑 Données de santé supprimées automatiquement 3 mois après la fin du séjour</li>
+                <li>📋 Audit de tous les accès aux données sensibles</li>
+                <li>💳 Aucune donnée bancaire conservée (paiement délégué à Stripe, certifié PCI-DSS)</li>
+              </ul>
+            </InfoBox>
+            <p>
+              Pour exercer vos droits (accès, rectification, suppression, portabilité), contactez notre
+              Délégué à la Protection des Données :{' '}
+              <a href="mailto:dpo@groupeetdecouverte.fr" className="text-secondary underline">
+                dpo@groupeetdecouverte.fr
+              </a>.
+            </p>
+            <p>
+              La politique complète de protection des données est consultable sur{' '}
+              <Link href="/confidentialite" className="text-secondary underline">
+                notre page dédiée
+              </Link>.
             </p>
           </Section>
 

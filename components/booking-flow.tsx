@@ -57,6 +57,7 @@ interface Step2Data {
   childBirthDate: string;
   childSex?: string;
   consent: boolean;
+  parentalConsent: boolean;
 }
 
 const STANDARD_CITIES = [
@@ -237,6 +238,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     childFirstName: prefillPrenom || '',
     childBirthDate: '',
     consent: false,
+    parentalConsent: false,
   });
 
   const [ageError, setAgeError] = useState('');
@@ -293,7 +295,12 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     && step1.socialWorkerName?.trim().length >= 2
     && isEmailValid
     && isPhoneValid;
-  const isStep2Valid = step2.childSex && step2.childFirstName?.trim().length >= 2 && step2.childBirthDate && step2.consent && ageError === '';
+  // Calcul âge pour consentement parental (RGPD Art. 8 : < 15 ans en France)
+  const sessionRef = selectedSession?.startDate ? new Date(selectedSession.startDate) : undefined;
+  const childAge = step2.childBirthDate ? calculateAge(step2.childBirthDate, sessionRef) : null;
+  const needsParentalConsent = childAge !== null && childAge < 15;
+
+  const isStep2Valid = step2.childSex && step2.childFirstName?.trim().length >= 2 && step2.childBirthDate && step2.consent && ageError === '' && (!needsParentalConsent || step2.parentalConsent);
 
   const currentYear = new Date().getFullYear();
 
@@ -376,6 +383,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
           remarques,
           priceTotal: totalPrice ?? 0,
           consent: step2.consent,
+          parentalConsent: step2.parentalConsent || undefined,
           paymentMethod,
           // Champs structure (Espace Structure)
           structureCode: step1.structureCode || undefined,
@@ -960,6 +968,21 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                 </Link>. Je confirme que les données de l&apos;enfant sont saisies dans le cadre de mes fonctions et avec l&apos;accord des responsables légaux. *
               </span>
             </label>
+            {needsParentalConsent && (
+              <label className="flex items-start gap-3 p-3 bg-amber-50 rounded-xl cursor-pointer border border-amber-200">
+                <input
+                  type="checkbox"
+                  checked={step2.parentalConsent}
+                  onChange={e => setStep2({ ...step2, parentalConsent: e.target.checked })}
+                  className="w-5 h-5 mt-0.5 text-secondary rounded shrink-0"
+                />
+                <span className="text-sm text-amber-800">
+                  <strong>Consentement pour mineur de moins de 15 ans (RGPD) :</strong> Je certifie avoir recueilli
+                  l&apos;accord du titulaire de l&apos;autorité parentale ou du responsable légal (parent, tuteur, service ASE)
+                  pour le traitement des données personnelles et de santé de l&apos;enfant dans le cadre de cette inscription. *
+                </span>
+              </label>
+            )}
           </div>
           {ageError && (
             <div className="p-4 bg-red-50 text-red-700 rounded-xl text-sm border border-red-200 flex items-start gap-3">

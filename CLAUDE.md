@@ -279,6 +279,19 @@ git fetch origin && git log origin/main..main --oneline && git log main..origin/
 - Non-régression prioritaire
 - Commit + push uniquement si le fix est sûr
 
+## Règles sécurité & RGPD — GED App
+
+1. **JAMAIS `console.log` avec PII** — email, nom, prénom, token, données médicales interdits dans les logs. IDs et refs seulement.
+2. **`gd_dossier_enfant` → `verifyOwnership()` obligatoire** — pas de guard inline. Centralisation dans `lib/verify-ownership.ts`.
+3. **Données Art. 9 → `auditLog()` obligatoire** — sur chaque read/write de `gd_dossier_enfant`, `fiche_sanitaire`, `documents_joints`.
+4. **Collecte données → mention RGPD avant soumission** — bloc informatif + lien `/confidentialite` requis avant tout champ nominatif.
+5. **Consentement parental < 15 ans = double vérification** — front (conditionnel) ET back (Zod + guard serveur).
+6. **Tokens = UUIDs opaques** — jamais nom, email, ID enfant dans les tokens ou URLs publiques.
+7. **Exports admin = colonnes minimales** — exclure `fiche_sanitaire`, `bulletin_complement`, `documents_joints`.
+8. **Tests RLS actifs en CI** — `isRealSupabase` dynamique basé sur env. Flag `false` = dette à traiter immédiatement.
+9. **Déploiement prod : valider `lib/env.ts`** — `STRIPE_SECRET_KEY`, `EMAIL_SERVICE_API_KEY`, `NEXTAUTH_SECRET` obligatoires. Zod bloque si absent.
+10. **Incident données → `docs/PROCEDURE_VIOLATION_DONNEES.md`** — délai CNIL : 72h. Protocole complet dans `Documents_Legaux/`.
+
 ## Token efficiency — PERMANENT, AUTO, NO EXCEPTION
 - Tables/listes > prose. Zéro filler. Zéro restatement. Zéro trailing summary.
 - Shortest accurate answer wins.

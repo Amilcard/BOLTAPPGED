@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getStoredUser, clearStoredAuth } from '@/lib/utils';
@@ -25,6 +25,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [authState, setAuthState] = useState<'checking' | 'authenticated' | 'unauthenticated'>('checking');
   const [userRole, setUserRole] = useState<string | null>(null);
 
+  // ── Timeout inactivité 30 min (RGPD — données ASE sensibles) ──────────
+  const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+  const IDLE_WARNING_MS = 25 * 60 * 1000;
+  const [showIdleWarning, setShowIdleWarning] = useState(false);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const logout = useCallback(() => {
+    clearStoredAuth();
+    router.replace('/login?reason=idle');
+  }, [router]);
+
+  const resetIdleTimer = useCallback(() => {
+    setShowIdleWarning(false);
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+    warningTimerRef.current = setTimeout(() => setShowIdleWarning(true), IDLE_WARNING_MS);
+    idleTimerRef.current = setTimeout(logout, IDLE_TIMEOUT_MS);
+  }, [logout]);
+
   useEffect(() => {
     const checkAuth = () => {
       const user = getStoredUser();
@@ -37,6 +57,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     };
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    if (authState !== 'authenticated') return;
+    const events = ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll'];
+    events.forEach(e => window.addEventListener(e, resetIdleTimer, { passive: true }));
+    resetIdleTimer();
+    return () => {
+      events.forEach(e => window.removeEventListener(e, resetIdleTimer));
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+    };
+  }, [authState, resetIdleTimer]);
 
   useEffect(() => {
     if (authState === 'unauthenticated') {
@@ -101,6 +133,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
+      {showIdleWarning && (
+        <div role="alert" className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white text-sm font-medium px-4 py-2 flex items-center justify-between shadow-lg">
+          <span>Déconnexion automatique dans 5 minutes pour inactivité.</span>
+          <button onClick={resetIdleTimer} className="ml-4 underline hover:no-underline whitespace-nowrap">
+            Rester connecté
+          </button>
+        </div>
+      )}
       {/* Mobile header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-primary text-white flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">

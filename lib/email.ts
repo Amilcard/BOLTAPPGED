@@ -38,7 +38,7 @@ export async function sendInscriptionConfirmation(data: InscriptionEmailData) {
   }
 
   try {
-    console.log('[EMAIL] Envoi confirmation vers:', data.referentEmail, 'depuis:', FROM_EMAIL);
+    // PII supprimé — RGPD Art. 32
     const result = await getResend().emails.send({
       from: FROM_EMAIL,
       to: data.referentEmail,
@@ -111,7 +111,7 @@ export async function sendInscriptionConfirmation(data: InscriptionEmailData) {
         </div>
       `,
     });
-    console.log('[EMAIL] Résultat envoi confirmation:', JSON.stringify(result));
+    console.log('[EMAIL] Confirmation envoyée ok');
     return result;
   } catch (error) {
     console.error('[EMAIL] Erreur envoi confirmation:', error);
@@ -437,7 +437,7 @@ export async function sendRappelDossierIncomplet(data: {
         </div>
       `,
     });
-    console.log('[EMAIL] Rappel dossier incomplet envoyé à:', data.referentEmail);
+    console.log('[EMAIL] Rappel dossier incomplet ok');
     return result;
   } catch (error) {
     console.error('[EMAIL] Erreur envoi rappel dossier incomplet:', error);
@@ -486,7 +486,7 @@ export async function sendRelanceAdminNotification(data: {
         </div>
       `,
     });
-    console.log('[EMAIL] Notification relance admin envoyée pour dossier:', data.dossierRef || data.inscriptionId);
+    console.log('[EMAIL] Notification relance admin ok');
     return result;
   } catch (error) {
     console.error('[EMAIL] Erreur envoi notification relance admin:', error);
@@ -539,7 +539,7 @@ export async function sendDossierCompletEmail(data: {
         </div>
       `,
     });
-    console.log('[EMAIL] Dossier complet envoyé à:', data.referentEmail);
+    console.log('[EMAIL] Dossier complet ok');
     return result;
   } catch (error) {
     console.error('[EMAIL] Erreur envoi dossier complet:', error);
@@ -601,7 +601,7 @@ export async function sendNewEducateurAlert(data: NewEducateurAlertData) {
         </div>
       `,
     });
-    console.log('[EMAIL] Alerte nouvel éducateur envoyée pour CP:', data.postalCode);
+    console.log('[EMAIL] Alerte nouvel éducateur ok');
     return result;
   } catch (error) {
     console.error('[EMAIL] Erreur envoi alerte nouvel éducateur:', error);
@@ -636,7 +636,7 @@ export async function sendStructureCodeEmail(data: StructureCodeEmailData) {
         </div>
       `,
     });
-    console.log('[EMAIL] Code structure envoyé à:', data.recipientEmail);
+    console.log('[EMAIL] Code structure envoyé ok');
     return result;
   } catch (error) {
     console.error('[EMAIL] Erreur envoi code structure:', error);
@@ -692,7 +692,7 @@ export async function sendChefDeServiceInvitation(data: {
         </div>
       `,
     });
-    console.log('[EMAIL] Invitation chef de service envoyée à:', data.recipientEmail);
+    console.log('[EMAIL] Invitation chef de service ok');
     return result;
   } catch (error) {
     console.error('[EMAIL] Erreur envoi invitation chef de service:', error);

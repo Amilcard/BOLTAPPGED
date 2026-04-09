@@ -25,9 +25,13 @@ if (!supabaseUrl) throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL');
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 if (!supabaseAnonKey) throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY');
 
-// Désactivé : clés legacy Supabase désactivées le 2026-03-30
-// Réactiver quand les publishable/secret keys seront configurées
-const isRealSupabase = true;
+// Actif si les vraies clés Supabase sont configurées (CI + local avec .env réel)
+const isRealSupabase = !!(
+  process.env.NEXT_PUBLIC_SUPABASE_URL &&
+  !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('xxxxxxxxxxxxx') &&
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.startsWith('eyJ')
+);
 
 if (!isRealSupabase) {
   describe.skip('RLS — Accès direct Supabase avec clé anon', () => {

@@ -513,6 +513,10 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
       {/* Step 0: Session */}
       {step === 0 && (
         <div className="space-y-4">
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-800 mb-4">
+            🔒 Les données saisies sont traitées par Groupe & Découverte pour la gestion des inscriptions.{' '}
+            <Link href="/confidentialite" target="_blank" className="underline">Politique de confidentialité</Link> — DPO : dpo@groupeetdecouverte.fr
+          </div>
           <h3 className="font-medium text-primary text-lg">Étape 1/5 : Choisir une session — demande d&apos;inscription</h3>
           {sessionsUnique.length === 0 && (
             <WaitlistBlock sejourSlug={stay.slug || ''} />

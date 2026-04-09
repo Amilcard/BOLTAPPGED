@@ -41,29 +41,50 @@ npm run lint
 # Execute migrations manually in Supabase SQL Editor
 ```
 
+## Supabase
+- Project ID : voir .env.local (ne pas committer)
+- URL : voir NEXT_PUBLIC_SUPABASE_URL dans .env.local
+- Dashboard : https://supabase.com/dashboard (projet GED)
+- Client : JS direct, no ORM, no Prisma
+
+## Tables critiques (Supabase)
+- gd_souhaits (choix_mode, statut, enfant_id, session_id)
+- gd_inscriptions (statut, souhait_id, dossier_id)
+- gd_stay_sessions (session_id, stay_id, capacity)
+- gd_dossier_enfant, gd_structures, gd_stays
+- gd_stay_themes, gd_session_prices, gd_waitlist
+- Vues : v_activity_with_sessions, v_orphaned_records
+
+## Danger zones — INTERDICTIONS ABSOLUES
+- JAMAIS de DELETE FROM sans WHERE explicite validé
+- JAMAIS de TRUNCATE sur aucune table
+- JAMAIS de UPDATE sans WHERE
+- Données ASE = enfants protégés — toute modification en masse interdite
+- Supabase project ID actif : voir .env.local — jamais committer l'ID en clair
+
 ## Database & Models
 
-### Core Models
+### Tables principales (Supabase)
+- gd_stays — séjours éducatifs (slug unique, published, period, sourceUrl)
+- gd_stay_sessions — sessions par séjour (dates, capacité, seat tracking)
+- gd_session_prices — tarifs par session (priceFrom, promo)
+- gd_inscriptions — inscriptions professionnels (statut, souhait_id, dossier_id)
+- gd_souhaits — souhaits kids (choix_mode, statut, enfant_id, session_id)
+- gd_dossier_enfant — dossiers enfants ASE
+- gd_structures — structures partenaires (ASE, MECS, foyers)
+- gd_waitlist, gd_wishes, gd_admin_2fa, gd_audit_log
 
-```prisma
-User      # Admin users (RBAC: ADMIN/EDITOR/VIEWER)
-Stay      # Main entity for educational stays
-StaySession # Date-based availability with seat tracking
-Booking   # Booking records with social worker info
-```
+### Champs importants gd_stays
+- Ingestion : sourceUrl, sourcePdfPath, importedAt, lastSyncAt, sourceManual
+- UFOVAL : contentKids (JSON), departureCity, educationalOption
+- Pricing : priceFrom (base), complété par prix UFOVAL sessions
+- Metadata : themes (JSON array), programme (JSON array)
 
-### Important Stay Fields
-
-- **Ingestion**: `sourceUrl`, `sourcePdfPath`, `importedAt`, `lastSyncAt`, `sourceManual`
-- **UFOVAL**: `contentKids` (JSON), `departureCity`, `educationalOption`
-- **Pricing**: `priceFrom` (base price from DB), supplemented by UFOVAL session prices
-- **Metadata**: `themes` (JSON array), `programme` (JSON array)
-
-### Key Patterns
-
-- **Cascade deletion**: `StaySession` has `onDelete: Cascade` on `stayId`
-- **JSON fields**: Used for flexible data (`programme`, `themes`, `contentKids`)
-- **Indexing**: Indexes on `slug`, `published`, `period`, `sourceUrl`, `importedAt`
+### Patterns clés
+- JSON fields : caster via `as string[]`
+- Slug : unique en DB, URLs publiques
+- Sessions à venir : filter `startDate: { gte: new Date() }`
+- Cascade : gd_stay_sessions supprimées si gd_stays supprimé
 
 ## API Architecture
 
@@ -150,6 +171,30 @@ In `app/sejour/[id]/stay-detail.tsx`:
 2. Fallback to `stay.priceFrom` from database
 3. If both missing, show "Tarif communiqué aux professionnels"
 
+## Intégrations
+
+### Resend (emails transactionnels)
+- Domaine vérifié : groupeetdecouverte.fr
+- FROM : noreply@groupeetdecouverte.fr
+- Fichiers clés : lib/email.ts, routes notify-waitlist, pdf-email
+
+### Stripe (paiement)
+- Modes : carte, virement, chèque
+- Fichiers clés : webhook, payment/create-intent, inscriptions
+- Vars : voir .env.example
+
+### URLs
+- App prod : app.groupeetdecouverte.fr
+- Site vitrine : www.groupeetdecouverte.fr (Hostinger)
+- Vercel project : boltappged (compte gedapp)
+
+### Sécurité — points de vigilance
+- Auth middleware : risque bypass — maintenir verrouillé
+- Routes admin : risque mass-assignment — toujours vérifier
+- RLS Supabase : gd_inscriptions, gd_wishes, smart_form_submissions, notification_queue, payment_status_logs — sensibles
+- RGPD : données enfants ASE — protection maximale
+- Secrets : jamais de fallback hardcodé en prod
+
 ## Important Conventions
 
 ### File Organization
@@ -197,13 +242,9 @@ app/
 - Pro: `pro@gd.fr` / `Pro123!`
 
 ## Environment Variables
-
-```env
-DATABASE_URL="file:./dev.db"  # or PostgreSQL URL
-JWT_SECRET="dev-secret-..."
-NEXT_PUBLIC_API_URL="http://localhost:3000"
-NODE_ENV="development"
-```
+Voir `.env.example` pour la liste complète.
+Variables requises : Supabase (3), NextAuth (2), Stripe (3), Resend (2), Build (1).
+Ne jamais committer .env.local ni les vraies clés.
 
 ## Troubleshooting
 
@@ -211,12 +252,6 @@ NODE_ENV="development"
 ```bash
 rm -rf node_modules package-lock.json
 npm install --legacy-peer-deps
-```
-
-**Prisma errors:**
-```bash
-npx prisma generate
-npx prisma migrate reset
 ```
 
 ## Règles de travail
@@ -244,7 +279,12 @@ git fetch origin && git log origin/main..main --oneline && git log main..origin/
 - Non-régression prioritaire
 - Commit + push uniquement si le fix est sûr
 
-## Token efficiency (règle permanente)
-
-- Réponses courtes, structurées, sans redondance
-- Préférer tableaux/listes à la prose
+## Token efficiency — PERMANENT, AUTO, NO EXCEPTION
+- Tables/listes > prose. Zéro filler. Zéro restatement. Zéro trailing summary.
+- Shortest accurate answer wins.
+- Ne jamais rescanner des dossiers déjà lus ou exclus de la tâche.
+- Ne scanner que les fichiers/dossiers strictement concernés par la tâche.
+- Réutiliser les résultats de scan dans la session — ne pas relancer.
+- Auto-exclude : node_modules/, .next/, .git/, out/, fichiers générés, caches.
+- Si la tâche ne concerne qu'un sous-dossier, ne pas explorer l'arbre complet.
+- Adapter au profil utilisateur : business owner non-dev pilotant des projets full-stack via IA → réponses niveau senior tech, zéro pédagogie non sollicitée.

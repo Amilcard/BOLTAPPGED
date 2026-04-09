@@ -197,6 +197,11 @@ export default function StructureDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
 
+      {/* ── Bandeau réassurance périmètre ── */}
+      <div className="bg-blue-50 border-b border-blue-100 px-4 py-2.5 text-xs text-blue-800 text-center">
+        Vous voyez uniquement les inscriptions de votre structure. Les fiches sanitaires et documents médicaux sont accessibles uniquement par l&apos;équipe d&apos;encadrement du séjour.
+      </div>
+
       {/* ── Header ── */}
       <header className="bg-primary text-white print:bg-white print:text-black">
         <div className="max-w-6xl mx-auto px-4 py-5 flex items-start justify-between gap-4 flex-wrap">

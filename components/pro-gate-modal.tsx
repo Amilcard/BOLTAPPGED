@@ -59,6 +59,9 @@ export function ProGateModal({ open, onClose, variant }: ProGateModalProps) {
               />
             </div>
             {error && <p className="text-xs text-red-500">{error}</p>}
+            <p className="text-[11px] text-gray-400">
+              Votre email est utilisé uniquement pour vous identifier en tant que professionnel. Il n&apos;est ni partagé ni utilisé à des fins commerciales.
+            </p>
             <Button onClick={handleSubmitEmail} className="w-full" size="sm">
               Accéder à l&apos;espace pro
               <ArrowRight className="w-4 h-4 ml-1" />

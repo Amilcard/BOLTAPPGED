@@ -55,8 +55,8 @@ export function Providers({ children }: { children: ReactNode }) {
     if (user) {
       setAuthUser({ email: user.email, role: user.role } as AuthUser);
     }
-    // Check pro email verification
-    if (localStorage.getItem(STORAGE_KEYS.PRO_EMAIL)) {
+    // Pro email vérifié via session cookie (plus de PII en localStorage)
+    if (user?.email) {
       setProEmailVerifiedState(true);
     }
   }, []);
@@ -91,8 +91,8 @@ export function Providers({ children }: { children: ReactNode }) {
     setWishlist(getWishlist());
   }, []);
 
-  const setProEmailVerified = (email: string) => {
-    localStorage.setItem(STORAGE_KEYS.PRO_EMAIL, email);
+  const setProEmailVerified = (_email: string) => {
+    // PII supprimé du localStorage (RGPD) — état en mémoire uniquement
     setProEmailVerifiedState(true);
   };
 

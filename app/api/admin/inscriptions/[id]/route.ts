@@ -1,21 +1,23 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '@/lib/auth-middleware';
+import { verifyAuth, requireEditor } from '@/lib/auth-middleware';
 import { getSupabase } from '@/lib/supabase-server';
 import { sendStatusChangeEmail } from '@/lib/email';
+import { auditLog } from '@/lib/audit-log';
 /**
  * GET /api/admin/inscriptions/[id]
  * Détail d'une inscription depuis Supabase gd_inscriptions.
+ * Requiert rôle EDITOR minimum (pas VIEWER — données enfants ASE).
  */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const supabase = getSupabase();
-    const auth = await verifyAuth(req);
+    const auth = await requireEditor(req);
     if (!auth) {
       return NextResponse.json(
-        { error: { code: 'unauthorized', message: 'Non autorisé' } },
-        { status: 401 }
+        { error: { code: 'unauthorized', message: 'Accès réservé aux éditeurs et administrateurs.' } },
+        { status: 403 }
       );
     }
 
@@ -32,6 +34,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         { status: 404 }
       );
     }
+
+    // RGPD Art. 9 — tracer lecture données enfant par admin
+    auditLog(supabase, {
+      action: 'read',
+      resourceType: 'inscription',
+      resourceId: id,
+      actorType: 'admin',
+      actorId: auth.email,
+    });
 
     return NextResponse.json(data);
   } catch (error) {

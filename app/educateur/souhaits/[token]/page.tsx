@@ -119,6 +119,11 @@ export default function EducateurSouhaitsPage() {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-6">
+        {/* Réassurance éducateur */}
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-800">
+          Ce lien personnel vous donne accès aux souhaits déposés par les jeunes que vous accompagnez. Seul(e) vous et l&apos;équipe GED y avez accès. Ce lien expire automatiquement après 30 jours.
+        </div>
+
         {/* Compteurs */}
         <div className="flex gap-3 mb-6">
           <div className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex-1 text-center">

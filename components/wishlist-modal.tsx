@@ -328,6 +328,14 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
           </div>
         )}
 
+        {/* Mention RGPD — information préalable Art. 13 */}
+        {!saved && (
+          <p className="text-[11px] text-gray-400 mb-3 text-center">
+            Ton prénom et ton message sont transmis à ton éducateur·trice référent uniquement. Ils ne sont visibles par personne d&apos;autre.{' '}
+            <Link href="/confidentialite" target="_blank" className="underline">En savoir plus</Link>
+          </p>
+        )}
+
         {/* Save button */}
         {!saved && (
           <button

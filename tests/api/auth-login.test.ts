@@ -166,7 +166,7 @@ describe('POST /api/auth/login', () => {
     expect(token).toBeDefined();
     const secret = process.env.NEXTAUTH_SECRET;
     expect(secret).toBeDefined();
-    const decoded = jwt.verify(token!, secret!) as { role: string; email: string };
+    const decoded = jwt.verify(token as string, secret as string) as { role: string; email: string };
     expect(decoded.role).toBe('EDITOR');
     expect(decoded.email).toBe('editor@ged.fr');
   });

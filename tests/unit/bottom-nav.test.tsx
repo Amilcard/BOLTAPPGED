@@ -205,28 +205,28 @@ describe('BottomNav — navigation au clic', () => {
   it('clic Accueil → push("/")', () => {
     setup({ mode: 'pro' });
     render(<BottomNav />);
-    fireEvent.click(btn('Accueil')!);
+    fireEvent.click(btn('Accueil') as HTMLElement);
     expect(mockPush).toHaveBeenCalledWith('/');
   });
 
   it('clic Recherche → push("/recherche")', () => {
     setup({ mode: 'pro' });
     render(<BottomNav />);
-    fireEvent.click(btn('Recherche')!);
+    fireEvent.click(btn('Recherche') as HTMLElement);
     expect(mockPush).toHaveBeenCalledWith('/recherche');
   });
 
   it('clic Dossiers Pro → push("/recherche") (pas de token pro en localStorage)', () => {
     setup({ mode: 'pro' });
     render(<BottomNav />);
-    fireEvent.click(btn('Dossiers')!);
+    fireEvent.click(btn('Dossiers') as HTMLElement);
     expect(mockPush).toHaveBeenCalledWith('/recherche');
   });
 
   it('clic Mes souhaits Kids → push("/envies")', () => {
     setup({ mode: 'kids' });
     render(<BottomNav />);
-    fireEvent.click(btn('Mes souhaits')!);
+    fireEvent.click(btn('Mes souhaits') as HTMLElement);
     expect(mockPush).toHaveBeenCalledWith('/envies');
   });
 });

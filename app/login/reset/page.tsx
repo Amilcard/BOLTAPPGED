@@ -35,7 +35,8 @@ export default function ResetPasswordPage() {
       setError('Le mot de passe doit contenir au moins 8 caractères.');
       return;
     }
-    if (password !== confirm) {
+    // Comparaison client-side (2 inputs utilisateur, pas un secret) — timing attack non applicable
+    if (password.length !== confirm.length || password !== confirm) {
       setError('Les mots de passe ne correspondent pas.');
       return;
     }

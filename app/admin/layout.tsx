@@ -10,6 +10,9 @@ import { LayoutDashboard, Map, Calendar, FileText, Users, LogOut, Receipt, Build
 import { Logo } from '@/components/logo';
 import { AdminUIProvider } from '@/components/admin/admin-ui';
 
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+const IDLE_WARNING_MS = 25 * 60 * 1000;
+
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/sejours', label: 'Séjours', icon: Map },
@@ -26,8 +29,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [userRole, setUserRole] = useState<string | null>(null);
 
   // ── Timeout inactivité 30 min (RGPD — données ASE sensibles) ──────────
-  const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
-  const IDLE_WARNING_MS = 25 * 60 * 1000;
   const [showIdleWarning, setShowIdleWarning] = useState(false);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

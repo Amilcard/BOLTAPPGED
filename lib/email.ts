@@ -7,6 +7,9 @@ function getResend() {
   return _resend;
 }
 
+// Échappement HTML — prévient injection XSS dans les templates email
+const htmlEscape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
 // Domaine groupeetdecouverte.fr vérifié sur Resend
 const FROM_EMAIL = 'Groupe & Découverte <noreply@groupeetdecouverte.fr>';
 const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'contact@groupeetdecouverte.fr,groupeetdecouverte@gmail.com';
@@ -42,7 +45,7 @@ export async function sendInscriptionConfirmation(data: InscriptionEmailData) {
     const result = await getResend().emails.send({
       from: FROM_EMAIL,
       to: data.referentEmail,
-      subject: `Confirmation d'inscription - ${data.jeunePrenom} ${data.jeuneNom}`,
+      subject: `Confirmation d'inscription - ${htmlEscape(data.jeunePrenom)} ${htmlEscape(data.jeuneNom)}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
@@ -50,8 +53,8 @@ export async function sendInscriptionConfirmation(data: InscriptionEmailData) {
           </div>
           <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
             <h2 style="color: #2a383f; margin-top: 0;">Inscription enregistrée</h2>
-            <p>Bonjour ${data.referentNom},</p>
-            <p>L'inscription de <strong>${data.jeunePrenom} ${data.jeuneNom}</strong> a bien été enregistrée.</p>
+            <p>Bonjour ${htmlEscape(data.referentNom)},</p>
+            <p>L'inscription de <strong>${htmlEscape(data.jeunePrenom)} ${htmlEscape(data.jeuneNom)}</strong> a bien été enregistrée.</p>
             <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
               <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Séjour</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: bold;">${data.sejourSlug.replace(/-/g, ' ')}</td></tr>
               <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Session</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${data.sessionDate}</td></tr>
@@ -131,14 +134,14 @@ export async function sendAdminNewInscriptionNotification(data: InscriptionEmail
     const result = await getResend().emails.send({
       from: FROM_EMAIL,
       to: ADMIN_EMAIL,
-      subject: `Nouvelle inscription - ${data.jeunePrenom} ${data.jeuneNom}`,
+      subject: `Nouvelle inscription - ${htmlEscape(data.jeunePrenom)} ${htmlEscape(data.jeuneNom)}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #2a383f;">Nouvelle inscription reçue</h2>
           <ul>
-            <li><strong>Jeune :</strong> ${data.jeunePrenom} ${data.jeuneNom}</li>
-            <li><strong>Référent :</strong> ${data.referentNom} (${data.referentEmail})</li>
-            ${data.organisation ? `<li><strong>Structure :</strong> ${data.organisation}</li>` : ''}
+            <li><strong>Jeune :</strong> ${htmlEscape(data.jeunePrenom)} ${htmlEscape(data.jeuneNom)}</li>
+            <li><strong>Référent :</strong> ${htmlEscape(data.referentNom)} (${data.referentEmail})</li>
+            ${data.organisation ? `<li><strong>Structure :</strong> ${htmlEscape(data.organisation)}</li>` : ''}
             ${data.dossierRef ? `<li><strong>Dossier :</strong> <code>${data.dossierRef}</code></li>` : ''}
             <li><strong>Séjour :</strong> ${data.sejourSlug}</li>
             <li><strong>Session :</strong> ${data.sessionDate}</li>
@@ -178,7 +181,7 @@ export async function sendPaymentConfirmedAdminNotification(data: {
     const result = await getResend().emails.send({
       from: FROM_EMAIL,
       to: ADMIN_EMAIL,
-      subject: data.subject || `Paiement confirmé — ${data.jeunePrenom} ${data.jeuneNom} (${data.amount.toFixed(2)} €)`,
+      subject: data.subject || `Paiement confirmé — ${htmlEscape(data.jeunePrenom)} ${htmlEscape(data.jeuneNom)} (${data.amount.toFixed(2)} €)`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #16a34a; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">
@@ -186,8 +189,8 @@ export async function sendPaymentConfirmedAdminNotification(data: {
           </div>
           <div style="border: 1px solid #e5e7eb; border-top: none; padding: 20px; border-radius: 0 0 8px 8px;">
             <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
-              <tr><td style="padding: 6px 0; color: #6b7280;">Jeune</td><td style="padding: 6px 0; font-weight: bold;">${data.jeunePrenom} ${data.jeuneNom}</td></tr>
-              <tr><td style="padding: 6px 0; color: #6b7280;">Référent</td><td style="padding: 6px 0;">${data.referentNom}</td></tr>
+              <tr><td style="padding: 6px 0; color: #6b7280;">Jeune</td><td style="padding: 6px 0; font-weight: bold;">${htmlEscape(data.jeunePrenom)} ${htmlEscape(data.jeuneNom)}</td></tr>
+              <tr><td style="padding: 6px 0; color: #6b7280;">Référent</td><td style="padding: 6px 0;">${htmlEscape(data.referentNom)}</td></tr>
               <tr><td style="padding: 6px 0; color: #6b7280;">Séjour</td><td style="padding: 6px 0;">${data.sejourSlug.replace(/-/g, ' ')}</td></tr>
               ${data.dossierRef ? `<tr><td style="padding: 6px 0; color: #6b7280;">Dossier</td><td style="padding: 6px 0; font-family: monospace;">${data.dossierRef}</td></tr>` : ''}
               <tr><td style="padding: 6px 0; color: #6b7280;">Montant</td><td style="padding: 6px 0; font-weight: bold; color: #16a34a;">${data.amount.toFixed(2)} €</td></tr>
@@ -231,7 +234,7 @@ export async function sendStatusChangeEmail(
     const result = await getResend().emails.send({
       from: FROM_EMAIL,
       to: referentEmail,
-      subject: `Inscription ${statusInfo.label.toLowerCase()} - ${jeunePrenom} ${jeuneNom}`,
+      subject: `Inscription ${statusInfo.label.toLowerCase()} - ${htmlEscape(jeunePrenom)} ${htmlEscape(jeuneNom)}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
@@ -239,9 +242,9 @@ export async function sendStatusChangeEmail(
           </div>
           <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
             <h2 style="color: ${statusInfo.color};">Inscription ${statusInfo.label}</h2>
-            <p>Bonjour ${referentNom},</p>
+            <p>Bonjour ${htmlEscape(referentNom)},</p>
             <p>${statusInfo.message}</p>
-            <p><strong>Jeune concerné :</strong> ${jeunePrenom} ${jeuneNom}</p>
+            <p><strong>Jeune concerné :</strong> ${htmlEscape(jeunePrenom)} ${htmlEscape(jeuneNom)}</p>
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
             <p style="color: #9ca3af; font-size: 12px;">Groupe &amp; Découverte — Séjours de vacances pour enfants et adolescents</p>
             <p style="font-size:11px;color:#6b7280;margin-top:24px;border-top:1px solid #e5e7eb;padding-top:12px;">
@@ -280,11 +283,11 @@ export async function sendSouhaitNotificationEducateur(data: SouhaitEmailData) {
 
   try {
     const resend = getResend();
-    const prenom = data.educateurPrenom ? ` ${data.educateurPrenom}` : '';
+    const prenom = data.educateurPrenom ? ` ${htmlEscape(data.educateurPrenom)}` : '';
     return await resend.emails.send({
       from: FROM_EMAIL,
       to: data.educateurEmail,
-      subject: `${data.kidPrenom} souhaite partir en séjour — ${data.sejourTitre}`,
+      subject: `${htmlEscape(data.kidPrenom)} souhaite partir en séjour — ${htmlEscape(data.sejourTitre)}`,
       html: `
         <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto;">
           <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
@@ -293,10 +296,10 @@ export async function sendSouhaitNotificationEducateur(data: SouhaitEmailData) {
           <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
             <h2 style="color: #2a383f;">Un souhait de séjour à traiter</h2>
             <p>Bonjour${prenom},</p>
-            <p><strong>${data.kidPrenom}</strong> a noté un souhait pour le séjour :</p>
+            <p><strong>${htmlEscape(data.kidPrenom)}</strong> a noté un souhait pour le séjour :</p>
             <div style="background: #f9fafb; border-left: 4px solid #e07a5f; padding: 16px; margin: 16px 0; border-radius: 4px;">
-              <p style="margin: 0 0 8px; font-weight: bold; color: #2a383f;">${data.sejourTitre}</p>
-              <p style="margin: 0; color: #4b5563; font-style: italic;">&laquo; ${data.motivation} &raquo;</p>
+              <p style="margin: 0 0 8px; font-weight: bold; color: #2a383f;">${htmlEscape(data.sejourTitre)}</p>
+              <p style="margin: 0; color: #4b5563; font-style: italic;">&laquo; ${htmlEscape(data.motivation)} &raquo;</p>
             </div>
             <p>Cliquez sur le bouton ci-dessous pour consulter ce souhait et y répondre :</p>
             <div style="text-align: center; margin: 24px 0;">
@@ -358,7 +361,7 @@ export async function sendDossierGedAdminNotification(data: {
     const result = await getResend().emails.send({
       from: FROM_EMAIL,
       to: ADMIN_EMAIL,
-      subject: `Dossier enfant soumis — ${data.jeunePrenom} ${data.jeuneNom}${data.dossierRef ? ` (${data.dossierRef})` : ''}`,
+      subject: `Dossier enfant soumis — ${htmlEscape(data.jeunePrenom)} ${htmlEscape(data.jeuneNom)}${data.dossierRef ? ` (${data.dossierRef})` : ''}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #166534; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">
@@ -366,8 +369,8 @@ export async function sendDossierGedAdminNotification(data: {
           </div>
           <div style="border: 1px solid #e5e7eb; border-top: none; padding: 20px; border-radius: 0 0 8px 8px;">
             <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 16px;">
-              <tr><td style="padding: 6px 0; color: #6b7280;">Jeune</td><td style="padding: 6px 0; font-weight: bold;">${data.jeunePrenom} ${data.jeuneNom}</td></tr>
-              <tr><td style="padding: 6px 0; color: #6b7280;">Référent</td><td style="padding: 6px 0;">${data.referentNom} (${data.referentEmail})</td></tr>
+              <tr><td style="padding: 6px 0; color: #6b7280;">Jeune</td><td style="padding: 6px 0; font-weight: bold;">${htmlEscape(data.jeunePrenom)} ${htmlEscape(data.jeuneNom)}</td></tr>
+              <tr><td style="padding: 6px 0; color: #6b7280;">Référent</td><td style="padding: 6px 0;">${htmlEscape(data.referentNom)} (${data.referentEmail})</td></tr>
               ${data.dossierRef ? `<tr><td style="padding: 6px 0; color: #6b7280;">N° dossier</td><td style="padding: 6px 0; font-family: monospace; font-weight: bold;">${data.dossierRef}</td></tr>` : ''}
               <tr><td style="padding: 6px 0; color: #6b7280;">Séjour</td><td style="padding: 6px 0;">${data.sejourSlug.replace(/-/g, ' ')}</td></tr>
               <tr><td style="padding: 6px 0; color: #6b7280;">Session</td><td style="padding: 6px 0;">${data.sessionDate}</td></tr>
@@ -415,7 +418,7 @@ export async function sendRappelDossierIncomplet(data: {
           </div>
           <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
             <h2 style="color: #b45309; margin-top: 0;">Dossier incomplet</h2>
-            <p>Bonjour ${data.referentNom},</p>
+            <p>Bonjour ${htmlEscape(data.referentNom)},</p>
             <p>Nous n'avons pas encore reçu votre dossier complet. Votre espace de suivi est toujours accessible.</p>
             ${data.dossierRef ? `<p>Référence du dossier : <strong style="font-family: monospace;">${data.dossierRef}</strong></p>` : ''}
             <div style="text-align: center; margin: 24px 0;">
@@ -467,7 +470,7 @@ export async function sendRelanceAdminNotification(data: {
     const result = await getResend().emails.send({
       from: FROM_EMAIL,
       to: ADMIN_EMAIL,
-      subject: `[Relance envoyée] Dossier ${data.dossierRef || data.inscriptionId} — ${data.referentNom}`,
+      subject: `[Relance envoyée] Dossier ${data.dossierRef || data.inscriptionId} — ${htmlEscape(data.referentNom)}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #b45309; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">
@@ -475,9 +478,9 @@ export async function sendRelanceAdminNotification(data: {
           </div>
           <div style="border: 1px solid #e5e7eb; border-top: none; padding: 20px; border-radius: 0 0 8px 8px;">
             <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 16px;">
-              <tr><td style="padding: 6px 0; color: #6b7280;">Référent</td><td style="padding: 6px 0; font-weight: bold;">${data.referentNom}</td></tr>
+              <tr><td style="padding: 6px 0; color: #6b7280;">Référent</td><td style="padding: 6px 0; font-weight: bold;">${htmlEscape(data.referentNom)}</td></tr>
               <tr><td style="padding: 6px 0; color: #6b7280;">Email</td><td style="padding: 6px 0;">${data.referentEmail}</td></tr>
-              ${data.structureNom ? `<tr><td style="padding: 6px 0; color: #6b7280;">Structure</td><td style="padding: 6px 0;">${data.structureNom}</td></tr>` : ''}
+              ${data.structureNom ? `<tr><td style="padding: 6px 0; color: #6b7280;">Structure</td><td style="padding: 6px 0;">${htmlEscape(data.structureNom)}</td></tr>` : ''}
               ${data.dossierRef ? `<tr><td style="padding: 6px 0; color: #6b7280;">Dossier</td><td style="padding: 6px 0; font-family: monospace; font-weight: bold;">${data.dossierRef}</td></tr>` : ''}
               <tr><td style="padding: 6px 0; color: #6b7280;">Date de relance</td><td style="padding: 6px 0;">${dateRelance}</td></tr>
             </table>
@@ -513,7 +516,7 @@ export async function sendDossierCompletEmail(data: {
     const result = await getResend().emails.send({
       from: FROM_EMAIL,
       to: data.referentEmail,
-      subject: `Dossier de ${data.jeunePrenom} ${data.jeuneNom} complété${data.dossierRef ? ` - ${data.dossierRef}` : ''}`,
+      subject: `Dossier de ${htmlEscape(data.jeunePrenom)} ${htmlEscape(data.jeuneNom)} complété${data.dossierRef ? ` - ${data.dossierRef}` : ''}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
@@ -524,8 +527,8 @@ export async function sendDossierCompletEmail(data: {
               <h2 style="color: #166534; margin: 0 0 8px 0; font-size: 18px;">Dossier complet ✓</h2>
               <p style="margin: 0; color: #15803d; font-size: 14px;">Tous les documents ont bien été reçus.</p>
             </div>
-            <p>Bonjour ${data.referentNom},</p>
-            <p>Le dossier de <strong>${data.jeunePrenom} ${data.jeuneNom}</strong> est désormais complet. Nous avons bien reçu l'ensemble des documents requis (bulletin complémentaire, fiche sanitaire, fiche de liaison et pièces jointes).</p>
+            <p>Bonjour ${htmlEscape(data.referentNom)},</p>
+            <p>Le dossier de <strong>${htmlEscape(data.jeunePrenom)} ${htmlEscape(data.jeuneNom)}</strong> est désormais complet. Nous avons bien reçu l'ensemble des documents requis (bulletin complémentaire, fiche sanitaire, fiche de liaison et pièces jointes).</p>
             ${data.dossierRef ? `<p>Référence du dossier : <strong style="font-family: monospace;">${data.dossierRef}</strong></p>` : ''}
             <p>Notre équipe procédera à la vérification des documents et vous contactera si nécessaire.</p>
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
@@ -625,13 +628,13 @@ export async function sendStructureCodeEmail(data: StructureCodeEmailData) {
           </div>
           <div style="padding: 30px; background: #f9f9f9; border-radius: 0 0 8px 8px;">
             <p>Bonjour,</p>
-            <p>La structure <strong>${data.structureName}</strong> est désormais enregistrée sur Groupe & Découverte.</p>
+            <p>La structure <strong>${htmlEscape(data.structureName)}</strong> est désormais enregistrée sur Groupe & Découverte.</p>
             <div style="background: #1A5276; color: white; text-align: center; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <p style="margin: 0 0 5px 0; font-size: 14px;">Votre code structure</p>
               <p style="margin: 0; font-size: 32px; font-weight: bold; letter-spacing: 4px;">${data.structureCode}</p>
             </div>
             <p><strong>Transmettez ce code à vos collègues</strong> pour regrouper les inscriptions de votre structure. Ils pourront le saisir lors de leur prochaine inscription ou depuis leur espace de suivi.</p>
-            <p style="color: #666; font-size: 13px; margin-top: 30px;">Cet email a été envoyé suite à l'inscription réalisée par ${data.educateurPrenom}. Si vous n'êtes pas concerné(e), vous pouvez ignorer ce message.</p>
+            <p style="color: #666; font-size: 13px; margin-top: 30px;">Cet email a été envoyé suite à l'inscription réalisée par ${htmlEscape(data.educateurPrenom)}. Si vous n'êtes pas concerné(e), vous pouvez ignorer ce message.</p>
           </div>
         </div>
       `,
@@ -676,15 +679,15 @@ export async function sendPriceInquiryToEducateur(data: PriceInquiryData): Promi
     await resend.emails.send({
       from: FROM_EMAIL,
       to: data.email,
-      subject: `Tarifs — ${data.sejourTitle}`,
+      subject: `Tarifs — ${htmlEscape(data.sejourTitle)}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: #2a383f; color: white; padding: 20px 24px; border-radius: 8px 8px 0 0;">
             <h1 style="margin: 0; font-size: 22px;">Groupe &amp; Découverte</h1>
           </div>
           <div style="padding: 30px 28px; background: #fafafa; border-radius: 0 0 8px 8px;">
-            <p>Bonjour ${data.prenom},</p>
-            <p>Merci pour votre intérêt pour le séjour <strong>${data.sejourTitle}</strong>.</p>
+            <p>Bonjour ${htmlEscape(data.prenom)},</p>
+            <p>Merci pour votre intérêt pour le séjour <strong>${htmlEscape(data.sejourTitle)}</strong>.</p>
             <p>Voici l'information tarifaire pour votre structure :</p>
             ${prixSection}
             <p style="color: #444;">Ces tarifs sont adaptés selon votre type de structure (ASE, MECS, foyer). Accédez à l'espace professionnel pour inscrire un enfant sur ce séjour.</p>
@@ -727,7 +730,7 @@ export async function sendPriceInquiryAlertGED(data: PriceInquiryData): Promise<
     await resend.emails.send({
       from: 'contact@groupeetdecouverte.fr',
       to: 'contact@groupeetdecouverte.fr',
-      subject: `[Lead] Demande tarif — ${data.structureName} — ${data.sejourTitle}`,
+      subject: `[Lead] Demande tarif — ${htmlEscape(data.structureName)} — ${htmlEscape(data.sejourTitle)}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: #D4AC0D; color: #333; padding: 16px 20px; border-radius: 8px 8px 0 0;">
@@ -735,10 +738,10 @@ export async function sendPriceInquiryAlertGED(data: PriceInquiryData): Promise<
           </div>
           <div style="padding: 24px; background: #f9f9f9; border-radius: 0 0 8px 8px;">
             <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-              <tr><td style="padding: 6px 0; color: #666; width: 140px;">Prénom</td><td><strong>${data.prenom}</strong></td></tr>
-              <tr><td style="padding: 6px 0; color: #666;">Structure</td><td><strong>${data.structureName}</strong></td></tr>
+              <tr><td style="padding: 6px 0; color: #666; width: 140px;">Prénom</td><td><strong>${htmlEscape(data.prenom)}</strong></td></tr>
+              <tr><td style="padding: 6px 0; color: #666;">Structure</td><td><strong>${htmlEscape(data.structureName)}</strong></td></tr>
               <tr><td style="padding: 6px 0; color: #666;">Email</td><td><a href="mailto:${data.email}">${data.email}</a></td></tr>
-              <tr><td style="padding: 6px 0; color: #666;">Séjour</td><td>${data.sejourTitle} (<code>${data.sejourSlug}</code>)</td></tr>
+              <tr><td style="padding: 6px 0; color: #666;">Séjour</td><td>${htmlEscape(data.sejourTitle)} (<code>${data.sejourSlug}</code>)</td></tr>
               <tr><td style="padding: 6px 0; color: #666;">Date</td><td>${now}</td></tr>
             </table>
             <p style="color: #666; font-size: 12px; margin-top: 20px;">Email automatique — Groupe &amp; Découverte</p>
@@ -781,7 +784,7 @@ export async function sendChefDeServiceInvitation(data: {
           </div>
           <div style="padding: 30px; background: #f9f9f9; border-radius: 0 0 8px 8px;">
             <p>Bonjour,</p>
-            <p>Les dossiers de la structure <strong>${data.structureName}</strong> ont été intégrés dans notre plateforme.</p>
+            <p>Les dossiers de la structure <strong>${htmlEscape(data.structureName)}</strong> ont été intégrés dans notre plateforme.</p>
             ${data.nbDossiers ? `<p>Nombre de dossiers : <strong>${data.nbDossiers}</strong></p>` : ''}
             <p>En tant que responsable, vous pouvez suivre l'ensemble des dossiers depuis votre tableau de bord :</p>
             <div style="text-align: center; margin: 30px 0;">
@@ -848,7 +851,7 @@ export async function sendProAccessConfirmation(data: ProAccessRequestData): Pro
           </div>
           <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
             <h2 style="color: #2a383f;">Demande bien reçue !</h2>
-            <p>Bonjour ${data.prenom},</p>
+            <p>Bonjour ${htmlEscape(data.prenom)},</p>
             <p>Votre demande d'accès professionnel a bien été reçue.</p>
             <p>Notre équipe crée votre compte et vous envoie vos identifiants sous <strong>24h ouvrées</strong>.</p>
             ${sejourBlock}
@@ -893,7 +896,7 @@ export async function sendProAccessAlertGED(data: ProAccessRequestData): Promise
     await getResend().emails.send({
       from: FROM_EMAIL,
       to: ADMIN_EMAIL,
-      subject: `[Accès pro] ${data.prenom} ${data.nom} — ${data.structureName}`,
+      subject: `[Accès pro] ${htmlEscape(data.prenom)} ${htmlEscape(data.nom)} — ${htmlEscape(data.structureName)}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
@@ -904,11 +907,11 @@ export async function sendProAccessAlertGED(data: ProAccessRequestData): Promise
               <tbody>
                 <tr style="background: #f9fafb;">
                   <td style="padding: 6px 12px; color: #6b7280;">Nom</td>
-                  <td style="padding: 6px 12px; font-weight: 500;">${data.prenom} ${data.nom}</td>
+                  <td style="padding: 6px 12px; font-weight: 500;">${htmlEscape(data.prenom)} ${htmlEscape(data.nom)}</td>
                 </tr>
                 <tr>
                   <td style="padding: 6px 12px; color: #6b7280;">Structure</td>
-                  <td style="padding: 6px 12px;">${data.structureName}</td>
+                  <td style="padding: 6px 12px;">${htmlEscape(data.structureName)}</td>
                 </tr>
                 <tr style="background: #f9fafb;">
                   <td style="padding: 6px 12px; color: #6b7280;">Type</td>

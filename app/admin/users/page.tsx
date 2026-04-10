@@ -3,9 +3,11 @@ export const dynamic = 'force-dynamic';
 
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { useAdminUI } from '@/components/admin/admin-ui';
 import { Button } from '@/components/ui/button';
+import { getStoredUser } from '@/lib/utils';
 
 interface User {
   id: string;
@@ -17,8 +19,16 @@ interface User {
 const ROLES = ['ADMIN', 'EDITOR', 'VIEWER'];
 
 export default function AdminUsers() {
+  const router = useRouter();
   const { confirm } = useAdminUI();
   const [users, setUsers] = useState<User[]>([]);
+
+  // Guard : ADMIN uniquement — EDITOR/VIEWER redirigés
+  const storedUser = getStoredUser();
+  if (storedUser?.role !== 'ADMIN') {
+    router.push('/admin');
+    return null;
+  }
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 

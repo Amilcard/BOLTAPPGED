@@ -22,12 +22,12 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
   const cookieStore = await cookies();
   const token = cookieStore.get('gd_session')?.value;
   const secret = process.env.NEXTAUTH_SECRET;
-  if (!token || !secret) redirect('/login');
+  if (!token || !secret) redirect('/login?context=pro');
   try {
     const encodedSecret = new TextEncoder().encode(secret);
     await jwtVerify(token, encodedSecret);
   } catch {
-    redirect('/login');
+    redirect('/login?context=pro');
   }
 
   const stay = await getSejourBySlug(id);

@@ -117,6 +117,9 @@ export default function StructureDashboard() {
   const [delegUntil, setDelegUntil] = useState('');
   const [delegSaving, setDelegSaving] = useState(false);
   const [delegMsg,    setDelegMsg]    = useState<string | null>(null);
+  const [emailEdit,   setEmailEdit]   = useState('');
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailMsg,    setEmailMsg]    = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filterSejour, setFilterSejour] = useState('');
   const [filterDossier, setFilterDossier] = useState<'all' | 'complet' | 'en_attente' | 'ged_sent'>('all');
@@ -139,6 +142,7 @@ export default function StructureDashboard() {
         if (d.structure.rgpdAcceptedAt) setRgpdAccepted(true);
         if (d.structure.delegationFrom)  setDelegFrom(d.structure.delegationFrom.slice(0, 10));
         if (d.structure.delegationUntil) setDelegUntil(d.structure.delegationUntil.slice(0, 10));
+        if (d.structure.email) setEmailEdit(d.structure.email);
       })
       .catch(err => setError((err as Error).message))
       .finally(() => setLoading(false));
@@ -488,8 +492,9 @@ export default function StructureDashboard() {
               </div>
             </div>
 
-            {/* Délégation — visible uniquement pour le directeur */}
+            {/* Délégation et paramètres — visible uniquement pour le directeur */}
             {role === 'directeur' && (
+              <>
               <div className="border-t border-amber-200 pt-5">
                 <p className="text-sm font-semibold text-amber-900 mb-1">Déléguer la gestion des codes à votre CDS</p>
                 <p className="text-xs text-amber-700 mb-4">
@@ -578,6 +583,58 @@ export default function StructureDashboard() {
                   </p>
                 )}
               </div>
+
+              {/* Modifier l'email de contact */}
+              <div className="border-t border-amber-200 pt-5 mt-5">
+                <p className="text-sm font-semibold text-amber-900 mb-1">Email de contact de la structure</p>
+                <p className="text-xs text-amber-700 mb-3">
+                  Cet email est utilisé par GED pour vous contacter. Vérifiez qu&apos;il est à jour.
+                </p>
+                <div className="flex gap-3 items-end flex-wrap">
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Adresse email</label>
+                    <input
+                      type="email"
+                      value={emailEdit}
+                      onChange={e => setEmailEdit(e.target.value)}
+                      placeholder={structure.email || 'email@votrestructure.fr'}
+                      className="w-full px-3 py-2 border border-amber-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                    />
+                  </div>
+                  <button
+                    disabled={emailSaving || !emailEdit || emailEdit === structure.email}
+                    onClick={async () => {
+                      setEmailSaving(true);
+                      setEmailMsg(null);
+                      try {
+                        const res = await fetch(`/api/structure/${code}/settings`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ email: emailEdit }),
+                        });
+                        if (res.ok) {
+                          setEmailMsg('✓ Email mis à jour.');
+                        } else {
+                          const err = await res.json().catch(() => ({}));
+                          setEmailMsg(`Erreur : ${err?.error?.message || 'Veuillez réessayer.'}`);
+                        }
+                      } catch {
+                        setEmailMsg('Erreur réseau. Veuillez réessayer.');
+                      }
+                      setEmailSaving(false);
+                    }}
+                    className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
+                  >
+                    {emailSaving ? 'Enregistrement…' : 'Mettre à jour'}
+                  </button>
+                </div>
+                {emailMsg && (
+                  <p className={`text-xs mt-2 font-medium ${emailMsg.startsWith('✓') ? 'text-green-700' : 'text-red-600'}`}>
+                    {emailMsg}
+                  </p>
+                )}
+              </div>
+              </>
             )}
             <p className="text-xs text-amber-600 mt-5">
               Pour régénérer un code : <a href="mailto:contact@groupeetdecouverte.fr" className="underline font-medium">contact@groupeetdecouverte.fr</a>

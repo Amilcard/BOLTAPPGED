@@ -56,8 +56,33 @@ async function verifyAdminAuth(request: NextRequest): Promise<boolean> {
   }
 }
 
+async function verifyProAuth(request: NextRequest): Promise<boolean> {
+  const token = request.cookies.get('gd_pro_session')?.value;
+  if (!token) return false;
+  const rawSecret = process.env.NEXTAUTH_SECRET;
+  if (!rawSecret) return false;
+  try {
+    const secret = new TextEncoder().encode(rawSecret);
+    const { payload } = await jwtVerify(token, secret);
+    return (payload as Record<string, unknown>).type === 'pro_session';
+  } catch {
+    return false;
+  }
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Auth guard /sejour/[id]/reserver — admin OU pro session
+  if (/^\/sejour\/[^/]+\/reserver/.test(pathname)) {
+    const isAdmin = await verifyAdminAuth(request);
+    const isPro = await verifyProAuth(request);
+    if (!isAdmin && !isPro) {
+      const redirect = encodeURIComponent(pathname + request.nextUrl.search);
+      return NextResponse.redirect(new URL(`/login?context=pro&redirect=${redirect}`, request.url));
+    }
+    return NextResponse.next();
+  }
 
   // Auth guard admin
   if (pathname.startsWith('/admin')) {
@@ -85,6 +110,7 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/admin/:path*',
+    '/sejour/:path*/reserver',
     '/api/inscriptions',
     '/api/souhaits',
     '/api/payment/create-intent',

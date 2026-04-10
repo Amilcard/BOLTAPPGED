@@ -18,16 +18,33 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
   const { id } = await params;
   const sp = await searchParams;
 
-  // Protection : seuls les pros authentifiés accèdent à la réservation (et aux prix)
+  // Protection : admin (gd_session) OU pro (gd_pro_session) accèdent à la réservation
   const cookieStore = await cookies();
-  const token = cookieStore.get('gd_session')?.value;
   const secret = process.env.NEXTAUTH_SECRET;
-  if (!token || !secret) redirect('/login?context=pro');
-  try {
-    const encodedSecret = new TextEncoder().encode(secret);
-    await jwtVerify(token, encodedSecret);
-  } catch {
-    redirect('/login?context=pro');
+  if (!secret) redirect('/login?context=pro');
+  const encodedSecret = new TextEncoder().encode(secret);
+
+  let isAuthenticated = false;
+
+  // Essai 1 : cookie admin (gd_session)
+  const adminToken = cookieStore.get('gd_session')?.value;
+  if (adminToken) {
+    try { await jwtVerify(adminToken, encodedSecret); isAuthenticated = true; } catch { /* invalid */ }
+  }
+
+  // Essai 2 : cookie pro (gd_pro_session)
+  if (!isAuthenticated) {
+    const proToken = cookieStore.get('gd_pro_session')?.value;
+    if (proToken) {
+      try {
+        const { payload } = await jwtVerify(proToken, encodedSecret);
+        if ((payload as Record<string, unknown>).type === 'pro_session') isAuthenticated = true;
+      } catch { /* invalid */ }
+    }
+  }
+
+  if (!isAuthenticated) {
+    redirect(`/login?context=pro&redirect=/sejour/${id}/reserver`);
   }
 
   const stay = await getSejourBySlug(id);

@@ -47,6 +47,22 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabase();
     const body = await request.json();
 
+    // ── Enrichissement via pro session (structureCode pré-rempli si connecté pro) ──
+    const proToken = request.cookies.get('gd_pro_session')?.value;
+    if (proToken && !body.structureCode) {
+      try {
+        const secret = process.env.NEXTAUTH_SECRET;
+        if (secret) {
+          const { jwtVerify } = await import('jose');
+          const { payload } = await jwtVerify(proToken, new TextEncoder().encode(secret));
+          const p = payload as Record<string, unknown>;
+          if (p.type === 'pro_session' && p.structureCode) {
+            body.structureCode = p.structureCode as string;
+          }
+        }
+      } catch { /* pro session invalide — on continue sans pré-remplissage */ }
+    }
+
     // ── Vérification Turnstile (skip si clé non configurée — env de test) ──
     const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
     if (turnstileSecret && body.turnstileToken) {

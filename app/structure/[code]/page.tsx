@@ -48,6 +48,7 @@ interface Inscription {
 
 interface StructureData {
   structure: StructureInfo;
+  role: 'cds' | 'directeur';
   inscriptions: Inscription[];
 }
 
@@ -109,6 +110,7 @@ export default function StructureDashboard() {
   const [data, setData] = useState<StructureData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [role, setRole] = useState<'cds' | 'directeur' | null>(null);
   const [search, setSearch] = useState('');
   const [rgpdAccepted, setRgpdAccepted] = useState(false);
   const [rgpdLoading, setRgpdLoading] = useState(false);
@@ -125,6 +127,7 @@ export default function StructureDashboard() {
       })
       .then((d) => {
         setData(d);
+        setRole(d.role);
         if (d.structure.rgpdAcceptedAt) setRgpdAccepted(true);
       })
       .catch(err => setError((err as Error).message))
@@ -260,6 +263,15 @@ export default function StructureDashboard() {
               <span className="text-xs text-white/60 font-semibold uppercase tracking-wider print:text-gray-400">
                 Espace Structure
               </span>
+              {role === 'directeur' ? (
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-900 uppercase tracking-wide">
+                  Directeur
+                </span>
+              ) : role === 'cds' ? (
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-white/20 text-white uppercase tracking-wide">
+                  CDS
+                </span>
+              ) : null}
             </div>
             <h1 className="text-xl font-bold leading-tight">{structure.name}</h1>
             <p className="text-sm text-white/60 mt-0.5 print:text-gray-500">

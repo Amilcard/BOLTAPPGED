@@ -687,16 +687,17 @@ export async function sendPriceInquiryToEducateur(data: PriceInquiryData): Promi
             <p>Merci pour votre intérêt pour le séjour <strong>${data.sejourTitle}</strong>.</p>
             <p>Voici l'information tarifaire pour votre structure :</p>
             ${prixSection}
-            <p style="color: #444;">Ces tarifs sont adaptés selon votre type de structure (ASE, MECS, foyer). Contactez-nous pour un <strong>devis personnalisé</strong> correspondant à votre situation.</p>
-            <div style="background: #2a383f; border-radius: 8px; padding: 18px 22px; margin: 24px 0; text-align: center;">
-              <p style="margin: 0 0 6px 0; color: #ccc; font-size: 13px;">Obtenir votre code structure</p>
-              <p style="margin: 0; color: white; font-size: 15px;">
-                <a href="mailto:contact@groupeetdecouverte.fr" style="color: #7dd9a0; text-decoration: none;">contact@groupeetdecouverte.fr</a>
-                &nbsp;·&nbsp;
-                <span style="color: #7dd9a0;">04 23 16 16 71</span>
-              </p>
+            <p style="color: #444;">Ces tarifs sont adaptés selon votre type de structure (ASE, MECS, foyer). Accédez à l'espace professionnel pour inscrire un enfant sur ce séjour.</p>
+            <div style="text-align:center;margin:24px 0">
+              <a href="https://app.groupeetdecouverte.fr/acceder-pro?sejour=${data.sejourSlug}"
+                 style="display:inline-block;background:#1d4ed8;color:white;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px">
+                Inscrire un enfant sur ce séjour →
+              </a>
             </div>
-            <p style="color: #666; font-size: 13px;">Notre équipe vous répondra sous 24h et vous accompagnera dans la constitution du dossier de financement.</p>
+            <p style="font-size:13px;color:#6b7280;text-align:center;margin:0">
+              Votre demande d'accès sera traitée sous 24h ouvrées.<br>
+              En cas d'urgence : <a href="tel:0423161671" style="color:#1d4ed8">04 23 16 16 71</a>
+            </p>
             <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 24px 0;" />
             <p style="color: #999; font-size: 12px; margin: 0;">Groupe &amp; Découverte — Séjours éducatifs pour enfants ASE<br>
             <a href="https://app.groupeetdecouverte.fr" style="color: #999;">app.groupeetdecouverte.fr</a></p>

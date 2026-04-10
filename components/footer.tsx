@@ -15,7 +15,7 @@ export function Footer() {
           <div className="text-center md:text-left flex flex-col items-center md:items-start gap-2">
             <Logo variant="default" className="h-8" />
             <p className="text-xs">© {currentYear} Association Groupe et Découverte. Tous droits réservés.</p>
-            <p className="text-xs text-gray-400">SIREN 515 225 654 — Agrément J&amp;S 069ORG0667</p>
+            <p className="text-xs text-gray-500">SIREN 515 225 654 — Agrément J&amp;S 069ORG0667</p>
           </div>
 
           {/* RGPD */}
@@ -32,7 +32,7 @@ export function Footer() {
           {/* Liens légaux */}
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-8">
             <div className="flex flex-col gap-1.5 text-center sm:text-left">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Légal</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Légal</p>
               <Link href="/mentions-legales" className="text-xs hover:text-primary transition-colors">
                 Mentions légales
               </Link>
@@ -48,7 +48,7 @@ export function Footer() {
             </div>
 
             <div className="flex flex-col gap-1.5 text-center sm:text-left">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Contact</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Contact</p>
               <a
                 href="mailto:groupeetdecouverte@gmail.com"
                 className="text-xs hover:text-primary transition-colors"

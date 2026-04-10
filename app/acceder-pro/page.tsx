@@ -29,6 +29,7 @@ function AccederProForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [rgpdConsent, setRgpdConsent] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -220,6 +221,22 @@ function AccederProForm() {
               <input type="hidden" name="sejour_slug" value={sejourSlug} />
             )}
 
+            <label className="flex items-start gap-2 text-xs text-gray-600 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={rgpdConsent}
+                onChange={(e) => setRgpdConsent(e.target.checked)}
+                className="mt-0.5 rounded border-gray-300"
+                required
+              />
+              <span>
+                J&apos;accepte que mes données soient traitées conformément à la{' '}
+                <Link href="/confidentialite" target="_blank" className="underline text-primary hover:text-primary/80">
+                  politique de confidentialité
+                </Link>
+              </span>
+            </label>
+
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
                 {error}
@@ -228,7 +245,7 @@ function AccederProForm() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !rgpdConsent}
               className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}

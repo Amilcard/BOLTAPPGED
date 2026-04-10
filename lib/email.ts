@@ -45,7 +45,7 @@ export async function sendInscriptionConfirmation(data: InscriptionEmailData) {
     const result = await getResend().emails.send({
       from: FROM_EMAIL,
       to: data.referentEmail,
-      subject: `Confirmation d'inscription - ${htmlEscape(data.jeunePrenom)} ${htmlEscape(data.jeuneNom)}`,
+      subject: `Confirmation d'inscription - Réf. ${data.dossierRef || 'en cours'}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
@@ -134,7 +134,7 @@ export async function sendAdminNewInscriptionNotification(data: InscriptionEmail
     const result = await getResend().emails.send({
       from: FROM_EMAIL,
       to: ADMIN_EMAIL,
-      subject: `Nouvelle inscription - ${htmlEscape(data.jeunePrenom)} ${htmlEscape(data.jeuneNom)}`,
+      subject: `Nouvelle inscription - Réf. ${data.dossierRef || 'en cours'}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #2a383f;">Nouvelle inscription reçue</h2>
@@ -181,7 +181,7 @@ export async function sendPaymentConfirmedAdminNotification(data: {
     const result = await getResend().emails.send({
       from: FROM_EMAIL,
       to: ADMIN_EMAIL,
-      subject: data.subject || `Paiement confirmé — ${htmlEscape(data.jeunePrenom)} ${htmlEscape(data.jeuneNom)} (${data.amount.toFixed(2)} €)`,
+      subject: data.subject || `Paiement confirmé — Réf. ${data.dossierRef || 'N/A'} (${data.amount.toFixed(2)} €)`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #16a34a; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">
@@ -234,7 +234,7 @@ export async function sendStatusChangeEmail(
     const result = await getResend().emails.send({
       from: FROM_EMAIL,
       to: referentEmail,
-      subject: `Inscription ${statusInfo.label.toLowerCase()} - ${htmlEscape(jeunePrenom)} ${htmlEscape(jeuneNom)}`,
+      subject: `Inscription ${statusInfo.label.toLowerCase()}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
@@ -287,7 +287,7 @@ export async function sendSouhaitNotificationEducateur(data: SouhaitEmailData) {
     return await resend.emails.send({
       from: FROM_EMAIL,
       to: data.educateurEmail,
-      subject: `${htmlEscape(data.kidPrenom)} souhaite partir en séjour — ${htmlEscape(data.sejourTitre)}`,
+      subject: `Nouveau souhait de séjour — ${htmlEscape(data.sejourTitre)}`,
       html: `
         <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto;">
           <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
@@ -361,7 +361,7 @@ export async function sendDossierGedAdminNotification(data: {
     const result = await getResend().emails.send({
       from: FROM_EMAIL,
       to: ADMIN_EMAIL,
-      subject: `Dossier enfant soumis — ${htmlEscape(data.jeunePrenom)} ${htmlEscape(data.jeuneNom)}${data.dossierRef ? ` (${data.dossierRef})` : ''}`,
+      subject: `Nouveau dossier reçu - Réf. ${data.dossierRef || 'en cours'}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #166534; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">
@@ -516,7 +516,7 @@ export async function sendDossierCompletEmail(data: {
     const result = await getResend().emails.send({
       from: FROM_EMAIL,
       to: data.referentEmail,
-      subject: `Dossier de ${htmlEscape(data.jeunePrenom)} ${htmlEscape(data.jeuneNom)} complété${data.dossierRef ? ` - ${data.dossierRef}` : ''}`,
+      subject: `Dossier complété - Réf. ${data.dossierRef || 'en cours'}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
@@ -896,7 +896,7 @@ export async function sendProAccessAlertGED(data: ProAccessRequestData): Promise
     await getResend().emails.send({
       from: FROM_EMAIL,
       to: ADMIN_EMAIL,
-      subject: `[Accès pro] ${htmlEscape(data.prenom)} ${htmlEscape(data.nom)} — ${htmlEscape(data.structureName)}`,
+      subject: `[Accès pro] Nouvelle demande — ${htmlEscape(data.structureName)}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">

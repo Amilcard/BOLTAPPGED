@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/rgpd-purge",
       "schedule": "0 3 1 * *"
+    },
+    {
+      "path": "/api/cron/expire-codes",
+      "schedule": "0 2 * * *"
     }
   ]
 }

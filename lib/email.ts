@@ -810,3 +810,129 @@ export async function sendChefDeServiceInvitation(data: {
     return null;
   }
 }
+
+// ============================================================
+// Demande d'accès professionnel
+// ============================================================
+
+interface ProAccessRequestData {
+  prenom: string;
+  nom: string;
+  structureName: string;
+  structureType: string;
+  email: string;
+  phone?: string;
+  sejourSlug?: string;
+}
+
+/**
+ * Confirmation à l'éducateur qui demande son accès pro
+ */
+export async function sendProAccessConfirmation(data: ProAccessRequestData): Promise<void> {
+  const apiKey = process.env.EMAIL_SERVICE_API_KEY;
+  if (!apiKey || apiKey === 'YOUR_EMAIL_API_KEY_HERE') return;
+
+  const sejourBlock = data.sejourSlug
+    ? `<p>Vous pourrez ensuite inscrire un enfant sur le séjour demandé directement depuis votre espace professionnel.</p>`
+    : '';
+
+  try {
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: data.email,
+      subject: 'Votre demande d\'accès professionnel — Groupe & Découverte',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 24px;">Groupe &amp; Découverte</h1>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+            <h2 style="color: #2a383f;">Demande bien reçue !</h2>
+            <p>Bonjour ${data.prenom},</p>
+            <p>Votre demande d'accès professionnel a bien été reçue.</p>
+            <p>Notre équipe crée votre compte et vous envoie vos identifiants sous <strong>24h ouvrées</strong>.</p>
+            ${sejourBlock}
+            <div style="background: #f9fafb; border-left: 4px solid #2a383f; padding: 16px; margin: 20px 0; border-radius: 4px;">
+              <p style="margin: 0; font-size: 14px; color: #4b5563;">
+                En cas d'urgence, notre équipe est joignable au
+                <strong><a href="tel:0423161671" style="color: #2a383f; text-decoration: none;">04 23 16 16 71</a></strong>
+                (lun.–ven. 9h–17h).
+              </p>
+            </div>
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
+            <p style="color: #9ca3af; font-size: 12px;">Groupe &amp; Découverte — Séjours éducatifs pour enfants et adolescents</p>
+            <p style="font-size: 11px; color: #6b7280; margin-top: 12px; border-top: 1px solid #e5e7eb; padding-top: 12px;">
+              Vos données sont utilisées uniquement pour créer votre accès professionnel.
+              Pour exercer vos droits RGPD : <a href="mailto:dpo@groupeetdecouverte.fr" style="color: #6b7280;">dpo@groupeetdecouverte.fr</a>
+            </p>
+          </div>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error('[EMAIL] Erreur confirmation accès pro:', error);
+  }
+}
+
+/**
+ * Alerte interne GED — nouvelle demande d'accès pro
+ */
+export async function sendProAccessAlertGED(data: ProAccessRequestData): Promise<void> {
+  const apiKey = process.env.EMAIL_SERVICE_API_KEY;
+  if (!apiKey || apiKey === 'YOUR_EMAIL_API_KEY_HERE') return;
+
+  const sejourRow = data.sejourSlug
+    ? `<tr><td style="padding: 6px 12px; color: #6b7280;">Séjour demandé</td><td style="padding: 6px 12px; font-weight: 500;">${data.sejourSlug}</td></tr>`
+    : '';
+
+  const phoneRow = data.phone
+    ? `<tr><td style="padding: 6px 12px; color: #6b7280;">Téléphone</td><td style="padding: 6px 12px;">${data.phone}</td></tr>`
+    : '';
+
+  try {
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: ADMIN_EMAIL,
+      subject: `[Accès pro] ${data.prenom} ${data.nom} — ${data.structureName}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 20px;">Nouvelle demande d'accès professionnel</h1>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              <tbody>
+                <tr style="background: #f9fafb;">
+                  <td style="padding: 6px 12px; color: #6b7280;">Nom</td>
+                  <td style="padding: 6px 12px; font-weight: 500;">${data.prenom} ${data.nom}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 12px; color: #6b7280;">Structure</td>
+                  <td style="padding: 6px 12px;">${data.structureName}</td>
+                </tr>
+                <tr style="background: #f9fafb;">
+                  <td style="padding: 6px 12px; color: #6b7280;">Type</td>
+                  <td style="padding: 6px 12px;">${data.structureType}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 12px; color: #6b7280;">Email</td>
+                  <td style="padding: 6px 12px;"><a href="mailto:${data.email}" style="color: #2a383f;">${data.email}</a></td>
+                </tr>
+                ${phoneRow}
+                ${sejourRow}
+              </tbody>
+            </table>
+            <div style="margin-top: 24px;">
+              <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://app.groupeetdecouverte.fr'}/admin"
+                 style="display: inline-block; background: #2a383f; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 500;">
+                Créer le compte → /admin
+              </a>
+            </div>
+          </div>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error('[EMAIL] Erreur alerte accès pro GED:', error);
+  }
+}

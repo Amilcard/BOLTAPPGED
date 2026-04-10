@@ -15,8 +15,10 @@ interface StructureInfo {
   postalCode: string;
   type: string;
   email: string;
-  code: string;
+  code?: string;
   rgpdAcceptedAt: string | null;
+  delegationFrom:  string | null;
+  delegationUntil: string | null;
 }
 
 interface DossierCompletude {
@@ -48,7 +50,7 @@ interface Inscription {
 
 interface StructureData {
   structure: StructureInfo;
-  role: 'cds' | 'directeur';
+  role: 'cds' | 'cds_delegated' | 'directeur';
   inscriptions: Inscription[];
 }
 
@@ -110,7 +112,11 @@ export default function StructureDashboard() {
   const [data, setData] = useState<StructureData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [role, setRole] = useState<'cds' | 'directeur' | null>(null);
+  const [role, setRole] = useState<'cds' | 'cds_delegated' | 'directeur' | null>(null);
+  const [delegFrom,  setDelegFrom]  = useState('');
+  const [delegUntil, setDelegUntil] = useState('');
+  const [delegSaving, setDelegSaving] = useState(false);
+  const [delegMsg,    setDelegMsg]    = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filterSejour, setFilterSejour] = useState('');
   const [filterDossier, setFilterDossier] = useState<'all' | 'complet' | 'en_attente' | 'ged_sent'>('all');
@@ -131,6 +137,8 @@ export default function StructureDashboard() {
         setData(d);
         setRole(d.role);
         if (d.structure.rgpdAcceptedAt) setRgpdAccepted(true);
+        if (d.structure.delegationFrom)  setDelegFrom(d.structure.delegationFrom.slice(0, 10));
+        if (d.structure.delegationUntil) setDelegUntil(d.structure.delegationUntil.slice(0, 10));
       })
       .catch(err => setError((err as Error).message))
       .finally(() => setLoading(false));
@@ -275,15 +283,15 @@ export default function StructureDashboard() {
               <span className="text-xs text-white/60 font-semibold uppercase tracking-wider print:text-gray-400">
                 Espace Structure
               </span>
-              {role === 'directeur' ? (
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-900 uppercase tracking-wide">
-                  Directeur
-                </span>
-              ) : role === 'cds' ? (
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-white/20 text-white uppercase tracking-wide">
-                  CDS
-                </span>
-              ) : null}
+              {role === 'directeur' && (
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-900 uppercase tracking-wide">Directeur</span>
+              )}
+              {role === 'cds' && (
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-white/20 text-white uppercase tracking-wide">CDS</span>
+              )}
+              {role === 'cds_delegated' && (
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-900 uppercase tracking-wide">CDS · Délégation active</span>
+              )}
             </div>
             <h1 className="text-xl font-bold leading-tight">{structure.name}</h1>
             <p className="text-sm text-white/60 mt-0.5 print:text-gray-500">
@@ -432,34 +440,147 @@ export default function StructureDashboard() {
           </div>
         )}
 
-        {/* ── Section Directeur : Gestion des codes ── */}
-        {role === 'directeur' && (
+        {/* ── Bandeau délégation active (CDS délégué) ── */}
+        {role === 'cds_delegated' && structure.delegationUntil && (
+          <div className="mt-8 border-l-4 border-amber-400 bg-amber-50 rounded-xl p-5 flex items-start gap-3">
+            <span className="text-amber-500 text-xl">⏳</span>
+            <div>
+              <p className="font-semibold text-amber-900 text-sm">Accès délégué par votre directeur</p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                Votre directeur vous a accordé un accès temporaire à la gestion des codes jusqu'au{' '}
+                <strong>{new Date(structure.delegationUntil).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</strong>.
+                Après cette date, seul le directeur pourra gérer les codes.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Section Directeur / CDS délégué : Codes d'accès ── */}
+        {(role === 'directeur' || role === 'cds_delegated') && (
           <div className="mt-8 border-l-4 border-amber-400 bg-amber-50 rounded-xl p-6">
             <div className="flex items-center gap-2 mb-1">
-              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-900 uppercase tracking-wide">Directeur</span>
-              <h3 className="font-semibold text-amber-900">Gestion des codes d'accès</h3>
+              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-900 uppercase tracking-wide">
+                {role === 'directeur' ? 'Directeur' : 'CDS · Délégué'}
+              </span>
+              <h3 className="font-semibold text-amber-900">Codes d'accès de la structure</h3>
             </div>
             <p className="text-xs text-amber-700 mb-4">
-              En tant que directeur, vous pouvez consulter les codes d'accès actifs de votre structure. Pour régénérer un code, contactez l'équipe GED.
+              Ces codes permettent à votre équipe d'accéder aux inscriptions. Ne les partagez qu'avec les personnes autorisées.
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               <div className="bg-white rounded-lg p-4 border border-amber-200">
-                <p className="text-xs text-gray-500 mb-1">Code CDS (6 caractères)</p>
-                <p className="text-xs text-gray-400 mb-2">Partagez ce code avec votre chef de service pour qu'il accède aux inscriptions.</p>
+                <p className="text-xs font-semibold text-gray-700 mb-1">Code CDS — 6 caractères</p>
+                <p className="text-xs text-gray-400 mb-3">
+                  À donner à votre chef de service. Permet de voir la liste des inscriptions de la structure.
+                </p>
                 <code className="font-mono font-bold text-lg tracking-widest text-primary bg-gray-50 px-3 py-1.5 rounded-lg block text-center">
                   {structure.code || '——'}
                 </code>
               </div>
               <div className="bg-white rounded-lg p-4 border border-amber-200">
-                <p className="text-xs text-gray-500 mb-1">Code Directeur (10 caractères)</p>
-                <p className="text-xs text-gray-400 mb-2">Ce code est personnel. Ne le partagez pas — il donne accès à la gestion des codes.</p>
+                <p className="text-xs font-semibold text-gray-700 mb-1">Code Directeur — 10 caractères</p>
+                <p className="text-xs text-gray-400 mb-3">
+                  Code personnel du directeur. Donne accès à la gestion des délégations. Ne pas diffuser.
+                </p>
                 <code className="font-mono font-bold text-lg tracking-widest text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg block text-center">
                   {code}
                 </code>
               </div>
             </div>
-            <p className="text-xs text-amber-600 mt-4">
-              Pour modifier l'email de contact ou régénérer un code : <a href="mailto:contact@groupeetdecouverte.fr" className="underline font-medium">contact@groupeetdecouverte.fr</a>
+
+            {/* Délégation — visible uniquement pour le directeur */}
+            {role === 'directeur' && (
+              <div className="border-t border-amber-200 pt-5">
+                <p className="text-sm font-semibold text-amber-900 mb-1">Déléguer la gestion des codes à votre CDS</p>
+                <p className="text-xs text-amber-700 mb-4">
+                  En cas d'absence, vous pouvez autoriser votre chef de service à accéder aux codes pendant une période limitée (90 jours maximum).
+                  Le CDS verra un bandeau indiquant qu'il bénéficie d'un accès temporaire.
+                </p>
+                <div className="flex flex-wrap gap-4 items-end">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Date de début</label>
+                    <input
+                      type="date"
+                      value={delegFrom}
+                      onChange={e => setDelegFrom(e.target.value)}
+                      min={new Date().toISOString().slice(0, 10)}
+                      className="px-3 py-2 border border-amber-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Date de fin</label>
+                    <input
+                      type="date"
+                      value={delegUntil}
+                      onChange={e => setDelegUntil(e.target.value)}
+                      min={delegFrom || new Date().toISOString().slice(0, 10)}
+                      className="px-3 py-2 border border-amber-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                    />
+                  </div>
+                  <button
+                    disabled={delegSaving || !delegFrom || !delegUntil}
+                    onClick={async () => {
+                      setDelegSaving(true);
+                      setDelegMsg(null);
+                      try {
+                        const res = await fetch(`/api/structure/${code}/delegation`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ from: delegFrom, until: delegUntil }),
+                        });
+                        if (res.ok) {
+                          setDelegMsg('✓ Délégation enregistrée.');
+                        } else {
+                          const err = await res.json().catch(() => ({}));
+                          setDelegMsg(`Erreur : ${err?.error?.message || 'Veuillez réessayer.'}`);
+                        }
+                      } catch {
+                        setDelegMsg('Erreur réseau. Veuillez réessayer.');
+                      }
+                      setDelegSaving(false);
+                    }}
+                    className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
+                  >
+                    {delegSaving ? 'Enregistrement…' : 'Enregistrer la délégation'}
+                  </button>
+                  {(structure.delegationFrom || structure.delegationUntil) && (
+                    <button
+                      disabled={delegSaving}
+                      onClick={async () => {
+                        if (!confirm('Supprimer la délégation en cours ?')) return;
+                        setDelegSaving(true);
+                        setDelegMsg(null);
+                        try {
+                          const res = await fetch(`/api/structure/${code}/delegation`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ from: null, until: null }),
+                          });
+                          if (res.ok) {
+                            setDelegFrom('');
+                            setDelegUntil('');
+                            setDelegMsg('✓ Délégation supprimée.');
+                          }
+                        } catch {
+                          setDelegMsg('Erreur réseau.');
+                        }
+                        setDelegSaving(false);
+                      }}
+                      className="px-4 py-2 bg-white border border-red-300 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition disabled:opacity-50"
+                    >
+                      Supprimer la délégation
+                    </button>
+                  )}
+                </div>
+                {delegMsg && (
+                  <p className={`text-xs mt-3 font-medium ${delegMsg.startsWith('✓') ? 'text-green-700' : 'text-red-600'}`}>
+                    {delegMsg}
+                  </p>
+                )}
+              </div>
+            )}
+            <p className="text-xs text-amber-600 mt-5">
+              Pour régénérer un code : <a href="mailto:contact@groupeetdecouverte.fr" className="underline font-medium">contact@groupeetdecouverte.fr</a>
             </p>
           </div>
         )}

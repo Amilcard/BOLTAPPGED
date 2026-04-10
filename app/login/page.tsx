@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Mountain, ArrowLeft, Loader2 } from 'lucide-react';
 import { getStoredAuth, setStoredUser } from '@/lib/utils';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isProContext = searchParams.get('context') === 'pro';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -113,8 +115,15 @@ export default function LoginPage() {
         <div className="bg-white rounded-xl shadow-card p-8">
           <div className="flex items-center gap-2 text-primary mb-6">
             <Mountain className="w-8 h-8" />
-            <span className="text-xl font-bold">Administration</span>
+            <span className="text-xl font-bold">
+              {isProContext ? 'Espace professionnel' : 'Administration'}
+            </span>
           </div>
+          {isProContext && (
+            <p className="text-sm text-primary-600 mb-4">
+              Connectez-vous pour inscrire un enfant sur ce séjour.
+            </p>
+          )}
 
           {resetSent ? (
             <div className="text-center space-y-4">
@@ -249,8 +258,24 @@ export default function LoginPage() {
               </button>
             </form>
           )}
+          {isProContext && (
+            <p className="text-xs text-gray-500 mt-4 text-center">
+              Pas encore de compte professionnel ?{' '}
+              <a href="mailto:contact@groupeetdecouverte.fr" className="underline hover:text-primary">
+                Contactez-nous : contact@groupeetdecouverte.fr
+              </a>
+            </p>
+          )}
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

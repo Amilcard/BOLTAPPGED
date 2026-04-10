@@ -112,6 +112,8 @@ export default function StructureDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [role, setRole] = useState<'cds' | 'directeur' | null>(null);
   const [search, setSearch] = useState('');
+  const [filterSejour, setFilterSejour] = useState('');
+  const [filterDossier, setFilterDossier] = useState<'all' | 'complet' | 'en_attente' | 'ged_sent'>('all');
   const [rgpdAccepted, setRgpdAccepted] = useState(false);
   const [rgpdLoading, setRgpdLoading] = useState(false);
 
@@ -233,16 +235,26 @@ export default function StructureDashboard() {
   }).length;
 
   const montantTotal = inscriptions.reduce((s, i) => s + (i.price_total || 0), 0);
+  const sejoursUniques = [...new Set(inscriptions.map(i => i.sejour_titre).filter(Boolean))].sort();
 
-  // ── Filtre ──
+  // ── Filtres ──
 
-  const filtered = search.trim()
-    ? inscriptions.filter(i =>
-        `${i.jeune_prenom} ${i.jeune_nom} ${i.referent_nom} ${i.referent_email} ${i.sejour_titre} ${i.dossier_ref || ''}`
-          .toLowerCase()
-          .includes(search.toLowerCase())
-      )
-    : inscriptions;
+  const filtered = inscriptions.filter(i => {
+    if (search.trim() && !`${i.jeune_prenom} ${i.jeune_nom} ${i.referent_nom} ${i.referent_email} ${i.sejour_titre} ${i.dossier_ref || ''}`.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterSejour && i.sejour_titre !== filterSejour) return false;
+    if (filterDossier === 'ged_sent' && !i.ged_sent_at) return false;
+    if (filterDossier === 'complet' && !i.ged_sent_at) {
+      const c = i.dossier_completude;
+      if (!c || !c.bulletin || !c.sanitaire || !c.liaison || !c.renseignements) return false;
+    }
+    if (filterDossier === 'en_attente') {
+      if (i.ged_sent_at) return false;
+      const c = i.dossier_completude;
+      const isComplete = c && c.bulletin && c.sanitaire && c.liaison && c.renseignements;
+      if (isComplete) return false;
+    }
+    return true;
+  });
 
   // ── Rendu ──
 
@@ -287,12 +299,6 @@ export default function StructureDashboard() {
                 {structure.code}
               </code>
             </div>
-            <button
-              onClick={() => window.print()}
-              className="print:hidden text-xs px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition"
-            >
-              Imprimer
-            </button>
           </div>
         </div>
       </header>
@@ -300,33 +306,63 @@ export default function StructureDashboard() {
       <main className="max-w-6xl mx-auto px-4 py-8">
 
         {/* ── Stats ── */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
           {[
-            { label: 'Inscriptions', value: total,      color: 'text-primary' },
-            { label: 'Validées',     value: validees,   color: 'text-green-700' },
-            { label: 'Réglées',      value: reglees,    color: 'text-green-700' },
-            { label: 'Dossiers complets', value: completes, color: 'text-blue-700' },
+            { label: 'Inscriptions',      value: total,                color: 'text-primary' },
+            { label: 'Validées',          value: validees,             color: 'text-green-700' },
+            { label: 'Réglées',           value: reglees,              color: 'text-green-700' },
+            { label: 'Dossiers complets', value: completes,            color: 'text-blue-700' },
+            { label: 'En attente',        value: total - completes,    color: 'text-orange-600' },
+            { label: 'Séjours',           value: sejoursUniques.length, color: 'text-purple-700' },
           ].map(s => (
             <div key={s.label} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
               <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
               <p className="text-xs text-gray-500 mt-1">{s.label}</p>
             </div>
           ))}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
-            <p className="text-3xl font-bold text-primary">{montantTotal.toLocaleString('fr-FR')} €</p>
-            <p className="text-xs text-gray-500 mt-1">Montant total</p>
-          </div>
         </div>
 
-        {/* ── Recherche ── */}
-        <div className="mb-4 print:hidden">
+        {/* Montant total */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 flex items-center justify-between">
+          <div>
+            <p className="text-xs text-gray-500">Montant total engagé</p>
+            <p className="text-2xl font-bold text-primary">{montantTotal.toLocaleString('fr-FR')} €</p>
+          </div>
+          <button
+            onClick={() => window.print()}
+            className="print:hidden text-sm px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition font-medium"
+          >
+            Télécharger récap PDF
+          </button>
+        </div>
+
+        {/* ── Filtres ── */}
+        <div className="mb-4 print:hidden flex flex-wrap gap-3">
           <input
             type="text"
             placeholder="Rechercher un enfant, référent, séjour…"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full sm:w-80 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="flex-1 min-w-[200px] sm:max-w-xs px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
+          <select
+            value={filterSejour}
+            onChange={e => setFilterSejour(e.target.value)}
+            className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
+          >
+            <option value="">Tous les séjours</option>
+            {sejoursUniques.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <select
+            value={filterDossier}
+            onChange={e => setFilterDossier(e.target.value as typeof filterDossier)}
+            className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
+          >
+            <option value="all">Tous les dossiers</option>
+            <option value="ged_sent">Envoyés GED</option>
+            <option value="complet">Dossiers complets</option>
+            <option value="en_attente">En attente</option>
+          </select>
         </div>
 
         {/* ── Tableau ── */}
@@ -393,6 +429,38 @@ export default function StructureDashboard() {
                 {filtered.length} résultat{filtered.length > 1 ? 's' : ''} sur {total}
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── Section Directeur : Gestion des codes ── */}
+        {role === 'directeur' && (
+          <div className="mt-8 border-l-4 border-amber-400 bg-amber-50 rounded-xl p-6">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-900 uppercase tracking-wide">Directeur</span>
+              <h3 className="font-semibold text-amber-900">Gestion des codes d'accès</h3>
+            </div>
+            <p className="text-xs text-amber-700 mb-4">
+              En tant que directeur, vous pouvez consulter les codes d'accès actifs de votre structure. Pour régénérer un code, contactez l'équipe GED.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-white rounded-lg p-4 border border-amber-200">
+                <p className="text-xs text-gray-500 mb-1">Code CDS (6 caractères)</p>
+                <p className="text-xs text-gray-400 mb-2">Partagez ce code avec votre chef de service pour qu'il accède aux inscriptions.</p>
+                <code className="font-mono font-bold text-lg tracking-widest text-primary bg-gray-50 px-3 py-1.5 rounded-lg block text-center">
+                  {structure.code || '——'}
+                </code>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-amber-200">
+                <p className="text-xs text-gray-500 mb-1">Code Directeur (10 caractères)</p>
+                <p className="text-xs text-gray-400 mb-2">Ce code est personnel. Ne le partagez pas — il donne accès à la gestion des codes.</p>
+                <code className="font-mono font-bold text-lg tracking-widest text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg block text-center">
+                  {code}
+                </code>
+              </div>
+            </div>
+            <p className="text-xs text-amber-600 mt-4">
+              Pour modifier l'email de contact ou régénérer un code : <a href="mailto:contact@groupeetdecouverte.fr" className="underline font-medium">contact@groupeetdecouverte.fr</a>
+            </p>
           </div>
         )}
 

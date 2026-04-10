@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Key Architecture
 
-- **Framework**: Next.js 14 with App Router (server components)
+- **Framework**: Next.js 15 + React 19 with App Router (server components)
 - **Database**: PostgreSQL via Supabase (direct JS client, no ORM)
 - **Authentication**: Custom JWT-based auth (not NextAuth) with role-based access
 - **Styling**: Tailwind CSS with Radix UI primitives
@@ -53,6 +53,7 @@ npm run lint
 - gd_stay_sessions (session_id, stay_id, capacity)
 - gd_dossier_enfant, gd_structures, gd_stays
 - gd_stay_themes, gd_session_prices, gd_waitlist
+- gd_login_attempts — rate limiting IP (login + structure + délégation + price-inquiry)
 - Vues : v_activity_with_sessions, v_orphaned_records
 
 ## Danger zones — INTERDICTIONS ABSOLUES
@@ -72,7 +73,11 @@ npm run lint
 - gd_souhaits — souhaits kids (choix_mode, statut, enfant_id, session_id)
 - gd_dossier_enfant — dossiers enfants ASE
 - gd_structures — structures partenaires (ASE, MECS, foyers)
+  - code (6 chars, CDS) + code_directeur (10 chars) + expiration + révocation
+  - delegation_active_from / delegation_active_until (TIMESTAMPTZ) — migration 040
+  - rgpd_accepted_at + rgpd_accepted_by
 - gd_waitlist, gd_wishes, gd_admin_2fa, gd_audit_log
+- smart_form_submissions — leads price-inquiry + request-access (fail-silently)
 
 ### Champs importants gd_stays
 - Ingestion : sourceUrl, sourcePdfPath, importedAt, lastSyncAt, sourceManual
@@ -100,12 +105,27 @@ npm run lint
 - `/api/pro/stays/[slug]` - Individual stay with pricing
 - `/api/bookings` - Booking CRUD
 
+**Pro sans compte (public, rate-limited):**
+- `POST /api/pro/price-inquiry` - Demande de tarifs (prénom + structure + email) → email immédiat
+- `POST /api/pro/request-access` - Demande accès professionnel → email confirmation + alerte GED
+
+**Structure (code-based, no JWT):**
+- `GET /api/structure/[code]` - Dashboard structure (CDS 6 chars ou Directeur 10 chars)
+- `POST /api/structure/[code]` - Accepter engagement RGPD
+- `PATCH /api/structure/[code]/delegation` - Directeur uniquement : définir/supprimer délégation CDS
+- `PATCH /api/structure/[code]/settings` - Directeur uniquement : modifier email contact
+
 **Admin (JWT + role check):**
 - `/api/admin/stays` - Full CRUD operations
 - `/api/admin/sessions` - Session management
 - `/api/admin/bookings` - Booking oversight
 - `/api/admin/users` - User management
 - `/api/admin/stats` - Analytics
+- `GET /api/admin/structures/[id]/audit-log` - Audit accès codes structure
+
+**Cron (CRON_SECRET Bearer):**
+- `GET /api/cron/expire-codes` - Révocation codes CDS + Directeur expirés (0 2 * * *)
+- `GET /api/cron/rgpd-purge` - Purge données RGPD (0 3 1 * *)
 
 **UFOVAL Enrichment:**
 - `/api/ufoval-enrichment` - Returns merged UFOVAL data from `out/ufoval/ufoval_enrichment_full.json`
@@ -177,6 +197,11 @@ In `app/sejour/[id]/stay-detail.tsx`:
 - Domaine vérifié : groupeetdecouverte.fr
 - FROM : noreply@groupeetdecouverte.fr
 - Fichiers clés : lib/email.ts, routes notify-waitlist, pdf-email
+- Fonctions email disponibles :
+  - `sendPriceInquiryToEducateur()` — tarifs pro par email (sans compte)
+  - `sendPriceInquiryAlertGED()` — alerte interne nouvelle demande tarifs
+  - `sendProAccessConfirmation()` — confirmation demande accès pro (/acceder-pro)
+  - `sendProAccessAlertGED()` — alerte interne nouvelle demande accès pro
 
 ### Stripe (paiement)
 - Modes : carte, virement, chèque
@@ -201,11 +226,14 @@ In `app/sejour/[id]/stay-detail.tsx`:
 
 ```
 app/
-├── api/              # API routes (grouped by domain: admin/pro/public)
+├── api/              # API routes (grouped by domain: admin/pro/public/cron/structure)
 ├── admin/            # Admin dashboard pages
+├── acceder-pro/      # Formulaire demande accès pro (sans compte JWT)
 ├── espace-pro/       # Professional interface
 ├── envies/           # Wishlist (kids mode)
-└── sejour/[id]/      # Stay detail pages (public + pro)
+├── login/            # Login contextuel : ?context=pro → "Espace professionnel"
+├── sejour/[id]/      # Stay detail pages (public + pro + PriceInquiryBlock)
+└── structure/[code]/ # Dashboard structure (CDS/Directeur, code-based, no JWT)
 ```
 
 ### TypeScript Patterns
@@ -223,8 +251,8 @@ app/
 
 ## State Management
 
-- **Jotai**: Global state (mode, wishlist, auth)
-- **Zustand**: Alternative state management
+- ~~Jotai~~ : supprimé (10 avril 2026, zéro import)
+- ~~Zustand~~ : supprimé (10 avril 2026, zéro import)
 - **Local storage**: Wishlist persistence, JWT token
 
 ## Common Gotchas
@@ -291,13 +319,16 @@ git fetch origin && git log origin/main..main --oneline && git log main..origin/
 8. **Routes admin = `requireEditor` minimum** — jamais `verifyAuth` seul (inclut VIEWER). `requireAdmin` pour les actions destructives.
 9. **localStorage = zéro PII** — UUID opaques acceptables, jamais email/nom/données personnelles.
 10. **Upload = whitelist MIME + extensions + magic bytes** — toujours vérifier le contenu réel du fichier, pas le MIME déclaré.
-11. **RLS actif sur toutes les tables contenant PII** — `gd_inscriptions`, `gd_dossier_enfant` = service_role only. Jamais d'accès anon.
+11. **RLS actif sur toutes les tables contenant PII** — `gd_inscriptions`, `gd_dossier_enfant`, `gd_propositions_tarifaires` = service_role only. Jamais d'accès anon. **Pattern : RLS activé + zéro policy = accès client bloqué, service_role bypass RLS → correct et intentionnel.** L'alerte Supabase "no policies" sur ces tables est un faux positif à ignorer.
 12. **Incident données → `docs/PROCEDURE_VIOLATION_DONNEES.md`** — délai CNIL : 72h. Protocole complet documenté.
 13. **Purge RGPD automatique** — audit logs 12 mois, données médicales 3 mois post-séjour. Cron actif et testé.
 14. **Session cookie = httpOnly + secure + sameSite strict** — jamais de JWT dans le body de réponse ni dans localStorage.
 15. **Toute route admin accédant à des données nominatives doit appeler `auditLog()`** — même en lecture seule.
 16. **Réassurance front obligatoire sur chaque écran collectant ou affichant des données** — qui voit quoi, pourquoi on collecte, combien de temps on garde.
-17. **Multi-codes structure** — éducateur (suivi_token), CDS (6 chars, toute la structure), directeur (10 chars, tout + gestion codes). Expiration + révocation.
+17. **Multi-codes structure** — éducateur (suivi_token), CDS (6 chars, toute la structure), directeur (10 chars, tout + gestion codes). Expiration + révocation automatique (cron quotidien).
+18. **Délégation directeur→CDS** — `delegation_active_from` / `delegation_active_until` en DB. Max 90 jours. Le CDS délégué voit le code CDS. Supprimable à tout moment par le directeur.
+19. **Parcours pro sans compte** — `PriceInquiryBlock` sur la fiche séjour (formulaire inline) → email tarifs → CTA `/acceder-pro`. Ne jamais rediriger vers `/login` sans `?context=pro` depuis un parcours éducateur.
+20. **`/acceder-pro`** — page publique, rate-limitée (2 req/60min par email). Envoie 2 emails (confirmation + alerte GED) + sauvegarde lead dans `smart_form_submissions`.
 
 ## Token efficiency — PERMANENT, AUTO, NO EXCEPTION
 - Tables/listes > prose. Zéro filler. Zéro restatement. Zéro trailing summary.

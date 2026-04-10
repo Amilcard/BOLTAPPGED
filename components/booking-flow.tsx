@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Check, ChevronRight, ChevronLeft, Loader2, AlertCircle, Calendar, MapPin, CreditCard, Shield } from 'lucide-react';
+import { Check, ChevronRight, ChevronLeft, Loader2, AlertCircle, Calendar, MapPin, CreditCard, Shield, Building2 } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import type { Stay, StaySession} from '@/lib/types';
@@ -24,6 +24,12 @@ interface SessionPriceData {
   promo_price_eur: number | null;
 }
 
+interface ProSessionInfo {
+  email: string;
+  structureCode: string;
+  structureName: string;
+}
+
 interface BookingFlowProps {
   stay: Stay;
   sessions: StaySession[];
@@ -32,6 +38,7 @@ interface BookingFlowProps {
   prefillPrenom?: string;
   prefillEmail?: string;
   souhaitId?: string;
+  proSession?: ProSessionInfo | null;
 }
 
 interface Step1Data {
@@ -144,7 +151,7 @@ function StripePaymentForm({ clientSecret, onSuccess, onError }: { clientSecret:
   );
 }
 
-export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity = '', prefillPrenom, prefillEmail, souhaitId }: BookingFlowProps) {
+export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity = '', prefillPrenom, prefillEmail, souhaitId, proSession }: BookingFlowProps) {
   const router = useRouter();
   const departureCities = (stay as Stay & { departureCities?: DepartureCity[] }).departureCities || [];
   const enrichmentSessions = (stay as Stay & { enrichmentSessions?: SessionPriceData[] }).enrichmentSessions || [];
@@ -226,20 +233,21 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   const totalPrice = sessionBasePrice !== null ? sessionBasePrice + extraVille : (stay.priceFrom ? stay.priceFrom + extraVille : null);
 
   const [step1, setStep1] = useState<Step1Data>({
-    organisation: '',
+    organisation: proSession?.structureName || '',
     socialWorkerName: '',
-    email: prefillEmail || '',
+    email: prefillEmail || proSession?.email || '',
     phone: '',
-    structureCode: '',
-    structureName: '',
+    structureCode: proSession?.structureCode || '',
+    structureName: proSession?.structureName || '',
     structureAddress: '',
     structurePostalCode: '',
     structureCity: '',
     structureType: '',
     structureEmail: '',
-    structureVerified: false,
+    structureVerified: !!proSession?.structureCode,
     structureId: null,
   });
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [structureSearchResults, setStructureSearchResults] = useState<Array<{ name: string; city: string; type: string; contactHint: string | null }>>([]);
   const [structureCodeError, setStructureCodeError] = useState('');
 
@@ -412,6 +420,12 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
       });
 
       const data = await res.json();
+      if (res.status === 401 && proSession) {
+        setSessionExpired(true);
+        setError('Votre session a expiré. Veuillez vous reconnecter.');
+        setLoading(false);
+        return;
+      }
       if (!res.ok) throw new Error(data?.error?.message ?? 'Erreur lors de la réservation');
 
       createdInscriptionId = data?.id ?? '';
@@ -1069,6 +1083,23 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
       {step === 4 && (
         <div className="space-y-4">
           <h3 className="font-medium text-primary text-lg">Étape 5/5 : Récapitulatif et envoi de la demande</h3>
+          {proSession && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-800">
+              <Building2 className="w-4 h-4 flex-shrink-0" />
+              <span>Inscription professionnelle — <strong>{proSession.structureName}</strong></span>
+            </div>
+          )}
+          {sessionExpired && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800 space-y-2">
+              <p>Votre session a expiré. Veuillez vous reconnecter pour finaliser l&apos;inscription.</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition"
+              >
+                Se reconnecter
+              </button>
+            </div>
+          )}
           <div className="bg-primary-50 p-4 rounded-xl space-y-2 border border-primary-100">
             <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
               <Check className="w-4 h-4 text-green-600" /> Récapitulatif de la demande

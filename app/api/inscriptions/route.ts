@@ -545,7 +545,7 @@ export async function POST(request: NextRequest) {
       sendAdminNewInscriptionNotification(emailData),
     ]);
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         id: inscription.id,
         payment_reference: inscription.payment_reference,
@@ -555,6 +555,13 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     );
+
+    // Supprimer cookie pro après inscription réussie (re-auth requise pour chaque enfant)
+    if (request.cookies.get('gd_pro_session')) {
+      response.cookies.set('gd_pro_session', '', { maxAge: 0, path: '/' });
+    }
+
+    return response;
   } catch (error: unknown) {
     console.error('POST /api/inscriptions error:', error);
 

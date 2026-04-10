@@ -25,6 +25,7 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
   const encodedSecret = new TextEncoder().encode(secret);
 
   let isAuthenticated = false;
+  let proSession: { email: string; structureCode: string; structureName: string } | null = null;
 
   // Essai 1 : cookie admin (gd_session)
   const adminToken = cookieStore.get('gd_session')?.value;
@@ -38,7 +39,15 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
     if (proToken) {
       try {
         const { payload } = await jwtVerify(proToken, encodedSecret);
-        if ((payload as Record<string, unknown>).type === 'pro_session') isAuthenticated = true;
+        const p = payload as Record<string, unknown>;
+        if (p.type === 'pro_session') {
+          isAuthenticated = true;
+          proSession = {
+            email: (p.email as string) || '',
+            structureCode: (p.structureCode as string) || '',
+            structureName: (p.structureName as string) || '',
+          };
+        }
       } catch { /* invalid */ }
     }
   }
@@ -250,8 +259,9 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
               initialSessionId={sp.session}
               initialCity={sp.ville}
               prefillPrenom={sp.prenom}
-              prefillEmail={sp.email}
+              prefillEmail={proSession?.email || sp.email}
               souhaitId={sp.souhait_id}
+              proSession={proSession}
             />
           )}
         </div>

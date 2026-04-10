@@ -15,6 +15,10 @@
  */
 
 import { describe, it, expect, beforeAll } from '@jest/globals';
+
+const INTEGRATION = process.env.RUN_INTEGRATION === 'true';
+const itIntegration = INTEGRATION ? it : it.skip;
+
 import { config } from 'dotenv';
 import { resolve } from 'path';
 
@@ -115,8 +119,8 @@ async function supabase(path: string) {
 // ─── P1 — Inscription complète ───────────────────────────────────────────────
 
 describe('P1 — Inscription complète', () => {
-  // Skipped: test d'intégration nécessitant serveur local + seed DB. Lancer avec npm run test:integration
-  it.skip('crée une inscription → id + suivi_token + dossier_ref', async () => {
+  // Test d'intégration nécessitant serveur local + seed DB. Lancer avec npm run test:integration
+  itIntegration('crée une inscription → id + suivi_token + dossier_ref', async () => {
     if (skip('P1')) return;
 
     const res  = await post('/api/inscriptions', {
@@ -246,8 +250,8 @@ describe('P3 — Soumission et anti-doublon', () => {
 // ─── P4 — Upload pièce jointe ────────────────────────────────────────────────
 
 describe('P4 — Upload pièce jointe (chemin nominal)', () => {
-  // Skipped: test d'intégration nécessitant serveur local + seed DB. Lancer avec npm run test:integration
-  it.skip('upload un PDF valide → 200 + storage_path', async () => {
+  // Test d'intégration nécessitant serveur local + seed DB. Lancer avec npm run test:integration
+  itIntegration('upload un PDF valide → 200 + storage_path', async () => {
     if (skip('P4')) return;
 
     const targetId    = process.env.TEST_INSCRIPTION_ID;

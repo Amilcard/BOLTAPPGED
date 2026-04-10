@@ -25,6 +25,9 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 
+const INTEGRATION = process.env.RUN_INTEGRATION === 'true';
+const itIntegration = INTEGRATION ? it : it.skip;
+
 const BASE_URL = process.env.BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 const TOKEN = process.env.TEST_SUIVI_TOKEN || '';
 const INSCRIPTION_ID = process.env.TEST_INSCRIPTION_ID || '';
@@ -105,8 +108,8 @@ describe('POST /api/dossier-enfant/[inscriptionId]/submit', () => {
   // ─────────────────────────────────────────────────────────────────────────
   // TEST F — Submit dossier déjà envoyé → 409
   // ─────────────────────────────────────────────────────────────────────────
-  // Skipped: test d'intégration nécessitant serveur local + seed DB. Lancer avec npm run test:integration
-  it.skip('F - retourne 409 si le dossier a déjà été envoyé', async () => {
+  // Test d'intégration nécessitant serveur local + seed DB. Lancer avec npm run test:integration
+  itIntegration('F - retourne 409 si le dossier a déjà été envoyé', async () => {
     if (skipIfNoServer('F')) return;
     // Pour ce test il faut une inscription dont ged_sent_at IS NOT NULL.
     // Si TEST_SENT_INSCRIPTION_ID est défini, on l'utilise ; sinon on skippe.
@@ -247,8 +250,8 @@ describe('POST /api/dossier-enfant/[inscriptionId]/upload', () => {
 // TEST H — DELETE avec storage_path d'une autre inscription → 403
 // ─────────────────────────────────────────────────────────────────────────────
 describe('DELETE /api/dossier-enfant/[inscriptionId]/upload', () => {
-  // Skipped: test d'intégration nécessitant serveur local + seed DB. Lancer avec npm run test:integration
-  it.skip('H - retourne 403 si storage_path ne correspond pas à l\'inscriptionId', async () => {
+  // Test d'intégration nécessitant serveur local + seed DB. Lancer avec npm run test:integration
+  itIntegration('H - retourne 403 si storage_path ne correspond pas à l\'inscriptionId', async () => {
     if (skipIfNoServer('H') || skipIfNoToken('H')) return;
 
     // storage_path appartenant à une autre inscription (autre UUID)

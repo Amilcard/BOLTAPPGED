@@ -17,6 +17,9 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 
+const INTEGRATION = process.env.RUN_INTEGRATION === 'true';
+const itIntegration = INTEGRATION ? it : it.skip;
+
 const BASE_URL = process.env.BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 let serverReachable = false;
@@ -96,8 +99,8 @@ describe('API /api/inscriptions', () => {
     expect(data.status).toBe('en_attente');
   });
 
-  // Skipped: test d'intégration nécessitant serveur local. Lancer avec npm run test:integration
-  it.skip('rejette inscription sans consentement', async () => {
+  // Test d'intégration nécessitant serveur local. Lancer avec npm run test:integration
+  itIntegration('rejette inscription sans consentement', async () => {
     if (skipIfNoServer()) return;
 
     const payload = {
@@ -128,8 +131,8 @@ describe('API /api/inscriptions', () => {
     expect(data).toHaveProperty('error');
   });
 
-  // Skipped: test d'intégration nécessitant serveur local. Lancer avec npm run test:integration
-  it.skip('rejette inscription avec email invalide', async () => {
+  // Test d'intégration nécessitant serveur local. Lancer avec npm run test:integration
+  itIntegration('rejette inscription avec email invalide', async () => {
     if (skipIfNoServer()) return;
 
     const payload = {
@@ -157,8 +160,8 @@ describe('API /api/inscriptions', () => {
     expect(response.status).toBe(400);
   });
 
-  // Skipped: test d'intégration nécessitant serveur local. Lancer avec npm run test:integration
-  it.skip('rejette inscription avec prix négatif', async () => {
+  // Test d'intégration nécessitant serveur local. Lancer avec npm run test:integration
+  itIntegration('rejette inscription avec prix négatif', async () => {
     if (skipIfNoServer()) return;
 
     const payload = {
@@ -186,8 +189,8 @@ describe('API /api/inscriptions', () => {
     expect(response.status).toBe(400);
   });
 
-  // Skipped: test d'intégration nécessitant serveur local. Lancer avec npm run test:integration
-  it.skip('rejette inscription avec priceTotal à 0', async () => {
+  // Test d'intégration nécessitant serveur local. Lancer avec npm run test:integration
+  itIntegration('rejette inscription avec priceTotal à 0', async () => {
     if (skipIfNoServer()) return;
 
     const payload = {

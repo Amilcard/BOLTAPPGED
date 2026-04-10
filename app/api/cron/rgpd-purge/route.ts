@@ -24,14 +24,20 @@ export async function GET(req: NextRequest) {
 
   const { data: auditResult } = await supabase.rpc('gd_purge_expired_audit_logs');
   const { data: medicalResult } = await supabase.rpc('gd_purge_expired_medical_data');
+  // Purge login attempts > 24h (IPs rate limiting — RGPD minimisation)
+  const { data: loginResult } = await supabase.rpc('purge_old_login_attempts');
+  // Purge audit logs > 3 ans (recommandation CNIL)
+  const { data: auditOldResult } = await supabase.rpc('purge_old_audit_logs');
 
-  console.log(`[rgpd-purge] audit_logs: ${auditResult ?? 0}, medical_data: ${medicalResult ?? 0}`);
+  console.log(`[rgpd-purge] audit_logs_12m: ${auditResult ?? 0}, medical_data: ${medicalResult ?? 0}, login_attempts: ${loginResult ?? 'ok'}, audit_logs_3y: ${auditOldResult ?? 'ok'}`);
 
   return NextResponse.json({
     ok: true,
     purged: {
-      audit_logs: auditResult ?? 0,
+      audit_logs_12m: auditResult ?? 0,
       medical_data: medicalResult ?? 0,
+      login_attempts_24h: loginResult ?? 'ok',
+      audit_logs_3y: auditOldResult ?? 'ok',
     },
   });
 }

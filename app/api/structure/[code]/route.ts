@@ -60,9 +60,9 @@ async function isStructureRateLimited(ip: string): Promise<boolean> {
  *
  * L'éducateur utilise le suivi_token par inscription (pas cette route).
  */
-type StructureRole = 'cds' | 'directeur';
+export type StructureRole = 'cds' | 'cds_delegated' | 'directeur';
 
-async function resolveCodeToStructure(
+export async function resolveCodeToStructure(
   code: string
 ): Promise<{ structure: Record<string, unknown>; role: StructureRole } | null> {
   const supabase = getSupabase();
@@ -73,25 +73,29 @@ async function resolveCodeToStructure(
   if (codeNorm.length === 6) {
     const { data } = await supabase
       .from('gd_structures')
-      .select('id, name, city, postal_code, type, email, code_expires_at, code_revoked_at, rgpd_accepted_at')
+      .select('id, name, city, postal_code, type, email, code, code_expires_at, code_revoked_at, rgpd_accepted_at, delegation_active_from, delegation_active_until')
       .eq('code', codeNorm)
       .eq('status', 'active')
       .single();
 
     if (!data) return null;
 
-    // Vérifier expiration et révocation
     if (data.code_revoked_at) return null;
     if (data.code_expires_at && data.code_expires_at < now) return null;
 
-    return { structure: data, role: 'cds' };
+    // Délégation active ? directeur a accordé accès gestion codes au CDS
+    const delegFrom = data.delegation_active_from as string | null;
+    const delegUntil = data.delegation_active_until as string | null;
+    const isDelegated = !!(delegFrom && delegUntil && delegFrom <= now && now <= delegUntil);
+
+    return { structure: data, role: isDelegated ? 'cds_delegated' : 'cds' };
   }
 
   // Essai code Directeur (10 chars)
   if (codeNorm.length === 10) {
     const { data } = await supabase
       .from('gd_structures')
-      .select('id, name, city, postal_code, type, email, code_directeur_expires_at, code_directeur_revoked_at, rgpd_accepted_at')
+      .select('id, name, city, postal_code, type, email, code, code_directeur_expires_at, code_directeur_revoked_at, rgpd_accepted_at, delegation_active_from, delegation_active_until')
       .eq('code_directeur', codeNorm)
       .eq('status', 'active')
       .single();
@@ -156,7 +160,7 @@ export async function GET(
     resourceType: 'inscription',
     resourceId: structureId,
     actorType: 'referent',
-    metadata: { access_type: 'structure_code', role, ip, code_length: code.length },
+    metadata: { access_type: 'structure_code', role, ip, code_length: code.length, user_agent: _req.headers.get('user-agent') || 'unknown' },
   });
 
   // Récupérer les inscriptions rattachées
@@ -180,15 +184,20 @@ export async function GET(
   // Enrichir (logique partagée avec /api/admin/inscriptions)
   const enriched = enrichInscriptions((inscriptions || []) as InscriptionRaw[]);
 
+  const s = structure as Record<string, unknown>;
+
   return NextResponse.json({
     structure: {
       id: structureId,
-      name: structure.name,
-      city: structure.city,
-      postalCode: structure.postal_code,
-      type: structure.type,
-      email: structure.email,
-      rgpdAcceptedAt: (structure as Record<string, unknown>).rgpd_accepted_at || null,
+      name: s.name,
+      city: s.city,
+      postalCode: s.postal_code,
+      type: s.type,
+      email: s.email,
+      code: role === 'directeur' || role === 'cds_delegated' ? s.code : undefined,
+      rgpdAcceptedAt: s.rgpd_accepted_at || null,
+      delegationFrom:  s.delegation_active_from  || null,
+      delegationUntil: s.delegation_active_until || null,
     },
     role,
     inscriptions: enriched,

@@ -26,6 +26,11 @@ process.env.NEXTAUTH_SECRET = 'test-secret-32-chars-minimum-key!';
 
 const mockFrom = jest.fn();
 
+jest.mock('@/lib/audit-log', () => ({
+  auditLog: jest.fn().mockResolvedValue(undefined),
+  getClientIp: jest.fn().mockReturnValue('127.0.0.1'),
+}));
+
 jest.mock('@/lib/supabase-server', () => ({
   getSupabase: () => ({ from: mockFrom }),
   getSupabaseAdmin: () => ({ from: mockFrom }),

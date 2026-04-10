@@ -28,6 +28,11 @@ const mockStorageUpload = jest.fn();
 const mockStorageRemove = jest.fn();
 const mockStorageCreateSignedUrl = jest.fn();
 
+jest.mock('@/lib/audit-log', () => ({
+  auditLog: jest.fn().mockResolvedValue(undefined),
+  getClientIp: jest.fn().mockReturnValue('127.0.0.1'),
+}));
+
 jest.mock('@/lib/supabase-server', () => ({
   getSupabase: () => ({
     from: mockFrom,

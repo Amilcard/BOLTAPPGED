@@ -107,7 +107,7 @@ describe('POST /api/auth/login', () => {
     expect(body.error).not.toMatch(/password|mot de passe/i);
   });
 
-  it('connexion réussie → 200 + { ok: true, token }', async () => {
+  it('connexion réussie → 200 + { ok: true, user } (cookie-only)', async () => {
     mockSignInWithPassword.mockResolvedValue({
       data: {
         user: {
@@ -122,10 +122,10 @@ describe('POST /api/auth/login', () => {
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(body.ok).toBe(true);
-    // Token dans le body pour localStorage (architecture admin)
-    expect(body.token).toBeDefined();
-    expect(typeof body.token).toBe('string');
-    // Pas d'autres clés de token inattendues
+    expect(body.user).toHaveProperty('email', 'admin@ged.fr');
+    expect(body.user).toHaveProperty('role', 'ADMIN');
+    // Token en cookie httpOnly — absent du body depuis migration 28 mars
+    expect(body.token).toBeUndefined();
     expect(body.access_token).toBeUndefined();
     expect(body.gd_session).toBeUndefined();
   });

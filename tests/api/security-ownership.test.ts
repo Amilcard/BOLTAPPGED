@@ -26,6 +26,11 @@ process.env.SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.fa
 
 const mockFrom = jest.fn();
 
+jest.mock('@/lib/audit-log', () => ({
+  auditLog: jest.fn().mockResolvedValue(undefined),
+  getClientIp: jest.fn().mockReturnValue('127.0.0.1'),
+}));
+
 jest.mock('@/lib/supabase-server', () => ({
   getSupabase: () => ({ from: mockFrom }),
   getSupabaseAdmin: () => ({ from: mockFrom }),

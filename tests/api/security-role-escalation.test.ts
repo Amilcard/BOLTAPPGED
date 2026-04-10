@@ -65,14 +65,9 @@ describe('VIEWER ne peut pas écrire sur /admin/propositions', () => {
     expect(res.status).toBe(401);
   });
 
-  it('GET VIEWER → 200 (lecture toujours autorisée)', async () => {
-    mockFrom.mockReturnValue({
-      select: jest.fn().mockReturnValue({
-        order: jest.fn().mockResolvedValue({ data: [], error: null }),
-      }),
-    });
+  it('GET VIEWER → 403 (requireEditor bloque les non-éditeurs)', async () => {
     const res = await propGet(r('GET', VIEWER));
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(403);
   });
 
   it('POST EDITOR → pas 401 (accès normal)', async () => {

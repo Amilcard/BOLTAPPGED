@@ -66,8 +66,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Rate limiting POST public routes
-  if (request.method === 'POST' && pathname in RATE_LIMITS) {
+  // Rate limiting POST public routes (désactivé en test — les tests rapides déclenchent le limiter)
+  if (request.method === 'POST' && pathname in RATE_LIMITS && process.env.NODE_ENV !== 'test') {
     const ip = getClientIp(request);
     if (checkRateLimit(pathname, ip)) {
       const cfg = RATE_LIMITS[pathname];

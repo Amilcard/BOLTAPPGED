@@ -61,5 +61,10 @@ module.exports = async () => {
       `${PROJECT_ROOT}/.next`,
       '/InKlusifApp/',
     ],
+
+    // ESM packages : jose, @supabase/*, uuid — doivent être transformés par Jest
+    transformIgnorePatterns: [
+      '/node_modules/(?!(jose|@supabase|uuid)/)',
+    ],
   };
 };

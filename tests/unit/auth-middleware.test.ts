@@ -63,13 +63,13 @@ describe('verifyAuth', () => {
   it('retourne null si aucun token (pas de header ni cookie)', async () => {
     const { verifyAuth } = await import('@/lib/auth-middleware');
     const req = makeRequest();
-    expect(verifyAuth(req)).toBeNull();
+    await expect(verifyAuth(req)).resolves.toBeNull();
   });
 
   it('retourne null si token malformé', async () => {
     const { verifyAuth } = await import('@/lib/auth-middleware');
     const req = makeRequest('not.a.valid.jwt');
-    expect(verifyAuth(req)).toBeNull();
+    await expect(verifyAuth(req)).resolves.toBeNull();
   });
 
   it('retourne null si token expiré', async () => {

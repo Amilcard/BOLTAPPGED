@@ -109,6 +109,7 @@ export default function StructureDashboard() {
   const [role, setRole] = useState<'direction' | 'cds' | 'cds_delegated' | 'secretariat' | 'educateur' | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'admin' | 'educatif'>('admin');
+  const [eduSubTab, setEduSubTab] = useState('deroulement');
   const [delegFrom,  setDelegFrom]  = useState('');
   const [delegUntil, setDelegUntil] = useState('');
   const [delegSaving, setDelegSaving] = useState(false);
@@ -382,69 +383,179 @@ export default function StructureDashboard() {
         {/* ── Contenu onglet Éducatif ── */}
         {activeTab === 'educatif' && (
           <div className="space-y-6">
-            {/* Liste enfants — sans prix ni paiement */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100">
-                <h3 className="font-semibold text-gray-800">Enfants inscrits — suivi éducatif</h3>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  {role === 'educateur' ? 'Vos inscriptions uniquement' : `${filtered.length} inscription(s) pour votre structure`}
-                </p>
+
+            {/* 1. BANDEAU URGENCE FIXE */}
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-xl">🚨</span>
+                <div>
+                  <p className="font-bold text-red-800 text-sm">GED Astreinte H24</p>
+                  <a href="tel:0423161671" className="text-xl font-bold text-red-900">04 23 16 16 71</a>
+                </div>
               </div>
-              <div className="divide-y divide-gray-50">
-                {filtered.length === 0 ? (
-                  <div className="p-8 text-center text-gray-400">Aucune inscription pour le moment.</div>
-                ) : filtered.map(insc => {
-                  const st = STATUS[insc.status] || STATUS.en_attente;
-                  return (
-                    <div key={insc.id} className="px-6 py-4 hover:bg-gray-50 transition">
-                      <div className="flex items-center justify-between gap-4">
-                        <div>
-                          <p className="font-medium text-gray-800">{insc.jeune_prenom} {insc.jeune_nom}</p>
-                          <p className="text-sm text-gray-500">{insc.sejour_titre}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">Référent : {insc.referent_nom}</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <DossierBadge completude={insc.dossier_completude ? { bulletin: insc.dossier_completude.bulletin, sanitaire: insc.dossier_completude.sanitaire, liaison: insc.dossier_completude.liaison, renseignements: insc.dossier_completude.renseignements, pj_count: insc.dossier_completude.pj_count } : null} gedSentAt={insc.ged_sent_at} />
-                          <Badge {...st} />
-                          {insc.suivi_token && (
-                            <Link href={`/suivi/${insc.suivi_token}`} className="text-xs text-primary hover:underline whitespace-nowrap">
-                              Dossier →
-                            </Link>
+              <div className="flex flex-wrap gap-3 text-xs font-medium">
+                <span className="px-2 py-1 bg-red-100 text-red-800 rounded">SAMU 15</span>
+                <span className="px-2 py-1 bg-red-100 text-red-800 rounded">Police 17</span>
+                <span className="px-2 py-1 bg-red-100 text-red-800 rounded">Pompiers 18</span>
+                <span className="px-2 py-1 bg-red-100 text-red-800 rounded">Enfants en danger 119</span>
+              </div>
+            </div>
+
+            {/* 2. KPIs TERRAIN — 8 cartes */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: 'Enfants en séjour', value: filtered.filter(i => i.status === 'validee').length, icon: '👦', critical: false },
+                { label: 'Prochains départs J-7', value: 0, icon: '🗓️', critical: false },
+                { label: 'Attention médicale', value: 0, icon: '🏥', critical: false },
+                { label: 'Situation difficile', value: 0, icon: '⚠️', critical: true },
+                { label: 'À rappeler', value: 0, icon: '📞', critical: false },
+                { label: 'Messages non lus', value: 0, icon: '💬', critical: false },
+                { label: 'Notes importantes', value: 0, icon: '📝', critical: false },
+                { label: 'Incidents ouverts', value: 0, icon: '🔴', critical: true },
+              ].map(kpi => (
+                <div key={kpi.label} className={`rounded-xl border p-3 text-center ${
+                  kpi.value === 0 ? 'bg-green-50 border-green-100' :
+                  kpi.critical ? 'bg-red-50 border-red-200' : 'bg-orange-50 border-orange-200'
+                }`}>
+                  <p className="text-2xl mb-1">{kpi.icon}</p>
+                  <p className={`text-2xl font-bold ${
+                    kpi.value === 0 ? 'text-green-700' :
+                    kpi.critical ? 'text-red-700' : 'text-orange-700'
+                  }`}>{kpi.value}</p>
+                  <p className="text-xs text-gray-600 mt-0.5">{kpi.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* 3. SOUS-ONGLETS SUIVI */}
+            {(() => {
+              const [subTab, setSubTab] = [eduSubTab, setEduSubTab];
+              return (<>
+              <div className="flex border-b border-gray-200 overflow-x-auto">
+                {[
+                  { key: 'deroulement', label: 'Déroulement' },
+                  { key: 'medical', label: 'Médical' },
+                  { key: 'appels', label: 'Appels & Rappels' },
+                  { key: 'notes', label: 'Notes' },
+                  { key: 'bilan', label: 'Bilan' },
+                ].map(t => (
+                  <button key={t.key} onClick={() => setSubTab(t.key)}
+                    className={`px-4 py-2.5 text-xs font-medium border-b-2 whitespace-nowrap transition-colors ${
+                      subTab === t.key ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'
+                    }`}
+                  >{t.label}</button>
+                ))}
+              </div>
+
+              {/* Sous-onglet DÉROULEMENT */}
+              {subTab === 'deroulement' && (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-100">
+                    <h3 className="font-semibold text-gray-800">Enfants inscrits — suivi éducatif</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {role === 'educateur' ? 'Vos inscriptions uniquement' : `${filtered.length} inscription(s)`}
+                    </p>
+                  </div>
+                  <div className="divide-y divide-gray-50">
+                    {filtered.length === 0 ? (
+                      <div className="p-8 text-center text-gray-400">Aucune inscription pour le moment.</div>
+                    ) : filtered.map(insc => {
+                      const st = STATUS[insc.status] || STATUS.en_attente;
+                      return (
+                        <div key={insc.id} className="px-6 py-4 hover:bg-gray-50 transition">
+                          <div className="flex items-center justify-between gap-4">
+                            <div>
+                              <p className="font-medium text-gray-800">{insc.jeune_prenom} {insc.jeune_nom}</p>
+                              <p className="text-sm text-gray-500">{insc.sejour_titre}</p>
+                              <p className="text-xs text-gray-400 mt-0.5">Référent : {insc.referent_nom}</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <DossierBadge completude={insc.dossier_completude ? { bulletin: insc.dossier_completude.bulletin, sanitaire: insc.dossier_completude.sanitaire, liaison: insc.dossier_completude.liaison, renseignements: insc.dossier_completude.renseignements, pj_count: insc.dossier_completude.pj_count } : null} gedSentAt={insc.ged_sent_at} />
+                              <Badge {...st} />
+                              {insc.suivi_token && (
+                                <Link href={`/suivi/${insc.suivi_token}`} className="text-xs text-primary hover:underline whitespace-nowrap">
+                                  Dossier →
+                                </Link>
+                              )}
+                            </div>
+                          </div>
+                          {insc.besoins_specifiques && (
+                            <div className="mt-2 p-2 bg-amber-50 border border-amber-100 rounded-lg text-xs text-amber-800">
+                              Besoins spécifiques : {insc.besoins_specifiques}
+                            </div>
                           )}
                         </div>
-                      </div>
-                      {insc.besoins_specifiques && (
-                        <div className="mt-2 p-2 bg-amber-50 border border-amber-100 rounded-lg text-xs text-amber-800">
-                          Besoins spécifiques : {insc.besoins_specifiques}
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Sous-onglet MÉDICAL */}
+              {subTab === 'medical' && (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                  <h3 className="font-semibold text-gray-800 mb-2">Suivi médical</h3>
+                  <p className="text-sm text-gray-400">Aucun événement médical enregistré.</p>
+                  <p className="text-xs text-gray-300 mt-2">Les consultations, traitements et alertes médicales apparaîtront ici.</p>
+                </div>
+              )}
+
+              {/* Sous-onglet APPELS & RAPPELS */}
+              {subTab === 'appels' && (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                  <h3 className="font-semibold text-gray-800 mb-2">Appels &amp; Rappels</h3>
+                  <div className="p-4 bg-green-50 border border-green-100 rounded-lg mb-4">
+                    <p className="text-sm text-green-800 font-medium">Aucun rappel en attente</p>
+                  </div>
+                  <p className="text-sm text-gray-400">Le journal des appels et rappels apparaîtra ici.</p>
+                </div>
+              )}
+
+              {/* Sous-onglet NOTES */}
+              {subTab === 'notes' && (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                  <h3 className="font-semibold text-gray-800 mb-2">Notes &amp; Messages</h3>
+                  <div className="mb-4">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Notes importantes</label>
+                    <textarea
+                      className="w-full border border-gray-200 rounded-lg p-3 text-sm resize-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                      rows={4}
+                      placeholder="Saisissez ici les points d'attention pour l'équipe..."
+                      disabled
+                    />
+                    <p className="text-xs text-gray-300 mt-1">Édition disponible prochainement.</p>
+                  </div>
+                  <p className="text-sm text-gray-400">Les messages entre GED et votre structure apparaîtront ici.</p>
+                </div>
+              )}
+
+              {/* Sous-onglet BILAN */}
+              {subTab === 'bilan' && (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                  <h3 className="font-semibold text-gray-800 mb-3">Bilan séjours</h3>
+                  <div className="space-y-2">
+                    {filtered.filter(i => i.status === 'validee').length > 0 ? (
+                      filtered.filter(i => i.status === 'validee').map(insc => (
+                        <div key={insc.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div>
+                            <p className="font-medium text-gray-800 text-sm">{insc.jeune_prenom} {insc.jeune_nom}</p>
+                            <p className="text-xs text-gray-500">{insc.sejour_titre}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-green-600 text-xs">✅ Aucun incident</span>
+                            <DossierBadge completude={insc.dossier_completude ? { bulletin: insc.dossier_completude.bulletin, sanitaire: insc.dossier_completude.sanitaire, liaison: insc.dossier_completude.liaison, renseignements: insc.dossier_completude.renseignements, pj_count: insc.dossier_completude.pj_count } : null} gedSentAt={insc.ged_sent_at} />
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Suivi séjour — sections futures */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h3 className="font-semibold text-gray-800 mb-2">Suivi pendant le séjour</h3>
-              <p className="text-sm text-gray-400">Aucun événement enregistré pour le moment.</p>
-              <p className="text-xs text-gray-300 mt-2">Appels, incidents, informations médicales et messages apparaîtront ici.</p>
-            </div>
-
-            {/* Contacts urgence */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h3 className="font-semibold text-gray-800 mb-3">Contacts urgence</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                <div className="p-3 bg-red-50 border border-red-100 rounded-lg">
-                  <p className="text-xs font-semibold text-red-700 mb-1">Astreinte GED — 24h/24</p>
-                  <a href="tel:0423161671" className="text-lg font-bold text-red-800">04 23 16 16 71</a>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-400">Aucun séjour validé pour le moment.</p>
+                    )}
+                  </div>
                 </div>
-                <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">
-                  <p className="text-xs font-semibold text-blue-700 mb-1">Contact équipe GED</p>
-                  <a href="mailto:contact@groupeetdecouverte.fr" className="text-sm font-medium text-blue-800">contact@groupeetdecouverte.fr</a>
-                </div>
-              </div>
-            </div>
+              )}
+              </>);
+            })()}
+
           </div>
         )}
 

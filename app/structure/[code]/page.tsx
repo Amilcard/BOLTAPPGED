@@ -401,28 +401,38 @@ export default function StructureDashboard() {
               </div>
             </div>
 
-            {/* 2. KPIs TERRAIN — 8 cartes */}
+            {/* 2. KPIs TERRAIN — style admin dashboard */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { label: 'Enfants en séjour', value: filtered.filter(i => i.status === 'validee').length, color: 'bg-blue-500', sub: 'Inscriptions validées' },
+                { label: 'Dossiers complets', value: filtered.filter(i => i.ged_sent_at).length, color: 'bg-green-500', sub: 'Envoyés à GED' },
+                { label: 'En attente', value: filtered.filter(i => i.status === 'en_attente').length, color: 'bg-orange-500', sub: 'À valider' },
+                { label: 'Incidents ouverts', value: 0, color: 'bg-red-500', sub: 'Aucun incident' },
+              ].map(kpi => (
+                <div key={kpi.label} className="bg-white rounded-xl shadow p-6">
+                  <div className={`w-12 h-12 ${kpi.color} rounded-lg flex items-center justify-center mb-4`}>
+                    <span className="text-white text-xl font-bold">{kpi.value}</span>
+                  </div>
+                  <p className="text-gray-500 text-sm">{kpi.label}</p>
+                  <p className="text-3xl font-bold text-primary">{kpi.value}</p>
+                  <p className="text-xs text-gray-400 mt-1">{kpi.sub}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* KPIs secondaires — ligne compacte */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: 'Enfants en séjour', value: filtered.filter(i => i.status === 'validee').length, icon: '👦', critical: false },
-                { label: 'Prochains départs J-7', value: 0, icon: '🗓️', critical: false },
-                { label: 'Attention médicale', value: 0, icon: '🏥', critical: false },
-                { label: 'Situation difficile', value: 0, icon: '⚠️', critical: true },
-                { label: 'À rappeler', value: 0, icon: '📞', critical: false },
-                { label: 'Messages non lus', value: 0, icon: '💬', critical: false },
-                { label: 'Notes importantes', value: 0, icon: '📝', critical: false },
-                { label: 'Incidents ouverts', value: 0, icon: '🔴', critical: true },
+                { label: 'À rappeler', value: 0, ok: 'RAS' },
+                { label: 'Messages', value: 0, ok: 'Aucun' },
+                { label: 'Médical', value: 0, ok: 'RAS' },
+                { label: 'Notes', value: 0, ok: 'Aucune' },
               ].map(kpi => (
-                <div key={kpi.label} className={`rounded-xl border p-3 text-center ${
-                  kpi.value === 0 ? 'bg-green-50 border-green-100' :
-                  kpi.critical ? 'bg-red-50 border-red-200' : 'bg-orange-50 border-orange-200'
-                }`}>
-                  <p className="text-2xl mb-1">{kpi.icon}</p>
-                  <p className={`text-2xl font-bold ${
-                    kpi.value === 0 ? 'text-green-700' :
-                    kpi.critical ? 'text-red-700' : 'text-orange-700'
-                  }`}>{kpi.value}</p>
-                  <p className="text-xs text-gray-600 mt-0.5">{kpi.label}</p>
+                <div key={kpi.label} className={`rounded-xl border p-4 ${kpi.value === 0 ? 'bg-green-50 border-green-100' : 'bg-orange-50 border-orange-200'}`}>
+                  <p className="text-sm font-medium text-gray-700">{kpi.label}</p>
+                  <p className={`text-lg font-bold ${kpi.value === 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                    {kpi.value === 0 ? kpi.ok : kpi.value}
+                  </p>
                 </div>
               ))}
             </div>

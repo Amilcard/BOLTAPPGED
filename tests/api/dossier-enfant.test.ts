@@ -107,34 +107,57 @@ describe('POST /api/dossier-enfant/[inscriptionId]/submit', () => {
 
   // ─────────────────────────────────────────────────────────────────────────
   // TEST F — Submit dossier déjà envoyé → 409
+  // Converti en test unitaire : mock verifyOwnership + mock Supabase
   // ─────────────────────────────────────────────────────────────────────────
-  // Test d'intégration nécessitant serveur local + seed DB. Lancer avec npm run test:integration
-  itIntegration('F - retourne 409 si le dossier a déjà été envoyé', async () => {
-    if (skipIfNoServer('F')) return;
-    // Pour ce test il faut une inscription dont ged_sent_at IS NOT NULL.
-    // Si TEST_SENT_INSCRIPTION_ID est défini, on l'utilise ; sinon on skippe.
-    const sentId = process.env.TEST_SENT_INSCRIPTION_ID || '';
-    const sentToken = process.env.TEST_SENT_SUIVI_TOKEN || '';
-    if (!sentId || !sentToken) {
-      console.warn('[SKIP] F — TEST_SENT_INSCRIPTION_ID / TEST_SENT_SUIVI_TOKEN non définis');
-      return;
-    }
-    // Guard supplémentaire : les deux valeurs doivent être des UUID valides.
-    // Si une variable est définie mais contient une valeur malformée, la route
-    // retourne 400 "Token invalide" avant d'atteindre le check ged_sent_at → faux-négatif.
-    if (!VALID_UUID_REGEX.test(sentId) || !VALID_UUID_REGEX.test(sentToken)) {
-      console.warn('[SKIP] F — TEST_SENT_INSCRIPTION_ID ou TEST_SENT_SUIVI_TOKEN ne sont pas des UUID valides');
-      return;
-    }
+  it('F - retourne 409 si le dossier a déjà été envoyé (unitaire)', async () => {
+    // Import dynamique pour éviter les conflits de mock avec les tests fetch
+    jest.resetModules();
+    jest.doMock('@/lib/verify-ownership', () => ({
+      verifyOwnership: jest.fn().mockResolvedValue({
+        ok: true, referentEmail: 'ref@test.fr', status: 200,
+      }),
+    }));
+    jest.doMock('@/lib/email', () => ({
+      sendDossierCompletEmail: jest.fn().mockResolvedValue(undefined),
+      sendDossierGedAdminNotification: jest.fn().mockResolvedValue(undefined),
+    }));
+    jest.doMock('@/lib/audit-log', () => ({
+      auditLog: jest.fn().mockResolvedValue(undefined),
+      getClientIp: jest.fn().mockReturnValue('127.0.0.1'),
+    }));
+    const mockFrom = jest.fn().mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          is: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({
+              data: { id: 'doss-1', ged_sent_at: '2026-04-01T00:00:00Z', bulletin_completed: true, sanitaire_completed: true, liaison_completed: true, renseignements_completed: true, renseignements_required: false, documents_joints: [] },
+              error: null,
+            }),
+          }),
+          single: jest.fn().mockResolvedValue({
+            data: { id: 'doss-1', ged_sent_at: '2026-04-01T00:00:00Z', bulletin_completed: true, sanitaire_completed: true, liaison_completed: true, renseignements_completed: true, renseignements_required: false, documents_joints: [] },
+            error: null,
+          }),
+        }),
+      }),
+    });
+    jest.doMock('@/lib/supabase-server', () => ({
+      getSupabase: () => ({ from: mockFrom }),
+      getSupabaseAdmin: () => ({ from: mockFrom }),
+    }));
 
-    const res = await fetch(`${BASE_URL}/api/dossier-enfant/${sentId}/submit`, {
+    const { POST } = await import('@/app/api/dossier-enfant/[inscriptionId]/submit/route');
+    const { NextRequest } = await import('next/server');
+
+    const req = new NextRequest('http://localhost/api/dossier-enfant/aaa00000-0000-0000-0000-000000000001/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: sentToken }),
+      body: JSON.stringify({ token: 'bbb00000-0000-0000-0000-000000000001' }),
     });
 
+    const res = await POST(req, { params: Promise.resolve({ inscriptionId: 'aaa00000-0000-0000-0000-000000000001' }) });
     expect(res.status).toBe(409);
-    const body = await res.json().catch(() => ({}));
+    const body = await res.json();
     expect(body).toHaveProperty('alreadySent', true);
   });
 
@@ -250,24 +273,42 @@ describe('POST /api/dossier-enfant/[inscriptionId]/upload', () => {
 // TEST H — DELETE avec storage_path d'une autre inscription → 403
 // ─────────────────────────────────────────────────────────────────────────────
 describe('DELETE /api/dossier-enfant/[inscriptionId]/upload', () => {
-  // Test d'intégration nécessitant serveur local + seed DB. Lancer avec npm run test:integration
-  itIntegration('H - retourne 403 si storage_path ne correspond pas à l\'inscriptionId', async () => {
-    if (skipIfNoServer('H') || skipIfNoToken('H')) return;
+  // TEST H — IDOR storage_path d'une autre inscription → 403
+  // Converti en test unitaire : mock verifyOwnership retourne OK, le guard IDOR bloque
+  it('H - retourne 403 si storage_path ne correspond pas à l\'inscriptionId (unitaire)', async () => {
+    jest.resetModules();
+    jest.doMock('@/lib/verify-ownership', () => ({
+      verifyOwnership: jest.fn().mockResolvedValue({
+        ok: true, referentEmail: 'ref@test.fr', status: 200,
+      }),
+    }));
+    jest.doMock('@/lib/audit-log', () => ({
+      auditLog: jest.fn().mockResolvedValue(undefined),
+      getClientIp: jest.fn().mockReturnValue('127.0.0.1'),
+    }));
+    jest.doMock('@/lib/supabase-server', () => ({
+      getSupabase: () => ({ from: jest.fn(), storage: { from: jest.fn() } }),
+      getSupabaseAdmin: () => ({ from: jest.fn() }),
+    }));
 
-    // storage_path appartenant à une autre inscription (autre UUID)
+    const { DELETE } = await import('@/app/api/dossier-enfant/[inscriptionId]/upload/route');
+    const { NextRequest } = await import('next/server');
+
+    const inscriptionId = 'aaa00000-0000-0000-0000-000000000001';
     const foreignPath = `${FAKE_UUID}/vaccins_1234567890.pdf`;
 
-    const res = await fetch(`${BASE_URL}/api/dossier-enfant/${INSCRIPTION_ID}/upload`, {
+    const req = new NextRequest(`http://localhost/api/dossier-enfant/${inscriptionId}/upload`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        token: TOKEN,
+        token: 'bbb00000-0000-0000-0000-000000000001',
         storage_path: foreignPath,
       }),
     });
 
+    const res = await DELETE(req, { params: Promise.resolve({ inscriptionId }) });
     expect(res.status).toBe(403);
-    const body = await res.json().catch(() => ({}));
+    const body = await res.json();
     expect(body).toHaveProperty('error');
   });
 

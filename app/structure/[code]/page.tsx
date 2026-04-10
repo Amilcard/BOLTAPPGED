@@ -47,11 +47,14 @@ interface Inscription {
   created_at: string;
   dossier_completude: DossierCompletude | null;
   ged_sent_at?: string | null;
+  besoins_specifiques?: string | null;
 }
 
 interface StructureData {
   structure: StructureInfo;
-  role: 'cds' | 'cds_delegated' | 'directeur';
+  role: 'direction' | 'cds' | 'cds_delegated' | 'secretariat' | 'educateur';
+  roles: string[];
+  accessEmail: string | null;
   inscriptions: Inscription[];
 }
 
@@ -103,7 +106,9 @@ export default function StructureDashboard() {
   const [data, setData] = useState<StructureData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [role, setRole] = useState<'cds' | 'cds_delegated' | 'directeur' | null>(null);
+  const [role, setRole] = useState<'direction' | 'cds' | 'cds_delegated' | 'secretariat' | 'educateur' | null>(null);
+  const [roles, setRoles] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<'admin' | 'educatif'>('admin');
   const [delegFrom,  setDelegFrom]  = useState('');
   const [delegUntil, setDelegUntil] = useState('');
   const [delegSaving, setDelegSaving] = useState(false);
@@ -130,6 +135,9 @@ export default function StructureDashboard() {
       .then((d) => {
         setData(d);
         setRole(d.role);
+        setRoles(d.roles || [d.role]);
+        // Onglet par défaut : éducatif pour éducateur, admin pour les autres
+        if (d.role === 'educateur') setActiveTab('educatif');
         if (d.structure.rgpdAcceptedAt) setRgpdAccepted(true);
         if (d.structure.delegationFrom)  setDelegFrom(d.structure.delegationFrom.slice(0, 10));
         if (d.structure.delegationUntil) setDelegUntil(d.structure.delegationUntil.slice(0, 10));
@@ -278,14 +286,20 @@ export default function StructureDashboard() {
               <span className="text-xs text-white/60 font-semibold uppercase tracking-wider print:text-gray-400">
                 Espace Structure
               </span>
-              {role === 'directeur' && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-900 uppercase tracking-wide">Directeur</span>
+              {role === 'direction' && (
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-900 uppercase tracking-wide">Direction</span>
               )}
               {role === 'cds' && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-white/20 text-white uppercase tracking-wide">CDS</span>
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-white/20 text-white uppercase tracking-wide">Chef de service</span>
               )}
               {role === 'cds_delegated' && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-900 uppercase tracking-wide">CDS · Délégation active</span>
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-900 uppercase tracking-wide">CDS · Délégation</span>
+              )}
+              {role === 'secretariat' && (
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-gray-200 text-gray-700 uppercase tracking-wide">Secrétariat</span>
+              )}
+              {role === 'educateur' && (
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-200 text-blue-800 uppercase tracking-wide">Éducateur</span>
               )}
             </div>
             <h1 className="text-xl font-bold leading-tight">{structure.name}</h1>
@@ -338,6 +352,104 @@ export default function StructureDashboard() {
             Imprimer le récapitulatif
           </button>
         </div>
+
+        {/* ── Onglets Admin / Éducatif ── */}
+        {(roles.includes('admin') || roles.includes('educatif')) && (
+          <div className="flex border-b border-gray-200 mb-6 print:hidden">
+            {(roles.includes('admin') || roles.includes('direction') || roles.includes('cds') || roles.includes('secretariat')) && (
+              <button
+                onClick={() => setActiveTab('admin')}
+                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'admin' ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                Administratif
+              </button>
+            )}
+            {(roles.includes('educatif') || roles.includes('direction') || roles.includes('cds') || roles.includes('educateur')) && role !== 'secretariat' && (
+              <button
+                onClick={() => setActiveTab('educatif')}
+                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'educatif' ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                Suivi éducatif
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ── Contenu onglet Éducatif ── */}
+        {activeTab === 'educatif' && (
+          <div className="space-y-6">
+            {/* Liste enfants — sans prix ni paiement */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100">
+                <h3 className="font-semibold text-gray-800">Enfants inscrits — suivi éducatif</h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {role === 'educateur' ? 'Vos inscriptions uniquement' : `${filtered.length} inscription(s) pour votre structure`}
+                </p>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {filtered.length === 0 ? (
+                  <div className="p-8 text-center text-gray-400">Aucune inscription pour le moment.</div>
+                ) : filtered.map(insc => {
+                  const st = STATUS[insc.status] || STATUS.en_attente;
+                  return (
+                    <div key={insc.id} className="px-6 py-4 hover:bg-gray-50 transition">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="font-medium text-gray-800">{insc.jeune_prenom} {insc.jeune_nom}</p>
+                          <p className="text-sm text-gray-500">{insc.sejour_titre}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">Référent : {insc.referent_nom}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <DossierBadge completude={insc.dossier_completude ? { bulletin: insc.dossier_completude.bulletin, sanitaire: insc.dossier_completude.sanitaire, liaison: insc.dossier_completude.liaison, renseignements: insc.dossier_completude.renseignements, pj_count: insc.dossier_completude.pj_count } : null} gedSentAt={insc.ged_sent_at} />
+                          <Badge {...st} />
+                          {insc.suivi_token && (
+                            <Link href={`/suivi/${insc.suivi_token}`} className="text-xs text-primary hover:underline whitespace-nowrap">
+                              Dossier →
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                      {insc.besoins_specifiques && (
+                        <div className="mt-2 p-2 bg-amber-50 border border-amber-100 rounded-lg text-xs text-amber-800">
+                          Besoins spécifiques : {insc.besoins_specifiques}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Suivi séjour — sections futures */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="font-semibold text-gray-800 mb-2">Suivi pendant le séjour</h3>
+              <p className="text-sm text-gray-400">Aucun événement enregistré pour le moment.</p>
+              <p className="text-xs text-gray-300 mt-2">Appels, incidents, informations médicales et messages apparaîtront ici.</p>
+            </div>
+
+            {/* Contacts urgence */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="font-semibold text-gray-800 mb-3">Contacts urgence</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div className="p-3 bg-red-50 border border-red-100 rounded-lg">
+                  <p className="text-xs font-semibold text-red-700 mb-1">Astreinte GED — 24h/24</p>
+                  <a href="tel:0423161671" className="text-lg font-bold text-red-800">04 23 16 16 71</a>
+                </div>
+                <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                  <p className="text-xs font-semibold text-blue-700 mb-1">Contact équipe GED</p>
+                  <a href="mailto:contact@groupeetdecouverte.fr" className="text-sm font-medium text-blue-800">contact@groupeetdecouverte.fr</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Contenu onglet Administratif ── */}
+        {activeTab === 'admin' && (<>
 
         {/* ── Filtres ── */}
         <div className="mb-4 print:hidden flex flex-wrap gap-3">
@@ -451,11 +563,11 @@ export default function StructureDashboard() {
         )}
 
         {/* ── Section Directeur / CDS délégué : Codes d'accès ── */}
-        {(role === 'directeur' || role === 'cds_delegated') && (
+        {(role === 'direction' || role === 'cds_delegated') && (
           <div className="mt-8 border-l-4 border-amber-400 bg-amber-50 rounded-xl p-6">
             <div className="flex items-center gap-2 mb-1">
               <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-900 uppercase tracking-wide">
-                {role === 'directeur' ? 'Directeur' : 'CDS · Délégué'}
+                {role === 'direction' ? 'Directeur' : 'CDS · Délégué'}
               </span>
               <h3 className="font-semibold text-amber-900">Codes d'accès de la structure</h3>
             </div>
@@ -484,7 +596,7 @@ export default function StructureDashboard() {
             </div>
 
             {/* Délégation et paramètres — visible uniquement pour le directeur */}
-            {role === 'directeur' && (
+            {role === 'direction' && (
               <>
               <div className="border-t border-amber-200 pt-5">
                 <p className="text-sm font-semibold text-amber-900 mb-1">Déléguer la gestion des codes à votre CDS</p>
@@ -633,7 +745,9 @@ export default function StructureDashboard() {
           </div>
         )}
 
-        {/* ── Contact ── */}
+        </>)}
+
+        {/* ── Contact (commun aux deux onglets) ── */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-8">
           <h3 className="font-semibold text-gray-800 mb-3">Contact Groupe &amp; Découverte</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">

@@ -95,7 +95,7 @@ export async function GET(
     );
   }
 
-  const { structure, role } = resolved;
+  const { structure, role, roles, email: accessEmail } = resolved;
   const supabase = getSupabase();
   const structureId = structure.id as string;
 
@@ -105,11 +105,11 @@ export async function GET(
     resourceType: 'inscription',
     resourceId: structureId,
     actorType: 'referent',
-    metadata: { access_type: 'structure_code', role, ip, code_length: code.length, user_agent: _req.headers.get('user-agent') || 'unknown' },
+    metadata: { access_type: 'structure_code', role, roles, ip, code_length: code.length },
   });
 
   // Récupérer les inscriptions rattachées
-  const { data: inscriptions, error: inscErr } = await supabase
+  let query = supabase
     .from('gd_inscriptions')
     .select(
       '*, gd_dossier_enfant(bulletin_completed, sanitaire_completed, liaison_completed, renseignements_completed, ged_sent_at), gd_stays!fk_inscriptions_stay(marketing_title, title)'
@@ -117,6 +117,13 @@ export async function GET(
     .eq('structure_id', structureId)
     .is('deleted_at', null)
     .order('created_at', { ascending: false });
+
+  // ISOLATION ÉDUCATEUR : ne voit que ses propres inscriptions
+  if (role === 'educateur' && accessEmail) {
+    query = query.eq('referent_email', accessEmail);
+  }
+
+  const { data: inscriptions, error: inscErr } = await query;
 
   if (inscErr) {
     console.error('[api/structure/[code]] inscriptions error:', inscErr);
@@ -130,6 +137,7 @@ export async function GET(
   const enriched = enrichInscriptions((inscriptions || []) as InscriptionRaw[]);
 
   const s = structure as Record<string, unknown>;
+  const showCodes = role === 'direction' || role === 'cds_delegated';
 
   return NextResponse.json({
     structure: {
@@ -139,12 +147,15 @@ export async function GET(
       postalCode: s.postal_code,
       type: s.type,
       email: s.email,
-      code: role === 'directeur' || role === 'cds_delegated' ? s.code : undefined,
+      code: showCodes ? s.code : undefined,
       rgpdAcceptedAt: s.rgpd_accepted_at || null,
-      delegationFrom:  s.delegation_active_from  || null,
+      delegationFrom: s.delegation_active_from || null,
       delegationUntil: s.delegation_active_until || null,
+      delegatedToEmail: s.delegated_to_email || null,
     },
     role,
+    roles,
+    accessEmail,
     inscriptions: enriched,
   });
 }

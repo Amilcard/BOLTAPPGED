@@ -25,7 +25,7 @@ export async function PATCH(
   }
 
   const resolved = await resolveCodeToStructure(code);
-  if (!resolved || resolved.role !== 'directeur') {
+  if (!resolved || resolved.role !== 'direction') {
     return NextResponse.json(
       { error: { code: 'FORBIDDEN', message: 'Accès réservé au directeur.' } },
       { status: 403 }

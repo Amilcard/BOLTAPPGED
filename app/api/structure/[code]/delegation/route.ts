@@ -28,7 +28,7 @@ export async function PATCH(
 
   // Vérifier que le code est bien un code directeur (10 chars) et résoudre la structure
   const resolved = await resolveCodeToStructure(code);
-  if (!resolved || resolved.role !== 'directeur') {
+  if (!resolved || resolved.role !== 'direction') {
     return NextResponse.json(
       { error: { code: 'FORBIDDEN', message: 'Accès réservé au directeur.' } },
       { status: 403 }

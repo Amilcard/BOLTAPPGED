@@ -644,6 +644,116 @@ export async function sendStructureCodeEmail(data: StructureCodeEmailData) {
   }
 }
 
+// ─── Demande de tarifs sans compte ──────────────────────────────────────────
+
+interface PriceInquiryData {
+  prenom: string;
+  structureName: string;
+  email: string;
+  sejourTitle: string;
+  sejourSlug: string;
+  prixFrom?: number | null;
+}
+
+/**
+ * Email à l'éducateur avec indication tarifaire et CTA contact
+ */
+export async function sendPriceInquiryToEducateur(data: PriceInquiryData): Promise<void> {
+  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
+    console.warn('[EMAIL] Clé API manquante — sendPriceInquiryToEducateur non envoyé');
+    return;
+  }
+  try {
+    const resend = getResend();
+    const prixSection = data.prixFrom
+      ? `<div style="background: #eaf4ec; border-left: 4px solid #2d8a4e; padding: 14px 18px; border-radius: 0 6px 6px 0; margin: 20px 0;">
+           <p style="margin: 0; font-size: 15px; color: #1a5e35;"><strong>À partir de ${data.prixFrom}&nbsp;€</strong> par enfant</p>
+         </div>`
+      : `<div style="background: #f5f5f5; border-left: 4px solid #888; padding: 14px 18px; border-radius: 0 6px 6px 0; margin: 20px 0;">
+           <p style="margin: 0; font-size: 15px; color: #555;">Tarif sur devis selon votre structure</p>
+         </div>`;
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: data.email,
+      subject: `Tarifs — ${data.sejourTitle}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #2a383f; color: white; padding: 20px 24px; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 22px;">Groupe &amp; Découverte</h1>
+          </div>
+          <div style="padding: 30px 28px; background: #fafafa; border-radius: 0 0 8px 8px;">
+            <p>Bonjour ${data.prenom},</p>
+            <p>Merci pour votre intérêt pour le séjour <strong>${data.sejourTitle}</strong>.</p>
+            <p>Voici l'information tarifaire pour votre structure :</p>
+            ${prixSection}
+            <p style="color: #444;">Ces tarifs sont adaptés selon votre type de structure (ASE, MECS, foyer). Contactez-nous pour un <strong>devis personnalisé</strong> correspondant à votre situation.</p>
+            <div style="background: #2a383f; border-radius: 8px; padding: 18px 22px; margin: 24px 0; text-align: center;">
+              <p style="margin: 0 0 6px 0; color: #ccc; font-size: 13px;">Obtenir votre code structure</p>
+              <p style="margin: 0; color: white; font-size: 15px;">
+                <a href="mailto:contact@groupeetdecouverte.fr" style="color: #7dd9a0; text-decoration: none;">contact@groupeetdecouverte.fr</a>
+                &nbsp;·&nbsp;
+                <span style="color: #7dd9a0;">04 23 16 16 71</span>
+              </p>
+            </div>
+            <p style="color: #666; font-size: 13px;">Notre équipe vous répondra sous 24h et vous accompagnera dans la constitution du dossier de financement.</p>
+            <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 24px 0;" />
+            <p style="color: #999; font-size: 12px; margin: 0;">Groupe &amp; Découverte — Séjours éducatifs pour enfants ASE<br>
+            <a href="https://app.groupeetdecouverte.fr" style="color: #999;">app.groupeetdecouverte.fr</a></p>
+          </div>
+        </div>
+      `,
+    });
+    console.log('[EMAIL] sendPriceInquiryToEducateur ok');
+  } catch (error) {
+    console.error('[EMAIL] Erreur sendPriceInquiryToEducateur:', error);
+    throw error;
+  }
+}
+
+/**
+ * Notification interne GED — warm lead demande tarif sans compte
+ */
+export async function sendPriceInquiryAlertGED(data: PriceInquiryData): Promise<void> {
+  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
+    console.warn('[EMAIL] Clé API manquante — sendPriceInquiryAlertGED non envoyé');
+    return;
+  }
+  try {
+    const resend = getResend();
+    const now = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' });
+
+    await resend.emails.send({
+      from: 'contact@groupeetdecouverte.fr',
+      to: 'contact@groupeetdecouverte.fr',
+      subject: `[Lead] Demande tarif — ${data.structureName} — ${data.sejourTitle}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #D4AC0D; color: #333; padding: 16px 20px; border-radius: 8px 8px 0 0;">
+            <h2 style="margin: 0; font-size: 18px;">Nouvelle demande de tarif (sans compte)</h2>
+          </div>
+          <div style="padding: 24px; background: #f9f9f9; border-radius: 0 0 8px 8px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              <tr><td style="padding: 6px 0; color: #666; width: 140px;">Prénom</td><td><strong>${data.prenom}</strong></td></tr>
+              <tr><td style="padding: 6px 0; color: #666;">Structure</td><td><strong>${data.structureName}</strong></td></tr>
+              <tr><td style="padding: 6px 0; color: #666;">Email</td><td><a href="mailto:${data.email}">${data.email}</a></td></tr>
+              <tr><td style="padding: 6px 0; color: #666;">Séjour</td><td>${data.sejourTitle} (<code>${data.sejourSlug}</code>)</td></tr>
+              <tr><td style="padding: 6px 0; color: #666;">Date</td><td>${now}</td></tr>
+            </table>
+            <p style="color: #666; font-size: 12px; margin-top: 20px;">Email automatique — Groupe &amp; Découverte</p>
+          </div>
+        </div>
+      `,
+    });
+    console.log('[EMAIL] sendPriceInquiryAlertGED ok');
+  } catch (error) {
+    console.error('[EMAIL] Erreur sendPriceInquiryAlertGED:', error);
+    throw error;
+  }
+}
+
+// ─── Invitation chef de service ──────────────────────────────────────────────
+
 /**
  * Invitation chef de service — accès au tableau de bord structure
  * Envoyé lors d'un import administratif de dossiers pré-validés.

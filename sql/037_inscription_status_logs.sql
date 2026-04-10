@@ -8,12 +8,12 @@ CREATE TABLE IF NOT EXISTS gd_inscription_status_logs (
   old_status TEXT,
   new_status TEXT NOT NULL,
   changed_by_email TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  changed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Index pour requêtes par inscription
 CREATE INDEX IF NOT EXISTS idx_status_logs_inscription
-  ON gd_inscription_status_logs (inscription_id, created_at DESC);
+  ON gd_inscription_status_logs (inscription_id, changed_at DESC);
 
 -- RLS : service_role only (données admin)
 ALTER TABLE gd_inscription_status_logs ENABLE ROW LEVEL SECURITY;

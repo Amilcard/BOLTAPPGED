@@ -20,7 +20,7 @@ export async function resolveCodeToStructure(
   if (codeNorm.length === 6) {
     const { data } = await supabase
       .from('gd_structures')
-      .select('id, name, city, postal_code, type, email, code, code_expires_at, code_revoked_at, rgpd_accepted_at, delegation_active_from, delegation_active_until')
+      .select('id, name, city, postal_code, type, email, code, code_expires_at, code_revoked_at, rgpd_accepted_at')
       .eq('code', codeNorm)
       .eq('status', 'active')
       .single();
@@ -30,19 +30,14 @@ export async function resolveCodeToStructure(
     if (data.code_revoked_at) return null;
     if (data.code_expires_at && data.code_expires_at < now) return null;
 
-    // Délégation active ? directeur a accordé accès gestion codes au CDS
-    const delegFrom = data.delegation_active_from as string | null;
-    const delegUntil = data.delegation_active_until as string | null;
-    const isDelegated = !!(delegFrom && delegUntil && delegFrom <= now && now <= delegUntil);
-
-    return { structure: data, role: isDelegated ? 'cds_delegated' : 'cds' };
+    return { structure: data, role: 'cds' };
   }
 
   // Essai code Directeur (10 chars)
   if (codeNorm.length === 10) {
     const { data } = await supabase
       .from('gd_structures')
-      .select('id, name, city, postal_code, type, email, code, code_directeur_expires_at, code_directeur_revoked_at, rgpd_accepted_at, delegation_active_from, delegation_active_until')
+      .select('id, name, city, postal_code, type, email, code, code_directeur_expires_at, code_directeur_revoked_at, rgpd_accepted_at')
       .eq('code_directeur', codeNorm)
       .eq('status', 'active')
       .single();

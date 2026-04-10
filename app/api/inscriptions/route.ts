@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabase, getSupabaseUser } from '@/lib/supabase-server';
 import { z } from 'zod';
 import { sendInscriptionConfirmation, sendAdminNewInscriptionNotification, sendStructureCodeEmail, sendNewEducateurAlert } from '@/lib/email';
 import { randomBytes } from 'crypto';
@@ -44,7 +44,8 @@ const PAYMENT_METHOD_MAP: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = getSupabase();
+    const supabase = getSupabase();       // service_role — pour INSERT, structures, anti-doublon
+    const supabasePublic = getSupabaseUser(); // anon — pour SELECT publics (prix, sessions, stays)
     const body = await request.json();
 
     // ── Enrichissement via pro session (structureCode pré-rempli si connecté pro) ──
@@ -132,7 +133,7 @@ export async function POST(request: NextRequest) {
     let priceError: unknown = null;
 
     // Tentative 1: match exact date pure
-    const { data: priceRows1, error: priceErr1 } = await supabase
+    const { data: priceRows1, error: priceErr1 } = await supabasePublic
       .from('gd_session_prices')
       .select('price_ged_total, transport_surcharge_ged, city_departure')
       .eq('stay_slug', data.staySlug)
@@ -151,7 +152,7 @@ export async function POST(request: NextRequest) {
       priceRow = priceRows1[0];
     } else {
       // Tentative 2: plage timestamps
-      const { data: priceRows2, error: priceErr2 } = await supabase
+      const { data: priceRows2, error: priceErr2 } = await supabasePublic
         .from('gd_session_prices')
         .select('price_ged_total, transport_surcharge_ged, city_departure')
         .eq('stay_slug', data.staySlug)
@@ -165,7 +166,7 @@ export async function POST(request: NextRequest) {
 
     if (priceError || !priceRow) {
       // Fallback : prix sans transport si ville non trouvée pour cette date
-      const { data: baseRows1 } = await supabase
+      const { data: baseRows1 } = await supabasePublic
         .from('gd_session_prices')
         .select('price_ged_total')
         .eq('stay_slug', data.staySlug)
@@ -177,7 +178,7 @@ export async function POST(request: NextRequest) {
 
       if (!basePriceRow) {
         // Tentative 2: plage timestamps
-        const { data: baseRows2 } = await supabase
+        const { data: baseRows2 } = await supabasePublic
           .from('gd_session_prices')
           .select('price_ged_total')
           .eq('stay_slug', data.staySlug)
@@ -202,7 +203,7 @@ export async function POST(request: NextRequest) {
       const sansBasePrice = basePriceRow.price_ged_total ?? 0;
       let cityTransportSurcharge = 0;
       if (data.cityDeparture !== 'sans_transport') {
-        const { data: cityTransportRows } = await supabase
+        const { data: cityTransportRows } = await supabasePublic
           .from('gd_session_prices')
           .select('transport_surcharge_ged')
           .eq('stay_slug', data.staySlug)
@@ -238,7 +239,7 @@ export async function POST(request: NextRequest) {
       // FIX PRIX MULTI-SÉJOURS: Le front calcule base(sans_transport) + transport_surcharge_ged
       // Récupérer aussi le prix sans_transport pour valider la formule du front
       // (certains séjours UFOVAL ont price_ged_total(ville) ≠ price_ged_total(sans_transport) + surcharge)
-      const { data: sansRows } = await supabase
+      const { data: sansRows } = await supabasePublic
         .from('gd_session_prices')
         .select('price_ged_total')
         .eq('stay_slug', data.staySlug)
@@ -281,7 +282,7 @@ export async function POST(request: NextRequest) {
     if (rpcError) {
       console.error('Capacity check RPC error:', rpcError);
       // Fallback non-atomique sur gd_stay_sessions.seats_left
-      const { data: sessionFallback } = await supabase
+      const { data: sessionFallback } = await supabasePublic
         .from('gd_stay_sessions')
         .select('seats_left')
         .eq('stay_slug', data.staySlug)
@@ -313,7 +314,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── VÉRIFICATION cohérence session → séjour ──
-    const { data: sessionCheckRows } = await supabase
+    const { data: sessionCheckRows } = await supabasePublic
       .from('gd_stay_sessions')
       .select('stay_slug')
       .eq('stay_slug', data.staySlug)
@@ -324,7 +325,7 @@ export async function POST(request: NextRequest) {
     // Si pas de session trouvée, on vérifie au moins que le séjour existe
     // (certains séjours n'ont pas de sessions dans gd_stay_sessions mais ont des prix)
     if (!sessionCheck) {
-      const { data: stayExists } = await supabase
+      const { data: stayExists } = await supabasePublic
         .from('gd_stays')
         .select('slug')
         .eq('slug', data.staySlug)
@@ -340,7 +341,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── VÉRIFICATION is_full UFOVAL (source de vérité) ──
-    const { data: isFullRows } = await supabase
+    const { data: isFullRows } = await supabasePublic
       .from('gd_session_prices')
       .select('is_full')
       .eq('stay_slug', data.staySlug)
@@ -514,7 +515,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Récupérer le nom marketing du séjour pour l'email
-    const { data: stayInfo } = await supabase
+    const { data: stayInfo } = await supabasePublic
       .from('gd_stays')
       .select('marketing_title')
       .eq('slug', data.staySlug)

@@ -44,6 +44,7 @@ const mockFrom = jest.fn().mockImplementation((table: string) => {
 jest.mock('@/lib/supabase-server', () => ({
   getSupabase: () => ({ from: mockFrom, rpc: mockRpc }),
   getSupabaseAdmin: () => ({ from: mockFrom, rpc: mockRpc }),
+  getSupabaseUser: () => ({ from: mockFrom, rpc: mockRpc }),
 }));
 
 const mockSendConfirmation = jest.fn().mockResolvedValue(undefined);

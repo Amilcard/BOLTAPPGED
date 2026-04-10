@@ -28,6 +28,9 @@ jest.mock('@/lib/supabase-server', () => ({
   getSupabaseAdmin: () => ({
     from: () => { throw new Error('Supabase Admin should not be called'); },
   }),
+  getSupabaseUser: () => ({
+    from: () => { throw new Error('Supabase User should not be called — validation Zod devrait rejeter avant'); },
+  }),
 }));
 
 jest.mock('@/lib/email', () => ({

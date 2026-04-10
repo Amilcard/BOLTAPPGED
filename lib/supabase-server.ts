@@ -33,3 +33,28 @@ export function getSupabaseAdmin(): SupabaseClient {
 
 // Alias pour compatibilité avec les routes qui utilisaient getSupabase()
 export const getSupabase = getSupabaseAdmin;
+
+/**
+ * Client Supabase côté serveur avec clé ANON (RLS actif).
+ * Utiliser pour les requêtes qui ne nécessitent pas de bypass RLS :
+ * - SELECT sur données publiques (gd_stays, gd_session_prices, gd_stay_sessions)
+ * - SELECT/PATCH scopés par ownership (gd_dossier_enfant, gd_inscriptions via token)
+ *
+ * ⚠️ NE PAS utiliser pour : INSERT cross-user, Storage, opérations admin
+ */
+export function getSupabaseUser(): SupabaseClient {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !key) {
+    throw new Error(
+      '❌ NEXT_PUBLIC_SUPABASE_URL ou NEXT_PUBLIC_SUPABASE_ANON_KEY manquante.\n' +
+      'Vérifiez vos variables d\'environnement (.env.local ou Vercel).'
+    );
+  }
+
+  // Pas de singleton — instancié par requête (serverless safe, RLS par requête)
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}

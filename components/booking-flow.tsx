@@ -354,6 +354,11 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
       }
     }
 
+    if (totalPrice === null || totalPrice <= 0) {
+      setError('Le tarif de ce séjour est invalide. Veuillez contacter l\'équipe GED.');
+      return;
+    }
+
     setLoading(true);
     setError('');
 

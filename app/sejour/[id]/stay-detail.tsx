@@ -44,6 +44,92 @@ type EnrichmentData = { source_url: string; departures: DepartureData[]; session
 
 const PRIORITY_CITIES = ['paris', 'lyon', 'marseille', 'lille', 'bordeaux', 'rennes'];
 
+function PriceInquiryBlock({ sejourSlug }: { sejourSlug: string; sejourTitle: string }) {
+  const [prenom, setPrenom] = useState('');
+  const [structureName, setStructureName] = useState('');
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!prenom.trim() || !structureName.trim() || !email.trim()) {
+      setError('Veuillez remplir tous les champs.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/pro/price-inquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prenom, structureName, email, sejourSlug }),
+      });
+      if (res.ok) {
+        setDone(true);
+      } else {
+        setError('Une erreur est survenue. Réessayez ou contactez-nous directement.');
+      }
+    } catch {
+      setError('Erreur réseau. Veuillez réessayer.');
+    }
+    setLoading(false);
+  };
+
+  if (done) {
+    return (
+      <div className="bg-green-50 border border-green-200 rounded-xl p-5 text-center">
+        <p className="text-green-800 font-semibold text-sm mb-1">Les tarifs vous ont été envoyés !</p>
+        <p className="text-green-700 text-xs">Vérifiez votre boîte mail ({email}). Notre équipe peut aussi vous contacter pour un devis personnalisé selon votre structure.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-primary/5 border border-primary/20 rounded-xl p-5">
+      <p className="text-sm font-semibold text-gray-800 mb-1">Consulter les tarifs professionnels</p>
+      <p className="text-xs text-gray-500 mb-4">
+        Les tarifs sont adaptés à votre type de structure. Renseignez vos informations — nous vous les envoyons immédiatement par email.
+      </p>
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <input
+          type="text"
+          placeholder="Votre prénom"
+          value={prenom}
+          onChange={e => { setPrenom(e.target.value); setError(''); }}
+          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
+        <input
+          type="text"
+          placeholder="Nom de votre structure (MECS, foyer, ASE…)"
+          value={structureName}
+          onChange={e => { setStructureName(e.target.value); setError(''); }}
+          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
+        <input
+          type="email"
+          placeholder="Votre email professionnel"
+          value={email}
+          onChange={e => { setEmail(e.target.value); setError(''); }}
+          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
+        {error && <p className="text-xs text-red-500">{error}</p>}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition disabled:opacity-50"
+        >
+          {loading ? 'Envoi en cours…' : 'Recevoir les tarifs par email'}
+        </button>
+      </form>
+      <p className="text-[11px] text-gray-400 mt-3">
+        Aucun engagement. Vos données sont utilisées uniquement pour vous répondre. <a href="/confidentialite" className="underline">Politique de confidentialité</a>
+      </p>
+    </div>
+  );
+}
+
 export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], price_base?: number | null, price_unit?: string, pro_price_note?: string, sourceUrl?: string | null, pdfUrl?: string | null, geoLabel?: string | null, geoPrecision?: string | null, accommodationLabel?: string | null, contentKids?: Record<string, unknown> | null, rawSessions?: RawSessionData[], images?: string[] } }) {
   const { mode, mounted, refreshWishlist, isAuthenticated, proEmailVerified } = useApp();
   const router = useRouter();
@@ -731,10 +817,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                 </div>
               ) : isPro ? (
                 <div className="border-t border-gray-100 pt-3 mb-3">
-                  <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-800">
-                    <span className="font-bold block mb-1">Espace Pro — Tarifs réservés aux éducateurs</span>
-                    <span className="text-blue-600">Les tarifs détaillés sont visibles après authentification par e-mail. Vous pouvez ensuite choisir de les partager avec les jeunes dans un cadre éducatif.</span>
-                  </div>
+                  <PriceInquiryBlock sejourSlug={slug} sejourTitle={(stay?.title as string) || ((stay as unknown as Record<string, unknown>)?.marketing_title as string) || ''} />
                 </div>
               ) : (
                 <div className="border-t border-gray-100 pt-3 mb-3">

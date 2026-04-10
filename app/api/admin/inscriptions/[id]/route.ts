@@ -144,7 +144,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       .update(updateData)
       .eq('id', id)
       .is('deleted_at', null)
-      .select()
+      .select('id, status, payment_status, documents_status, besoins_pris_en_compte, equipe_informee, note_pro, updated_at, referent_email, referent_nom, jeune_prenom, jeune_nom, dossier_ref, sejour_slug, suivi_token')
       .single();
 
     if (error) {

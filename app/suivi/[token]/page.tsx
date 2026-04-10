@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Check, ChevronDown, ChevronUp, Lock } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Lock, Download } from 'lucide-react';
 import { DossierEnfantPanel } from '@/components/dossier-enfant/DossierEnfantPanel';
 
 // === Types locaux (lecture seule, pas besoin d'exporter) ===
@@ -326,12 +326,18 @@ export default function SuiviProPage() {
                   token={token}
                 />
 
-                {/* Footer léger */}
-                <div className="px-6 py-2 text-xs text-gray-400 border-t border-gray-50 flex justify-between">
+                {/* Footer — dates + téléchargement récap PDF */}
+                <div className="px-6 py-2 text-xs text-gray-400 border-t border-gray-50 flex items-center justify-between print:hidden">
                   <span>Créé le {formatDate(d.createdAt)}</span>
-                  {d.updatedAt && (
-                    <span>Mis à jour le {formatDate(d.updatedAt)}</span>
-                  )}
+                  <a
+                    href={`/api/inscriptions/${d.id}/recap-pdf?token=${token}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Récapitulatif PDF
+                  </a>
                 </div>
               </div>
             );

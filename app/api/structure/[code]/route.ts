@@ -73,7 +73,7 @@ async function resolveCodeToStructure(
   if (codeNorm.length === 6) {
     const { data } = await supabase
       .from('gd_structures')
-      .select('id, name, city, postal_code, type, email, code_expires_at, code_revoked_at')
+      .select('id, name, city, postal_code, type, email, code_expires_at, code_revoked_at, rgpd_accepted_at')
       .eq('code', codeNorm)
       .eq('status', 'active')
       .single();
@@ -91,7 +91,7 @@ async function resolveCodeToStructure(
   if (codeNorm.length === 10) {
     const { data } = await supabase
       .from('gd_structures')
-      .select('id, name, city, postal_code, type, email, code_directeur_expires_at, code_directeur_revoked_at')
+      .select('id, name, city, postal_code, type, email, code_directeur_expires_at, code_directeur_revoked_at, rgpd_accepted_at')
       .eq('code_directeur', codeNorm)
       .eq('status', 'active')
       .single();
@@ -188,8 +188,67 @@ export async function GET(
       postalCode: structure.postal_code,
       type: structure.type,
       email: structure.email,
+      rgpdAcceptedAt: (structure as Record<string, unknown>).rgpd_accepted_at || null,
     },
     role,
     inscriptions: enriched,
   });
+}
+
+/**
+ * POST /api/structure/[code]
+ * Accepter l'engagement RGPD pour la structure.
+ */
+export async function POST(
+  _req: NextRequest,
+  { params }: { params: Promise<{ code: string }> }
+) {
+  const { code } = await params;
+  if (!code) {
+    return NextResponse.json({ error: { code: 'MISSING_CODE' } }, { status: 400 });
+  }
+
+  const supabase = getSupabase();
+  const codeNorm = code.toUpperCase();
+
+  // Identifier la structure par code CDS ou directeur
+  const column = codeNorm.length === 10 ? 'code_directeur' : 'code';
+  const { data: structure } = await supabase
+    .from('gd_structures')
+    .select('id, rgpd_accepted_at')
+    .eq(column, codeNorm)
+    .eq('status', 'active')
+    .single();
+
+  if (!structure) {
+    return NextResponse.json({ error: { code: 'NOT_FOUND' } }, { status: 404 });
+  }
+
+  // Déjà accepté
+  if (structure.rgpd_accepted_at) {
+    return NextResponse.json({ already: true, acceptedAt: structure.rgpd_accepted_at });
+  }
+
+  // Enregistrer l'acceptation
+  const { error } = await supabase
+    .from('gd_structures')
+    .update({
+      rgpd_accepted_at: new Date().toISOString(),
+      rgpd_accepted_by: codeNorm,
+    })
+    .eq('id', structure.id);
+
+  if (error) {
+    return NextResponse.json({ error: { code: 'INTERNAL_ERROR' } }, { status: 500 });
+  }
+
+  auditLog(supabase, {
+    action: 'create',
+    resourceType: 'inscription',
+    resourceId: structure.id,
+    actorType: 'referent',
+    metadata: { type: 'rgpd_consent', code_used: codeNorm },
+  });
+
+  return NextResponse.json({ accepted: true, acceptedAt: new Date().toISOString() });
 }

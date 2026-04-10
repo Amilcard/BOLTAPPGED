@@ -16,6 +16,7 @@ interface StructureInfo {
   type: string;
   email: string;
   code: string;
+  rgpdAcceptedAt: string | null;
 }
 
 interface DossierCompletude {
@@ -109,6 +110,8 @@ export default function StructureDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [rgpdAccepted, setRgpdAccepted] = useState(false);
+  const [rgpdLoading, setRgpdLoading] = useState(false);
 
   useEffect(() => {
     if (!code) return;
@@ -120,7 +123,10 @@ export default function StructureDashboard() {
         }
         return res.json() as Promise<StructureData>;
       })
-      .then(setData)
+      .then((d) => {
+        setData(d);
+        if (d.structure.rgpdAcceptedAt) setRgpdAccepted(true);
+      })
       .catch(err => setError((err as Error).message))
       .finally(() => setLoading(false));
   }, [code]);
@@ -168,6 +174,49 @@ export default function StructureDashboard() {
   }
 
   const { structure, inscriptions } = data;
+
+  // ── Gate consentement RGPD ──
+  if (!rgpdAccepted) {
+    const handleAcceptRgpd = async () => {
+      setRgpdLoading(true);
+      try {
+        const res = await fetch(`/api/structure/${code}`, { method: 'POST' });
+        if (res.ok) setRgpdAccepted(true);
+      } catch { /* silencieux */ }
+      setRgpdLoading(false);
+    };
+
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-lg max-w-lg w-full p-8">
+          <div className="flex items-center gap-2 text-primary mb-4">
+            <Building2 size={24} />
+            <h1 className="text-xl font-bold">Engagement confidentialité</h1>
+          </div>
+          <p className="text-sm text-gray-600 mb-4">
+            Avant d&apos;accéder aux données des inscriptions de <strong>{structure.name}</strong>, vous vous engagez à :
+          </p>
+          <ul className="text-sm text-gray-700 space-y-2 mb-6">
+            <li className="flex gap-2"><span className="text-primary font-bold">1.</span> Utiliser ces données uniquement dans le cadre de vos fonctions professionnelles.</li>
+            <li className="flex gap-2"><span className="text-primary font-bold">2.</span> Ne pas partager les informations des enfants en dehors de votre structure.</li>
+            <li className="flex gap-2"><span className="text-primary font-bold">3.</span> Signaler immédiatement tout accès non autorisé à votre référent GED.</li>
+            <li className="flex gap-2"><span className="text-primary font-bold">4.</span> Respecter la confidentialité des données médicales et personnelles des enfants confiés.</li>
+          </ul>
+          <p className="text-xs text-gray-400 mb-6">
+            Conformément au RGPD et à la loi Informatique et Libertés, les données sont hébergées en France et supprimées selon la politique de conservation de GED.{' '}
+            <Link href="/confidentialite" target="_blank" className="underline">Politique de confidentialité</Link> — DPO : dpo@groupeetdecouverte.fr
+          </p>
+          <button
+            onClick={handleAcceptRgpd}
+            disabled={rgpdLoading}
+            className="w-full py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition disabled:opacity-50"
+          >
+            {rgpdLoading ? 'Enregistrement…' : 'J\'accepte et j\'accède aux données'}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // ── Stats ──
 

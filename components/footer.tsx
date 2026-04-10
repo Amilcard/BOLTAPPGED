@@ -50,10 +50,10 @@ export function Footer() {
             <div className="flex flex-col gap-1.5 text-center sm:text-left">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Contact</p>
               <a
-                href="mailto:groupeetdecouverte@gmail.com"
+                href="mailto:contact@groupeetdecouverte.fr"
                 className="text-xs hover:text-primary transition-colors"
               >
-                groupeetdecouverte@gmail.com
+                contact@groupeetdecouverte.fr
               </a>
               <a
                 href="tel:0423161671"

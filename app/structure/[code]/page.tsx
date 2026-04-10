@@ -344,7 +344,7 @@ export default function StructureDashboard() {
             onClick={() => window.print()}
             className="print:hidden text-sm px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition font-medium"
           >
-            Télécharger récap PDF
+            Imprimer le récapitulatif
           </button>
         </div>
 

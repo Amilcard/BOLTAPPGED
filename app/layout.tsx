@@ -29,7 +29,8 @@ export default function RootLayout({
   return (
     <html lang="fr" suppressHydrationWarning>
       <body className="font-sans">
-        <Providers>{children}</Providers>
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-white focus:text-black">Aller au contenu principal</a>
+        <Providers><div id="main-content">{children}</div></Providers>
       </body>
     </html>
   );

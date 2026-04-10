@@ -128,9 +128,9 @@ beforeAll(async () => {
 describe('GET /api/admin/stays', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('renvoie 401 sans auth', async () => {
+  it('renvoie 403 sans auth', async () => {
     const res = await getStays(makeRequest('/api/admin/stays'));
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(403);
   });
 
   it('renvoie 200 avec auth valide', async () => {
@@ -200,15 +200,13 @@ describe('DELETE /api/admin/stays/[id]', () => {
     expect(res.status).toBe(401);
   });
 
-  it('renvoie 200 avec auth EDITOR', async () => {
+  it('renvoie 401 avec auth EDITOR (DELETE réservé ADMIN)', async () => {
     if (!deleteStay) return;
-    mockSelectOrder({ data: null, error: null });
-
     const res = await deleteStay(
       makeRequest('/api/admin/stays/alpoo-kids', { method: 'DELETE', token: EDITOR_TOKEN }),
       { params: Promise.resolve({ id: 'alpoo-kids' }) }
     );
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(401);
   });
 });
 

@@ -118,11 +118,11 @@ describe('GET /api/admin/stats', () => {
 // ── 2. GET /api/admin/stays/[id]/sessions ─────────────────────────────────────
 
 describe('GET /api/admin/stays/[id]/sessions', () => {
-  it('sans auth → 401', async () => {
+  it('sans auth → 403', async () => {
     const res = await sessionsGet(r(`/api/admin/stays/${STAY_ID}/sessions`), {
       params: Promise.resolve({ id: STAY_ID }),
     });
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(403);
   });
 
   it('EDITOR → 200 + mapping camelCase (startDate, seatsLeft)', async () => {

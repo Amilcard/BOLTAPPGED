@@ -69,6 +69,7 @@ function mockOwnershipCheck(tokenEmail: string | null, inscriptionEmail: string 
   mockFrom.mockImplementation(() => ({
     select: jest.fn().mockReturnValue({
       eq: jest.fn().mockReturnValue({
+        is: jest.fn().mockReturnThis(),
         single: jest.fn().mockImplementation(() => {
           callCount++;
           if (callCount === 1) {

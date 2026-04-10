@@ -90,13 +90,14 @@ function setupMocks(opts: {
     if (table === 'gd_inscriptions') {
       return {
         select: () => ({
-          eq: () => ({
-            single: () => {
+          eq: () => {
+            const singleFn = () => {
               inscriptionCalls++;
               if (ownershipFail) return { data: null, error: null };
               return { data: { referent_email: REFERENT_EMAIL, sejour_slug: sejourSlug }, error: null };
-            },
-          }),
+            };
+            return { is: () => ({ single: singleFn }), single: singleFn };
+          },
         }),
       };
     }
@@ -124,6 +125,7 @@ function setupMocks(opts: {
     return {
       select: () => ({
         eq: () => ({
+          is: () => ({ single: () => ({ data: null, error: null }) }),
           single: () => ({ data: null, error: null }),
           maybeSingle: () => ({ data: null, error: null }),
         }),

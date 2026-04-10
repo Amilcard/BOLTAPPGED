@@ -144,9 +144,9 @@ describe('POST /api/admin/inscriptions/[id]/relance — auth requise', () => {
 // ── Tests — /api/admin/propositions — auth requise sur toutes les méthodes ───
 
 describe('/api/admin/propositions — toutes les méthodes requièrent auth', () => {
-  it('7. GET sans auth → 401', async () => {
+  it('7. GET sans auth → 403', async () => {
     const res = await propGet(req('/api/admin/propositions'));
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(403);
   });
 
   it('8. POST sans auth → 401', async () => {

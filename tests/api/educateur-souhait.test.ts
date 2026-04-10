@@ -60,6 +60,7 @@ function makePatchRequest(token: string, body: Record<string, unknown>): NextReq
 function mockSelectSingle(result: { data: unknown; error: unknown }) {
   mockSelect.mockReturnValue({
     eq: jest.fn().mockReturnValue({
+      is: jest.fn().mockReturnThis(),
       single: jest.fn().mockResolvedValue(result),
     }),
   });

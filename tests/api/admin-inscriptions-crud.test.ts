@@ -138,11 +138,11 @@ describe('GET /api/admin/inscriptions', () => {
 // ── Tests — GET /api/admin/inscriptions/[id] ─────────────────────────────────
 
 describe('GET /api/admin/inscriptions/[id]', () => {
-  it('retourne 401 sans auth', async () => {
+  it('retourne 403 sans auth', async () => {
     const res = await getInscription(req(`/api/admin/inscriptions/${INSCRIPTION_ID}`), {
       params: Promise.resolve({ id: INSCRIPTION_ID }),
     });
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(403);
   });
 
   it('retourne 404 si inscription inexistante', async () => {
@@ -256,12 +256,12 @@ describe('DELETE /api/admin/inscriptions/[id]', () => {
     });
   };
 
-  it('retourne 401 si EDITOR (DELETE réservé ADMIN)', async () => {
+  it('retourne 403 si EDITOR (DELETE réservé ADMIN)', async () => {
     const res = await deleteInscription(
       req(`/api/admin/inscriptions/${INSCRIPTION_ID}`, { method: 'DELETE', token: EDITOR_TOKEN }),
       { params: Promise.resolve({ id: INSCRIPTION_ID }) }
     );
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(403);
   });
 
   it('retourne 200 si ADMIN supprime', async () => {

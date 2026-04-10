@@ -114,37 +114,46 @@ describe('GET /api/suivi/[token]', () => {
   });
 
   it('retourne 200 avec les dossiers du référent (isolation par email)', async () => {
+    // verifyToken(renew:true) flow:
+    //   call 1 — select.eq.is.single (token lookup)
+    //   call 2 — update.eq (renew expiration, fire-and-forget)
+    // GET dossiers flow:
+    //   call 3 — select.eq.is.order (all dossiers)
+    //   call 4 — gd_stays select.in
     let callCount = 0;
     mockFrom.mockImplementation((table: string) => {
       if (table === 'gd_inscriptions') {
         callCount++;
         if (callCount === 1) {
-          // Source — lookup par suivi_token
+          // Token lookup
           return {
             select: jest.fn().mockReturnValue({
               eq: jest.fn().mockReturnValue({
                 is: jest.fn().mockReturnValue({
                   single: jest.fn().mockResolvedValue({
-                    data: { referent_email: 'ref@structure.fr', organisation: 'CAF Paris' },
+                    data: { referent_email: 'ref@structure.fr', organisation: 'CAF Paris', suivi_token_expires_at: null },
                     error: null,
                   }),
-                }),
-                single: jest.fn().mockResolvedValue({
-                  data: { referent_email: 'ref@structure.fr', organisation: 'CAF Paris' },
-                  error: null,
                 }),
               }),
             }),
           };
         }
-        // Tous les dossiers du référent
+        if (callCount === 2) {
+          // Renew update (fire-and-forget, result not used)
+          return {
+            update: jest.fn().mockReturnValue({
+              eq: jest.fn().mockResolvedValue({ error: null }),
+            }),
+          };
+        }
+        // All dossiers for this referent
         return {
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
               is: jest.fn().mockReturnValue({
                 order: jest.fn().mockResolvedValue({ data: [SAMPLE_INSCRIPTION], error: null }),
               }),
-              order: jest.fn().mockResolvedValue({ data: [SAMPLE_INSCRIPTION], error: null }),
             }),
           }),
         };
@@ -209,13 +218,22 @@ describe('PATCH /api/suivi/[token]', () => {
     mockFrom.mockImplementation(() => ({
       select: jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
+          is: jest.fn().mockReturnValue({
+            single: jest.fn().mockImplementation(() => {
+              selectCall++;
+              if (selectCall === 1) {
+                // Token source → referent A
+                return Promise.resolve({ data: { referent_email: 'refA@structure.fr', suivi_token_expires_at: null }, error: null });
+              }
+              // Inscription cible → referent B (différent !)
+              return Promise.resolve({ data: { referent_email: 'refB@other.fr' }, error: null });
+            }),
+          }),
           single: jest.fn().mockImplementation(() => {
             selectCall++;
             if (selectCall === 1) {
-              // Token source → referent A
-              return Promise.resolve({ data: { referent_email: 'refA@structure.fr' }, error: null });
+              return Promise.resolve({ data: { referent_email: 'refA@structure.fr', suivi_token_expires_at: null }, error: null });
             }
-            // Inscription cible → referent B (différent !)
             return Promise.resolve({ data: { referent_email: 'refB@other.fr' }, error: null });
           }),
         }),
@@ -236,19 +254,26 @@ describe('PATCH /api/suivi/[token]', () => {
   });
 
   it('retourne 200 si champ valide mis à jour par le référent propriétaire', async () => {
-    let selectCall = 0;
+    // verifyOwnership flow (no renew):
+    //   call 1 — select.eq.is.single (token source lookup)
+    //   call 2 — select.eq.is.single (target inscription lookup)
+    // update flow:
+    //   call 3 — update.eq.is (field update)
     mockFrom.mockImplementation(() => ({
       select: jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
-          single: jest.fn().mockImplementation(() => {
-            selectCall++;
-            // Token et inscription appartiennent au même référent
-            return Promise.resolve({ data: { referent_email: 'ref@structure.fr' }, error: null });
+          is: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({
+              data: { referent_email: 'ref@structure.fr', suivi_token_expires_at: null },
+              error: null,
+            }),
           }),
         }),
       }),
       update: jest.fn().mockReturnValue({
-        eq: jest.fn().mockResolvedValue({ error: null }),
+        eq: jest.fn().mockReturnValue({
+          is: jest.fn().mockResolvedValue({ error: null }),
+        }),
       }),
     }));
 

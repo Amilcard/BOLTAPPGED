@@ -70,6 +70,8 @@ const STORAGE_PATH = `${INSCRIPTION_ID}/vaccins_123.pdf`;
 
 function makeFile(name = 'doc.pdf', type = 'application/pdf', size = 1024): File {
   const content = new Uint8Array(size);
+  // PDF magic bytes: %PDF (0x25 0x50 0x44 0x46)
+  content[0] = 0x25; content[1] = 0x50; content[2] = 0x44; content[3] = 0x46;
   return new File([content], name, { type });
 }
 
@@ -94,12 +96,13 @@ function setupOwnershipOk(dossierExists = true) {
     if (table === 'gd_inscriptions') {
       return {
         select: () => ({
-          eq: () => ({
-            single: () => {
+          eq: () => {
+            const singleFn = () => {
               inscriptionCalls++;
               return { data: { referent_email: REFERENT_EMAIL }, error: null };
-            },
-          }),
+            };
+            return { is: () => ({ single: singleFn }), single: singleFn };
+          },
         }),
       };
     }
@@ -122,7 +125,7 @@ function setupOwnershipOk(dossierExists = true) {
         }),
       };
     }
-    return { select: () => ({ eq: () => ({ single: () => ({ data: null, error: null }) }) }) };
+    return { select: () => ({ eq: () => ({ is: () => ({ single: () => ({ data: null, error: null }) }), single: () => ({ data: null, error: null }) }) }) };
   });
 }
 
@@ -173,7 +176,7 @@ describe('POST /api/dossier-enfant/[id]/upload', () => {
 
   it('retourne 404 si token ownership invalide', async () => {
     mockFrom.mockImplementation(() => ({
-      select: () => ({ eq: () => ({ single: () => ({ data: null, error: null }) }) }),
+      select: () => ({ eq: () => ({ is: () => ({ single: () => ({ data: null, error: null }) }), single: () => ({ data: null, error: null }) }) }),
     }));
     const req = makeFormDataRequest({
       token: VALID_TOKEN,
@@ -202,7 +205,7 @@ describe('POST /api/dossier-enfant/[id]/upload', () => {
     const mockUpdate = jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ error: null }) });
     mockFrom.mockImplementation((table: string) => {
       if (table === 'gd_inscriptions') {
-        return { select: () => ({ eq: () => ({ single: () => ({ data: { referent_email: REFERENT_EMAIL }, error: null }) }) }) };
+        return { select: () => ({ eq: () => ({ is: () => ({ single: () => ({ data: { referent_email: REFERENT_EMAIL }, error: null }) }), single: () => ({ data: { referent_email: REFERENT_EMAIL }, error: null }) }) }) };
       }
       if (table === 'gd_dossier_enfant') {
         return {
@@ -210,7 +213,7 @@ describe('POST /api/dossier-enfant/[id]/upload', () => {
           update: mockUpdate,
         };
       }
-      return { select: () => ({ eq: () => ({ single: () => ({ data: null, error: null }) }) }) };
+      return { select: () => ({ eq: () => ({ is: () => ({ single: () => ({ data: null, error: null }) }), single: () => ({ data: null, error: null }) }) }) };
     });
 
     const req = makeFormDataRequest({ token: VALID_TOKEN, type: 'bulletin_signe', file: makeFile('bulletin.pdf') });
@@ -226,12 +229,12 @@ describe('POST /api/dossier-enfant/[id]/upload', () => {
   it('upload sanitaire_signe → sanitaire_completed mis à true', async () => {
     const mockUpdate = jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ error: null }) });
     mockFrom.mockImplementation((table: string) => {
-      if (table === 'gd_inscriptions') return { select: () => ({ eq: () => ({ single: () => ({ data: { referent_email: REFERENT_EMAIL }, error: null }) }) }) };
+      if (table === 'gd_inscriptions') return { select: () => ({ eq: () => ({ is: () => ({ single: () => ({ data: { referent_email: REFERENT_EMAIL }, error: null }) }), single: () => ({ data: { referent_email: REFERENT_EMAIL }, error: null }) }) }) };
       if (table === 'gd_dossier_enfant') return {
         select: () => ({ eq: () => ({ single: () => ({ data: { id: 'dossier_abc', documents_joints: [] }, error: null }) }) }),
         update: mockUpdate,
       };
-      return { select: () => ({ eq: () => ({ single: () => ({ data: null, error: null }) }) }) };
+      return { select: () => ({ eq: () => ({ is: () => ({ single: () => ({ data: null, error: null }) }), single: () => ({ data: null, error: null }) }) }) };
     });
 
     const req = makeFormDataRequest({ token: VALID_TOKEN, type: 'sanitaire_signe', file: makeFile('sanitaire.pdf') });
@@ -244,12 +247,12 @@ describe('POST /api/dossier-enfant/[id]/upload', () => {
   it('upload liaison_signe → liaison_completed mis à true', async () => {
     const mockUpdate = jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ error: null }) });
     mockFrom.mockImplementation((table: string) => {
-      if (table === 'gd_inscriptions') return { select: () => ({ eq: () => ({ single: () => ({ data: { referent_email: REFERENT_EMAIL }, error: null }) }) }) };
+      if (table === 'gd_inscriptions') return { select: () => ({ eq: () => ({ is: () => ({ single: () => ({ data: { referent_email: REFERENT_EMAIL }, error: null }) }), single: () => ({ data: { referent_email: REFERENT_EMAIL }, error: null }) }) }) };
       if (table === 'gd_dossier_enfant') return {
         select: () => ({ eq: () => ({ single: () => ({ data: { id: 'dossier_abc', documents_joints: [] }, error: null }) }) }),
         update: mockUpdate,
       };
-      return { select: () => ({ eq: () => ({ single: () => ({ data: null, error: null }) }) }) };
+      return { select: () => ({ eq: () => ({ is: () => ({ single: () => ({ data: null, error: null }) }), single: () => ({ data: null, error: null }) }) }) };
     });
 
     const req = makeFormDataRequest({ token: VALID_TOKEN, type: 'liaison_signe', file: makeFile('liaison.pdf') });
@@ -270,6 +273,7 @@ describe('POST /api/dossier-enfant/[id]/upload', () => {
       if (table === 'gd_inscriptions') return {
         select: () => ({
           eq: () => ({
+            is: () => ({ single: () => ({ data: { referent_email: REFERENT_EMAIL, sejour_slug: 'sejour-test' }, error: null }) }),
             single: () => ({ data: { referent_email: REFERENT_EMAIL, sejour_slug: 'sejour-test' }, error: null }),
           }),
         }),
@@ -282,11 +286,11 @@ describe('POST /api/dossier-enfant/[id]/upload', () => {
         }),
       };
       if (table === 'gd_dossier_enfant') return {
-        select: () => ({ eq: () => ({ single: () => ({ data: null, error: null }) }) }),
+        select: () => ({ eq: () => ({ is: () => ({ single: () => ({ data: null, error: null }) }), single: () => ({ data: null, error: null }) }) }),
         insert: mockInsert,
         update: mockUpdate,
       };
-      return { select: () => ({ eq: () => ({ single: () => ({ data: null, error: null }) }) }) };
+      return { select: () => ({ eq: () => ({ is: () => ({ single: () => ({ data: null, error: null }) }), single: () => ({ data: null, error: null }) }) }) };
     });
 
     const req = makeFormDataRequest({ token: VALID_TOKEN, type: 'bulletin_signe', file: makeFile('signed.pdf') });
@@ -307,8 +311,8 @@ describe('DELETE /api/dossier-enfant/[id]/upload', () => {
 
   it('retourne 403 si storage_path IDOR (chemin ne commence pas par inscriptionId)', async () => {
     const mockOwnership = jest.fn().mockImplementation((table: string) => {
-      if (table === 'gd_inscriptions') return { select: () => ({ eq: () => ({ single: () => ({ data: { referent_email: REFERENT_EMAIL }, error: null }) }) }) };
-      return { select: () => ({ eq: () => ({ single: () => ({ data: null, error: null }) }) }) };
+      if (table === 'gd_inscriptions') return { select: () => ({ eq: () => ({ is: () => ({ single: () => ({ data: { referent_email: REFERENT_EMAIL }, error: null }) }), single: () => ({ data: { referent_email: REFERENT_EMAIL }, error: null }) }) }) };
+      return { select: () => ({ eq: () => ({ is: () => ({ single: () => ({ data: null, error: null }) }), single: () => ({ data: null, error: null }) }) }) };
     });
     mockFrom.mockImplementation(mockOwnership);
 
@@ -321,12 +325,12 @@ describe('DELETE /api/dossier-enfant/[id]/upload', () => {
   it('si update DB réussit → storage supprimé ensuite', async () => {
     const mockUpdate = jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ error: null }) });
     mockFrom.mockImplementation((table: string) => {
-      if (table === 'gd_inscriptions') return { select: () => ({ eq: () => ({ single: () => ({ data: { referent_email: REFERENT_EMAIL }, error: null }) }) }) };
+      if (table === 'gd_inscriptions') return { select: () => ({ eq: () => ({ is: () => ({ single: () => ({ data: { referent_email: REFERENT_EMAIL }, error: null }) }), single: () => ({ data: { referent_email: REFERENT_EMAIL }, error: null }) }) }) };
       if (table === 'gd_dossier_enfant') return {
         select: () => ({ eq: () => ({ single: () => ({ data: { id: 'dossier_abc', documents_joints: [{ storage_path: STORAGE_PATH, type: 'vaccins' }] }, error: null }) }) }),
         update: mockUpdate,
       };
-      return { select: () => ({ eq: () => ({ single: () => ({ data: null, error: null }) }) }) };
+      return { select: () => ({ eq: () => ({ is: () => ({ single: () => ({ data: null, error: null }) }), single: () => ({ data: null, error: null }) }) }) };
     });
 
     const req = makeDeleteRequest({ token: VALID_TOKEN, storage_path: STORAGE_PATH });
@@ -340,12 +344,12 @@ describe('DELETE /api/dossier-enfant/[id]/upload', () => {
   it('si update DB échoue → storage NON supprimé (rollback implicite)', async () => {
     const mockUpdate = jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ error: { message: 'DB error' } }) });
     mockFrom.mockImplementation((table: string) => {
-      if (table === 'gd_inscriptions') return { select: () => ({ eq: () => ({ single: () => ({ data: { referent_email: REFERENT_EMAIL }, error: null }) }) }) };
+      if (table === 'gd_inscriptions') return { select: () => ({ eq: () => ({ is: () => ({ single: () => ({ data: { referent_email: REFERENT_EMAIL }, error: null }) }), single: () => ({ data: { referent_email: REFERENT_EMAIL }, error: null }) }) }) };
       if (table === 'gd_dossier_enfant') return {
         select: () => ({ eq: () => ({ single: () => ({ data: { id: 'dossier_abc', documents_joints: [{ storage_path: STORAGE_PATH }] }, error: null }) }) }),
         update: mockUpdate,
       };
-      return { select: () => ({ eq: () => ({ single: () => ({ data: null, error: null }) }) }) };
+      return { select: () => ({ eq: () => ({ is: () => ({ single: () => ({ data: null, error: null }) }), single: () => ({ data: null, error: null }) }) }) };
     });
 
     const req = makeDeleteRequest({ token: VALID_TOKEN, storage_path: STORAGE_PATH });

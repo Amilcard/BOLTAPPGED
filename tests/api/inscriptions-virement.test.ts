@@ -101,7 +101,9 @@ function setupHappyPath() {
       return {
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
+            is: jest.fn().mockReturnThis(),
             eq: jest.fn().mockReturnValue({
+              is: jest.fn().mockReturnThis(),
               single: jest.fn().mockResolvedValue({
                 data: { price: 810, city_departure: 'paris', is_full: false },
                 error: null,
@@ -115,7 +117,9 @@ function setupHappyPath() {
       return {
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
+            is: jest.fn().mockReturnThis(),
             eq: jest.fn().mockReturnValue({
+              is: jest.fn().mockReturnThis(),
               single: jest.fn().mockResolvedValue({
                 data: { id: 'session-1' },
                 error: null,
@@ -129,10 +133,15 @@ function setupHappyPath() {
       return {
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
+            is: jest.fn().mockReturnThis(),
             eq: jest.fn().mockReturnValue({
+              is: jest.fn().mockReturnThis(),
               eq: jest.fn().mockReturnValue({
+                is: jest.fn().mockReturnThis(),
                 eq: jest.fn().mockReturnValue({
+                  is: jest.fn().mockReturnThis(),
                   eq: jest.fn().mockReturnValue({
+                    is: jest.fn().mockReturnThis(),
                     single: jest.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } }),  // no duplicate
                   }),
                 }),
@@ -164,7 +173,9 @@ function setupHappyPath() {
       return {
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
+            is: jest.fn().mockReturnThis(),
             eq: jest.fn().mockReturnValue({
+              is: jest.fn().mockReturnThis(),
               single: jest.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } }),
               order: jest.fn().mockResolvedValue({ data: [], error: null }),
             }),
@@ -184,6 +195,7 @@ function setupHappyPath() {
       return {
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
+            is: jest.fn().mockReturnThis(),
             single: jest.fn().mockResolvedValue({
               data: { marketing_title: 'ALPOO KIDS', slug: 'alpoo-kids' },
               error: null,

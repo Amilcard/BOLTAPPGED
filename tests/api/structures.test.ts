@@ -50,7 +50,9 @@ function buildChain(result: { data?: unknown; error?: unknown }) {
   return {
     select: jest.fn().mockReturnValue({
       eq: jest.fn().mockReturnValue({
+        is: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnValue({
+          is: jest.fn().mockReturnThis(),
           order: jest.fn().mockResolvedValue(result),
           single: jest.fn().mockResolvedValue(result),
         }),

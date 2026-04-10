@@ -75,6 +75,7 @@ describe('VIEWER ne peut pas écrire sur /admin/propositions', () => {
     mockFrom.mockReturnValue({
       select: jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
+          is: jest.fn().mockReturnThis(),
           single: jest.fn().mockResolvedValue({ data: null, error: null }),
         }),
       }),
@@ -122,6 +123,7 @@ describe('VIEWER ne peut pas envoyer de relance email', () => {
     mockFrom.mockReturnValue({
       select: jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
+          is: jest.fn().mockReturnThis(),
           single: jest.fn().mockResolvedValue({ data: null, error: { message: 'not found' } }),
           maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
         }),

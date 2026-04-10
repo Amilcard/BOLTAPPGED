@@ -98,8 +98,8 @@ function setupMocks(opts: {
     if (table === 'gd_inscriptions') {
       return {
         select: () => ({
-          eq: () => ({
-            single: () => {
+          eq: () => {
+            const singleFn = () => {
               inscriptionCallCount++;
               if (ownership === 'not_found') return { data: null, error: null };
               if (ownership === 'mismatch') {
@@ -108,8 +108,12 @@ function setupMocks(opts: {
               }
               // ok — retourne email ET sejour_slug pour toutes les requêtes
               return { data: { referent_email: REFERENT_EMAIL, sejour_slug: 'test-sejour' }, error: null };
-            },
-          }),
+            };
+            return {
+              is: () => ({ single: singleFn }),
+              single: singleFn,
+            };
+          },
         }),
       };
     }
@@ -138,7 +142,12 @@ function setupMocks(opts: {
           }),
         }),
         update: () => ({
-          eq: () => ({ error: updateError }),
+          eq: () => ({
+            is: () => ({
+              select: () => ({ data: updateError ? null : [{ id: 'dossier_123' }], error: updateError }),
+            }),
+            error: updateError,
+          }),
         }),
       };
     }

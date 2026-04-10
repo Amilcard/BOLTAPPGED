@@ -76,7 +76,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // Validation des statuts
     const validStatuses = ['en_attente', 'validee', 'refusee', 'annulee'];
-    const validPaymentStatuses = ['pending_payment', 'paid', 'failed'];
+    const validPaymentStatuses = ['pending_payment', 'paid', 'failed', 'pending_transfer', 'pending_check', 'amount_mismatch'];
     const validDocStatuses = ['en_attente', 'partiellement_recus', 'complets'];
 
     const updateData: Record<string, unknown> = {};
@@ -152,6 +152,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       throw error;
     }
 
+    // RGPD — tracer modification inscription par admin
+    auditLog(supabase, {
+      action: 'update',
+      resourceType: 'inscription',
+      resourceId: id,
+      actorType: 'admin',
+      actorId: auth.email,
+      metadata: { fields: Object.keys(updateData) },
+    });
+
     // Audit log non-bloquant si le statut a changé
     if (status && oldStatus !== status) {
       supabase.from('gd_inscription_status_logs').insert({
@@ -200,6 +210,15 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
         { status: 403 }
       );
     }
+
+    // RGPD — tracer suppression inscription par admin (avant l'opération)
+    auditLog(supabase, {
+      action: 'delete',
+      resourceType: 'inscription',
+      resourceId: inscriptionId,
+      actorType: 'admin',
+      actorId: auth.email,
+    });
 
     // Soft delete : marquer deleted_at plutôt que supprimer physiquement
     const { error } = await supabase

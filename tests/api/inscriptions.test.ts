@@ -182,4 +182,30 @@ describe('API /api/inscriptions', () => {
 
     expect(response.status).toBe(400);
   });
+
+  it('rejette inscription avec priceTotal à 0', async () => {
+    if (skipIfNoServer()) return;
+
+    const payload = {
+      staySlug: 'alpoo-kids',
+      sessionDate: '2026-07-08',
+      cityDeparture: 'Paris',
+      organisation: 'Test Org',
+      socialWorkerName: 'Test',
+      email: 'test@example.com',
+      phone: '0612345678',
+      childFirstName: 'Test',
+      childBirthDate: '2019-01-15',
+      priceTotal: 0,
+      consent: true,
+    };
+
+    const response = await fetch(`${BASE_URL}/api/inscriptions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    expect(response.status).toBe(400);
+  });
 });

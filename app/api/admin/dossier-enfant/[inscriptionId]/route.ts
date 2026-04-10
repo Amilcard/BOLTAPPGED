@@ -25,7 +25,7 @@ export async function GET(
 
     const { data: dossier, error: err } = await supabase
       .from('gd_dossier_enfant')
-      .select('*')
+      .select('id, inscription_id, bulletin_complement, fiche_sanitaire, fiche_liaison_jeune, fiche_renseignements, documents_joints, bulletin_completed, sanitaire_completed, liaison_completed, renseignements_completed, renseignements_required, created_at, updated_at')
       .eq('inscription_id', inscriptionId)
       .maybeSingle();
 

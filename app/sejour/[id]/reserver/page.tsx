@@ -10,13 +10,16 @@ import { BookingFlow } from '@/components/booking-flow';
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
-  params: { id: string };
-  searchParams: { session?: string; ville?: string; prenom?: string; email?: string; souhait_id?: string };
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ session?: string; ville?: string; prenom?: string; email?: string; souhait_id?: string }>;
 }
 
 export default async function ReserverPage({ params, searchParams }: PageProps) {
+  const { id } = await params;
+  const sp = await searchParams;
+
   // Protection : seuls les pros authentifiés accèdent à la réservation (et aux prix)
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get('gd_session')?.value;
   const secret = process.env.NEXTAUTH_SECRET;
   if (!token || !secret) redirect('/login');
@@ -27,15 +30,15 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
     redirect('/login');
   }
 
-  const stay = await getSejourBySlug(params.id);
+  const stay = await getSejourBySlug(id);
   if (!stay) notFound();
 
   // Récupérer sessions + villes + prix + is_full UFOVAL (source de vérité)
   const [sessionsRaw, departureCities, enrichmentSessions, sessionPrices] = await Promise.all([
-    getStaySessions(params.id),
-    getDepartureCitiesFormatted(params.id),
-    getSessionPricesFormatted(params.id),
-    getSessionPrices(params.id), // is_full mis à jour par n8n UFOVAL toutes les 6h
+    getStaySessions(id),
+    getDepartureCitiesFormatted(id),
+    getSessionPricesFormatted(id),
+    getSessionPrices(id), // is_full mis à jour par n8n UFOVAL toutes les 6h
   ]);
 
   // Index is_full par clé start_date|end_date pour lookup rapide
@@ -50,8 +53,8 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
   // IMPORTANT: l'ID = slug__start__end — identique au format de sejour/[id]/page.tsx
   const sessions = validSessions.map((s: { start_date: string; end_date: string }) => ({
     ...s,
-    id: `${params.id}__${s.start_date}__${s.end_date}`,
-    stayId: params.id,
+    id: `${id}__${s.start_date}__${s.end_date}`,
+    stayId: id,
     startDate: s.start_date,
     endDate: s.end_date,
     // is_full UFOVAL — source de vérité Supabase — 0 = complet, -1 = dispo
@@ -59,12 +62,12 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
   }));
 
   // FIX_1 — Guard : session manquante ou invalide → redirect fiche séjour
-  if (!searchParams.session) {
-    redirect(`/sejour/${params.id}`);
+  if (!sp.session) {
+    redirect(`/sejour/${id}`);
   }
-  const sessionExists = sessions.some(s => s.id === searchParams.session);
+  const sessionExists = sessions.some(s => s.id === sp.session);
   if (!sessionExists) {
-    redirect(`/sejour/${params.id}`);
+    redirect(`/sejour/${id}`);
   }
 
   // FIX_2 — Guard : toutes sessions complètes → pas de BookingFlow
@@ -80,7 +83,7 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
       .select('slug, marketing_title, punchline, images, age_min, age_max')
       .eq('published', true)
       .eq('carousel_group', stay.carousel_group)
-      .neq('slug', params.id)
+      .neq('slug', id)
       .limit(10);
 
     if (candidates && candidates.length > 0) {
@@ -144,7 +147,7 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
             </Link>
             <ChevronRight className="w-3 h-3" />
             <Link
-              href={`/sejour/${params.id}`}
+              href={`/sejour/${id}`}
               className="hover:text-primary-700 transition-colors"
             >
               {stay.marketingTitle || 'Séjour'}
@@ -216,7 +219,7 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
                   Voir autres séjours
                 </Link>
                 <Link
-                  href={`/sejour/${params.id}`}
+                  href={`/sejour/${id}`}
                   className="flex-1 text-center border border-primary text-primary rounded-xl py-3 px-4 font-medium text-sm hover:bg-primary/5 transition-colors"
                 >
                   Retour fiche
@@ -227,11 +230,11 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
             <BookingFlow
               stay={enrichedStay as unknown as Stay & { departureCities: typeof departureCities; enrichmentSessions: typeof enrichmentSessions }}
               sessions={availableSessions}
-              initialSessionId={searchParams.session}
-              initialCity={searchParams.ville}
-              prefillPrenom={searchParams.prenom}
-              prefillEmail={searchParams.email}
-              souhaitId={searchParams.souhait_id}
+              initialSessionId={sp.session}
+              initialCity={sp.ville}
+              prefillPrenom={sp.prenom}
+              prefillEmail={sp.email}
+              souhaitId={sp.souhait_id}
             />
           )}
         </div>

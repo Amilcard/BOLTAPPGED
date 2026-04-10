@@ -29,12 +29,11 @@ const securityHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  experimental: {
-    outputFileTracingRoot: path.join(__dirname),
-    outputFileTracingExcludes: {
-      '*': ['supabase/**/*'],
-    },
+  outputFileTracingRoot: path.join(__dirname),
+  outputFileTracingExcludes: {
+    '*': ['supabase/**/*'],
   },
+  experimental: {},
   eslint: {
     ignoreDuringBuilds: true,
   },

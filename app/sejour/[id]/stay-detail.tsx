@@ -32,6 +32,7 @@ import { formatDateLong, getWishlistMotivation, addToWishlist } from '@/lib/util
 import { getPriceBreakdown, findSessionPrice, getMinSessionPrice } from '@/lib/pricing';
 import { useApp } from '@/components/providers';
 import { WishlistModal } from '@/components/wishlist-modal';
+import { ProGateModal } from '@/components/pro-gate-modal';
 import { Button } from '@/components/ui/button';
 
 // Test Mode
@@ -134,6 +135,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
   const { mode, mounted, refreshWishlist, isAuthenticated, proEmailVerified } = useApp();
   const router = useRouter();
   const [showWishlistModal, setShowWishlistModal] = useState(false);
+  const [showProAuthModal, setShowProAuthModal] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [showDepartures, setShowDepartures] = useState(false);
   const [showFullProgramme, setShowFullProgramme] = useState(false);
@@ -843,12 +845,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                 </Button>
               ) : (
                 <Button
-                  onClick={() => {
-                    const params = new URLSearchParams();
-                    if (preSelectedSessionId) params.set('session', preSelectedSessionId);
-                    if (preSelectedCity) params.set('ville', preSelectedCity);
-                    router.push(`/sejour/${slug}/reserver?${params.toString()}`);
-                  }}
+                  onClick={() => setShowProAuthModal(true)}
                   disabled={!preSelectedSessionId || !preSelectedCity || (!IS_TEST_MODE && sessions.filter(s => s?.seatsLeft === -1 || (s?.seatsLeft ?? 0) > 0).length === 0)}
                   className="w-full"
                   size="lg"
@@ -870,6 +867,20 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
           stayUrl={typeof window !== 'undefined' ? window.location.href : ''}
         />
       )}
+
+      {/* Modal auth pro — inscription */}
+      <ProGateModal
+        open={showProAuthModal}
+        onClose={() => setShowProAuthModal(false)}
+        variant="pro-auth"
+        sejourSlug={slug}
+        reserverParams={(() => {
+          const p = new URLSearchParams();
+          if (preSelectedSessionId) p.set('session', preSelectedSessionId);
+          if (preSelectedCity) p.set('ville', preSelectedCity);
+          return p.toString();
+        })()}
+      />
 
       {/* Modal villes */}
       {showDepartures && enrichment?.departures && (
@@ -962,12 +973,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
               </Button>
             ) : (
               <Button
-                onClick={() => {
-                  const params = new URLSearchParams();
-                  if (preSelectedSessionId) params.set('session', preSelectedSessionId);
-                  if (preSelectedCity) params.set('ville', preSelectedCity);
-                  router.push(`/sejour/${slug}/reserver?${params.toString()}`);
-                }}
+                onClick={() => setShowProAuthModal(true)}
                 disabled={!preSelectedSessionId || !preSelectedCity || sessions.filter(s => s?.seatsLeft === -1 || (s?.seatsLeft ?? 0) > 0).length === 0}
                 className="w-full"
                 size="default"

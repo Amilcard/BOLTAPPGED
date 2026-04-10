@@ -7,7 +7,7 @@ import { verifyAuth, requireEditor } from '@/lib/auth-middleware';
  */
 export async function GET(request: NextRequest) {
   try {
-    const auth = await verifyAuth(request);
+    const auth = await requireEditor(request);
     if (!auth) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }

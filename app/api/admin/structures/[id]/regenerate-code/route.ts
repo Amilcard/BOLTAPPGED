@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '@/lib/auth-middleware';
+import { requireAdmin } from '@/lib/auth-middleware';
 import { getSupabase } from '@/lib/supabase-server';
 import { auditLog } from '@/lib/audit-log';
 
@@ -15,8 +15,8 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await verifyAuth(req);
-  if (!auth || auth.role !== 'ADMIN') {
+  const auth = await requireAdmin(req);
+  if (!auth) {
     return NextResponse.json(
       { error: { code: 'UNAUTHORIZED', message: 'Accès réservé aux administrateurs.' } },
       { status: 403 }

@@ -53,11 +53,11 @@ function btn(label: string) {
 describe('BottomNav — items mode Pro', () => {
   beforeEach(() => setup({ mode: 'pro' }));
 
-  it('affiche Accueil, Recherche, Dossiers', () => {
+  it('affiche Accueil, Recherche (Dossiers retiré — pas de destination pertinente sans auth)', () => {
     render(<BottomNav />);
     expect(screen.getByText('Accueil')).toBeInTheDocument();
     expect(screen.getByText('Recherche')).toBeInTheDocument();
-    expect(screen.getByText('Dossiers')).toBeInTheDocument();
+    expect(screen.queryByText('Dossiers')).toBeNull();
   });
 
   it('ne contient pas "Infos" (item retiré)', () => {
@@ -70,9 +70,9 @@ describe('BottomNav — items mode Pro', () => {
     expect(screen.queryByText('Mes souhaits')).toBeNull();
   });
 
-  it('affiche exactement 3 boutons', () => {
+  it('affiche exactement 2 boutons (Dossiers retiré)', () => {
     render(<BottomNav />);
-    expect(screen.getAllByRole('button')).toHaveLength(3);
+    expect(screen.getAllByRole('button')).toHaveLength(2);
   });
 });
 
@@ -154,11 +154,7 @@ describe('BottomNav — isActive', () => {
     expect(btn('Recherche')?.className).toMatch(/(^| )text-primary( |$)/);
   });
 
-  it('Dossiers actif sur /suivi/[token]', () => {
-    setup({ mode: 'pro', pathname: '/suivi/abc-uuid-123' });
-    render(<BottomNav />);
-    expect(btn('Dossiers')?.className).toMatch(/(^| )text-primary( |$)/);
-  });
+  // Dossiers retiré du BottomNav pro — test supprimé
 
   it('Mes souhaits actif sur /envies (Kids)', () => {
     setup({ mode: 'kids', pathname: '/envies' });
@@ -216,12 +212,7 @@ describe('BottomNav — navigation au clic', () => {
     expect(mockPush).toHaveBeenCalledWith('/recherche');
   });
 
-  it('clic Dossiers Pro → push("/recherche") (pas de token pro en localStorage)', () => {
-    setup({ mode: 'pro' });
-    render(<BottomNav />);
-    fireEvent.click(btn('Dossiers') as HTMLElement);
-    expect(mockPush).toHaveBeenCalledWith('/recherche');
-  });
+  // Dossiers retiré du BottomNav pro — test supprimé
 
   it('clic Mes souhaits Kids → push("/envies")', () => {
     setup({ mode: 'kids' });

@@ -7,7 +7,6 @@ import { useApp } from './providers';
 const proNavItems = [
   { key: 'home',     label: 'Accueil',     route: '/',          icon: Home },
   { key: 'search',   label: 'Recherche',   route: '/recherche', icon: Search },
-  { key: 'dossiers', label: 'Dossiers',    route: '/recherche', icon: FolderOpen },
 ];
 
 const kidsNavItems = [

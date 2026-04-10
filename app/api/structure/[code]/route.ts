@@ -133,7 +133,7 @@ export async function GET(
   if (await isStructureRateLimited(ip)) {
     return NextResponse.json(
       { error: { code: 'RATE_LIMITED', message: 'Trop de tentatives. Réessayez dans quelques minutes.' } },
-      { status: 429 }
+      { status: 429, headers: { 'Retry-After': '900' } }
     );
   }
 

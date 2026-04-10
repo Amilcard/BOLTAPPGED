@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
   if (await isRateLimited(ip)) {
     return NextResponse.json(
       { error: 'Trop de tentatives. Réessayez dans 15 minutes.' },
-      { status: 429 }
+      { status: 429, headers: { 'Retry-After': '900' } }
     );
   }
 

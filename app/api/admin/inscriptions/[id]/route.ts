@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth, requireEditor } from '@/lib/auth-middleware';
+import { requireEditor, requireAdmin } from '@/lib/auth-middleware';
 import { getSupabase } from '@/lib/supabase-server';
 import { sendStatusChangeEmail } from '@/lib/email';
 import { auditLog } from '@/lib/audit-log';
@@ -63,11 +63,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     const supabase = getSupabase();
-    const auth = await verifyAuth(req);
-    if (!auth || !['ADMIN', 'EDITOR'].includes(auth.role)) {
+    const auth = await requireEditor(req);
+    if (!auth) {
       return NextResponse.json(
-        { error: { code: 'unauthorized', message: 'Non autorisé' } },
-        { status: 401 }
+        { error: { code: 'unauthorized', message: 'Accès réservé aux éditeurs et administrateurs.' } },
+        { status: 403 }
       );
     }
 
@@ -193,11 +193,11 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try {
     const { id: inscriptionId } = await params;
     const supabase = getSupabase();
-    const auth = await verifyAuth(req);
-    if (!auth || auth.role !== 'ADMIN') {
+    const auth = await requireAdmin(req);
+    if (!auth) {
       return NextResponse.json(
-        { error: { code: 'unauthorized', message: 'Seul un admin peut supprimer.' } },
-        { status: 401 }
+        { error: { code: 'unauthorized', message: 'Seul un administrateur peut supprimer.' } },
+        { status: 403 }
       );
     }
 

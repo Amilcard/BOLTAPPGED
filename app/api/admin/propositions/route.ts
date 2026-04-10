@@ -1,15 +1,15 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
-import { verifyAuth, requireEditor } from '@/lib/auth-middleware';
+import { requireEditor } from '@/lib/auth-middleware';
 /**
  * GET /api/admin/propositions — Liste toutes les propositions tarifaires
  */
 export async function GET(request: NextRequest) {
   try {
-    const auth = await verifyAuth(request);
+    const auth = await requireEditor(request);
     if (!auth) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Accès réservé aux éditeurs et administrateurs.' }, { status: 403 });
     }
 
     const supabase = getSupabase();

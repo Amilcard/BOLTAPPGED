@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '@/lib/auth-middleware';
+import { requireEditor } from '@/lib/auth-middleware';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 // GET all stays from Supabase (source de vérité)
 export async function GET(request: NextRequest) {
-  const auth = await verifyAuth(request);
+  const auth = await requireEditor(request);
   if (!auth) {
     return NextResponse.json(
-      { error: { code: 'UNAUTHORIZED', message: 'Non autorisé' } },
-      { status: 401 }
+      { error: { code: 'UNAUTHORIZED', message: 'Accès réservé aux éditeurs et administrateurs.' } },
+      { status: 403 }
     );
   }
 

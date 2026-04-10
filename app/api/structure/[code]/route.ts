@@ -160,7 +160,7 @@ export async function GET(
     resourceType: 'inscription',
     resourceId: structureId,
     actorType: 'referent',
-    metadata: { access_type: 'structure_code', role, ip, code_length: code.length },
+    metadata: { access_type: 'structure_code', role, ip, code_length: code.length, user_agent: _req.headers.get('user-agent') || 'unknown' },
   });
 
   // Récupérer les inscriptions rattachées

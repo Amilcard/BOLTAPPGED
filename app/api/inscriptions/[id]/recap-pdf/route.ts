@@ -222,7 +222,7 @@ export async function GET(
     page.drawText('Groupe & Decouverte — app.groupeetdecouverte.fr — DPO : dpo@groupeetdecouverte.fr', {
       x: LEFT, y: 25, size: 8, font: regular, color: rgb(0.7, 0.7, 0.7),
     });
-    page.drawText('Document horodate a valeur de justificatif. Donnees hebergees en UE (Supabase Frankfurt).', {
+    page.drawText('Document horodate a valeur de justificatif. Donnees hebergees en France.', {
       x: LEFT, y: 13, size: 7, font: regular, color: rgb(0.5, 0.5, 0.5),
     });
 

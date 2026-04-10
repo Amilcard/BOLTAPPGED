@@ -10,8 +10,13 @@ import { getSupabase } from '@/lib/supabase-server';
  * Protégé par CRON_SECRET (Vercel Cron).
  */
 export async function GET(req: NextRequest) {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) {
+    console.error('[rgpd-purge] CRON_SECRET non configuré — accès refusé');
+    return NextResponse.json({ error: 'Misconfigured' }, { status: 500 });
+  }
   const authHeader = req.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (authHeader !== `Bearer ${secret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

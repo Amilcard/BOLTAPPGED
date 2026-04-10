@@ -14,8 +14,8 @@ export default function StructureLoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const codeNorm = code.trim().toUpperCase();
-    if (!/^[A-Z0-9]{6}$/.test(codeNorm)) {
-      setError('Le code doit contenir exactement 6 caractères alphanumériques.');
+    if (!/^[A-Z0-9]{6}$/.test(codeNorm) && !/^[A-Z0-9]{10}$/.test(codeNorm)) {
+      setError('Le code doit contenir 6 caractères (chef de service) ou 10 caractères (directeur).');
       return;
     }
     setLoading(true);
@@ -58,8 +58,8 @@ export default function StructureLoginPage() {
                 type="text"
                 value={code}
                 onChange={e => setCode(e.target.value.toUpperCase())}
-                placeholder="Ex : AB12CD"
-                maxLength={6}
+                placeholder="Ex : AB12CD ou AB12CD34EF"
+                maxLength={10}
                 required
                 autoComplete="off"
                 className="w-full px-4 py-3 border border-primary-200 rounded-lg font-mono text-lg tracking-widest text-center uppercase focus:ring-2 focus:ring-accent focus:border-transparent"
@@ -80,7 +80,7 @@ export default function StructureLoginPage() {
 
             <button
               type="submit"
-              disabled={loading || code.length < 6}
+              disabled={loading || (code.length !== 6 && code.length !== 10)}
               className="w-full py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}

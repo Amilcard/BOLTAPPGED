@@ -1,7 +1,8 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
-import { verifyAuth, requireEditor } from '@/lib/auth-middleware';
+import { requireEditor } from '@/lib/auth-middleware';
+import { auditLog } from '@/lib/audit-log';
 /**
  * GET /api/admin/propositions — Liste toutes les propositions tarifaires
  */
@@ -128,6 +129,15 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error;
 
+    auditLog(supabase, {
+      action: 'create',
+      resourceType: 'inscription',
+      resourceId: proposition.id,
+      actorType: 'admin',
+      actorId: auth.email,
+      metadata: { enfant_nom, sejour_slug },
+    });
+
     return NextResponse.json({ proposition }, { status: 201 });
   } catch (err: unknown) {
     console.error('Error creating proposition:', err);
@@ -178,6 +188,16 @@ export async function PATCH(req: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    auditLog(supabase, {
+      action: 'update',
+      resourceType: 'inscription',
+      resourceId: id,
+      actorType: 'admin',
+      actorId: auth.email,
+      metadata: { fields: Object.keys(updates) },
+    });
+
     return NextResponse.json({ proposition: data });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
@@ -209,6 +229,15 @@ export async function DELETE(req: NextRequest) {
       .eq('id', id);
 
     if (error) throw error;
+
+    auditLog(supabase, {
+      action: 'delete',
+      resourceType: 'inscription',
+      resourceId: id,
+      actorType: 'admin',
+      actorId: auth.email,
+    });
+
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';

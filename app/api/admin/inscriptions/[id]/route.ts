@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth, requireEditor } from '@/lib/auth-middleware';
+import { requireEditor, requireAdmin } from '@/lib/auth-middleware';
 import { getSupabase } from '@/lib/supabase-server';
 import { sendStatusChangeEmail } from '@/lib/email';
 import { auditLog } from '@/lib/audit-log';
@@ -63,8 +63,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     const supabase = getSupabase();
-    const auth = await verifyAuth(req);
-    if (!auth || !['ADMIN', 'EDITOR'].includes(auth.role)) {
+    const auth = await requireEditor(req);
+    if (!auth) {
       return NextResponse.json(
         { error: { code: 'unauthorized', message: 'Non autorisé' } },
         { status: 401 }
@@ -152,6 +152,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       throw error;
     }
 
+    // RGPD — tracer modification inscription par admin
+    auditLog(supabase, {
+      action: 'update',
+      resourceType: 'inscription',
+      resourceId: id,
+      actorType: 'admin',
+      actorId: auth.email,
+      metadata: { fields: Object.keys(updateData) },
+    });
+
     // Audit log non-bloquant si le statut a changé
     if (status && oldStatus !== status) {
       supabase.from('gd_inscription_status_logs').insert({
@@ -193,13 +203,22 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try {
     const { id: inscriptionId } = await params;
     const supabase = getSupabase();
-    const auth = await verifyAuth(req);
-    if (!auth || auth.role !== 'ADMIN') {
+    const auth = await requireAdmin(req);
+    if (!auth) {
       return NextResponse.json(
         { error: { code: 'unauthorized', message: 'Seul un admin peut supprimer.' } },
         { status: 401 }
       );
     }
+
+    // RGPD — tracer suppression inscription par admin (avant l'opération)
+    auditLog(supabase, {
+      action: 'delete',
+      resourceType: 'inscription',
+      resourceId: inscriptionId,
+      actorType: 'admin',
+      actorId: auth.email,
+    });
 
     // Soft delete : marquer deleted_at plutôt que supprimer physiquement
     const { error } = await supabase

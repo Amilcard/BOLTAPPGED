@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     // Vérification ownership : suivi_token doit correspondre à l'inscription
     const { data: inscription, error: fetchError } = await supabase
       .from('gd_inscriptions')
-      .select('*')
+      .select('id, price_total, stripe_payment_intent_id, suivi_token, jeune_prenom, sejour_slug, payment_status, payment_method')
       .eq('id', inscriptionId)
       .eq('suivi_token', suivi_token)
       .single();

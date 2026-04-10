@@ -234,6 +234,7 @@ export default function PropositionsPage() {
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
     } catch (err) {
       console.error('Error downloading PDF:', err);
       alert('Erreur lors de la génération du PDF');

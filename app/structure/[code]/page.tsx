@@ -4,7 +4,8 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Building2, FileCheck, FileClock } from 'lucide-react';
+import { Building2 } from 'lucide-react';
+import { DossierBadge } from '@/components/admin/DossierBadge';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -87,17 +88,7 @@ function Badge({ label, color, bg }: { label: string; color: string; bg: string 
   );
 }
 
-function DossierBadge({ c, gedSentAt }: { c: DossierCompletude | null; gedSentAt?: string | null }) {
-  if (!c) return <span className="inline-flex items-center gap-1 text-xs text-gray-400"><FileClock size={12} /> Non commencé</span>;
-  if (gedSentAt) return <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700"><FileCheck size={12} /> Envoyé GED</span>;
-  const required = [c.bulletin, c.sanitaire, c.liaison, ...(c.renseignements_required ? [c.renseignements] : [])];
-  const done = required.filter(Boolean).length;
-  const total = required.length;
-  if (done === total) return <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700"><FileCheck size={12} /> Complet</span>;
-  return (
-    <span className="text-xs font-medium text-orange-600">{done}/{total} fiches</span>
-  );
-}
+// DossierBadge importé depuis @/components/admin/DossierBadge (plus de doublon local)
 
 function fmt(d: string) {
   try { return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
@@ -416,7 +407,7 @@ export default function StructureDashboard() {
                           <p className="text-xs text-gray-400">{insc.referent_email}</p>
                         </td>
                         <td className="px-4 py-3">
-                          <DossierBadge c={insc.dossier_completude} gedSentAt={insc.ged_sent_at} />
+                          <DossierBadge completude={insc.dossier_completude ? { bulletin: insc.dossier_completude.bulletin, sanitaire: insc.dossier_completude.sanitaire, liaison: insc.dossier_completude.liaison, renseignements: insc.dossier_completude.renseignements, pj_count: insc.dossier_completude.pj_count } : null} gedSentAt={insc.ged_sent_at} />
                         </td>
                         <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">
                           {(insc.price_total || 0).toLocaleString('fr-FR')} €

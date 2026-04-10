@@ -1,7 +1,7 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Building2, Search, Link2, GitMerge, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 import { useAdminUI } from '@/components/admin/admin-ui';
 
@@ -48,6 +48,8 @@ export default function AdminStructures() {
   const [orphans, setOrphans] = useState<Orphan[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [tab, setTab] = useState<'structures' | 'orphelines'>('structures');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [expandedInscriptions, setExpandedInscriptions] = useState<Record<string, unknown>[]>([]);
@@ -216,8 +218,12 @@ export default function AdminStructures() {
           <input
             type="text"
             placeholder="Rechercher par nom, ville ou code..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={e => {
+              setSearchInput(e.target.value);
+              if (debounceRef.current) clearTimeout(debounceRef.current);
+              debounceRef.current = setTimeout(() => setSearch(e.target.value), 300);
+            }}
             className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent"
           />
         </div>

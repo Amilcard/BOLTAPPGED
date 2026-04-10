@@ -21,7 +21,7 @@ export function Footer() {
           {/* RGPD */}
           <div className="flex flex-col items-center md:items-start gap-2">
             <div className="flex items-center gap-1 text-xs text-gray-500">
-              <Shield className="w-3 h-3" />
+              <Shield aria-hidden="true" className="w-3 h-3" />
               <span>Application conforme RGPD — Données hébergées en Union européenne</span>
             </div>
             <a href="/confidentialite" className="text-xs text-gray-500 hover:text-primary underline">

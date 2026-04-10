@@ -39,7 +39,7 @@ export function BottomNav() {
   if (!mounted) return <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 md:hidden pb-safe h-16" />;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 md:hidden pb-safe">
+    <nav aria-label="Navigation principale" className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 md:hidden pb-safe">
       <div className="flex justify-around items-center h-16">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -54,7 +54,7 @@ export function BottomNav() {
               }`}
             >
               <div className="relative">
-                <Icon className={`w-5 h-5 ${item.key === 'envies' && active ? 'fill-current' : ''}`} />
+                <Icon aria-hidden="true" className={`w-5 h-5 ${item.key === 'envies' && active ? 'fill-current' : ''}`} />
                 {showBadge && (
                   <span className="absolute -top-1 -right-2 w-4 h-4 bg-accent text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                     {wishlist.length > 9 ? '9+' : wishlist.length}

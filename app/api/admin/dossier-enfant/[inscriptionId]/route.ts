@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireEditor } from '@/lib/auth-middleware';
 import { getSupabase } from '@/lib/supabase-server';
+import { auditLog } from '@/lib/audit-log';
 /**
  * GET /api/admin/dossier-enfant/[inscriptionId]
  * Admin : lecture seule du dossier enfant d'une inscription.
@@ -45,6 +46,15 @@ export async function GET(
         fiche_liaison_jeune: {},
       });
     }
+
+    // RGPD Art. 9 — tracer lecture dossier enfant par admin
+    auditLog(supabase, {
+      action: 'read',
+      resourceType: 'dossier_enfant',
+      resourceId: inscriptionId,
+      actorType: 'admin',
+      actorId: auth.email,
+    });
 
     return NextResponse.json({
       exists: true,

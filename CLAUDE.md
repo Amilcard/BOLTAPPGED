@@ -283,14 +283,21 @@ git fetch origin && git log origin/main..main --oneline && git log main..origin/
 
 1. **JAMAIS `console.log` avec PII** — email, nom, prénom, token, données médicales interdits dans les logs. IDs et refs seulement.
 2. **`gd_dossier_enfant` → `verifyOwnership()` obligatoire** — pas de guard inline. Centralisation dans `lib/verify-ownership.ts`.
-3. **Données Art. 9 → `auditLog()` obligatoire** — sur chaque read/write de `gd_dossier_enfant`, `fiche_sanitaire`, `documents_joints`.
-4. **Collecte données → mention RGPD avant soumission** — bloc informatif + lien `/confidentialite` requis avant tout champ nominatif.
-5. **Consentement parental < 15 ans = double vérification** — front (conditionnel) ET back (Zod + guard serveur).
+3. **Données Art. 9 → `auditLog()` obligatoire** — sur chaque read/write de `gd_dossier_enfant`, `fiche_sanitaire`, `documents_joints`, Y COMPRIS côté admin.
+4. **Collecte données → mention RGPD avant soumission** — bloc informatif + lien `/confidentialite` requis avant tout champ nominatif (inscription, souhait, dossier).
+5. **Consentement parental < 15 ans = double vérification** — front (conditionnel) ET back (Zod + guard serveur). Tracer dans `parental_consent_at` + `parental_consent_version`.
 6. **Tokens = UUIDs opaques** — jamais nom, email, ID enfant dans les tokens ou URLs publiques.
-7. **Exports admin = colonnes minimales** — exclure `fiche_sanitaire`, `bulletin_complement`, `documents_joints`.
-8. **Tests RLS actifs en CI** — `isRealSupabase` dynamique basé sur env. Flag `false` = dette à traiter immédiatement.
-9. **Déploiement prod : valider `lib/env.ts`** — `STRIPE_SECRET_KEY`, `EMAIL_SERVICE_API_KEY`, `NEXTAUTH_SECRET` obligatoires. Zod bloque si absent.
-10. **Incident données → `docs/PROCEDURE_VIOLATION_DONNEES.md`** — délai CNIL : 72h. Protocole complet dans `Documents_Legaux/`.
+7. **Exports/listes admin = colonnes minimales** — exclure `fiche_sanitaire`, `fiche_liaison_jeune`, `documents_joints` des SELECT liste. Accès détail uniquement via route spécifique avec auditLog.
+8. **Routes admin = `requireEditor` minimum** — jamais `verifyAuth` seul (inclut VIEWER). `requireAdmin` pour les actions destructives.
+9. **localStorage = zéro PII** — UUID opaques acceptables, jamais email/nom/données personnelles.
+10. **Upload = whitelist MIME + extensions + magic bytes** — toujours vérifier le contenu réel du fichier, pas le MIME déclaré.
+11. **RLS actif sur toutes les tables contenant PII** — `gd_inscriptions`, `gd_dossier_enfant` = service_role only. Jamais d'accès anon.
+12. **Incident données → `docs/PROCEDURE_VIOLATION_DONNEES.md`** — délai CNIL : 72h. Protocole complet documenté.
+13. **Purge RGPD automatique** — audit logs 12 mois, données médicales 3 mois post-séjour. Cron actif et testé.
+14. **Session cookie = httpOnly + secure + sameSite strict** — jamais de JWT dans le body de réponse ni dans localStorage.
+15. **Toute route admin accédant à des données nominatives doit appeler `auditLog()`** — même en lecture seule.
+16. **Réassurance front obligatoire sur chaque écran collectant ou affichant des données** — qui voit quoi, pourquoi on collecte, combien de temps on garde.
+17. **Multi-codes structure** — éducateur (suivi_token), CDS (6 chars, toute la structure), directeur (10 chars, tout + gestion codes). Expiration + révocation.
 
 ## Token efficiency — PERMANENT, AUTO, NO EXCEPTION
 - Tables/listes > prose. Zéro filler. Zéro restatement. Zéro trailing summary.

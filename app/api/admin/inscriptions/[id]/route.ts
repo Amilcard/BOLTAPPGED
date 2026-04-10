@@ -23,7 +23,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const { data, error } = await supabase
       .from('gd_inscriptions')
-      .select('*')
+      .select('id, dossier_ref, jeune_prenom, jeune_nom, referent_nom, referent_email, organisation, sejour_titre, sejour_slug, status, payment_status, payment_method, price_total, structure_id, created_at, updated_at, suivi_token, documents_status')
       .eq('id', id)
       .is('deleted_at', null)
       .single();

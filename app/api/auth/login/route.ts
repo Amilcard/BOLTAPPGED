@@ -59,10 +59,10 @@ async function isRateLimited(ip: string): Promise<boolean> {
 
     return false;
   } catch (err) {
-    // Fail-open : si la table n'existe pas encore ou erreur BDD,
-    // on laisse passer (mieux que bloquer tous les logins)
-    console.error('[rate-limit] Erreur, fail-open:', err);
-    return false;
+    // Fail-closed : si on ne peut pas vérifier, on bloque par précaution
+    // (données enfants ASE — mieux bloquer que laisser passer)
+    console.error('[rate-limit] Erreur DB, fail-closed:', err);
+    return true;
   }
 }
 

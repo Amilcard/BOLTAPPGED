@@ -165,6 +165,15 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   const [selectedSessionId, setSelectedSessionId] = useState<string>(initialSessionId);
   const [selectedCity, setSelectedCity] = useState<string>(normalizedInitialCity);
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+
+  // Écouter le callback Turnstile
+  useEffect(() => {
+    const handler = (e: Event) => setTurnstileToken((e as CustomEvent).detail);
+    window.addEventListener('turnstile-success', handler);
+    return () => window.removeEventListener('turnstile-success', handler);
+  }, []);
+
   const [error, setError] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'bank_transfer' | 'cheque' | null>(null);
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
@@ -398,6 +407,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
           structureCity: step1.structureCity,
           structureType: step1.structureType || undefined,
           structureEmail: step1.structureEmail || undefined,
+          turnstileToken: turnstileToken || undefined,
         }),
       });
 
@@ -1148,6 +1158,29 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               )}
             </div>
           )}
+          {/* Turnstile CAPTCHA — RGPD-friendly (Cloudflare, pas de cookie tracking) */}
+          {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+            <div className="flex justify-center mb-4">
+              <div
+                className="cf-turnstile"
+                data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                data-callback="onTurnstileSuccess"
+                data-theme="light"
+                data-size="normal"
+              />
+              <script
+                src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+                async
+                defer
+              />
+              <script
+                dangerouslySetInnerHTML={{
+                  __html: `window.onTurnstileSuccess = function(token) { window.__turnstileToken = token; window.dispatchEvent(new CustomEvent('turnstile-success', { detail: token })); };`,
+                }}
+              />
+            </div>
+          )}
+
           <div className="flex gap-3">
             <button
               onClick={() => setStep(3)}
@@ -1157,7 +1190,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             </button>
             <button
               onClick={handleSubmit}
-              disabled={loading || totalPrice === null || ageError !== '' || !paymentMethod || !!stripeFailedInscriptionId}
+              disabled={loading || totalPrice === null || ageError !== '' || !paymentMethod || !!stripeFailedInscriptionId || (!!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken)}
               className="flex-1 py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}

@@ -46,6 +46,24 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = getSupabase();
     const body = await request.json();
+
+    // ── Vérification Turnstile (skip si clé non configurée — env de test) ──
+    const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
+    if (turnstileSecret && body.turnstileToken) {
+      const tvRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret: turnstileSecret, response: body.turnstileToken }),
+      });
+      const tvData = await tvRes.json();
+      if (!tvData.success) {
+        return NextResponse.json(
+          { error: { code: 'CAPTCHA_FAILED', message: 'Vérification anti-robot échouée. Rechargez la page.' } },
+          { status: 400 }
+        );
+      }
+    }
+
     const parsed = inscriptionSchema.safeParse(body);
 
     if (!parsed.success) {

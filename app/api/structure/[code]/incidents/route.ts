@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
 import { resolveCodeToStructure } from '@/lib/structure';
 import { auditLog } from '@/lib/audit-log';
+import { sendIncidentNotification } from '@/lib/email';
 
 const VALID_CATEGORIES = ['medical', 'comportemental', 'fugue', 'accident', 'autre'] as const;
 const VALID_SEVERITIES = ['info', 'attention', 'urgent'] as const;
@@ -117,7 +118,38 @@ export async function POST(
     metadata: { type: 'incident_created', category, severity, role: resolved.role },
   });
 
-  // TODO: email notification si gravité >= attention (Sprint B phase 2)
+  // Email notification si gravité >= attention
+  if (severity === 'attention' || severity === 'urgent') {
+    // Récupérer les emails des éducateurs de la structure via access codes
+    const { data: accessCodes } = await supabase
+      .from('gd_structure_access_codes')
+      .select('email')
+      .eq('structure_id', structureId)
+      .eq('active', true)
+      .not('email', 'is', null);
+
+    const emails = (accessCodes ?? [])
+      .map((ac: { email: string | null }) => ac.email)
+      .filter((e): e is string => !!e);
+
+    // Récupérer le prénom de l'enfant
+    const { data: inscData } = await supabase
+      .from('gd_inscriptions')
+      .select('jeune_prenom')
+      .eq('id', inscription_id)
+      .single();
+
+    if (emails.length > 0) {
+      sendIncidentNotification(emails, {
+        structureName: (resolved.structure as { name?: string }).name || 'Structure',
+        jeunePrenom: inscData?.jeune_prenom || 'Enfant',
+        category: category as string,
+        severity: severity as string,
+        description: (description as string).trim(),
+        createdBy: resolved.email || 'unknown',
+      });
+    }
+  }
 
   return NextResponse.json({ ok: true, id: incident.id }, { status: 201 });
 }

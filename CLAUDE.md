@@ -54,6 +54,10 @@ npm run lint
 - gd_dossier_enfant, gd_structures, gd_stays
 - gd_stay_themes, gd_session_prices, gd_waitlist
 - gd_login_attempts — rate limiting IP (login + structure + délégation + price-inquiry)
+- gd_incidents — incidents séjour (5 catégories, 3 gravités, statut ouvert/en_cours/resolu)
+- gd_medical_events — événements médicaux Art. 9 RGPD (table séparée, purge 3 mois)
+- gd_calls — appels significatifs (5 types, sens, interlocuteur, accord parents)
+- gd_notes — notes par enfant (non éditables, traçabilité RGPD)
 - Vues : v_activity_with_sessions, v_orphaned_records
 
 ## Danger zones — INTERDICTIONS ABSOLUES
@@ -114,6 +118,10 @@ npm run lint
 - `POST /api/structure/[code]` - Accepter engagement RGPD
 - `PATCH /api/structure/[code]/delegation` - Directeur uniquement : définir/supprimer délégation CDS
 - `PATCH /api/structure/[code]/settings` - Directeur uniquement : modifier email contact
+- `GET/POST /api/structure/[code]/incidents` - Incidents séjour (direction/CDS écrivent, éducateur lit)
+- `GET/POST /api/structure/[code]/medical` - Événements médicaux Art. 9 (éducateur = compteur seul)
+- `GET/POST /api/structure/[code]/calls` - Appels significatifs (direction/CDS écrivent, éducateur lit)
+- `GET/POST /api/structure/[code]/notes` - Notes par enfant (direction/CDS écrivent, non éditables)
 
 **Admin (JWT + role check):**
 - `/api/admin/stays` - Full CRUD operations

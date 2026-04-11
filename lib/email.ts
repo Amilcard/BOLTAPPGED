@@ -939,3 +939,72 @@ export async function sendProAccessAlertGED(data: ProAccessRequestData): Promise
     console.error('[EMAIL] Erreur alerte accès pro GED:', error);
   }
 }
+
+/**
+ * Notification incident séjour → éducateurs de la structure
+ * Envoyé uniquement si gravité >= "attention"
+ */
+interface IncidentNotificationData {
+  structureName: string;
+  jeunePrenom: string;
+  category: string;
+  severity: string;
+  description: string;
+  createdBy: string;
+}
+
+const SEVERITY_LABELS: Record<string, string> = {
+  info: 'Information',
+  attention: 'Attention',
+  urgent: 'Urgent',
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  medical: 'Médical',
+  comportemental: 'Comportemental',
+  fugue: 'Fugue',
+  accident: 'Accident',
+  autre: 'Autre',
+};
+
+export async function sendIncidentNotification(
+  emails: string[],
+  data: IncidentNotificationData
+): Promise<void> {
+  try {
+    const resend = getResend();
+    if (!process.env.EMAIL_SERVICE_API_KEY || emails.length === 0) return;
+
+    const severityColor = data.severity === 'urgent' ? '#dc2626' : '#f59e0b';
+    const severityLabel = SEVERITY_LABELS[data.severity] || data.severity;
+    const categoryLabel = CATEGORY_LABELS[data.category] || data.category;
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: emails,
+      subject: `[${severityLabel}] Incident ${categoryLabel} — ${htmlEscape(data.jeunePrenom)} — ${htmlEscape(data.structureName)}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: ${severityColor}; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">
+            <h2 style="margin: 0; font-size: 18px;">${severityLabel} — Incident signalé</h2>
+          </div>
+          <div style="padding: 24px; background: #f9f9f9; border-radius: 0 0 8px 8px;">
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
+              <tr><td style="padding: 6px 0; color: #6b7280; width: 120px;">Enfant</td><td style="padding: 6px 0; font-weight: 600;">${htmlEscape(data.jeunePrenom)}</td></tr>
+              <tr><td style="padding: 6px 0; color: #6b7280;">Structure</td><td style="padding: 6px 0;">${htmlEscape(data.structureName)}</td></tr>
+              <tr><td style="padding: 6px 0; color: #6b7280;">Type</td><td style="padding: 6px 0;">${categoryLabel}</td></tr>
+              <tr><td style="padding: 6px 0; color: #6b7280;">Gravité</td><td style="padding: 6px 0; font-weight: 600; color: ${severityColor};">${severityLabel}</td></tr>
+              <tr><td style="padding: 6px 0; color: #6b7280;">Signalé par</td><td style="padding: 6px 0;">${htmlEscape(data.createdBy)}</td></tr>
+            </table>
+            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+              <p style="margin: 0; color: #374151;">${htmlEscape(data.description)}</p>
+            </div>
+            <p style="color: #9ca3af; font-size: 12px; margin: 0;">Cet email est envoyé automatiquement par Groupe & Découverte. Ne pas répondre.</p>
+          </div>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error('[EMAIL] Erreur notification incident:', error);
+  }
+}

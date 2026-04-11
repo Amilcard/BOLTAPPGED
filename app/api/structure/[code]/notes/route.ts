@@ -56,7 +56,7 @@ export async function POST(
 ) {
   const { code } = await params;
   const resolved = await resolveCodeToStructure(code);
-  if (!resolved || !['direction', 'cds'].includes(resolved.role)) {
+  if (!resolved || !['direction', 'cds', 'cds_delegated'].includes(resolved.role)) {
     return NextResponse.json({ error: 'Accès réservé à la direction et au CDS.' }, { status: 403 });
   }
 

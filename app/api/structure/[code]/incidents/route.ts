@@ -49,7 +49,7 @@ export async function POST(
 ) {
   const { code } = await params;
   const resolved = await resolveCodeToStructure(code);
-  if (!resolved || !['direction', 'cds'].includes(resolved.role)) {
+  if (!resolved || !['direction', 'cds', 'cds_delegated'].includes(resolved.role)) {
     return NextResponse.json({ error: 'Accès réservé à la direction et au CDS.' }, { status: 403 });
   }
 
@@ -152,4 +152,72 @@ export async function POST(
   }
 
   return NextResponse.json({ ok: true, id: incident.id }, { status: 201 });
+}
+
+/**
+ * PATCH /api/structure/[code]/incidents
+ * Mettre à jour le statut d'un incident. Direction et CDS uniquement.
+ * Body : { incident_id, status: 'ouvert' | 'en_cours' | 'resolu' }
+ */
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ code: string }> }
+) {
+  const { code } = await params;
+  const resolved = await resolveCodeToStructure(code);
+  if (!resolved || !['direction', 'cds', 'cds_delegated'].includes(resolved.role)) {
+    return NextResponse.json({ error: 'Accès réservé à la direction et au CDS.' }, { status: 403 });
+  }
+
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Corps de requête invalide.' }, { status: 400 });
+  }
+
+  const { incident_id, status } = body;
+  const VALID_STATUSES = ['ouvert', 'en_cours', 'resolu'] as const;
+
+  if (!incident_id || typeof incident_id !== 'string') {
+    return NextResponse.json({ error: 'incident_id requis.' }, { status: 400 });
+  }
+  if (!status || !VALID_STATUSES.includes(status as typeof VALID_STATUSES[number])) {
+    return NextResponse.json({ error: 'Statut invalide. Valeurs : ouvert, en_cours, resolu.' }, { status: 400 });
+  }
+
+  const supabase = getSupabase();
+  const structureId = resolved.structure.id as string;
+
+  const updateData: Record<string, unknown> = {
+    status,
+    updated_at: new Date().toISOString(),
+  };
+  if (status === 'resolu') {
+    updateData.resolved_at = new Date().toISOString();
+  } else {
+    updateData.resolved_at = null;
+  }
+
+  const { error: updateError } = await supabase
+    .from('gd_incidents')
+    .update(updateData)
+    .eq('id', incident_id)
+    .eq('structure_id', structureId);
+
+  if (updateError) {
+    console.error('[incidents PATCH] error:', updateError.message);
+    return NextResponse.json({ error: 'Erreur mise à jour incident.' }, { status: 500 });
+  }
+
+  await auditLog(supabase, {
+    action: 'update',
+    resourceType: 'structure',
+    resourceId: incident_id as string,
+    actorType: 'referent',
+    actorId: resolved.email || undefined,
+    metadata: { type: 'incident_status_change', new_status: status, role: resolved.role },
+  });
+
+  return NextResponse.json({ ok: true, status });
 }

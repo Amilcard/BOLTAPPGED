@@ -124,6 +124,7 @@ export default function StructureDashboard() {
   const [filterSejour, setFilterSejour] = useState('');
   const [filterDossier, setFilterDossier] = useState<'all' | 'complet' | 'en_attente' | 'ged_sent'>('all');
   const [rgpdAccepted, setRgpdAccepted] = useState(false);
+  const [incidentCounts, setIncidentCounts] = useState<Record<string, number>>({});
   const [rgpdLoading, setRgpdLoading] = useState(false);
 
   useEffect(() => {
@@ -150,6 +151,24 @@ export default function StructureDashboard() {
       .catch(err => setError((err as Error).message))
       .finally(() => setLoading(false));
   }, [code]);
+
+  // Fetch incidents pour KPI + bilan
+  useEffect(() => {
+    if (!code || !data) return;
+    void fetch(`/api/structure/${code}/incidents`, { credentials: 'include' })
+      .then(res => res.ok ? res.json() : null)
+      .then(d => {
+        if (!d?.incidents) return;
+        const counts: Record<string, number> = {};
+        for (const inc of d.incidents as Array<{ inscription_id: string; status: string }>) {
+          if (inc.status !== 'resolu') {
+            counts[inc.inscription_id] = (counts[inc.inscription_id] || 0) + 1;
+          }
+        }
+        setIncidentCounts(counts);
+      })
+      .catch(() => {});
+  }, [code, data]);
 
   // ── États de chargement / erreur ──
 
@@ -412,7 +431,7 @@ export default function StructureDashboard() {
                 { label: 'Enfants en séjour', value: filtered.filter(i => i.status === 'validee').length, color: 'bg-primary', icon: Users, sub: 'Inscriptions validées' },
                 { label: 'Dossiers complets', value: filtered.filter(i => i.ged_sent_at).length, color: 'bg-accent', icon: FileCheck, sub: 'Envoyés à GED' },
                 { label: 'En attente', value: filtered.filter(i => i.status === 'en_attente').length, color: 'bg-secondary', icon: Clock, sub: 'À valider' },
-                { label: 'Incidents ouverts', value: 0, color: 'bg-primary-700', icon: AlertTriangle, sub: 'Aucun incident' },
+                { label: 'Incidents ouverts', value: Object.values(incidentCounts).reduce((a, b) => a + b, 0), color: 'bg-primary-700', icon: AlertTriangle, sub: Object.values(incidentCounts).reduce((a, b) => a + b, 0) === 0 ? 'Aucun incident' : 'Non résolus' },
               ].map(kpi => (
                 <div key={kpi.label} className="bg-white rounded-xl shadow p-6">
                   <div className={`w-12 h-12 ${kpi.color} rounded-lg flex items-center justify-center mb-4`}>
@@ -537,7 +556,9 @@ export default function StructureDashboard() {
                             <p className="text-xs text-gray-500">{insc.sejour_titre}</p>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-green-600 text-xs">✅ Aucun incident</span>
+                            <span className={`text-xs ${(incidentCounts[insc.id] ?? 0) > 0 ? 'text-red-600 font-medium' : 'text-primary'}`}>
+                              {(incidentCounts[insc.id] ?? 0) > 0 ? `${incidentCounts[insc.id]} incident(s) non résolu(s)` : 'Aucun incident'}
+                            </span>
                             <DossierBadge completude={insc.dossier_completude ? { bulletin: insc.dossier_completude.bulletin, sanitaire: insc.dossier_completude.sanitaire, liaison: insc.dossier_completude.liaison, renseignements: insc.dossier_completude.renseignements, pj_count: insc.dossier_completude.pj_count } : null} gedSentAt={insc.ged_sent_at} />
                           </div>
                         </div>

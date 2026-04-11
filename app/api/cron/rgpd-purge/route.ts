@@ -33,6 +33,14 @@ export async function GET(req: NextRequest) {
   const { data: loginResult, error: errLogin } = await supabase.rpc('purge_old_login_attempts');
   if (errLogin) errors.push(`login_attempts: ${errLogin.message}`);
 
+  // Purge gd_medical_events > 3 mois post-séjour (Art. 9 RGPD)
+  // Supprime les événements médicaux dont l'inscription est liée à une session terminée depuis +3 mois
+  const { error: errMedEvents } = await supabase
+    .from('gd_medical_events')
+    .delete()
+    .lt('created_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString());
+  if (errMedEvents) errors.push(`medical_events_3m: ${errMedEvents.message}`);
+
   // Purge audit logs > 3 ans (recommandation CNIL)
   const { data: auditOldResult, error: errAuditOld } = await supabase.rpc('purge_old_audit_logs');
   if (errAuditOld) errors.push(`audit_logs_3y: ${errAuditOld.message}`);

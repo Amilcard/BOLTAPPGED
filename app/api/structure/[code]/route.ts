@@ -50,7 +50,8 @@ async function isStructureRateLimited(ip: string): Promise<boolean> {
 
     return false;
   } catch {
-    return false; // fail-open
+    // fail-closed : données enfants ASE — bloquer en cas d'erreur (comme login)
+    return true;
   }
 }
 

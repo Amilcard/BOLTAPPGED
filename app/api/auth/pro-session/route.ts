@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { resolveCodeToStructure } from '@/lib/structure';
 import { SignJWT } from 'jose';
 
 const MAX_ATTEMPTS = 10;
@@ -89,31 +90,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Validation structureCode (6 chars alphanum)
-    if (!structureCode || typeof structureCode !== 'string' || !/^[A-Z0-9]{6}$/i.test(structureCode.trim())) {
+    // 2. Validation structureCode (6-10 chars alphanum)
+    if (!structureCode || typeof structureCode !== 'string' || !/^[A-Z0-9]{6,10}$/i.test(structureCode.trim())) {
       return NextResponse.json(
-        { error: { code: 'VALIDATION_ERROR', message: 'Code structure requis (6 caractères).' } },
+        { error: { code: 'VALIDATION_ERROR', message: 'Code structure requis (6 à 10 caractères).' } },
         { status: 400 }
       );
     }
 
     const codeNorm = structureCode.trim().toUpperCase();
 
-    // 3. Vérifier dans gd_structures
-    const supabase = getSupabaseAdmin();
-    const { data: structure } = await supabase
-      .from('gd_structures')
-      .select('id, name')
-      .eq('code', codeNorm)
-      .eq('status', 'active')
-      .single();
-
-    if (!structure) {
+    // 3. Vérifier via resolveCodeToStructure (vérifie expiration + révocation)
+    const resolved = await resolveCodeToStructure(codeNorm);
+    if (!resolved) {
       return NextResponse.json(
-        { error: { code: 'CODE_INVALIDE', message: 'Code structure invalide ou structure inactive.' } },
+        { error: { code: 'CODE_INVALIDE', message: 'Code structure invalide, expiré ou révoqué.' } },
         { status: 401 }
       );
     }
+
+    const structure = resolved.structure as { id: string; name: string };
 
     // 4. Générer JWT pro (30 min)
     const secret = process.env.NEXTAUTH_SECRET;
@@ -152,6 +148,7 @@ export async function POST(req: NextRequest) {
     });
 
     // 6. Reset rate limit après succès
+    const supabase = getSupabaseAdmin();
     supabase.from('gd_login_attempts').delete().eq('ip', `pro:${ip}`);
 
     return response;

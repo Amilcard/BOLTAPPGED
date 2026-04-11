@@ -38,6 +38,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     void fetch('/api/admin/stats')
@@ -49,8 +50,9 @@ export default function AdminDashboard() {
         if (res.status === 401) {
           throw new Error('Unauthorized');
         }
-        // Erreur serveur (500) : afficher le dashboard quand même
+        // Erreur serveur (500)
         setIsAuthenticated(true);
+        setError(`Erreur serveur (${res.status}). Les statistiques sont temporairement indisponibles.`);
         return null;
       })
       .then((data) => { if (data) setStats(data); })
@@ -70,6 +72,18 @@ export default function AdminDashboard() {
   }
 
   if (!isAuthenticated) return null;
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background p-8">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 max-w-xl mx-auto" role="alert">
+          <p className="font-semibold text-red-800 mb-1">Erreur</p>
+          <p className="text-red-700 text-sm">{error}</p>
+          <button onClick={() => { setError(null); window.location.reload(); }} className="mt-4 text-sm px-4 py-2 bg-red-100 text-red-800 rounded-lg hover:bg-red-200 transition">Réessayer</button>
+        </div>
+      </div>
+    );
+  }
 
   const cards = [
     { label: 'Séjours', value: stats?.stays ?? '-', icon: Map, color: 'bg-blue-500' },

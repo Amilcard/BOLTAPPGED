@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
-import { verifyAuth } from '@/lib/auth-middleware';
+import { requireEditor } from '@/lib/auth-middleware';
 
 /**
  * GET /api/admin/structures
@@ -9,12 +9,11 @@ import { verifyAuth } from '@/lib/auth-middleware';
  * Liste toutes les structures avec compteur d'inscriptions rattachées.
  * Paramètres optionnels : ?search=xxx&type=xxx&status=active
  *
- * Retourne aussi les inscriptions orphelines (structure_pending_name sans structure_id).
- *
- * Accès : verifyAuth — tout membre GED (ADMIN, EDITOR, VIEWER).
+ * Retourne aussi les inscriptions orphelines (structure_pending_name sans structure_id)
+ * → PII (referent_email, jeune_prenom) → requireEditor minimum (CLAUDE.md règle 8).
  */
 export async function GET(request: NextRequest) {
-  if (!await verifyAuth(request)) {
+  if (!await requireEditor(request)) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
   }
 

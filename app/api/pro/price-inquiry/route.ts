@@ -7,7 +7,27 @@ export const dynamic = 'force-dynamic';
 const RATE_LIMIT_MAX = 3;
 const RATE_LIMIT_WINDOW_MIN = 30;
 
-async function isRateLimited(email: string): Promise<boolean> {
+async function checkRateLimitWithoutIncrement(email: string): Promise<boolean> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const key = `priceiq:${email}`;
+    const now = new Date();
+    const windowStart = new Date(now.getTime() - RATE_LIMIT_WINDOW_MIN * 60 * 1000);
+
+    const { data: entry } = await supabase
+      .from('gd_login_attempts')
+      .select('attempt_count, window_start')
+      .eq('ip', key)
+      .single();
+
+    if (!entry || new Date(entry.window_start) < windowStart) return false;
+    return entry.attempt_count >= RATE_LIMIT_MAX;
+  } catch {
+    return false;
+  }
+}
+
+async function incrementRateLimit(email: string): Promise<void> {
   try {
     const supabase = getSupabaseAdmin();
     const key = `priceiq:${email}`;
@@ -27,20 +47,14 @@ async function isRateLimited(email: string): Promise<boolean> {
           { ip: key, attempt_count: 1, window_start: now.toISOString() },
           { onConflict: 'ip' }
         );
-      return false;
+    } else {
+      await supabase
+        .from('gd_login_attempts')
+        .update({ attempt_count: entry.attempt_count + 1 })
+        .eq('ip', key);
     }
-
-    if (entry.attempt_count >= RATE_LIMIT_MAX) return true;
-
-    await supabase
-      .from('gd_login_attempts')
-      .update({ attempt_count: entry.attempt_count + 1 })
-      .eq('ip', key);
-
-    return false;
   } catch {
-    // fail-open : ne pas bloquer si erreur DB
-    return false;
+    // fail-silently — l'email a été envoyé, le rate-limit est secondaire
   }
 }
 
@@ -65,9 +79,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Format email invalide' }, { status: 400 });
   }
 
-  // Rate limiting (fail-open)
-  const limited = await isRateLimited(email as string);
-  if (limited) {
+  // Rate limiting — vérifier AVANT, incrémenter APRÈS succès email
+  const rateLimitEmail = (email as string).toLowerCase().trim();
+  const isLimited = await checkRateLimitWithoutIncrement(rateLimitEmail);
+  if (isLimited) {
     return NextResponse.json(
       { error: 'Trop de demandes. Réessayez dans 30 minutes.' },
       { status: 429 }
@@ -117,6 +132,9 @@ export async function POST(request: NextRequest) {
   if (gedResult.status === 'rejected') {
     console.error('[price-inquiry] Email GED échoué:', gedResult.reason);
   }
+
+  // Incrémenter rate-limit seulement après succès email (au moins un envoyé)
+  await incrementRateLimit(rateLimitEmail);
 
   // Sauvegarder le lead dans smart_form_submissions (fail-silently)
   try {

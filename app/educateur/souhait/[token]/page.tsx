@@ -20,9 +20,9 @@ interface Souhait {
 
 const STATUT_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   emis:          { label: 'En attente de réponse', color: 'text-orange-700', bg: 'bg-orange-50' },
-  vu:            { label: 'Consulté', color: 'text-blue-700', bg: 'bg-blue-50' },
-  en_discussion: { label: 'En discussion', color: 'text-purple-700', bg: 'bg-purple-50' },
-  valide:        { label: 'Validé ✓', color: 'text-green-700', bg: 'bg-green-50' },
+  vu:            { label: 'Consulté', color: 'text-accent', bg: 'bg-muted' },
+  en_discussion: { label: 'En discussion', color: 'text-secondary', bg: 'bg-secondary-50' },
+  valide:        { label: 'Validé ✓', color: 'text-primary', bg: 'bg-primary-50' },
   refuse:        { label: 'Non retenu', color: 'text-red-700', bg: 'bg-red-50' },
 };
 
@@ -171,7 +171,7 @@ export default function EducateurSouhaitPage() {
             />
 
             {saved && (
-              <div className="flex items-center gap-2 text-green-700 text-sm mb-4 bg-green-50 px-3 py-2 rounded-lg">
+              <div className="flex items-center gap-2 text-primary text-sm mb-4 bg-primary-50 px-3 py-2 rounded-lg">
                 <Check className="w-4 h-4" /> Réponse enregistrée
               </div>
             )}
@@ -180,7 +180,7 @@ export default function EducateurSouhaitPage() {
               <button
                 onClick={() => respond('valide')}
                 disabled={saving}
-                className="flex flex-col items-center gap-1.5 p-3 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl transition disabled:opacity-50"
+                className="flex flex-col items-center gap-1.5 p-3 bg-primary-50 hover:bg-primary-100 text-primary rounded-xl transition disabled:opacity-50"
               >
                 <Check className="w-5 h-5" />
                 <span className="text-xs font-medium">Valider</span>
@@ -188,7 +188,7 @@ export default function EducateurSouhaitPage() {
               <button
                 onClick={() => respond('en_discussion')}
                 disabled={saving}
-                className="flex flex-col items-center gap-1.5 p-3 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-xl transition disabled:opacity-50"
+                className="flex flex-col items-center gap-1.5 p-3 bg-secondary-50 hover:bg-secondary-100 text-secondary rounded-xl transition disabled:opacity-50"
               >
                 <MessageCircle className="w-5 h-5" />
                 <span className="text-xs font-medium">On en parle</span>
@@ -207,12 +207,12 @@ export default function EducateurSouhaitPage() {
 
         {/* CTA inscription pré-remplie */}
         {souhait.status === 'valide' && (
-          <div className="bg-green-50 border border-green-200 rounded-2xl p-6 text-center animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <p className="text-green-800 font-semibold mb-2">Souhait validé</p>
-            <p className="text-green-700 text-sm mb-4">Vous pouvez démarrer l&apos;inscription de {souhait.kid_prenom}.</p>
+          <div className="bg-primary-50 border border-primary-100 rounded-2xl p-6 text-center animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <p className="text-primary font-semibold mb-2">Souhait validé</p>
+            <p className="text-primary text-sm mb-4">Vous pouvez démarrer l&apos;inscription de {souhait.kid_prenom}.</p>
             <a
               href={redirectUrl || `/sejour/${souhait.sejour_slug}/reserver?prenom=${encodeURIComponent(souhait.kid_prenom)}&souhait_id=${souhait.id}`}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-full font-medium hover:bg-green-700 transition text-sm"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary-600 transition text-sm"
             >
               Démarrer l&apos;inscription →
             </a>

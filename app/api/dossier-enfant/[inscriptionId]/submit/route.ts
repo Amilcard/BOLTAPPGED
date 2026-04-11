@@ -189,7 +189,7 @@ export async function POST(
     }
 
     // Audit log : soumission dossier complet (RGPD)
-    auditLog(supabase, {
+    await auditLog(supabase, {
       action: 'submit',
       resourceType: 'dossier_enfant',
       resourceId: inscriptionId,

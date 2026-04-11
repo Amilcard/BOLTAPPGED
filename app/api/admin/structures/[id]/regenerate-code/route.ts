@@ -70,7 +70,7 @@ export async function POST(
       );
     }
 
-    auditLog(supabase, {
+    await auditLog(supabase, {
       action: 'update',
       resourceType: 'inscription',
       resourceId: id,
@@ -101,7 +101,7 @@ export async function POST(
       );
     }
 
-    auditLog(supabase, {
+    await auditLog(supabase, {
       action: 'update',
       resourceType: 'inscription',
       resourceId: id,

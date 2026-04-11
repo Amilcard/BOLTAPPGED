@@ -101,7 +101,7 @@ export async function GET(
   const structureId = structure.id as string;
 
   // Audit log — RGPD : tracer chaque accès aux données enfants
-  auditLog(supabase, {
+  await auditLog(supabase, {
     action: 'read',
     resourceType: 'inscription',
     resourceId: structureId,
@@ -208,7 +208,7 @@ export async function POST(
     return NextResponse.json({ error: { code: 'INTERNAL_ERROR' } }, { status: 500 });
   }
 
-  auditLog(supabase, {
+  await auditLog(supabase, {
     action: 'create',
     resourceType: 'inscription',
     resourceId: structure.id,

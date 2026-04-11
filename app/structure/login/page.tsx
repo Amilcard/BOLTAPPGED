@@ -69,7 +69,7 @@ export default function StructureLoginPage() {
               </p>
             </div>
 
-            <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-800 space-y-1">
+            <div className="p-3 bg-muted border border-primary-100 rounded-lg text-xs text-primary space-y-1">
               <p>Ce code vous donne accès aux inscriptions de votre structure uniquement. Les données médicales des enfants ne sont pas accessibles depuis cet espace.</p>
               <p>Aucune autre structure ne peut voir vos dossiers.</p>
             </div>

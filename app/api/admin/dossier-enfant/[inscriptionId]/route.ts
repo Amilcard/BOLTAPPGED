@@ -48,7 +48,7 @@ export async function GET(
     }
 
     // RGPD Art. 9 — tracer lecture dossier enfant par admin
-    auditLog(supabase, {
+    await auditLog(supabase, {
       action: 'read',
       resourceType: 'dossier_enfant',
       resourceId: inscriptionId,

@@ -113,7 +113,7 @@ export async function GET(
     });
 
     // Audit log : accès lecture dossiers (RGPD)
-    auditLog(supabase, {
+    await auditLog(supabase, {
       action: 'read',
       resourceType: 'inscription',
       resourceId: 'batch',

@@ -158,9 +158,9 @@ export default function SuiviProPage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8">
-        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 mb-4 flex items-start gap-2">
-          <Lock className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
-          <p className="text-xs text-blue-700">
+        <div className="p-3 bg-muted rounded-lg border border-primary-100 mb-4 flex items-start gap-2">
+          <Lock className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+          <p className="text-xs text-primary">
             Ce lien sécurisé est personnel. Il vous donne accès au suivi des dossiers sans nécessiter de mot de passe. Ne le partagez pas. Il expire automatiquement après 30 jours d&#39;inactivité.
           </p>
         </div>
@@ -456,7 +456,7 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
           </p>
 
           {saved && (
-            <div className="flex items-center gap-1.5 text-sm text-green-700 font-medium bg-green-50 px-3 py-1.5 rounded-lg">
+            <div className="flex items-center gap-1.5 text-sm text-primary font-medium bg-primary-50 px-3 py-1.5 rounded-lg">
               <Check className="w-3.5 h-3.5" /> Enregistré
             </div>
           )}
@@ -604,7 +604,7 @@ function ResendLinkBlock() {
         <p className="text-gray-400 text-xs mb-6">Pensez aussi à vérifier vos spams.</p>
 
         {status === 'sent' ? (
-          <div className="bg-green-50 border border-green-100 rounded-lg p-4 text-green-700 text-sm">
+          <div className="bg-primary-50 border border-primary-100 rounded-lg p-4 text-primary text-sm">
             ✓ Si un dossier existe pour cet email, vous recevrez votre lien dans quelques minutes.
           </div>
         ) : (

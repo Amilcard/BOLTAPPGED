@@ -36,7 +36,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     // RGPD Art. 9 — tracer lecture données enfant par admin
-    auditLog(supabase, {
+    await auditLog(supabase, {
       action: 'read',
       resourceType: 'inscription',
       resourceId: id,
@@ -153,7 +153,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     // RGPD — tracer modification inscription par admin
-    auditLog(supabase, {
+    await auditLog(supabase, {
       action: 'update',
       resourceType: 'inscription',
       resourceId: id,
@@ -212,7 +212,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     }
 
     // RGPD — tracer suppression inscription par admin (avant l'opération)
-    auditLog(supabase, {
+    await auditLog(supabase, {
       action: 'delete',
       resourceType: 'inscription',
       resourceId: inscriptionId,

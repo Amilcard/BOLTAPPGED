@@ -68,7 +68,7 @@ export default function ResetPasswordPage() {
           </div>
 
           {done ? (
-            <div className="p-4 bg-green-50 text-green-700 rounded-lg text-sm text-center">
+            <div className="p-4 bg-primary-50 text-primary rounded-lg text-sm text-center">
               Mot de passe mis à jour. Redirection en cours...
             </div>
           ) : (

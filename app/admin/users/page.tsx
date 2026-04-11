@@ -1,5 +1,4 @@
 'use client';
-export const dynamic = 'force-dynamic';
 
 
 import { useEffect, useState } from 'react';
@@ -81,7 +80,7 @@ export default function AdminUsers() {
                 <td className="px-6 py-4">
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                     user.role === 'ADMIN' ? 'bg-red-100 text-red-700' :
-                    user.role === 'EDITOR' ? 'bg-blue-100 text-blue-700' :
+                    user.role === 'EDITOR' ? 'bg-accent/10 text-accent' :
                     'bg-gray-100 text-gray-700'
                   }`}>
                     {user.role}

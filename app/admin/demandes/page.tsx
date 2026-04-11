@@ -1,5 +1,4 @@
 'use client';
-export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -21,15 +20,15 @@ function daysSince(dateStr: string): number {
 }
 
 const STATUS_OPTIONS = [
-  { value: 'en_attente', label: 'En attente', color: 'bg-blue-100 text-blue-700' },
-  { value: 'validee', label: 'Validée', color: 'bg-green-100 text-green-700' },
+  { value: 'en_attente', label: 'En attente', color: 'bg-accent/10 text-accent' },
+  { value: 'validee', label: 'Validée', color: 'bg-primary-50 text-primary' },
   { value: 'refusee', label: 'Refusée', color: 'bg-red-100 text-red-700' },
   { value: 'annulee', label: 'Annulée', color: 'bg-gray-100 text-gray-500' },
 ];
 
 const PAYMENT_STATUS_LABELS: Record<string, { label: string; color: string }> = {
   pending_payment: { label: 'En attente', color: 'bg-orange-100 text-orange-700' },
-  paid: { label: 'Payé', color: 'bg-green-100 text-green-700' },
+  paid: { label: 'Payé', color: 'bg-primary-50 text-primary' },
   failed: { label: 'Échoué', color: 'bg-red-100 text-red-700' },
 };
 

@@ -46,7 +46,7 @@ export async function GET(
     }
 
     // Audit log : accès lecture dossier enfant (RGPD Art. 9)
-    auditLog(supabase, {
+    await auditLog(supabase, {
       action: 'read',
       resourceType: 'dossier_enfant',
       resourceId: inscriptionId,
@@ -190,7 +190,7 @@ export async function PATCH(
     }
 
     // Audit log : modification dossier enfant (RGPD Art. 9)
-    auditLog(supabase, {
+    await auditLog(supabase, {
       action: 'update',
       resourceType: 'dossier_enfant',
       resourceId: inscriptionId,

@@ -29,9 +29,9 @@ const CHOIX_MODE_LABELS: Record<string, string> = {
 
 const STATUT_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   emis:          { label: 'Nouveau',        color: 'text-orange-700', bg: 'bg-orange-100', icon: <Clock className="w-3.5 h-3.5" /> },
-  vu:            { label: 'Consulté',       color: 'text-blue-700',   bg: 'bg-blue-100',   icon: <Check className="w-3.5 h-3.5" /> },
-  en_discussion: { label: 'En discussion',  color: 'text-purple-700', bg: 'bg-purple-100', icon: <MessageCircle className="w-3.5 h-3.5" /> },
-  valide:        { label: 'Validé',         color: 'text-green-700',  bg: 'bg-green-100',  icon: <Check className="w-3.5 h-3.5" /> },
+  vu:            { label: 'Consulté',       color: 'text-accent',     bg: 'bg-accent/10',  icon: <Check className="w-3.5 h-3.5" /> },
+  en_discussion: { label: 'En discussion',  color: 'text-secondary',  bg: 'bg-secondary-50', icon: <MessageCircle className="w-3.5 h-3.5" /> },
+  valide:        { label: 'Validé',         color: 'text-primary',    bg: 'bg-primary-50', icon: <Check className="w-3.5 h-3.5" /> },
   refuse:        { label: 'Pas cette fois', color: 'text-red-700',    bg: 'bg-red-100',    icon: <X className="w-3.5 h-3.5" /> },
 };
 
@@ -120,7 +120,7 @@ export default function EducateurSouhaitsPage() {
 
       <main className="max-w-3xl mx-auto px-4 py-6">
         {/* Réassurance éducateur */}
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-800">
+        <div className="mb-4 p-3 bg-muted border border-primary-100 rounded-xl text-xs text-primary">
           Ce lien personnel vous donne accès aux souhaits déposés par les jeunes que vous accompagnez. Seul(e) vous et l&apos;équipe GED y avez accès. Ce lien expire automatiquement après 30 jours.
         </div>
 
@@ -252,7 +252,7 @@ function SouhaitCard({ souhait: initialSouhait }: { souhait: Souhait }) {
 
         {/* Réponse éducateur si existante */}
         {souhait.reponse_educateur && (
-          <div className="mt-2 bg-blue-50 p-3 rounded-lg">
+          <div className="mt-2 bg-muted p-3 rounded-lg">
             <p className="text-xs text-blue-500 font-medium mb-0.5">Votre message pour ce jeune</p>
             <p className="text-sm text-blue-800">{souhait.reponse_educateur}</p>
           </div>
@@ -278,7 +278,7 @@ function SouhaitCard({ souhait: initialSouhait }: { souhait: Souhait }) {
                 <button
                   onClick={() => handleAction('valide')}
                   disabled={acting}
-                  className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-full hover:bg-green-700 transition disabled:opacity-50"
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-full hover:bg-primary-600 transition disabled:opacity-50"
                 >
                   {acting ? 'En cours...' : 'Valider le souhait'}
                 </button>
@@ -292,13 +292,13 @@ function SouhaitCard({ souhait: initialSouhait }: { souhait: Souhait }) {
 
           {/* Redirect vers inscription pré-remplie après validation */}
           {redirectUrl && (
-            <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <p className="text-sm text-green-800 font-medium mb-2">
+            <div className="mt-3 bg-primary-50 border border-primary-100 rounded-lg p-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <p className="text-sm text-primary font-medium mb-2">
                 Souhait validé — vous pouvez démarrer l&apos;inscription.
               </p>
               <a
                 href={redirectUrl}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-full hover:bg-green-700 transition"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-full hover:bg-primary-600 transition"
               >
                 Démarrer l&apos;inscription <ChevronRight className="w-4 h-4" />
               </a>

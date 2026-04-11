@@ -1,5 +1,4 @@
 'use client';
-export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Building2, Search, Link2, GitMerge, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
@@ -189,7 +188,7 @@ export default function AdminStructures() {
       </div>
 
       {successMsg && (
-        <div className="mb-4 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-green-800 text-sm">
+        <div className="mb-4 bg-primary-50 border border-primary-100 rounded-lg px-4 py-3 text-primary text-sm">
           {successMsg}
         </div>
       )}
@@ -256,7 +255,7 @@ export default function AdminStructures() {
                   <td className="px-4 py-3 text-gray-600">{s.city}</td>
                   <td className="px-4 py-3 text-gray-600">{s.postalCode}</td>
                   <td className="px-4 py-3">
-                    <span className="inline-block bg-blue-50 text-blue-700 rounded-full px-2 py-0.5 text-xs font-medium">
+                    <span className="inline-block bg-primary-50 text-primary rounded-full px-2 py-0.5 text-xs font-medium">
                       {TYPE_LABELS[s.type] || s.type || '—'}
                     </span>
                   </td>
@@ -264,7 +263,7 @@ export default function AdminStructures() {
                     <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono">{s.code || '—'}</code>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-bold ${s.inscriptionCount > 0 ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
+                    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-bold ${s.inscriptionCount > 0 ? 'bg-primary-50 text-primary' : 'bg-gray-100 text-gray-400'}`}>
                       {s.inscriptionCount}
                     </span>
                   </td>
@@ -302,8 +301,8 @@ export default function AdminStructures() {
 
           {/* Détail inscriptions */}
           {expandedId && expandedInscriptions.length > 0 && (
-            <div className="bg-blue-50 border-t border-blue-100 px-6 py-4">
-              <h3 className="text-sm font-semibold text-blue-800 mb-3">
+            <div className="bg-muted border-t border-primary-100 px-6 py-4">
+              <h3 className="text-sm font-semibold text-primary mb-3">
                 Inscriptions rattachées ({expandedInscriptions.length})
               </h3>
               <div className="space-y-2">
@@ -326,7 +325,7 @@ export default function AdminStructures() {
             </div>
           )}
           {expandedId && expandedInscriptions.length === 0 && (
-            <div className="bg-blue-50 border-t border-blue-100 px-6 py-4 text-sm text-gray-500">
+            <div className="bg-muted border-t border-primary-100 px-6 py-4 text-sm text-gray-500">
               Aucune inscription rattachée à cette structure.
             </div>
           )}

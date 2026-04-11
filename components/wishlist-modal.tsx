@@ -164,7 +164,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
         <p className="text-sm text-primary-500 text-center mb-6">{stayTitle}</p>
 
         {/* Info message */}
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+        <div className="mb-4 p-3 bg-muted border border-primary-100 rounded-xl">
           <p className="text-sm text-primary">
             <span className="font-medium">
               {saved
@@ -399,8 +399,8 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowMailtoWarning(false)} />
             <div className="relative bg-white rounded-2xl p-6 max-w-sm w-full animate-in fade-in zoom-in duration-200">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Info className="w-5 h-5 text-blue-600" />
+                <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center flex-shrink-0">
+                  <Info className="w-5 h-5 text-primary" />
                 </div>
                 <h3 className="font-semibold text-primary">Envoyer par messagerie</h3>
               </div>

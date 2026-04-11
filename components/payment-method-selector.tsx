@@ -31,7 +31,7 @@ export function PaymentMethodSelector({
           <div className="font-bold text-gray-900">Paiement sécurisé en ligne</div>
           <div className="text-sm text-gray-500">Carte bancaire via Stripe</div>
         </div>
-        <div className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">
+        <div className="px-3 py-1 bg-primary-50 text-primary text-xs font-bold rounded-full">
           Immédiat
         </div>
       </button>

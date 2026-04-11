@@ -44,8 +44,8 @@ interface Proposition {
 
 const STATUS_LABELS: Record<string, { label: string; color: string; icon: typeof Clock }> = {
   brouillon: { label: 'Brouillon', color: 'bg-gray-100 text-gray-700', icon: Clock },
-  envoyee: { label: 'Envoyée', color: 'bg-blue-100 text-blue-700', icon: Send },
-  validee: { label: 'Validée', color: 'bg-green-100 text-green-700', icon: Check },
+  envoyee: { label: 'Envoyée', color: 'bg-accent/10 text-accent', icon: Send },
+  validee: { label: 'Validée', color: 'bg-primary-50 text-primary', icon: Check },
   refusee: { label: 'Refusée', color: 'bg-red-100 text-red-700', icon: X },
   annulee: { label: 'Annulée', color: 'bg-gray-200 text-gray-500', icon: X },
 };
@@ -554,7 +554,7 @@ export default function PropositionsPage() {
                         {p.status === 'brouillon' && (
                           <button
                             onClick={() => updateStatus(p.id, 'envoyee')}
-                            className="p-1.5 hover:bg-blue-50 rounded-lg transition" title="Marquer comme envoyée"
+                            className="p-1.5 hover:bg-muted rounded-lg transition" title="Marquer comme envoyée"
                           >
                             <Send size={18} className="text-blue-600" />
                           </button>
@@ -562,7 +562,7 @@ export default function PropositionsPage() {
                         {(p.status === 'brouillon' || p.status === 'envoyee') && (
                           <button
                             onClick={() => updateStatus(p.id, 'validee')}
-                            className="p-1.5 hover:bg-green-50 rounded-lg transition" title="Valider (BON POUR ACCORD)"
+                            className="p-1.5 hover:bg-primary-50 rounded-lg transition" title="Valider (BON POUR ACCORD)"
                           >
                             <Check size={18} className="text-green-600" />
                           </button>

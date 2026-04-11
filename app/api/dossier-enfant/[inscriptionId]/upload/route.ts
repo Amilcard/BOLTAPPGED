@@ -190,7 +190,7 @@ export async function POST(
     }
 
     // Audit log : upload document (RGPD Art. 9)
-    auditLog(supabase, {
+    await auditLog(supabase, {
       action: 'upload',
       resourceType: 'document',
       resourceId: storagePath,
@@ -304,7 +304,7 @@ export async function DELETE(
     await supabase.storage.from('dossier-documents').remove([storage_path]);
 
     // Audit log : suppression document (RGPD)
-    auditLog(supabase, {
+    await auditLog(supabase, {
       action: 'delete',
       resourceType: 'document',
       resourceId: storage_path,

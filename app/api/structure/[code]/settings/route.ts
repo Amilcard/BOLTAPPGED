@@ -82,7 +82,7 @@ export async function PATCH(
     );
   }
 
-  auditLog(supabase, {
+  await auditLog(supabase, {
     action: 'update',
     resourceType: 'inscription',
     resourceId: structureId,

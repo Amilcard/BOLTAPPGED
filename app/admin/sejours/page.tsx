@@ -90,7 +90,7 @@ export default function AdminSejours() {
                 <td className="px-6 py-4 text-gray-600">{stay.ageMin}-{stay.ageMax} ans</td>
                 <td className="px-6 py-4 text-gray-600">{formatPrice(stay.priceFrom ?? 0)}</td>
                 <td className="px-6 py-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${stay.published ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${stay.published ? 'bg-primary-50 text-primary' : 'bg-gray-100 text-gray-600'}`}>
                     {stay.published ? 'Publié' : 'Brouillon'}
                   </span>
                 </td>

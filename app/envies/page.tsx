@@ -15,9 +15,9 @@ interface SouhaitServeur {
 
 const STATUT_BADGE: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   emis:          { label: 'Envoyé', color: 'bg-orange-100 text-orange-700', icon: <Clock className="w-3 h-3" /> },
-  vu:            { label: 'Consulté', color: 'bg-blue-100 text-blue-700', icon: <Clock className="w-3 h-3" /> },
-  en_discussion: { label: 'En discussion', color: 'bg-purple-100 text-purple-700', icon: <MessageCircle className="w-3 h-3" /> },
-  valide:        { label: 'Validé !', color: 'bg-green-100 text-green-700', icon: <Check className="w-3 h-3" /> },
+  vu:            { label: 'Consulté', color: 'bg-accent/10 text-accent', icon: <Clock className="w-3 h-3" /> },
+  en_discussion: { label: 'En discussion', color: 'bg-secondary-50 text-secondary', icon: <MessageCircle className="w-3 h-3" /> },
+  valide:        { label: 'Validé !', color: 'bg-primary-50 text-primary', icon: <Check className="w-3 h-3" /> },
   refuse:        { label: 'Pas cette fois', color: 'bg-red-100 text-red-700', icon: <X className="w-3 h-3" /> },
 };
 

@@ -127,7 +127,7 @@ function LoginForm() {
 
           {resetSent ? (
             <div className="text-center space-y-4">
-              <div className="p-4 bg-green-50 text-green-700 rounded-lg text-sm">
+              <div className="p-4 bg-primary-50 text-primary rounded-lg text-sm">
                 Email envoyé à <strong>{email}</strong>.<br />
                 Vérifiez votre boîte mail et cliquez le lien pour réinitialiser votre mot de passe.
               </div>

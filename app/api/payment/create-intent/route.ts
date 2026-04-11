@@ -87,6 +87,12 @@ export async function POST(req: NextRequest) {
 
     if (updateError) {
       console.error('Error updating inscription:', updateError);
+      // Annuler l'intent Stripe orphelin (DB n'a pas enregistré l'ID)
+      try {
+        await stripe.paymentIntents.cancel(paymentIntent.id);
+      } catch (cancelErr) {
+        console.error('Failed to cancel orphaned PaymentIntent:', cancelErr);
+      }
       return NextResponse.json(
         { error: 'Failed to update inscription' },
         { status: 500 }

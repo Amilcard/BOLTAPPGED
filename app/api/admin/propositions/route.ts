@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error;
 
-    auditLog(supabase, {
+    await auditLog(supabase, {
       action: 'create',
       resourceType: 'inscription',
       resourceId: proposition.id,
@@ -189,7 +189,7 @@ export async function PATCH(req: NextRequest) {
 
     if (error) throw error;
 
-    auditLog(supabase, {
+    await auditLog(supabase, {
       action: 'update',
       resourceType: 'inscription',
       resourceId: id,
@@ -230,7 +230,7 @@ export async function DELETE(req: NextRequest) {
 
     if (error) throw error;
 
-    auditLog(supabase, {
+    await auditLog(supabase, {
       action: 'delete',
       resourceType: 'inscription',
       resourceId: id,

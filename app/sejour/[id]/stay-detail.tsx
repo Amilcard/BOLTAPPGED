@@ -80,9 +80,9 @@ function PriceInquiryBlock({ sejourSlug }: { sejourSlug: string; sejourTitle: st
 
   if (done) {
     return (
-      <div className="bg-green-50 border border-green-200 rounded-xl p-5 text-center">
-        <p className="text-green-800 font-semibold text-sm mb-1">Les tarifs vous ont été envoyés !</p>
-        <p className="text-green-700 text-xs">Vérifiez votre boîte mail ({email}). Notre équipe peut aussi vous contacter pour un devis personnalisé selon votre structure.</p>
+      <div className="bg-primary-50 border border-primary-100 rounded-xl p-5 text-center">
+        <p className="text-primary font-semibold text-sm mb-1">Les tarifs vous ont été envoyés !</p>
+        <p className="text-primary text-xs">Vérifiez votre boîte mail ({email}). Notre équipe peut aussi vous contacter pour un devis personnalisé selon votre structure.</p>
       </div>
     );
   }
@@ -444,7 +444,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
         </div>
 
         {shareSuccess && (
-          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 px-4 py-2 bg-green-500 text-white rounded-xl text-sm font-medium animate-in slide-in-from-bottom shadow-lg z-50">
+          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium animate-in slide-in-from-bottom shadow-lg z-50">
             Lien copié !
           </div>
         )}
@@ -810,7 +810,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                           <span className="text-base font-bold text-gray-900">Total TTC</span>
                           <div className="text-right">
                              <span className="text-xl font-bold text-accent block tracking-tight">{priceBreakdown.total}€</span>
-                             <span className="text-[10px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full inline-block mt-1">
+                             <span className="text-[10px] font-bold text-primary bg-primary-50 px-2 py-0.5 rounded-full inline-block mt-1">
                                Option Suivi Individualisé Incluse
                              </span>
                           </div>

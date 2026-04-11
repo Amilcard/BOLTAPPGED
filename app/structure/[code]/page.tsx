@@ -1,10 +1,9 @@
 'use client';
-export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Building2, Users, FileCheck, Clock, AlertTriangle } from 'lucide-react';
+import { Building2, Users, FileCheck, Clock, AlertTriangle, Phone } from 'lucide-react';
 import { DossierBadge } from '@/components/admin/DossierBadge';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -274,7 +273,7 @@ export default function StructureDashboard() {
     <div className="min-h-screen bg-gray-50">
 
       {/* ── Bandeau réassurance périmètre ── */}
-      <div className="bg-blue-50 border-b border-blue-100 px-4 py-2.5 text-xs text-blue-800 text-center">
+      <div className="bg-muted border-b border-primary-100 px-4 py-2.5 text-xs text-primary text-center">
         Vous voyez uniquement les inscriptions de votre structure. Les fiches sanitaires et documents médicaux sont accessibles uniquement par l&apos;équipe d&apos;encadrement du séjour.
       </div>
 
@@ -389,7 +388,7 @@ export default function StructureDashboard() {
             {/* 1. BANDEAU URGENCE FIXE */}
             <div className="bg-red-50 border border-red-200 rounded-xl p-4 sticky top-0 z-20">
               <div className="flex items-center gap-3 mb-2">
-                <span className="text-xl">🚨</span>
+                <Phone className="w-5 h-5 text-red-700 flex-shrink-0" />
                 <div>
                   <p className="font-bold text-red-800 text-sm">GED Astreinte H24</p>
                   <a href="tel:0423161671" className="text-xl font-bold text-red-900 min-h-[44px] flex items-center">04 23 16 16 71</a>
@@ -406,10 +405,10 @@ export default function StructureDashboard() {
             {/* 2. KPIs TERRAIN — style admin dashboard */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                { label: 'Enfants en séjour', value: filtered.filter(i => i.status === 'validee').length, color: 'bg-blue-500', icon: Users, sub: 'Inscriptions validées' },
-                { label: 'Dossiers complets', value: filtered.filter(i => i.ged_sent_at).length, color: 'bg-green-500', icon: FileCheck, sub: 'Envoyés à GED' },
-                { label: 'En attente', value: filtered.filter(i => i.status === 'en_attente').length, color: 'bg-orange-500', icon: Clock, sub: 'À valider' },
-                { label: 'Incidents ouverts', value: 0, color: 'bg-red-500', icon: AlertTriangle, sub: 'Aucun incident' },
+                { label: 'Enfants en séjour', value: filtered.filter(i => i.status === 'validee').length, color: 'bg-primary', icon: Users, sub: 'Inscriptions validées' },
+                { label: 'Dossiers complets', value: filtered.filter(i => i.ged_sent_at).length, color: 'bg-accent', icon: FileCheck, sub: 'Envoyés à GED' },
+                { label: 'En attente', value: filtered.filter(i => i.status === 'en_attente').length, color: 'bg-secondary', icon: Clock, sub: 'À valider' },
+                { label: 'Incidents ouverts', value: 0, color: 'bg-primary-700', icon: AlertTriangle, sub: 'Aucun incident' },
               ].map(kpi => (
                 <div key={kpi.label} className="bg-white rounded-xl shadow p-6">
                   <div className={`w-12 h-12 ${kpi.color} rounded-lg flex items-center justify-center mb-4`}>
@@ -430,9 +429,9 @@ export default function StructureDashboard() {
                 { label: 'Médical', value: 0, ok: 'RAS' },
                 { label: 'Notes', value: 0, ok: 'Aucune' },
               ].map(kpi => (
-                <div key={kpi.label} className={`rounded-xl border p-4 ${kpi.value === 0 ? 'bg-green-50 border-green-100' : 'bg-orange-50 border-orange-200'}`}>
+                <div key={kpi.label} className={`rounded-xl border p-4 ${kpi.value === 0 ? 'bg-muted border-primary-100' : 'bg-secondary-50 border-secondary-200'}`}>
                   <p className="text-sm font-medium text-gray-700">{kpi.label}</p>
-                  <p className={`text-lg font-bold ${kpi.value === 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                  <p className={`text-lg font-bold ${kpi.value === 0 ? 'text-accent' : 'text-secondary'}`}>
                     {kpi.value === 0 ? kpi.ok : kpi.value}
                   </p>
                 </div>
@@ -518,8 +517,8 @@ export default function StructureDashboard() {
               {subTab === 'appels' && (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                   <h3 className="font-semibold text-gray-800 mb-2">Appels &amp; Rappels</h3>
-                  <div className="p-4 bg-green-50 border border-green-100 rounded-lg mb-4">
-                    <p className="text-sm text-green-800 font-medium">Aucun rappel en attente</p>
+                  <div className="p-4 bg-primary-50 border border-primary-100 rounded-lg mb-4">
+                    <p className="text-sm text-primary font-medium">Aucun rappel en attente</p>
                   </div>
                   <p className="text-sm text-gray-400">Le journal des appels et rappels apparaîtra ici.</p>
                 </div>

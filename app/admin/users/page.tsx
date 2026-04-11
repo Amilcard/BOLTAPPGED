@@ -20,14 +20,8 @@ const ROLES = ['ADMIN', 'EDITOR', 'VIEWER'];
 export default function AdminUsers() {
   const router = useRouter();
   const { confirm } = useAdminUI();
+  // Tous les hooks AVANT tout return conditionnel (règle React)
   const [users, setUsers] = useState<User[]>([]);
-
-  // Guard : ADMIN uniquement — EDITOR/VIEWER redirigés
-  const storedUser = getStoredUser();
-  if (storedUser?.role !== 'ADMIN') {
-    router.push('/admin');
-    return null;
-  }
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -37,6 +31,13 @@ export default function AdminUsers() {
   };
 
   useEffect(() => { fetchUsers(); }, []);
+
+  // Guard : ADMIN uniquement — EDITOR/VIEWER redirigés
+  const storedUser = getStoredUser();
+  if (storedUser?.role !== 'ADMIN') {
+    router.push('/admin');
+    return null;
+  }
 
   const handleDelete = (id: string) => {
     confirm('Supprimer cet utilisateur ? Cette action est irréversible.', async () => {

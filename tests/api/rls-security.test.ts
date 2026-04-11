@@ -72,6 +72,15 @@ if (!isRealSupabase) {
       expect(error?.message ?? error?.code ?? '').toMatch(/42501|insufficient_privilege|rls|PGRST204|Legacy API keys/i);
     });
 
+    test('gd_structures : lecture anon refusée', async () => {
+      const { data, error } = await anonClient.from('gd_structures').select('code').limit(1);
+      if (error?.message?.includes('Legacy API keys are disabled')) {
+        expect(error).not.toBeNull();
+        return;
+      }
+      expect(data).toEqual([]);
+    });
+
     test('gd_stays : UPDATE anon refusé', async () => {
       const { data: before } = await anonClient
         .from('gd_stays')

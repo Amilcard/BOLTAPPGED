@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-const path = require('path');
 const { withSentryConfig } = require('@sentry/nextjs');
 
 const securityHeaders = [
@@ -28,11 +27,6 @@ const securityHeaders = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
-  outputFileTracingRoot: path.join(__dirname),
-  outputFileTracingExcludes: {
-    '*': ['supabase/**/*'],
-  },
   experimental: {},
   eslint: {
     ignoreDuringBuilds: true,

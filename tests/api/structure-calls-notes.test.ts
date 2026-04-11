@@ -50,7 +50,7 @@ import { GET as getCalls, POST as postCalls } from '@/app/api/structure/[code]/c
 import { GET as getNotes, POST as postNotes } from '@/app/api/structure/[code]/notes/route';
 
 function makeReq(url: string, method: string, body?: Record<string, unknown>): NextRequest {
-  const opts: RequestInit = { method, headers: { 'Content-Type': 'application/json' } };
+  const opts: { method: string; headers: Record<string, string>; body?: string } = { method, headers: { 'Content-Type': 'application/json' } };
   if (body) opts.body = JSON.stringify(body);
   return new NextRequest(url, opts);
 }

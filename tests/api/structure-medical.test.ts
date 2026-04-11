@@ -45,7 +45,7 @@ import { NextRequest } from 'next/server';
 import { GET, POST } from '@/app/api/structure/[code]/medical/route';
 
 function makeReq(method: string, body?: Record<string, unknown>): NextRequest {
-  const opts: RequestInit = { method, headers: { 'Content-Type': 'application/json' } };
+  const opts: { method: string; headers: Record<string, string>; body?: string } = { method, headers: { 'Content-Type': 'application/json' } };
   if (body) opts.body = JSON.stringify(body);
   return new NextRequest('http://localhost:3000/api/structure/TESTCODE/medical', opts);
 }

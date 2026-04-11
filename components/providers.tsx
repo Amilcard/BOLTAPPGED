@@ -5,7 +5,6 @@ import type { ViewMode, PeriodFilter } from '@/lib/types';
 import { getStoredMode, setStoredMode, resetAllStorage, STORAGE_KEYS, getWishlist, toggleWishlist as toggleWishlistUtil, getStoredUser } from '@/lib/utils';
 
 interface AuthUser {
-  userId: string;
   email: string;
   role: 'ADMIN' | 'EDITOR' | 'VIEWER';
 }
@@ -53,8 +52,7 @@ export function Providers({ children }: { children: ReactNode }) {
     // Check auth user metadata (RGPD: plus de JWT dans localStorage)
     const user = getStoredUser();
     if (user) {
-      // userId non disponible côté client (cookie httpOnly) — seuls email/role sont en localStorage
-      setAuthUser({ userId: user.email, email: user.email, role: user.role });
+      setAuthUser({ email: user.email, role: user.role });
     }
     // Pro email vérifié via session cookie (plus de PII en localStorage)
     if (user?.email) {

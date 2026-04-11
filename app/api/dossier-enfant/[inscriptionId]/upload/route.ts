@@ -29,17 +29,18 @@ export async function POST(
 ) {
   try {
     const { inscriptionId } = await params;
-    const supabase = getSupabase();
 
     const formData = await req.formData();
     const token = formData.get('token') as string;
     const docType = formData.get('type') as string;
     const file = formData.get('file') as File | null;
 
-    // Validation
+    // Validation — avant toute initialisation Supabase
     if (!token || !inscriptionId) {
       return NextResponse.json({ error: 'Token et inscriptionId requis.' }, { status: 400 });
     }
+
+    const supabase = getSupabase();
 
     if (!docType || !ALLOWED_TYPES.includes(docType as typeof ALLOWED_TYPES[number])) {
       return NextResponse.json({ error: `Type invalide. Types acceptes: ${ALLOWED_TYPES.join(', ')}` }, { status: 400 });

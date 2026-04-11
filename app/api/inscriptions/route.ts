@@ -4,6 +4,7 @@ import { getSupabase, getSupabaseUser } from '@/lib/supabase-server';
 import { z } from 'zod';
 import { sendInscriptionConfirmation, sendAdminNewInscriptionNotification, sendStructureCodeEmail, sendNewEducateurAlert } from '@/lib/email';
 import { randomBytes } from 'crypto';
+import { auditLog, getClientIp } from '@/lib/audit-log';
 const inscriptionSchema = z.object({
   staySlug: z.string().min(1),
   sessionDate: z.string().min(1), // Date de début session
@@ -512,6 +513,22 @@ export async function POST(request: NextRequest) {
         { error: { code: 'INSERT_ERROR', message: 'Impossible de créer l\'inscription.' } },
         { status: 500 }
       );
+    }
+
+    // M9 — Audit RGPD : enregistrer le consentement parental si applicable (Art. 9 données mineurs)
+    if (data.parentalConsent && inscription.id) {
+      await auditLog(supabase, {
+        action: 'create',
+        resourceType: 'inscription',
+        resourceId: inscription.id as string,
+        actorType: 'referent',
+        actorId: data.email,
+        ipAddress: getClientIp(request),
+        metadata: {
+          parental_consent_version: 'v2026.1',
+          child_birth_date: data.childBirthDate,
+        },
+      });
     }
 
     // Récupérer le nom marketing du séjour pour l'email

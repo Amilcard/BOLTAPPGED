@@ -125,6 +125,9 @@ export default function StructureDashboard() {
   const [filterDossier, setFilterDossier] = useState<'all' | 'complet' | 'en_attente' | 'ged_sent'>('all');
   const [rgpdAccepted, setRgpdAccepted] = useState(false);
   const [incidentCounts, setIncidentCounts] = useState<Record<string, number>>({});
+  const [callsCount, setCallsCount] = useState(0);
+  const [notesCount, setNotesCount] = useState(0);
+  const [medicalCount, setMedicalCount] = useState(0);
   const [rgpdLoading, setRgpdLoading] = useState(false);
 
   useEffect(() => {
@@ -168,6 +171,17 @@ export default function StructureDashboard() {
         setIncidentCounts(counts);
       })
       .catch(() => {});
+
+    // Fetch calls, notes, medical en parallèle
+    Promise.all([
+      fetch(`/api/structure/${code}/calls`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
+      fetch(`/api/structure/${code}/notes`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
+      fetch(`/api/structure/${code}/medical`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
+    ]).then(([callsData, notesData, medData]) => {
+      setCallsCount(callsData?.calls?.length ?? 0);
+      setNotesCount(notesData?.notes?.length ?? 0);
+      setMedicalCount(medData?.count ?? 0);
+    }).catch(() => {});
   }, [code, data]);
 
   // ── États de chargement / erreur ──
@@ -447,10 +461,10 @@ export default function StructureDashboard() {
             {/* KPIs secondaires — ligne compacte */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: 'À rappeler', value: 0, ok: 'RAS' },
-                { label: 'Messages', value: 0, ok: 'Aucun' },
-                { label: 'Médical', value: 0, ok: 'RAS' },
-                { label: 'Notes', value: 0, ok: 'Aucune' },
+                { label: 'Appels tracés', value: callsCount, ok: 'Aucun' },
+                { label: 'Notes', value: notesCount, ok: 'Aucune' },
+                { label: 'Médical', value: medicalCount, ok: 'RAS' },
+                { label: 'Incidents', value: Object.values(incidentCounts).reduce((a, b) => a + b, 0), ok: 'RAS' },
               ].map(kpi => (
                 <div key={kpi.label} className={`rounded-xl border p-4 ${kpi.value === 0 ? 'bg-muted border-primary-100' : 'bg-secondary-50 border-secondary-200'}`}>
                   <p className="text-sm font-medium text-gray-700">{kpi.label}</p>

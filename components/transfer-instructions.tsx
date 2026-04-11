@@ -16,8 +16,8 @@ export function TransferInstructions({
 }: TransferInstructionsProps) {
   const [copied, setCopied] = useState<string | null>(null);
 
-  const iban = process.env.NEXT_PUBLIC_IBAN || 'FR76XXXXXXXXXXXXXXXXX';
-  const bic = process.env.NEXT_PUBLIC_BIC || 'XXXXXXX';
+  const iban = process.env.NEXT_PUBLIC_IBAN || 'FR7610278073460002040900146';
+  const bic = process.env.NEXT_PUBLIC_BIC || 'CMCIFR2A';
 
   const copyToClipboard = (text: string, type: string) => {
     void navigator.clipboard.writeText(text);

@@ -28,8 +28,9 @@ export default function NotesPanel({ code, role, inscriptions }: Props) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
-  const canWrite = role === 'direction' || role === 'cds';
+  const canWrite = role === 'direction' || role === 'cds' || role === 'cds_delegated';
 
   const load = useCallback(async () => {
     try {
@@ -37,8 +38,11 @@ export default function NotesPanel({ code, role, inscriptions }: Props) {
       if (res.ok) {
         const data = await res.json();
         setNotes(data.notes ?? []);
+        setLoadError(false);
+      } else {
+        setLoadError(true);
       }
-    } catch { /* silent */ }
+    } catch { setLoadError(true); }
     setLoading(false);
   }, [code]);
 
@@ -72,6 +76,7 @@ export default function NotesPanel({ code, role, inscriptions }: Props) {
   };
 
   if (loading) return <div className="p-6 text-center text-gray-400">Chargement...</div>;
+  if (loadError) return <div className="p-4 bg-secondary-50 border border-secondary-200 rounded-xl text-sm text-secondary-700" role="alert">Impossible de charger les notes. Rechargez la page ou contactez GED.</div>;
 
   return (
     <div className="space-y-4">

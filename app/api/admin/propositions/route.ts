@@ -98,6 +98,13 @@ export async function POST(req: NextRequest) {
 
     const prixTotal = Number(prixSejour) + Number(prixTransport) + prixEncadrement;
 
+    if (prixTotal <= 0) {
+      return NextResponse.json(
+        { error: 'Prix total invalide (0 ou négatif). Vérifiez les tarifs de la session et ville de départ sélectionnées.' },
+        { status: 400 }
+      );
+    }
+
     // Récupérer les activités du séjour
     const sejourActivites = sejour.description_pro || '';
 

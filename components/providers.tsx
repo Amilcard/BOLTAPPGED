@@ -53,7 +53,8 @@ export function Providers({ children }: { children: ReactNode }) {
     // Check auth user metadata (RGPD: plus de JWT dans localStorage)
     const user = getStoredUser();
     if (user) {
-      setAuthUser({ userId: '', email: user.email, role: user.role });
+      // userId non disponible côté client (cookie httpOnly) — seuls email/role sont en localStorage
+      setAuthUser({ userId: user.email, email: user.email, role: user.role });
     }
     // Pro email vérifié via session cookie (plus de PII en localStorage)
     if (user?.email) {

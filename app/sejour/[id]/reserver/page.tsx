@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, CalendarX } from 'lucide-react';
 import type { Stay } from '@/lib/types';
 import { getSejourBySlug, getStaySessions, getDepartureCitiesFormatted, getSessionPricesFormatted, getSessionPrices, supabaseGed } from '@/lib/supabaseGed';
 import { BookingFlow } from '@/components/booking-flow';
@@ -195,7 +195,7 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
               {/* Header complet */}
               <div className="text-center flex flex-col items-center gap-4">
                 <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
-                  <span className="text-2xl">😔</span>
+                  <CalendarX className="w-7 h-7 text-primary-300" />
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 mb-1">Séjour complet</h2>

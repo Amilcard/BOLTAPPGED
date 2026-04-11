@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import Link from 'next/link';
-import { ClipboardList, Stethoscope, Handshake, FileText, Paperclip } from 'lucide-react';
+import { ClipboardList, Stethoscope, Handshake, FileText, Paperclip, LockKeyhole } from 'lucide-react';
 import { DOC_OPT_LABELS } from '@/lib/dossier-shared';
 import { useDossierEnfant } from './useDossierEnfant';
 import { BulletinComplementForm } from './BulletinComplementForm';
@@ -453,8 +453,8 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
           ) : (
             <>
               {/* Notice RGPD — données médicales */}
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg flex gap-2 items-start">
-                <span className="text-blue-400 mt-0.5 shrink-0">🔒</span>
+              <div className="mb-4 p-3 bg-muted border border-primary-100 rounded-lg flex gap-2 items-start">
+                <LockKeyhole className="w-4 h-4 text-primary-300 mt-0.5 shrink-0" />
                 <p className="text-xs text-blue-700 leading-relaxed">
                   Les informations saisies dans ce dossier (fiche sanitaire, documents médicaux) sont transmises
                   uniquement à l&apos;équipe Groupe &amp; Découverte dans le cadre du séjour et conservées 3 mois après

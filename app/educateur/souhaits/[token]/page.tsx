@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Heart, Clock, Check, X, MessageCircle, ChevronRight, Loader2 } from 'lucide-react';
+import { Heart, Clock, Check, X, MessageCircle, ChevronRight, Loader2, Link2 } from 'lucide-react';
 
 interface Souhait {
   id: string;
@@ -87,7 +87,7 @@ export default function EducateurSouhaitsPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-8 text-center">
-          <div className="text-4xl mb-4">🔗</div>
+          <div className="w-14 h-14 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-4"><Link2 className="w-7 h-7 text-primary" /></div>
           <h1 className="text-xl font-bold text-gray-800 mb-2">Ce lien ne fonctionne plus</h1>
           <p className="text-gray-500 text-sm mb-6">
             Ce lien a expiré. Consultez votre boîte mail pour retrouver un lien actif.

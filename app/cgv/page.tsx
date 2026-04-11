@@ -127,7 +127,7 @@ export default function CgvPage() {
               <p className="font-semibold mb-2">Moyens de paiement acceptés</p>
               <ul className="space-y-1">
                 <li>🏦 <strong>Virement bancaire</strong> — RIB communiqué sur devis ou facture</li>
-                <li>📝 <strong>Chèque</strong> — à l&apos;ordre de « Association Groupe et Découverte »</li>
+                <li>— <strong>Chèque</strong> — à l&apos;ordre de « Association Groupe et Découverte »</li>
                 <li>💳 <strong>Carte bancaire</strong> — paiement sécurisé en ligne (Visa, Mastercard)</li>
                 <li>🎟 <strong>Coupon / bon CAF / aide financière</strong> — selon dispositifs en vigueur</li>
               </ul>
@@ -217,10 +217,10 @@ export default function CgvPage() {
             <InfoBox>
               <p className="font-semibold mb-2">Engagements de l&apos;association</p>
               <ul className="space-y-1">
-                <li>🔒 Données hébergées exclusivement en Union européenne (Francfort, Allemagne)</li>
-                <li>👤 Consentement du responsable légal recueilli pour les mineurs de moins de 15 ans</li>
-                <li>🗑 Données de santé supprimées automatiquement 3 mois après la fin du séjour</li>
-                <li>📋 Audit de tous les accès aux données sensibles</li>
+                <li>— Données hébergées exclusivement en Union européenne (Francfort, Allemagne)</li>
+                <li>— Consentement du responsable légal recueilli pour les mineurs de moins de 15 ans</li>
+                <li>— Données de santé supprimées automatiquement 3 mois après la fin du séjour</li>
+                <li>— Audit de tous les accès aux données sensibles</li>
                 <li>💳 Aucune donnée bancaire conservée (paiement délégué à Stripe, certifié PCI-DSS)</li>
               </ul>
             </InfoBox>

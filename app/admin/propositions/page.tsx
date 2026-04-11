@@ -287,22 +287,22 @@ export default function PropositionsPage() {
               <input
                 type="text" placeholder="Nom de la structure *" required
                 value={form.structure_nom} onChange={e => setForm({ ...form, structure_nom: e.target.value })}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-300 focus:border-orange-500 outline-none"
+                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
               />
               <input
                 type="text" placeholder="Adresse"
                 value={form.structure_adresse} onChange={e => setForm({ ...form, structure_adresse: e.target.value })}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-300 focus:border-orange-500 outline-none"
+                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
               />
               <input
                 type="text" placeholder="Code postal"
                 value={form.structure_cp} onChange={e => setForm({ ...form, structure_cp: e.target.value })}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-300 focus:border-orange-500 outline-none"
+                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
               />
               <input
                 type="text" placeholder="Ville"
                 value={form.structure_ville} onChange={e => setForm({ ...form, structure_ville: e.target.value })}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-300 focus:border-orange-500 outline-none"
+                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
               />
             </div>
           </div>
@@ -314,12 +314,12 @@ export default function PropositionsPage() {
               <input
                 type="text" placeholder="Nom de l'enfant *" required
                 value={form.enfant_nom} onChange={e => setForm({ ...form, enfant_nom: e.target.value })}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-300 focus:border-orange-500 outline-none"
+                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
               />
               <input
                 type="text" placeholder="Prénom de l'enfant *" required
                 value={form.enfant_prenom} onChange={e => setForm({ ...form, enfant_prenom: e.target.value })}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-300 focus:border-orange-500 outline-none"
+                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
               />
             </div>
           </div>
@@ -331,7 +331,7 @@ export default function PropositionsPage() {
               <select
                 required value={form.sejour_slug}
                 onChange={e => setForm({ ...form, sejour_slug: e.target.value, session_start: '', session_end: '', ville_depart: '' })}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-300 focus:border-orange-500 outline-none"
+                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
               >
                 <option value="">Sélectionner un séjour *</option>
                 {sejours.map(s => (
@@ -345,7 +345,7 @@ export default function PropositionsPage() {
                   const [start, end] = e.target.value.split('|');
                   setForm({ ...form, session_start: start, session_end: end });
                 }}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-300 focus:border-orange-500 outline-none"
+                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
                 disabled={!form.sejour_slug}
               >
                 <option value="|">Sélectionner une session *</option>
@@ -359,7 +359,7 @@ export default function PropositionsPage() {
               <select
                 required value={form.ville_depart}
                 onChange={e => setForm({ ...form, ville_depart: e.target.value })}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-300 focus:border-orange-500 outline-none"
+                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
                 disabled={!form.session_start}
               >
                 <option value="">Ville de départ *</option>
@@ -373,7 +373,7 @@ export default function PropositionsPage() {
                   type="checkbox"
                   checked={form.encadrement}
                   onChange={e => setForm({ ...form, encadrement: e.target.checked })}
-                  className="w-5 h-5 rounded text-orange-500 focus:ring-orange-300"
+                  className="w-5 h-5 rounded text-primary focus:ring-primary-300"
                 />
                 <span className="text-sm">
                   Encadrement renforcé (animateur dédié — 630 €/semaine)

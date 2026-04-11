@@ -317,7 +317,7 @@ export default function InscriptionDetailPage() {
                 type="checkbox"
                 checked={insc.besoins_pris_en_compte || false}
                 onChange={(e) => patchField('besoins_pris_en_compte', e.target.checked)}
-                className="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-300"
+                className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary-300"
               />
             </label>
 
@@ -327,14 +327,14 @@ export default function InscriptionDetailPage() {
                 type="checkbox"
                 checked={insc.equipe_informee || false}
                 onChange={(e) => patchField('equipe_informee', e.target.checked)}
-                className="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-300"
+                className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary-300"
               />
             </label>
 
             <div>
               <label className="text-sm text-gray-700 block mb-1">Note pro</label>
               <textarea
-                className="w-full border rounded-lg px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-orange-300 focus:border-orange-500 outline-none"
+                className="w-full border rounded-lg px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
                 rows={3}
                 defaultValue={insc.note_pro || ''}
                 placeholder="Note visible par le referent..."

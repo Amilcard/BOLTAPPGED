@@ -187,7 +187,7 @@ export default function StructureDashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-8 text-center">
-          <div className="text-4xl mb-4">🏢</div>
+          <div className="w-14 h-14 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-4"><Building2 className="w-7 h-7 text-primary" /></div>
           <h1 className="text-xl font-bold text-gray-800 mb-2">Code structure invalide</h1>
           <p className="text-gray-500 text-sm mb-6">
             {error || 'Ce code ne correspond à aucune structure active.'}

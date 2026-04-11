@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Lock } from 'lucide-react';
+import { Lock, FileText } from 'lucide-react';
 import { REQUIS_TO_JOINT, DOC_OPT_LABELS } from '@/lib/dossier-shared';
 
 interface DocJoint {
@@ -211,14 +211,7 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess, r
               className="flex items-center justify-between p-3 bg-white border rounded-lg"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <span className="text-lg flex-shrink-0">
-                  {doc.type === 'vaccins' ? '💉' :
-                   doc.type === 'ordonnance' ? '💊' :
-                   doc.type === 'certificat_medical' ? '🩺' :
-                   doc.type === 'attestation_assurance' ? '🛡' :
-                   doc.type === 'pass_nautique' ? '🏊' :
-                   doc.type === 'certificat_plongee' ? '🤿' : '📎'}
-                </span>
+                <FileText className="w-5 h-5 text-primary-300 flex-shrink-0" aria-hidden="true" />
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{getTypeLabel(doc.type)}</p>
                   <p className="text-xs text-gray-400 truncate">

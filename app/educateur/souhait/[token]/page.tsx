@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Heart, Check, MessageCircle, X, Clock, ExternalLink } from 'lucide-react';
+import { Heart, Check, MessageCircle, X, Clock, ExternalLink, LockKeyhole } from 'lucide-react';
 
 interface Souhait {
   id: string;
@@ -82,7 +82,7 @@ export default function EducateurSouhaitPage() {
   if (error || !souhait) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="bg-white rounded-2xl shadow-lg max-w-md w-full p-8 text-center">
-        <div className="text-4xl mb-4">🔒</div>
+        <div className="w-14 h-14 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-4"><LockKeyhole className="w-7 h-7 text-primary" /></div>
         <h1 className="text-xl font-bold text-gray-800 mb-2">Lien invalide ou expiré</h1>
         <p className="text-gray-600 mb-6">{error || 'Ce lien de souhait n\'est pas valide ou a expiré.'}</p>
         <div className="bg-gray-50 rounded-xl p-4 text-left text-sm text-gray-600 mb-4">

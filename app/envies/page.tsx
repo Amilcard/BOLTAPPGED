@@ -147,7 +147,7 @@ export default function EnviesPage() {
                       </div>
                       {souhait?.reponse_educateur && (
                         <p className="text-xs text-gray-500 italic mt-1">
-                          💬 {souhait.reponse_educateur}
+                          <MessageCircle className="w-3 h-3 inline mr-1" />{souhait.reponse_educateur}
                         </p>
                       )}
                     </div>

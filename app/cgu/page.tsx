@@ -146,10 +146,10 @@ export default function CguPage() {
             <InfoBox variant="green">
               <p className="font-semibold mb-2">Mesures de protection en place</p>
               <ul className="space-y-1">
-                <li>🔒 Authentification sécurisée par cookie chiffré (pas de mot de passe stocké en clair)</li>
-                <li>👤 Consentement du responsable légal obligatoire pour les mineurs de moins de 15 ans</li>
-                <li>📋 Traçabilité complète des accès aux données sensibles (journal d&apos;audit)</li>
-                <li>🗑 Suppression automatique des données de santé 3 mois après la fin du séjour</li>
+                <li>— Authentification sécurisée par cookie chiffré (pas de mot de passe stocké en clair)</li>
+                <li>— Consentement du responsable légal obligatoire pour les mineurs de moins de 15 ans</li>
+                <li>— Traçabilité complète des accès aux données sensibles (journal d&apos;audit)</li>
+                <li>— Suppression automatique des données de santé 3 mois après la fin du séjour</li>
                 <li>🇪🇺 Données hébergées exclusivement en Union européenne</li>
                 <li>🔐 Liens de suivi sécurisés avec expiration automatique (30 jours)</li>
               </ul>

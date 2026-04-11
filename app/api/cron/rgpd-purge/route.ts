@@ -21,13 +21,26 @@ export async function GET(req: NextRequest) {
   }
 
   const supabase = getSupabase();
+  const errors: string[] = [];
 
-  const { data: auditResult } = await supabase.rpc('gd_purge_expired_audit_logs');
-  const { data: medicalResult } = await supabase.rpc('gd_purge_expired_medical_data');
+  const { data: auditResult, error: errAudit } = await supabase.rpc('gd_purge_expired_audit_logs');
+  if (errAudit) errors.push(`audit_logs_12m: ${errAudit.message}`);
+
+  const { data: medicalResult, error: errMedical } = await supabase.rpc('gd_purge_expired_medical_data');
+  if (errMedical) errors.push(`medical_data: ${errMedical.message}`);
+
   // Purge login attempts > 24h (IPs rate limiting — RGPD minimisation)
-  const { data: loginResult } = await supabase.rpc('purge_old_login_attempts');
+  const { data: loginResult, error: errLogin } = await supabase.rpc('purge_old_login_attempts');
+  if (errLogin) errors.push(`login_attempts: ${errLogin.message}`);
+
   // Purge audit logs > 3 ans (recommandation CNIL)
-  const { data: auditOldResult } = await supabase.rpc('purge_old_audit_logs');
+  const { data: auditOldResult, error: errAuditOld } = await supabase.rpc('purge_old_audit_logs');
+  if (errAuditOld) errors.push(`audit_logs_3y: ${errAuditOld.message}`);
+
+  if (errors.length > 0) {
+    console.error(`[rgpd-purge] ${errors.length} erreur(s):`, errors.join('; '));
+    return NextResponse.json({ ok: false, errors }, { status: 500 });
+  }
 
   console.log(`[rgpd-purge] audit_logs_12m: ${auditResult ?? 0}, medical_data: ${medicalResult ?? 0}, login_attempts: ${loginResult ?? 'ok'}, audit_logs_3y: ${auditOldResult ?? 'ok'}`);
 

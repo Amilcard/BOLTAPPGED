@@ -87,6 +87,15 @@ export async function PATCH(
     );
   }
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (fromDate < today) {
+    return NextResponse.json(
+      { error: { code: 'PAST_DATE', message: 'La date de début ne peut pas être dans le passé.' } },
+      { status: 400 }
+    );
+  }
+
   if (untilDate <= fromDate) {
     return NextResponse.json(
       { error: { code: 'INVALID_RANGE', message: 'La date de fin doit être après la date de début.' } },

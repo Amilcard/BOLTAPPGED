@@ -111,11 +111,25 @@ export async function POST(request: NextRequest) {
     sejourSlug: sejour_slug?.trim() || undefined,
   };
 
-  // Emails (non-bloquants — on répond même si un email échoue)
-  await Promise.allSettled([
+  // Emails — vérifier que l'alerte GED arrive (pattern price-inquiry)
+  const [confirmResult, alertResult] = await Promise.allSettled([
     sendProAccessConfirmation(accessData),
     sendProAccessAlertGED(accessData),
   ]);
+
+  if (confirmResult.status === 'rejected' && alertResult.status === 'rejected') {
+    console.error('[request-access] Échec total emails:', confirmResult.reason, alertResult.reason);
+    return NextResponse.json(
+      { error: { code: 'EMAIL_ERROR', message: 'Erreur lors de l\'envoi. Veuillez réessayer ou nous contacter directement.' } },
+      { status: 500 }
+    );
+  }
+  if (confirmResult.status === 'rejected') {
+    console.error('[request-access] Email confirmation échoué:', confirmResult.reason);
+  }
+  if (alertResult.status === 'rejected') {
+    console.error('[request-access] Email alerte GED échoué:', alertResult.reason);
+  }
 
   // Enregistrement dans smart_form_submissions (fail-silently)
   try {

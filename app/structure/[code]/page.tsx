@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Building2 } from 'lucide-react';
+import { Building2, Users, FileCheck, Clock, AlertTriangle } from 'lucide-react';
 import { DossierBadge } from '@/components/admin/DossierBadge';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -340,7 +340,8 @@ export default function StructureDashboard() {
           ))}
         </div>
 
-        {/* Montant total */}
+        {/* Montant total — masqué pour les éducateurs (hors périmètre rôle) */}
+        {role !== 'educateur' && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 flex items-center justify-between">
           <div>
             <p className="text-xs text-gray-500">Montant total engagé</p>
@@ -353,9 +354,10 @@ export default function StructureDashboard() {
             Imprimer le récapitulatif
           </button>
         </div>
+        )}
 
         {/* ── Onglets Admin / Éducatif ── */}
-        {(roles.includes('admin') || roles.includes('educatif')) && (
+        {(roles.includes('direction') || roles.includes('cds') || roles.includes('educateur') || roles.includes('secretariat')) && (
           <div className="flex border-b border-gray-200 mb-6 print:hidden">
             {(roles.includes('admin') || roles.includes('direction') || roles.includes('cds') || roles.includes('secretariat')) && (
               <button
@@ -385,7 +387,7 @@ export default function StructureDashboard() {
           <div className="space-y-6">
 
             {/* 1. BANDEAU URGENCE FIXE */}
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 sticky top-0 z-20">
               <div className="flex items-center gap-3 mb-2">
                 <span className="text-xl">🚨</span>
                 <div>
@@ -404,14 +406,14 @@ export default function StructureDashboard() {
             {/* 2. KPIs TERRAIN — style admin dashboard */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                { label: 'Enfants en séjour', value: filtered.filter(i => i.status === 'validee').length, color: 'bg-blue-500', sub: 'Inscriptions validées' },
-                { label: 'Dossiers complets', value: filtered.filter(i => i.ged_sent_at).length, color: 'bg-green-500', sub: 'Envoyés à GED' },
-                { label: 'En attente', value: filtered.filter(i => i.status === 'en_attente').length, color: 'bg-orange-500', sub: 'À valider' },
-                { label: 'Incidents ouverts', value: 0, color: 'bg-red-500', sub: 'Aucun incident' },
+                { label: 'Enfants en séjour', value: filtered.filter(i => i.status === 'validee').length, color: 'bg-blue-500', icon: Users, sub: 'Inscriptions validées' },
+                { label: 'Dossiers complets', value: filtered.filter(i => i.ged_sent_at).length, color: 'bg-green-500', icon: FileCheck, sub: 'Envoyés à GED' },
+                { label: 'En attente', value: filtered.filter(i => i.status === 'en_attente').length, color: 'bg-orange-500', icon: Clock, sub: 'À valider' },
+                { label: 'Incidents ouverts', value: 0, color: 'bg-red-500', icon: AlertTriangle, sub: 'Aucun incident' },
               ].map(kpi => (
                 <div key={kpi.label} className="bg-white rounded-xl shadow p-6">
                   <div className={`w-12 h-12 ${kpi.color} rounded-lg flex items-center justify-center mb-4`}>
-                    <span className="text-white text-xl font-bold">{kpi.value}</span>
+                    <kpi.icon className="w-6 h-6 text-white" />
                   </div>
                   <p className="text-gray-500 text-sm">{kpi.label}</p>
                   <p className="text-3xl font-bold text-primary">{kpi.value}</p>
@@ -441,7 +443,7 @@ export default function StructureDashboard() {
             {(() => {
               const [subTab, setSubTab] = [eduSubTab, setEduSubTab];
               return (<>
-              <div className="flex border-b border-gray-200 overflow-x-auto">
+              <div className="flex border-b border-gray-200 overflow-x-auto" role="tablist" aria-label="Sous-onglets suivi éducatif">
                 {[
                   { key: 'deroulement', label: 'Déroulement' },
                   { key: 'medical', label: 'Médical' },
@@ -450,8 +452,10 @@ export default function StructureDashboard() {
                   { key: 'bilan', label: 'Bilan' },
                 ].map(t => (
                   <button key={t.key} onClick={() => setSubTab(t.key)}
+                    role="tab"
+                    aria-selected={subTab === t.key}
                     className={`px-4 py-2.5 text-xs font-medium border-b-2 whitespace-nowrap transition-colors ${
-                      subTab === t.key ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'
+                      subTab === t.key ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-600'
                     }`}
                   >{t.label}</button>
                 ))}

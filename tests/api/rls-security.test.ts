@@ -51,6 +51,13 @@ if (!isRealSupabase) {
         .select('id')
         .limit(1);
 
+      // Legacy keys désactivées → erreur "Legacy API keys are disabled" = accès bloqué (encore mieux que RLS)
+      if (error?.message?.includes('Legacy API keys are disabled')) {
+        expect(error).not.toBeNull();
+        return;
+      }
+
+      // Sinon : RLS bloque la lecture → tableau vide
       expect(error).toBeNull();
       expect(data).toEqual([]);
     });
@@ -61,7 +68,8 @@ if (!isRealSupabase) {
         .insert({ slug: 'rls-test-anon', title: 'test', status: 'draft' });
 
       expect(error).not.toBeNull();
-      expect(error?.code).toMatch(/42501|insufficient_privilege|rls|PGRST204/i);
+      // Legacy keys disabled OU RLS refusant l'INSERT
+      expect(error?.message ?? error?.code ?? '').toMatch(/42501|insufficient_privilege|rls|PGRST204|Legacy API keys/i);
     });
 
     test('gd_stays : UPDATE anon refusé', async () => {

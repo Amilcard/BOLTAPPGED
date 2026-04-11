@@ -50,24 +50,16 @@ export async function GET(req: NextRequest) {
     console.error('[expire-codes] Erreur révocation codes Directeur:', errDir.message);
   }
 
-  // Si erreur DB sur l'un ou l'autre → 500 pour retry Vercel Cron
-  if (errCds || errDir) {
-    return NextResponse.json(
-      { ok: false, errors: { cds: errCds?.message ?? null, directeur: errDir?.message ?? null } },
-      { status: 500 }
-    );
-  }
-
   const countCds = revokedCds?.length ?? 0;
   const countDir = revokedDir?.length ?? 0;
 
   console.log(`[expire-codes] codes CDS révoqués: ${countCds}, codes Directeur révoqués: ${countDir}`);
 
-  // Audit log système
+  // Audit log — tracer les révocations réussies même en cas d'erreur partielle
   if (countCds + countDir > 0) {
-    auditLog(supabase, {
+    await auditLog(supabase, {
       action: 'update',
-      resourceType: 'inscription',
+      resourceType: 'structure',
       resourceId: 'system',
       actorType: 'system',
       metadata: {
@@ -77,6 +69,14 @@ export async function GET(req: NextRequest) {
         run_at: now,
       },
     });
+  }
+
+  // Si erreur DB sur l'un ou l'autre → 500 pour retry Vercel Cron (après audit log)
+  if (errCds || errDir) {
+    return NextResponse.json(
+      { ok: false, errors: { cds: errCds?.message ?? null, directeur: errDir?.message ?? null } },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({

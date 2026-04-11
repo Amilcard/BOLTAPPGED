@@ -1,18 +1,18 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
-import { verifyAuth } from '@/lib/auth-middleware';
+import { requireEditor } from '@/lib/auth-middleware';
 
 /**
  * POST /api/souhaits/link-inscription
  * Lie un souhait validé à l'inscription créée.
- * Protégé par JWT — seul un pro authentifié peut lier.
+ * Protégé par JWT — requireEditor (écriture sur inscriptions, CLAUDE.md règle 8).
  */
 export async function POST(req: NextRequest) {
   try {
-    const auth = await verifyAuth(req);
+    const auth = await requireEditor(req);
     if (!auth) {
-      return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisé.' }, { status: 403 });
     }
 
     const { souhaitId, inscriptionId } = await req.json();

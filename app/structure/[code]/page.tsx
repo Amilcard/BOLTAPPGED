@@ -5,6 +5,10 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Building2, Users, FileCheck, Clock, AlertTriangle, Phone } from 'lucide-react';
 import { DossierBadge } from '@/components/admin/DossierBadge';
+import IncidentsPanel from '@/components/structure/IncidentsPanel';
+import MedicalSummary from '@/components/structure/MedicalSummary';
+import CallsPanel from '@/components/structure/CallsPanel';
+import NotesPanel from '@/components/structure/NotesPanel';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -461,7 +465,7 @@ export default function StructureDashboard() {
               </div>
 
               {/* Sous-onglet DÉROULEMENT */}
-              {subTab === 'deroulement' && (
+              {subTab === 'deroulement' && (<>
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                   <div className="px-6 py-4 border-b border-gray-100">
                     <h3 className="font-semibold text-gray-800">Enfants inscrits — suivi éducatif</h3>
@@ -502,44 +506,22 @@ export default function StructureDashboard() {
                     })}
                   </div>
                 </div>
-              )}
+                <IncidentsPanel code={code} role={role || ''} inscriptions={filtered.map(i => ({ id: i.id, jeune_prenom: i.jeune_prenom, jeune_nom: i.jeune_nom }))} />
+              </>)}
 
               {/* Sous-onglet MÉDICAL */}
               {subTab === 'medical' && (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                  <h3 className="font-semibold text-gray-800 mb-2">Suivi médical</h3>
-                  <p className="text-sm text-gray-400">Aucun événement médical enregistré.</p>
-                  <p className="text-xs text-gray-300 mt-2">Les consultations, traitements et alertes médicales apparaîtront ici.</p>
-                </div>
+                <MedicalSummary code={code} role={role || ''} inscriptions={filtered.map(i => ({ id: i.id, jeune_prenom: i.jeune_prenom, jeune_nom: i.jeune_nom }))} />
               )}
 
-              {/* Sous-onglet APPELS & RAPPELS */}
+              {/* Sous-onglet APPELS */}
               {subTab === 'appels' && (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                  <h3 className="font-semibold text-gray-800 mb-2">Appels &amp; Rappels</h3>
-                  <div className="p-4 bg-primary-50 border border-primary-100 rounded-lg mb-4">
-                    <p className="text-sm text-primary font-medium">Aucun rappel en attente</p>
-                  </div>
-                  <p className="text-sm text-gray-400">Le journal des appels et rappels apparaîtra ici.</p>
-                </div>
+                <CallsPanel code={code} role={role || ''} inscriptions={filtered.map(i => ({ id: i.id, jeune_prenom: i.jeune_prenom, jeune_nom: i.jeune_nom }))} />
               )}
 
               {/* Sous-onglet NOTES */}
               {subTab === 'notes' && (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                  <h3 className="font-semibold text-gray-800 mb-2">Notes &amp; Messages</h3>
-                  <div className="mb-4">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Notes importantes</label>
-                    <textarea
-                      className="w-full border border-gray-200 rounded-lg p-3 text-sm resize-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
-                      rows={4}
-                      placeholder="Saisissez ici les points d'attention pour l'équipe..."
-                      disabled
-                    />
-                    <p className="text-xs text-gray-300 mt-1">Édition disponible prochainement.</p>
-                  </div>
-                  <p className="text-sm text-gray-400">Les messages entre GED et votre structure apparaîtront ici.</p>
-                </div>
+                <NotesPanel code={code} role={role || ''} inscriptions={filtered.map(i => ({ id: i.id, jeune_prenom: i.jeune_prenom, jeune_nom: i.jeune_nom }))} />
               )}
 
               {/* Sous-onglet BILAN */}

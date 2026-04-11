@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { requireAdmin } from '@/lib/auth-middleware';
+import { auditLog } from '@/lib/audit-log';
 
 /**
  * POST /api/admin/structures/merge
@@ -17,7 +18,8 @@ import { requireAdmin } from '@/lib/auth-middleware';
  * Sécurité : ADMIN uniquement.
  */
 export async function POST(request: NextRequest) {
-  if (!await requireAdmin(request)) {
+  const auth = await requireAdmin(request);
+  if (!auth) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
   }
 
@@ -108,6 +110,20 @@ export async function POST(request: NextRequest) {
         .eq('id', sourceId);
       if (e3) throw e3;
     }
+
+    await auditLog(supabase, {
+      action: 'update',
+      resourceType: 'structure',
+      resourceId: targetId,
+      actorType: 'admin',
+      actorId: auth.email,
+      metadata: {
+        type: 'structure_merge',
+        source_id: sourceId,
+        source_name: (source as { name: string }).name,
+        target_name: (target as { name: string }).name,
+      },
+    });
 
     return NextResponse.json({
       ok: true,

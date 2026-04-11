@@ -281,20 +281,12 @@ export async function POST(request: NextRequest) {
       });
 
     if (rpcError) {
-      console.error('Capacity check RPC error:', rpcError);
-      // Fallback non-atomique sur gd_stay_sessions.seats_left
-      const { data: sessionFallback } = await supabasePublic
-        .from('gd_stay_sessions')
-        .select('seats_left')
-        .eq('stay_slug', data.staySlug)
-        .eq('start_date', normalizedDate)
-        .maybeSingle();
-      if (sessionFallback && sessionFallback.seats_left !== null && sessionFallback.seats_left !== -1 && sessionFallback.seats_left <= 0) {
-        return NextResponse.json(
-          { error: { code: 'SESSION_FULL', message: 'Cette session est complète. Plus de places disponibles.' } },
-          { status: 400 }
-        );
-      }
+      // Pas de fallback non-atomique — risque d'overbooking
+      console.error('Capacity check RPC error (inscription bloquée):', rpcError);
+      return NextResponse.json(
+        { error: { code: 'CAPACITY_CHECK_FAILED', message: 'Vérification de disponibilité impossible. Veuillez réessayer.' } },
+        { status: 503 }
+      );
     } else if (capacityCheck && !capacityCheck.allowed) {
       return NextResponse.json(
         { error: { code: 'SESSION_FULL', message: 'Cette session est complète. Plus de places disponibles.' } },

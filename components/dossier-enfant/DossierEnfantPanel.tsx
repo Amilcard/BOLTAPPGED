@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import Link from 'next/link';
+import { ClipboardList, Stethoscope, Handshake, FileText, Paperclip } from 'lucide-react';
 import { DOC_OPT_LABELS } from '@/lib/dossier-shared';
 import { useDossierEnfant } from './useDossierEnfant';
 import { BulletinComplementForm } from './BulletinComplementForm';
@@ -25,11 +26,11 @@ interface Props {
 }
 
 const BASE_TABS = [
-  { key: 'bulletin', label: 'Bulletin', icon: '📋', color: 'orange' },
-  { key: 'sanitaire', label: 'Fiche sanitaire', icon: '🏥', color: 'blue' },
-  { key: 'liaison', label: 'Fiche de liaison', icon: '🤝', color: 'red' },
-  { key: 'renseignements', label: 'Renseignements', icon: '📝', color: 'purple' },
-  { key: 'pj', label: 'Pièces jointes', icon: '📎', color: 'green' },
+  { key: 'bulletin', label: 'Bulletin', icon: ClipboardList, color: 'orange' },
+  { key: 'sanitaire', label: 'Fiche sanitaire', icon: Stethoscope, color: 'blue' },
+  { key: 'liaison', label: 'Fiche de liaison', icon: Handshake, color: 'red' },
+  { key: 'renseignements', label: 'Renseignements', icon: FileText, color: 'purple' },
+  { key: 'pj', label: 'Pièces jointes', icon: Paperclip, color: 'green' },
 ] as const;
 
 // Classes Tailwind complètes (pas d'interpolation dynamique — la purge CSS supprimerait les classes générées)
@@ -470,9 +471,9 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                   <span>Progression du dossier</span>
                   <span>{progressPct}%</span>
                 </div>
-                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden" role="progressbar" aria-valuenow={progressPct} aria-valuemin={0} aria-valuemax={100} aria-label={`Progression du dossier : ${progressPct}%`}>
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${progressPct === 100 ? 'bg-green-500' : 'bg-blue-500'}`}
+                    className={`h-full rounded-full transition-all duration-500 ${progressPct === 100 ? 'bg-primary' : 'bg-secondary'}`}
                     style={{ width: `${progressPct}%` }}
                   />
                 </div>
@@ -507,9 +508,9 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                           : 'border-transparent text-gray-500 hover:text-gray-700'
                       }`}
                     >
-                      <span>{tab.icon}</span>
+                      <tab.icon className="w-4 h-4" aria-hidden="true" />
                       {tab.label}
-                      {isComplete && <span className="text-green-500 text-xs">✓</span>}
+                      {isComplete && <span className="text-primary text-xs">✓</span>}
                     </button>
                   );
                 })}

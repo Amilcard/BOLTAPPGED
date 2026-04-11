@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { requireEditor } from '@/lib/auth-middleware';
+import { auditLog } from '@/lib/audit-log';
 
 /**
  * PATCH /api/admin/structures/link
@@ -15,7 +16,8 @@ import { requireEditor } from '@/lib/auth-middleware';
  * Sécurité : EDITOR ou ADMIN (action qui modifie des données).
  */
 export async function PATCH(request: NextRequest) {
-  if (!await requireEditor(request)) {
+  const auth = await requireEditor(request);
+  if (!auth) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
   }
 
@@ -90,6 +92,20 @@ export async function PATCH(request: NextRequest) {
       console.error('[admin/structures/link] update error:', updateErr);
       throw updateErr;
     }
+
+    await auditLog(supabase, {
+      action: 'update',
+      resourceType: 'inscription',
+      resourceId: inscriptionId,
+      actorType: 'admin',
+      actorId: auth.email,
+      metadata: {
+        type: 'structure_link',
+        structure_id: structureId,
+        structure_name: (structure as { name: string }).name,
+        previous_pending_name: inscription.structure_pending_name,
+      },
+    });
 
     return NextResponse.json({
       ok: true,

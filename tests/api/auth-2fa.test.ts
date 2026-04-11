@@ -32,7 +32,19 @@ process.env.NEXTAUTH_SECRET = 'test-secret-32-chars-minimum-here!!';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
-const mockFrom = jest.fn();
+// Rate limiting mock chain — simule "pas de rate limit" pour gd_login_attempts
+const rlChain = {
+  select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: null }) }) }),
+  upsert: () => Promise.resolve({ error: null }),
+  update: () => ({ eq: () => Promise.resolve({ error: null }) }),
+  delete: () => ({ eq: () => Promise.resolve({ error: null }) }),
+};
+
+const mockFromInner = jest.fn();
+const mockFrom = jest.fn((table: string) => {
+  if (table === 'gd_login_attempts') return rlChain;
+  return mockFromInner(table);
+});
 const mockVerifyToken = jest.fn();
 const mockGenerateSecret = jest.fn().mockReturnValue('JBSWY3DPEHPK3PXP');
 const mockGenerateOtpAuthUrl = jest.fn().mockReturnValue('otpauth://totp/test');
@@ -106,7 +118,7 @@ describe('POST /api/auth/2fa/setup', () => {
 
   it('JWT valide → 200 + qrCodeUrl + secret', async () => {
     const mockUpsert = jest.fn().mockReturnValue({ error: null });
-    mockFrom.mockReturnValue({ upsert: mockUpsert });
+    mockFromInner.mockReturnValue({ upsert: mockUpsert });
 
     const req = makeRequest({}, makeAdminToken());
     const res = await setupPOST(req);
@@ -118,7 +130,7 @@ describe('POST /api/auth/2fa/setup', () => {
 
   it('sauvegarde en base avec enabled: false', async () => {
     const mockUpsert = jest.fn().mockReturnValue({ error: null });
-    mockFrom.mockReturnValue({ upsert: mockUpsert });
+    mockFromInner.mockReturnValue({ upsert: mockUpsert });
 
     const req = makeRequest({}, makeAdminToken());
     await setupPOST(req);
@@ -141,7 +153,7 @@ describe('POST /api/auth/2fa/confirm', () => {
   });
 
   it('2FA non configurée (pas de setup) → 404', async () => {
-    mockFrom.mockReturnValue({
+    mockFromInner.mockReturnValue({
       select: () => ({ eq: () => ({ single: () => ({ data: null, error: null }) }) }),
     });
 
@@ -152,7 +164,7 @@ describe('POST /api/auth/2fa/confirm', () => {
 
   it('code TOTP invalide → 400', async () => {
     mockVerifyToken.mockReturnValue(false);
-    mockFrom.mockReturnValue({
+    mockFromInner.mockReturnValue({
       select: () => ({ eq: () => ({ single: () => ({ data: { totp_secret: 'SECRET' }, error: null }) }) }),
     });
 
@@ -166,7 +178,7 @@ describe('POST /api/auth/2fa/confirm', () => {
   it('code TOTP valide → 200 + enabled: true en base', async () => {
     mockVerifyToken.mockReturnValue(true);
     const mockUpdate = jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ error: null }) });
-    mockFrom.mockImplementation((table: string) => {
+    mockFromInner.mockImplementation((table: string) => {
       if (table === 'gd_admin_2fa') return {
         select: () => ({ eq: () => ({ single: () => ({ data: { totp_secret: 'SECRET' }, error: null }) }) }),
         update: mockUpdate,
@@ -208,7 +220,7 @@ describe('POST /api/auth/2fa/verify', () => {
   });
 
   it('2FA non activée pour ce compte → 400', async () => {
-    mockFrom.mockReturnValue({
+    mockFromInner.mockReturnValue({
       select: () => ({ eq: () => ({ single: () => ({ data: { totp_secret: 'SECRET', enabled: false }, error: null }) }) }),
     });
 
@@ -221,7 +233,7 @@ describe('POST /api/auth/2fa/verify', () => {
 
   it('code TOTP invalide → 400', async () => {
     mockVerifyToken.mockReturnValue(false);
-    mockFrom.mockReturnValue({
+    mockFromInner.mockReturnValue({
       select: () => ({ eq: () => ({ single: () => ({ data: { totp_secret: 'SECRET', enabled: true }, error: null }) }) }),
     });
 
@@ -234,7 +246,7 @@ describe('POST /api/auth/2fa/verify', () => {
 
   it('code TOTP valide → 200 + ok: true', async () => {
     mockVerifyToken.mockReturnValue(true);
-    mockFrom.mockReturnValue({
+    mockFromInner.mockReturnValue({
       select: () => ({ eq: () => ({ single: () => ({ data: { totp_secret: 'SECRET', enabled: true }, error: null }) }) }),
     });
 

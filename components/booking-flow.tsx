@@ -1048,7 +1048,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             </div>
           )}
           {error && !ageError && (
-            <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm space-y-2">
+            <div role="alert" className="p-3 bg-red-50 text-red-600 rounded-xl text-sm space-y-2">
               <p>{error}</p>
               {stripeFailedInscriptionId && (
                 <button
@@ -1176,7 +1176,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             </div>
           )}
           {error && !ageError && (
-            <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100 space-y-2">
+            <div role="alert" className="p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100 space-y-2">
               <div className="flex items-center gap-2"><AlertCircle className="w-4 h-4 shrink-0" /> {error}</div>
               {stripeFailedInscriptionId && (
                 <button

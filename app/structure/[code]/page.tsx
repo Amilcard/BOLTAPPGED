@@ -208,7 +208,7 @@ export default function StructureDashboard() {
         <div className="bg-white rounded-xl shadow-lg max-w-lg w-full p-8">
           <div className="flex items-center gap-2 text-primary mb-4">
             <Building2 size={24} />
-            <h1 className="text-xl font-bold">Engagement confidentialité</h1>
+            <h2 className="text-xl font-bold">Engagement confidentialité</h2>
           </div>
           <p className="text-sm text-gray-600 mb-4">
             Avant d&apos;accéder aux données des inscriptions de <strong>{structure.name}</strong>, vous vous engagez à :
@@ -392,7 +392,7 @@ export default function StructureDashboard() {
                 <span className="text-xl">🚨</span>
                 <div>
                   <p className="font-bold text-red-800 text-sm">GED Astreinte H24</p>
-                  <a href="tel:0423161671" className="text-xl font-bold text-red-900">04 23 16 16 71</a>
+                  <a href="tel:0423161671" className="text-xl font-bold text-red-900 min-h-[44px] flex items-center">04 23 16 16 71</a>
                 </div>
               </div>
               <div className="flex flex-wrap gap-3 text-xs font-medium">
@@ -618,11 +618,16 @@ export default function StructureDashboard() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>
-                    {['Date', 'Réf.', 'Jeune', 'Séjour', 'Référent', 'Documents', 'Prix', 'Paiement', 'Statut', 'Suivi'].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">
-                        {h}
-                      </th>
-                    ))}
+                    <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Date</th>
+                    <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Réf.</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Jeune</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Séjour</th>
+                    <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Référent</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Documents</th>
+                    <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Prix</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Paiement</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Statut</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Suivi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -631,22 +636,22 @@ export default function StructureDashboard() {
                     const ps = PAYMENT[insc.payment_status || 'pending_payment'] || PAYMENT.pending_payment;
                     return (
                       <tr key={insc.id} className="hover:bg-gray-50 transition">
-                        <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{fmt(insc.created_at)}</td>
-                        <td className="px-4 py-3 font-mono text-xs text-gray-400">{insc.dossier_ref || '—'}</td>
+                        <td className="hidden sm:table-cell px-4 py-3 text-gray-500 whitespace-nowrap">{fmt(insc.created_at)}</td>
+                        <td className="hidden sm:table-cell px-4 py-3 font-mono text-xs text-gray-400">{insc.dossier_ref || '—'}</td>
                         <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">
                           {insc.jeune_prenom} {insc.jeune_nom}
                         </td>
                         <td className="px-4 py-3 text-gray-600 max-w-[160px] truncate" title={insc.sejour_titre}>
                           {insc.sejour_titre}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="hidden sm:table-cell px-4 py-3">
                           <p className="font-medium text-gray-700 whitespace-nowrap">{insc.referent_nom}</p>
                           <p className="text-xs text-gray-400">{insc.referent_email}</p>
                         </td>
                         <td className="px-4 py-3">
                           <DossierBadge completude={insc.dossier_completude ? { bulletin: insc.dossier_completude.bulletin, sanitaire: insc.dossier_completude.sanitaire, liaison: insc.dossier_completude.liaison, renseignements: insc.dossier_completude.renseignements, pj_count: insc.dossier_completude.pj_count } : null} gedSentAt={insc.ged_sent_at} />
                         </td>
-                        <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">
+                        <td className="hidden sm:table-cell px-4 py-3 font-medium text-gray-800 whitespace-nowrap">
                           {(insc.price_total || 0).toLocaleString('fr-FR')} €
                         </td>
                         <td className="px-4 py-3"><Badge {...ps} /></td>

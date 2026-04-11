@@ -76,14 +76,14 @@ function AccederProForm() {
             </p>
             <p className="text-sm text-gray-500 mb-8">
               En cas d&apos;urgence :{' '}
-              <a href="tel:0423161671" className="text-blue-600 hover:underline font-medium">
+              <a href="tel:0423161671" className="text-primary hover:underline font-medium">
                 04 23 16 16 71
               </a>
             </p>
             {sejourSlug && (
               <Link
                 href={`/sejour/${sejourSlug}`}
-                className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800"
+                className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Revenir au séjour
@@ -100,7 +100,7 @@ function AccederProForm() {
       <div className="w-full max-w-lg">
         <Link
           href={sejourSlug ? `/sejour/${sejourSlug}` : '/'}
-          className="inline-flex items-center gap-1 text-blue-600 text-sm mb-6 hover:text-blue-800"
+          className="inline-flex items-center gap-1 text-primary text-sm mb-6 hover:text-primary/80"
         >
           <ArrowLeft className="w-4 h-4" />
           {sejourSlug ? 'Retour au séjour' : 'Retour au site'}
@@ -129,7 +129,7 @@ function AccederProForm() {
                   onChange={handleChange}
                   required
                   autoComplete="given-name"
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
               </div>
               <div>
@@ -143,7 +143,7 @@ function AccederProForm() {
                   onChange={handleChange}
                   required
                   autoComplete="family-name"
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
               </div>
             </div>
@@ -160,7 +160,7 @@ function AccederProForm() {
                 onChange={handleChange}
                 required
                 placeholder="MECS Les Tilleuls, Foyer de l'Espoir, ASE du Rhône…"
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
 
@@ -174,7 +174,7 @@ function AccederProForm() {
                 value={form.structureType}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-white"
               >
                 <option value="">Sélectionnez un type…</option>
                 {STRUCTURE_TYPES.map(t => (
@@ -195,7 +195,7 @@ function AccederProForm() {
                 onChange={handleChange}
                 required
                 autoComplete="email"
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
 
@@ -212,7 +212,7 @@ function AccederProForm() {
                 onChange={handleChange}
                 autoComplete="tel"
                 placeholder="Pour vous joindre rapidement"
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
 
@@ -226,7 +226,7 @@ function AccederProForm() {
                 type="checkbox"
                 checked={rgpdConsent}
                 onChange={(e) => setRgpdConsent(e.target.checked)}
-                className="mt-0.5 rounded border-gray-300"
+                className="w-5 h-5 rounded border-gray-300"
                 required
               />
               <span>
@@ -238,7 +238,7 @@ function AccederProForm() {
             </label>
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+              <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
                 {error}
               </div>
             )}
@@ -246,7 +246,7 @@ function AccederProForm() {
             <button
               type="submit"
               disabled={loading || !rgpdConsent}
-              className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              className="w-full py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               {loading ? 'Envoi en cours…' : 'Envoyer ma demande'}

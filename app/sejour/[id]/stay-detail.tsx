@@ -94,21 +94,27 @@ function PriceInquiryBlock({ sejourSlug }: { sejourSlug: string; sejourTitle: st
         Les tarifs sont adaptés à votre type de structure. Renseignez vos informations — nous vous les envoyons immédiatement par email.
       </p>
       <form onSubmit={handleSubmit} className="space-y-3">
+        <label htmlFor="piq-prenom" className="sr-only">Votre prénom</label>
         <input
+          id="piq-prenom"
           type="text"
           placeholder="Votre prénom"
           value={prenom}
           onChange={e => { setPrenom(e.target.value); setError(''); }}
           className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
+        <label htmlFor="piq-structure" className="sr-only">Nom de votre structure</label>
         <input
+          id="piq-structure"
           type="text"
           placeholder="Nom de votre structure (MECS, foyer, ASE…)"
           value={structureName}
           onChange={e => { setStructureName(e.target.value); setError(''); }}
           className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
+        <label htmlFor="piq-email" className="sr-only">Votre email professionnel</label>
         <input
+          id="piq-email"
           type="email"
           placeholder="Votre email professionnel"
           value={email}

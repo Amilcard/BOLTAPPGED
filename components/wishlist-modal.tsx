@@ -199,7 +199,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
             aria-describedby={errors.prenom ? "error-prenom" : undefined}
           />
           {errors.prenom && (
-            <p id="error-prenom" ref={firstErrorRef} tabIndex={-1} className="mt-1 text-xs text-orange-600">
+            <p id="error-prenom" ref={firstErrorRef} tabIndex={-1} className="mt-1 text-xs text-red-600">
               {errors.prenom}
             </p>
           )}
@@ -253,7 +253,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
               aria-describedby={errors.email ? "error-email" : undefined}
             />
             {errors.email && (
-              <p id="error-email" className="mt-1 text-xs text-orange-600">
+              <p id="error-email" className="mt-1 text-xs text-red-600">
                 {errors.email}
               </p>
             )}
@@ -310,7 +310,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
             aria-describedby={errors.motivation ? "error-motivation" : undefined}
           />
           {errors.motivation && (
-            <p id="error-motivation" className="mt-1 text-xs text-orange-600">
+            <p id="error-motivation" className="mt-1 text-xs text-red-600">
               {errors.motivation}
             </p>
           )}

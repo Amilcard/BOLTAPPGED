@@ -40,7 +40,7 @@ export function StayCard({ stay }: { stay: Stay }) {
 
   return (
     <Link href={`/sejour/${stay?.id ?? ''}`} className="block h-full group">
-      <article className="h-full flex flex-col bg-white rounded-brand border border-gray-200 shadow-sm hover:shadow-brand-hover hover:-translate-y-2 transition-all duration-300 overflow-hidden">
+      <article className="h-full flex flex-col bg-white rounded-brand border border-gray-200 shadow-sm hover:shadow-card-hover hover:-translate-y-2 transition-all duration-300 overflow-hidden">
         {/* === ZONE 1: IMAGE === */}
         <div className="relative aspect-[16/10] bg-gray-100 overflow-hidden">
           <Image

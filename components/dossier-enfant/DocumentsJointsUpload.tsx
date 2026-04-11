@@ -154,7 +154,7 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess, r
           <select
             value={selectedType}
             onChange={e => setSelectedType(e.target.value)}
-            className="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-orange-300 focus:border-orange-500 outline-none flex-shrink-0"
+            className="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none flex-shrink-0"
           >
             {DOC_TYPES.map(dt => (
               <option key={dt.value} value={dt.value}>
@@ -167,12 +167,12 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess, r
             ref={fileRef}
             type="file"
             accept=".pdf,.jpg,.jpeg,.png,.webp"
-            className="text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 flex-1"
+            className="text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-brand-light file:text-primary hover:file:bg-brand-light/80 flex-1"
           />
           <button
             onClick={handleUpload}
             disabled={uploading}
-            className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+            className="px-4 py-2 bg-secondary text-white rounded-lg text-sm font-medium hover:bg-secondary/90 transition disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
           >
             {uploading ? (
               <>

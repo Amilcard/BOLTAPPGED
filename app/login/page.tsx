@@ -154,7 +154,7 @@ function LoginForm() {
                 />
               </div>
               {error && (
-                <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>
+                <div role="alert" className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>
               )}
               <button
                 type="submit"
@@ -196,7 +196,7 @@ function LoginForm() {
               </div>
 
               {error && (
-                <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>
+                <div role="alert" className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>
               )}
 
               <button
@@ -231,13 +231,14 @@ function LoginForm() {
                   onChange={e => setTotpCode(e.target.value.replace(/\D/g, ''))}
                   required
                   autoFocus
+                  autoComplete="one-time-code"
                   className="w-full px-4 py-3 border border-primary-200 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent text-center text-xl tracking-widest"
                   placeholder="000000"
                 />
               </div>
 
               {error && (
-                <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>
+                <div role="alert" className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>
               )}
 
               <button

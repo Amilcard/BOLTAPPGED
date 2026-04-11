@@ -43,7 +43,7 @@ export function Header({ variant: _variant = 'minimal' }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-brand">
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="max-w-7xl mx-auto px-4">
         <div className="h-16 flex items-center justify-between gap-4">
           {/* Logo - links to / which redirects to /sejours */}
           <Link href="/" className="flex-shrink-0 hover:opacity-90 transition-opacity">
@@ -89,7 +89,7 @@ export function Header({ variant: _variant = 'minimal' }: HeaderProps) {
                   aria-label="Mode Professionnel"
                   className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1.5 transition-all focus:outline-none focus:ring-2 ${
                     mode === 'pro'
-                      ? 'bg-gray-700 text-white shadow-sm focus:ring-gray-500'
+                      ? 'bg-accent text-white shadow-sm focus:ring-accent/50'
                       : 'text-gray-600 hover:bg-gray-200 focus:ring-gray-400'
                   }`}
                 >

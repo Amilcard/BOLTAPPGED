@@ -120,7 +120,10 @@ export async function GET(
     .order('created_at', { ascending: false });
 
   // ISOLATION ÉDUCATEUR : ne voit que ses propres inscriptions
-  if (role === 'educateur' && accessEmail) {
+  if (role === 'educateur') {
+    if (!accessEmail) {
+      return NextResponse.json({ error: 'Accès refusé : email requis pour le rôle éducateur.' }, { status: 403 });
+    }
     query = query.eq('referent_email', accessEmail);
   }
 

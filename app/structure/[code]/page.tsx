@@ -173,7 +173,7 @@ export default function StructureDashboard() {
       .catch(() => {});
 
     // Fetch calls, notes, medical en parallèle
-    Promise.all([
+    void Promise.all([
       fetch(`/api/structure/${code}/calls`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
       fetch(`/api/structure/${code}/notes`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
       fetch(`/api/structure/${code}/medical`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
@@ -445,7 +445,7 @@ export default function StructureDashboard() {
                 { label: 'Enfants en séjour', value: filtered.filter(i => i.status === 'validee').length, color: 'bg-primary', icon: Users, sub: 'Inscriptions validées' },
                 { label: 'Dossiers complets', value: filtered.filter(i => i.ged_sent_at).length, color: 'bg-accent', icon: FileCheck, sub: 'Envoyés à GED' },
                 { label: 'En attente', value: filtered.filter(i => i.status === 'en_attente').length, color: 'bg-secondary', icon: Clock, sub: 'À valider' },
-                { label: 'Incidents ouverts', value: Object.values(incidentCounts).reduce((a, b) => a + b, 0), color: 'bg-primary-700', icon: AlertTriangle, sub: Object.values(incidentCounts).reduce((a, b) => a + b, 0) === 0 ? 'Aucun incident' : 'Non résolus' },
+                { label: 'Incidents ouverts', value: filtered.reduce((sum, i) => sum + (incidentCounts[i.id] ?? 0), 0), color: 'bg-primary-700', icon: AlertTriangle, sub: filtered.reduce((sum, i) => sum + (incidentCounts[i.id] ?? 0), 0) === 0 ? 'Aucun incident' : 'Non résolus' },
               ].map(kpi => (
                 <div key={kpi.label} className="bg-white rounded-xl shadow p-6">
                   <div className={`w-12 h-12 ${kpi.color} rounded-lg flex items-center justify-center mb-4`}>
@@ -464,7 +464,7 @@ export default function StructureDashboard() {
                 { label: 'Appels tracés', value: callsCount, ok: 'Aucun' },
                 { label: 'Notes', value: notesCount, ok: 'Aucune' },
                 { label: 'Médical', value: medicalCount, ok: 'RAS' },
-                { label: 'Incidents', value: Object.values(incidentCounts).reduce((a, b) => a + b, 0), ok: 'RAS' },
+                { label: 'Incidents', value: filtered.reduce((sum, i) => sum + (incidentCounts[i.id] ?? 0), 0), ok: 'RAS' },
               ].map(kpi => (
                 <div key={kpi.label} className={`rounded-xl border p-4 ${kpi.value === 0 ? 'bg-muted border-primary-100' : 'bg-secondary-50 border-secondary-200'}`}>
                   <p className="text-sm font-medium text-gray-700">{kpi.label}</p>

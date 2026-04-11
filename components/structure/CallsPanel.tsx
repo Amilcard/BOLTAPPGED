@@ -48,9 +48,10 @@ export default function CallsPanel({ code, role, inscriptions }: Props) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(false);
   const [callType, setCallType] = useState('ged_colo');
 
-  const canWrite = role === 'direction' || role === 'cds';
+  const canWrite = role === 'direction' || role === 'cds' || role === 'cds_delegated';
 
   const load = useCallback(async () => {
     try {
@@ -69,6 +70,7 @@ export default function CallsPanel({ code, role, inscriptions }: Props) {
     e.preventDefault();
     setSubmitting(true);
     const fd = new FormData(e.currentTarget);
+    setSubmitError(false);
     try {
       const res = await fetch(`/api/structure/${code}/calls`, {
         method: 'POST',
@@ -86,8 +88,12 @@ export default function CallsPanel({ code, role, inscriptions }: Props) {
       if (res.ok) {
         setShowForm(false);
         load();
+      } else {
+        setSubmitError(true);
       }
-    } catch { /* silent */ }
+    } catch {
+      setSubmitError(true);
+    }
     setSubmitting(false);
   };
 
@@ -155,6 +161,7 @@ export default function CallsPanel({ code, role, inscriptions }: Props) {
               Accord de la structure obtenu
             </label>
           )}
+          {submitError && <p className="text-sm text-red-600">Erreur lors de l&apos;enregistrement. Veuillez réessayer.</p>}
           <button type="submit" disabled={submitting} className="px-4 py-2 bg-secondary text-white rounded-lg text-sm font-medium hover:bg-secondary-600 transition disabled:opacity-50">
             {submitting ? 'Envoi...' : 'Enregistrer'}
           </button>

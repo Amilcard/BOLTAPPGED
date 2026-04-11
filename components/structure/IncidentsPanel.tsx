@@ -58,6 +58,7 @@ export default function IncidentsPanel({ code, role, inscriptions }: Props) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(false);
   const [loadError, setLoadError] = useState(false);
 
   const canWrite = role === 'direction' || role === 'cds' || role === 'cds_delegated';
@@ -82,6 +83,7 @@ export default function IncidentsPanel({ code, role, inscriptions }: Props) {
     e.preventDefault();
     setSubmitting(true);
     const fd = new FormData(e.currentTarget);
+    setSubmitError(false);
     try {
       const res = await fetch(`/api/structure/${code}/incidents`, {
         method: 'POST',
@@ -97,8 +99,12 @@ export default function IncidentsPanel({ code, role, inscriptions }: Props) {
       if (res.ok) {
         setShowForm(false);
         load();
+      } else {
+        setSubmitError(true);
       }
-    } catch { /* silent */ }
+    } catch {
+      setSubmitError(true);
+    }
     setSubmitting(false);
   };
 
@@ -157,6 +163,7 @@ export default function IncidentsPanel({ code, role, inscriptions }: Props) {
             <label htmlFor="inc-desc" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
             <textarea id="inc-desc" name="description" required minLength={5} rows={3} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Décrire l'incident..." />
           </div>
+          {submitError && <p className="text-sm text-red-600">Erreur lors du signalement. Veuillez réessayer.</p>}
           <button type="submit" disabled={submitting} className="px-4 py-2 bg-secondary text-white rounded-lg text-sm font-medium hover:bg-secondary-600 transition disabled:opacity-50">
             {submitting ? 'Envoi...' : 'Signaler'}
           </button>

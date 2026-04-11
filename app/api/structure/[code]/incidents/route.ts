@@ -120,16 +120,17 @@ export async function POST(
 
   // Email notification si gravité >= attention
   if (severity === 'attention' || severity === 'urgent') {
-    // Récupérer les emails des éducateurs de la structure via access codes
+    // Récupérer les emails des référents direction/CDS de la structure
     const { data: accessCodes } = await supabase
       .from('gd_structure_access_codes')
-      .select('email')
+      .select('email, role')
       .eq('structure_id', structureId)
       .eq('active', true)
+      .in('role', ['direction', 'cds', 'cds_delegated'])
       .not('email', 'is', null);
 
     const emails = (accessCodes ?? [])
-      .map((ac: { email: string | null }) => ac.email)
+      .map((ac: { email: string | null; role: string }) => ac.email)
       .filter((e): e is string => !!e);
 
     // Récupérer le prénom de l'enfant

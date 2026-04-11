@@ -119,6 +119,7 @@ const config: Config = {
     'border-red-500',    'text-red-600',
     'border-green-500',  'text-green-600',
     'border-purple-500', 'text-purple-600',
+    'lg:grid-cols-3',    'lg:grid-cols-4',
   ],
   plugins: [tailwindAnimate],
 };

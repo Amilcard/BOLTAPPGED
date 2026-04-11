@@ -36,7 +36,7 @@ async function is2faRateLimited(ip: string): Promise<boolean> {
       .eq('ip', key);
     return false;
   } catch {
-    return false; // fail-open
+    return true; // fail-closed — 2FA brute-force doit être bloqué en cas d'erreur DB
   }
 }
 

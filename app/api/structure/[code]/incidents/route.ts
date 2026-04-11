@@ -140,14 +140,18 @@ export async function POST(
       .single();
 
     if (emails.length > 0) {
-      sendIncidentNotification(emails, {
-        structureName: (resolved.structure as { name?: string }).name || 'Structure',
-        jeunePrenom: inscData?.jeune_prenom || 'Enfant',
-        category: category as string,
-        severity: severity as string,
-        description: (description as string).trim(),
-        createdBy: resolved.email || 'unknown',
-      });
+      try {
+        await sendIncidentNotification(emails, {
+          structureName: (resolved.structure as { name?: string }).name || 'Structure',
+          jeunePrenom: inscData?.jeune_prenom || 'Enfant',
+          category: category as string,
+          severity: severity as string,
+          description: (description as string).trim(),
+          createdBy: resolved.email || 'unknown',
+        });
+      } catch (emailErr) {
+        console.error('[incidents POST] notification email failed:', emailErr);
+      }
     }
   }
 

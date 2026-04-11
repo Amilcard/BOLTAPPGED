@@ -982,7 +982,7 @@ export async function sendIncidentNotification(
     await resend.emails.send({
       from: FROM_EMAIL,
       to: emails,
-      subject: `[${severityLabel}] Incident ${categoryLabel} — ${htmlEscape(data.jeunePrenom)} — ${htmlEscape(data.structureName)}`,
+      subject: `[${severityLabel}] Incident ${categoryLabel} — ${htmlEscape(data.structureName)}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: ${severityColor}; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">

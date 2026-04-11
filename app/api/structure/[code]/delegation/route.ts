@@ -126,9 +126,9 @@ export async function PATCH(
     return NextResponse.json({ error: { code: 'INTERNAL_ERROR' } }, { status: 500 });
   }
 
-  auditLog(supabase, {
+  await auditLog(supabase, {
     action: 'update',
-    resourceType: 'inscription',
+    resourceType: 'structure',
     resourceId: resolved.structure.id as string,
     actorType: 'referent',
     metadata: {

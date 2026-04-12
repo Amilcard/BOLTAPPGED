@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ClipboardCheck, AlertTriangle, CheckCircle } from 'lucide-react';
+import { AlertTriangle, Phone, FileText, ClipboardCheck, Send } from 'lucide-react';
 
 interface Incident {
   id: string;
@@ -10,6 +10,23 @@ interface Incident {
   severity: string;
   status: string;
   description: string;
+  created_at: string;
+}
+
+interface Call {
+  id: string;
+  inscription_id: string;
+  call_type: string;
+  direction: string;
+  resume: string;
+  created_at: string;
+}
+
+interface Note {
+  id: string;
+  inscription_id: string;
+  content: string;
+  created_by: string;
   created_at: string;
 }
 
@@ -24,6 +41,8 @@ interface Inscription {
 interface Props {
   inscriptions: Inscription[];
   incidents: Incident[];
+  calls?: Call[];
+  notes?: Note[];
 }
 
 const SEVERITY_STYLES: Record<string, string> = {
@@ -32,7 +51,12 @@ const SEVERITY_STYLES: Record<string, string> = {
   urgent:    'text-red-600 font-medium',
 };
 
-const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incidents }: Props) {
+function fmt(iso: string) {
+  try { return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
+  catch { return iso; }
+}
+
+const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incidents, calls = [], notes = [] }: Props) {
   const enSejour = inscriptions.filter(i => i.status === 'validee');
 
   if (enSejour.length === 0) {
@@ -45,38 +69,50 @@ const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incident
 
   return (
     <div className="space-y-4">
-      <h4 className="text-sm font-semibold text-gray-700">Bilan sejours</h4>
+      <h4 className="text-sm font-semibold text-gray-700">Bilan sejours — suivi terrain</h4>
 
       {enSejour.map(ins => {
         const insIncidents = incidents.filter(e => e.inscription_id === ins.id);
-        const hasUrgent = insIncidents.some(e => e.severity === 'urgent' && e.status === 'ouvert');
+        const insCalls     = calls.filter(c => c.inscription_id === ins.id).sort((a, b) => b.created_at.localeCompare(a.created_at));
+        const insNotes     = notes.filter(n => n.inscription_id === ins.id).sort((a, b) => b.created_at.localeCompare(a.created_at));
+        const hasUrgent    = insIncidents.some(e => e.severity === 'urgent' && e.status === 'ouvert');
+
+        // Date du dernier bilan transmis = dernier appel type "bilan" ou note de type cadre
+        const bilanCall = insCalls.find(c => c.call_type === 'bilan' || c.resume?.toLowerCase().includes('bilan') || c.resume?.toLowerCase().includes('cadre'));
+        const bilanDate = bilanCall ? fmt(bilanCall.created_at) : null;
 
         return (
           <div key={ins.id} className={`rounded-xl border p-4 ${hasUrgent ? 'border-red-200 bg-red-50/50' : 'border-gray-100 bg-white'}`}>
-            <div className="flex items-center justify-between gap-2 mb-2">
+            {/* En-tête enfant */}
+            <div className="flex items-start justify-between gap-2 mb-3">
               <div>
                 <p className="font-medium text-gray-900 text-sm">{ins.jeune_prenom} {ins.jeune_nom.charAt(0)}.</p>
                 <p className="text-xs text-gray-500">{ins.sejour_titre}</p>
               </div>
-              {insIncidents.length === 0 ? (
-                <div className="flex items-center gap-1 text-gray-400">
-                  <CheckCircle className="w-4 h-4" />
-                  <span className="text-xs font-medium">0 evenement</span>
+              {/* Bilan transmis au cadre astreinte */}
+              {bilanDate ? (
+                <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1 flex-shrink-0">
+                  <Send className="w-3.5 h-3.5 text-blue-600" />
+                  <span className="text-xs font-medium text-blue-700">Bilan transmis au cadre astreinte le {bilanDate}</span>
                 </div>
               ) : (
-                <span className="text-xs font-medium text-amber-600">
-                  {insIncidents.length} evenement{insIncidents.length > 1 ? 's' : ''}
-                </span>
+                <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1 flex-shrink-0">
+                  <ClipboardCheck className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="text-xs font-medium text-amber-700">Bilan intermediaire a transmettre</span>
+                </div>
               )}
             </div>
 
+            {/* Evenements */}
             {insIncidents.length > 0 && (
-              <div className="space-y-1 mt-2 pt-2 border-t border-gray-100">
+              <div className="space-y-1 mb-3">
+                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Evenements signales</p>
                 {insIncidents.slice(0, 3).map(e => (
                   <div key={e.id} className="flex items-start gap-2">
                     <AlertTriangle className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${SEVERITY_STYLES[e.severity] || 'text-gray-400'}`} />
                     <p className={`text-xs ${SEVERITY_STYLES[e.severity] || 'text-gray-600'}`}>
-                      {e.description.length > 80 ? e.description.slice(0, 80) + '...' : e.description}
+                      {e.description.length > 90 ? e.description.slice(0, 90) + '…' : e.description}
+                      <span className="text-gray-400 ml-1">— {fmt(e.created_at)}</span>
                     </p>
                   </div>
                 ))}
@@ -85,19 +121,49 @@ const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incident
                 )}
               </div>
             )}
+
+            {/* Appels terrain */}
+            {insCalls.length > 0 && (
+              <div className="space-y-1 mb-3">
+                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Appels & echanges</p>
+                {insCalls.slice(0, 2).map(c => (
+                  <div key={c.id} className="flex items-start gap-2">
+                    <Phone className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-blue-400" />
+                    <p className="text-xs text-gray-600">
+                      {c.resume.length > 90 ? c.resume.slice(0, 90) + '…' : c.resume}
+                      <span className="text-gray-400 ml-1">— {fmt(c.created_at)}</span>
+                    </p>
+                  </div>
+                ))}
+                {insCalls.length > 2 && (
+                  <p className="text-xs text-gray-400 pl-5">+{insCalls.length - 2} autre{insCalls.length - 2 > 1 ? 's' : ''}</p>
+                )}
+              </div>
+            )}
+
+            {/* Notes terrain */}
+            {insNotes.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Notes educatives</p>
+                {insNotes.slice(0, 2).map(n => (
+                  <div key={n.id} className="flex items-start gap-2">
+                    <FileText className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-violet-400" />
+                    <p className="text-xs text-gray-600">
+                      {n.content.length > 90 ? n.content.slice(0, 90) + '…' : n.content}
+                      <span className="text-gray-400 ml-1">— {fmt(n.created_at)}</span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Aucun element terrain */}
+            {insIncidents.length === 0 && insCalls.length === 0 && insNotes.length === 0 && (
+              <p className="text-xs text-gray-400 italic">Aucun element terrain enregistre — veuillez documenter le suivi.</p>
+            )}
           </div>
         );
       })}
-
-      {/* Message reassurance */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center mt-4">
-        <ClipboardCheck className="h-8 w-8 text-blue-400 mx-auto mb-2" />
-        <p className="text-sm text-blue-800 font-medium">Bilan complet en preparation</p>
-        <p className="text-xs text-blue-600 mt-1">
-          Le bilan detaille (respect du cadre, participation, relations, autonomie)
-          sera complete par l'equipe sejour et transmis dans les delais prevus.
-        </p>
-      </div>
     </div>
   );
 });

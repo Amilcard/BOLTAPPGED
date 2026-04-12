@@ -355,7 +355,7 @@ export default function StructureEduTab({
       {/* BILAN */}
       {openSection === 'bilan' && (
         <div className="animate-in fade-in duration-200">
-          <BilanReadOnly inscriptions={inscriptions} incidents={incidents} />
+          <BilanReadOnly inscriptions={inscriptions} incidents={incidents} calls={calls} notes={notes} />
         </div>
       )}
 

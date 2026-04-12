@@ -219,8 +219,21 @@ export default function StructureAdminTab({
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {filtered.map(insc => {
-                  const st = STATUS[insc.status] || STATUS.en_attente;
-                  const ps = PAYMENT[insc.payment_status || 'pending_payment'] || PAYMENT.pending_payment;
+                  // Statut et paiement dérivés de la complétude du dossier
+                  const c = insc.dossier_completude;
+                  const score = c ? [c.bulletin, c.sanitaire, c.liaison, c.renseignements].filter(Boolean).length : 0;
+                  const dossierComplet = score === 4 || !!insc.ged_sent_at;
+
+                  const st = dossierComplet
+                    ? STATUS.validee
+                    : STATUS.en_attente;
+
+                  const ps = dossierComplet
+                    ? { label: 'Effectuée', color: '#166534', bg: '#dcfce7' }
+                    : score > 0
+                      ? { label: 'Acompte',   color: '#c2410c', bg: '#fff7ed' }
+                      : PAYMENT.pending_payment;
+
                   return (
                     <tr key={insc.id} className="hover:bg-gray-50 transition">
                       <td className="hidden sm:table-cell px-4 py-3 text-gray-500 whitespace-nowrap">{fmt(insc.created_at)}</td>

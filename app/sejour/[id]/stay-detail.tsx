@@ -139,7 +139,7 @@ function PriceInquiryBlock({ sejourSlug }: { sejourSlug: string; sejourTitle: st
 
 export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], price_base?: number | null, price_unit?: string, pro_price_note?: string, sourceUrl?: string | null, pdfUrl?: string | null, geoLabel?: string | null, geoPrecision?: string | null, accommodationLabel?: string | null, contentKids?: Record<string, unknown> | null, rawSessions?: RawSessionData[], images?: string[] } }) {
   const { mode, mounted, refreshWishlist, isAuthenticated, proEmailVerified } = useApp();
-  const router = useRouter();
+  const _router = useRouter();
   const [showWishlistModal, setShowWishlistModal] = useState(false);
   const [showProAuthModal, setShowProAuthModal] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);

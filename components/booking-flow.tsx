@@ -176,15 +176,17 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
 
   // Écouter le callback Turnstile + définir le callback global (sans dangerouslySetInnerHTML)
   useEffect(() => {
+    type TurnstileWindow = Window & { onTurnstileSuccess?: (t: string) => void; __turnstileToken?: string };
+    const tw = window as TurnstileWindow;
     const handler = (e: Event) => setTurnstileToken((e as CustomEvent).detail);
     window.addEventListener('turnstile-success', handler);
-    (window as any).onTurnstileSuccess = (token: string) => {
-      (window as any).__turnstileToken = token;
+    tw.onTurnstileSuccess = (token: string) => {
+      tw.__turnstileToken = token;
       window.dispatchEvent(new CustomEvent('turnstile-success', { detail: token }));
     };
     return () => {
       window.removeEventListener('turnstile-success', handler);
-      delete (window as any).onTurnstileSuccess;
+      delete tw.onTurnstileSuccess;
     };
   }, []);
 

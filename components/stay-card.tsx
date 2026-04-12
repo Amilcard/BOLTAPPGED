@@ -8,7 +8,7 @@ import { useApp } from '@/components/providers';
 export function StayCard({ stay }: { stay: Stay }) {
   const { mode, isAuthenticated } = useApp();
   const isKids = mode === 'kids';
-  const canSeePrices = !isKids && isAuthenticated;
+  const _canSeePrices = !isKids && isAuthenticated;
 
   // === TITRE: CityCrunch marketing_title UNIQUEMENT — plus aucun fallback legacy UFOVAL ===
   const displayTitle = stay?.marketingTitle || 'Séjour';

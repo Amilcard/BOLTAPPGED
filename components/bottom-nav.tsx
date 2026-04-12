@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Search, Heart, FolderOpen } from 'lucide-react';
+import { Home, Search, Heart } from 'lucide-react';
 import { useApp } from './providers';
 
 const proNavItems = [

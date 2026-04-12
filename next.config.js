@@ -29,7 +29,7 @@ const securityHeaders = [
 const nextConfig = {
   experimental: {},
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   typescript: {
     // TS strict activé — requis pour build Vercel zero-error

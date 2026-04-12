@@ -3,7 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { setSessionCookie } from '@/lib/auth-cookies';
 import { SignJWT } from 'jose';
-import { randomUUID } from 'crypto';
 
 const MAX_ATTEMPTS = 5;
 const WINDOW_MINUTES = 15;

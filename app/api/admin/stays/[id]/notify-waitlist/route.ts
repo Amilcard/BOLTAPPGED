@@ -97,7 +97,7 @@ export async function POST(
         notifiedIds.push(entry.id);
       } else {
         const errBody = await res.text().catch(() => 'no body');
-        console.error(`[notify-waitlist] Resend ${res.status} pour ${entry.email}:`, errBody);
+        console.error(`[notify-waitlist] Resend ${res.status} pour entry ${entry.id}:`, errBody);
         // Backoff si rate-limited
         if (res.status === 429) {
           console.warn('[notify-waitlist] Rate-limited par Resend, pause 2s');
@@ -105,7 +105,7 @@ export async function POST(
         }
       }
     } catch (err) {
-      console.error('[notify-waitlist] Erreur envoi vers', entry.email, err);
+      console.error('[notify-waitlist] Erreur envoi entry', entry.id, err);
     }
   }
 

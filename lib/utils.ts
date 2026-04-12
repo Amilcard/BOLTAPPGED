@@ -38,14 +38,12 @@ export function generateSlug(title: string): string {
 export const STORAGE_KEYS = {
   MODE: 'gd_mode',
   AUTH: 'gd_auth',       // DEPRECATED — conservé pour rétrocompatibilité nettoyage
-  USER: 'gd_user',       // Métadonnées non-sensibles {email, role}
+  USER: 'gd_user',       // Rôle uniquement — zéro PII (RGPD rule 9)
   PERIOD: 'gd_period',
   WISHLIST: 'gd_kids_wishlist',
-  PRO_EMAIL: 'gd_pro_email',
 } as const;
 
 export interface StoredUser {
-  email: string;
   role: 'ADMIN' | 'EDITOR' | 'VIEWER';
 }
 

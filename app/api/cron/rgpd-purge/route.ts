@@ -34,12 +34,29 @@ export async function GET(req: NextRequest) {
   if (errLogin) errors.push(`login_attempts: ${errLogin.message}`);
 
   // Purge gd_medical_events > 3 mois post-séjour (Art. 9 RGPD)
-  // Supprime les événements médicaux dont l'inscription est liée à une session terminée depuis +3 mois
-  const { error: errMedEvents } = await supabase
+  // Étape 1 : identifier les inscriptions dont la session est terminée depuis +3 mois
+  // On utilise session_date + 21j (durée max séjour) comme date de fin estimée
+  const purgeThreshold = new Date(Date.now() - (90 + 21) * 24 * 60 * 60 * 1000).toISOString();
+  const { data: expiredEvents, error: errFetchMed } = await supabase
     .from('gd_medical_events')
-    .delete()
-    .lt('created_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString());
-  if (errMedEvents) errors.push(`medical_events_3m: ${errMedEvents.message}`);
+    .select('id, inscription:gd_inscriptions!inner(session_date)')
+    .lt('inscription.session_date', purgeThreshold);
+
+  if (errFetchMed) {
+    errors.push(`medical_events_fetch: ${errFetchMed.message}`);
+  } else if (expiredEvents && expiredEvents.length > 0) {
+    const idsToDelete = expiredEvents.map((e: { id: string }) => e.id);
+    // Suppression par batch de 100
+    for (let i = 0; i < idsToDelete.length; i += 100) {
+      const batch = idsToDelete.slice(i, i + 100);
+      const { error: errDel } = await supabase
+        .from('gd_medical_events')
+        .delete()
+        .in('id', batch);
+      if (errDel) errors.push(`medical_events_delete_batch_${i}: ${errDel.message}`);
+    }
+  }
+  const medEventsDeleted = expiredEvents?.length ?? 0;
 
   // Purge audit logs > 3 ans (recommandation CNIL)
   const { data: auditOldResult, error: errAuditOld } = await supabase.rpc('purge_old_audit_logs');
@@ -50,13 +67,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, errors }, { status: 500 });
   }
 
-  console.log(`[rgpd-purge] audit_logs_12m: ${auditResult ?? 0}, medical_data: ${medicalResult ?? 0}, login_attempts: ${loginResult ?? 'ok'}, audit_logs_3y: ${auditOldResult ?? 'ok'}`);
+  console.log(`[rgpd-purge] audit_logs_12m: ${auditResult ?? 0}, medical_data: ${medicalResult ?? 0}, medical_events: ${medEventsDeleted}, login_attempts: ${loginResult ?? 'ok'}, audit_logs_3y: ${auditOldResult ?? 'ok'}`);
 
   return NextResponse.json({
     ok: true,
     purged: {
       audit_logs_12m: auditResult ?? 0,
       medical_data: medicalResult ?? 0,
+      medical_events_3m: medEventsDeleted,
       login_attempts_24h: loginResult ?? 'ok',
       audit_logs_3y: auditOldResult ?? 'ok',
     },

@@ -47,8 +47,8 @@ const serverSchema = clientSchema.extend({
   ORG_BANK_IBAN: z.string().optional(),
   ORG_BANK_BIC: z.string().optional(),
   ORG_BANK_BRANCH: z.string().optional(),
-  // Cron RGPD — recommandé en production
-  CRON_SECRET: z.string().min(16).optional(),
+  // Cron RGPD — requis (purge données médicales + expiration codes)
+  CRON_SECRET: z.string().min(16),
 });
 
 // ── Parsing sécurisé ─────────────────────────────────────────────────────────

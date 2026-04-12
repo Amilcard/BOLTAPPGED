@@ -48,7 +48,7 @@ function LoginForm() {
         return;
       }
 
-      if (data?.user) setStoredUser(data.user);
+      if (data?.user) setStoredUser({ role: data.user.role });
       router.replace('/admin');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erreur de connexion');
@@ -72,7 +72,7 @@ function LoginForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? 'Code invalide');
 
-      if (data?.user) setStoredUser(data.user);
+      if (data?.user) setStoredUser({ role: data.user.role });
       router.replace('/admin');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erreur de vérification');

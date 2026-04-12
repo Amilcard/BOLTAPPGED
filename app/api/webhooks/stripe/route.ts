@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
           console.error('Error updating payment status:', error);
           shouldRecordEvent = false;
         } else {
-          console.log(`Payment succeeded for inscription ${inscriptionId}`);
+          console.log('[webhook/stripe] payment_intent.succeeded processed');
           // Notification admin non-bloquante
           if (inscription) {
             const rec = inscription as Record<string, unknown>;
@@ -164,7 +164,7 @@ export async function POST(req: NextRequest) {
           console.error('Error updating failed payment status:', error);
           shouldRecordEvent = false; // DB échoué → Stripe réessaiera
         } else {
-          console.log(`Payment failed for inscription ${inscriptionId}`);
+          console.log('[webhook/stripe] payment_intent.payment_failed processed');
         }
         break;
       }

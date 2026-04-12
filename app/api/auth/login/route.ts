@@ -133,6 +133,8 @@ export async function POST(req: NextRequest) {
       // Émettre un token temporaire (5 min) pour la vérification 2FA
       const pendingToken = await new SignJWT({ userId: data.user.id, email: data.user.email, role, pending2fa: true })
         .setProtectedHeader({ alg: 'HS256' })
+        .setJti(crypto.randomUUID())
+        .setIssuedAt()
         .setExpirationTime('5m')
         .sign(encodedSecret);
       // pendingToken en httpOnly cookie (jamais dans le body — RGPD)
@@ -146,6 +148,8 @@ export async function POST(req: NextRequest) {
     // Pas de 2FA — session normale 8h
     const token = await new SignJWT({ userId: data.user.id, email: data.user.email, role })
       .setProtectedHeader({ alg: 'HS256' })
+      .setJti(crypto.randomUUID())
+      .setIssuedAt()
       .setExpirationTime('8h')
       .sign(encodedSecret);
 

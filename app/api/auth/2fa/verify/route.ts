@@ -93,6 +93,8 @@ export async function POST(req: NextRequest) {
 
     const fullToken = await new SignJWT({ userId: payload.userId, email: payload.email, role: payload.role })
       .setProtectedHeader({ alg: 'HS256' })
+      .setJti(crypto.randomUUID())
+      .setIssuedAt()
       .setExpirationTime('8h')
       .sign(encodedSecret);
 

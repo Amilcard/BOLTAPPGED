@@ -20,6 +20,7 @@ interface StructureInfo {
   rgpdAcceptedAt: string | null;
   delegationFrom:  string | null;
   delegationUntil: string | null;
+  isMigrated?: boolean;
 }
 
 interface DossierCompletude {

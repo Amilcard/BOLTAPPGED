@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export interface AuthPayload {
   userId: string;
   email: string;
   role: 'ADMIN' | 'EDITOR' | 'VIEWER';
+  jti?: string;
 }
 
 export async function verifyAuth(request: NextRequest): Promise<AuthPayload | null> {
@@ -20,6 +22,17 @@ export async function verifyAuth(request: NextRequest): Promise<AuthPayload | nu
     if (!secret) return null; // Fail-safe: jamais valider sans secret
     const encodedSecret = new TextEncoder().encode(secret);
     const { payload } = await jwtVerify(token, encodedSecret);
+
+    // Vérification révocation jti
+    const jti = payload.jti;
+    if (jti) {
+      const { data: revoked } = await getSupabaseAdmin()
+        .from('gd_revoked_tokens')
+        .select('jti')
+        .eq('jti', jti)
+        .maybeSingle();
+      if (revoked) return null;
+    }
 
     return payload as unknown as AuthPayload;
   } catch {

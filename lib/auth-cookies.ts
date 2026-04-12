@@ -28,3 +28,8 @@ export function clearPendingCookie(response: NextResponse): NextResponse {
   response.cookies.delete('gd_pending_2fa');
   return response;
 }
+
+export function clearSessionCookie(response: NextResponse): NextResponse {
+  response.cookies.delete('gd_session');
+  return response;
+}

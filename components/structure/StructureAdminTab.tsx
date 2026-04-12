@@ -44,6 +44,7 @@ interface StructureInfo {
   rgpdAcceptedAt: string | null;
   delegationFrom: string | null;
   delegationUntil: string | null;
+  isMigrated?: boolean;
 }
 
 interface Props {
@@ -291,6 +292,7 @@ export default function StructureAdminTab({
             Ces codes permettent à votre équipe d&apos;accéder aux inscriptions. Ne les partagez qu&apos;avec les personnes autorisées.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            {!structure.isMigrated && (
             <div className="bg-white rounded-lg p-4 border border-amber-200">
               <p className="text-xs font-semibold text-gray-700 mb-1">Code CDS — 6 caractères</p>
               <p className="text-xs text-gray-400 mb-3">
@@ -300,6 +302,7 @@ export default function StructureAdminTab({
                 {structure.code || '——'}
               </code>
             </div>
+            )}
             <div className="bg-white rounded-lg p-4 border border-amber-200">
               <p className="text-xs font-semibold text-gray-700 mb-1">Code Directeur — 10 caractères</p>
               <p className="text-xs text-gray-400 mb-3">

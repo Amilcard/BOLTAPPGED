@@ -89,6 +89,13 @@ export async function GET(
   const s = structure as Record<string, unknown>;
   const showCodes = role === 'direction' || role === 'cds_delegated';
 
+  // Vérifier si la structure utilise le nouveau système de codes (gd_structure_access_codes)
+  const { count: migratedCount } = await supabase
+    .from('gd_structure_access_codes')
+    .select('id', { count: 'exact', head: true })
+    .eq('structure_id', structureId);
+  const isMigrated = (migratedCount ?? 0) > 0;
+
   return NextResponse.json({
     structure: {
       id: structureId,
@@ -102,6 +109,7 @@ export async function GET(
       delegationFrom: s.delegation_active_from || null,
       delegationUntil: s.delegation_active_until || null,
       delegatedToEmail: s.delegated_to_email || null,
+      isMigrated,
     },
     role,
     roles,

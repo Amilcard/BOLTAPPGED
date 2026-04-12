@@ -107,6 +107,15 @@ const config: Config = {
         'brand-lg': '0 10px 15px -3px rgba(46, 64, 83, 0.1), 0 4px 6px -2px rgba(46, 64, 83, 0.05)',
         'brand-xl': '0 20px 25px -5px rgba(46, 64, 83, 0.1), 0 10px 10px -5px rgba(46, 64, 83, 0.04)',
       },
+      keyframes: {
+        'pulse-subtle': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.7' },
+        },
+      },
+      animation: {
+        'pulse-subtle': 'pulse-subtle 2s ease-in-out infinite',
+      },
       spacing: {
         section: '120px',
         card: '80px',
@@ -119,7 +128,13 @@ const config: Config = {
     'border-red-500',    'text-red-600',
     'border-green-500',  'text-green-600',
     'border-purple-500', 'text-purple-600',
-    'lg:grid-cols-3',    'lg:grid-cols-4',
+    'border-amber-500',  'text-amber-600',
+    'bg-red-50',   'bg-red-100',
+    'bg-green-50', 'bg-green-100',
+    'bg-amber-50', 'bg-amber-100',
+    'bg-blue-50',  'bg-blue-100',
+    'text-red-700', 'text-green-700', 'text-amber-700',
+    'lg:grid-cols-3', 'lg:grid-cols-4',
   ],
   plugins: [tailwindAnimate],
 };

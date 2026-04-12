@@ -367,7 +367,7 @@ export default function StructureAdminTab({
                 >
                   {delegSaving ? 'Enregistrement…' : 'Enregistrer la délégation'}
                 </button>
-                {(structure.delegationFrom || structure.delegationUntil) && (
+                {(structure.delegationFrom || structure.delegationUntil || delegFrom || delegUntil) && (
                   <button
                     disabled={delegSaving}
                     onClick={async () => {
@@ -383,6 +383,9 @@ export default function StructureAdminTab({
                         if (res.ok) {
                           setDelegFrom('');
                           setDelegUntil('');
+                          // Forcer la disparition du bouton en vidant aussi les props via state parent
+                          structure.delegationFrom = null;
+                          structure.delegationUntil = null;
                           setDelegMsg('Délégation supprimée.');
                         }
                       } catch {

@@ -403,14 +403,7 @@ export default function StructureDashboard() {
         </div>
       </main>
 
-      <style jsx global>{`
-        @media print {
-          body { background: white !important; }
-          .print\\:hidden { display: none !important; }
-          header { background: white !important; color: black !important; border-bottom: 1px solid #e5e7eb; }
-          .shadow-sm { box-shadow: none !important; }
-        }
-      `}</style>
+      {/* Print styles handled by Tailwind print: utilities on individual elements */}
     </div>
   );
 }

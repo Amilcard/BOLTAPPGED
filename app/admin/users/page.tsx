@@ -30,14 +30,19 @@ export default function AdminUsers() {
     if (res.ok) setUsers(await res.json());
   };
 
-  useEffect(() => { fetchUsers(); }, []);
-
   // Guard : ADMIN uniquement — EDITOR/VIEWER redirigés
   const storedUser = getStoredUser();
-  if (storedUser?.role !== 'ADMIN') {
-    router.push('/admin');
-    return null;
-  }
+  const isAdmin = storedUser?.role === 'ADMIN';
+
+  useEffect(() => {
+    if (!isAdmin) {
+      router.push('/admin');
+      return;
+    }
+    fetchUsers();
+  }, [isAdmin, router]);
+
+  if (!isAdmin) return null;
 
   const handleDelete = (id: string) => {
     confirm('Supprimer cet utilisateur ? Cette action est irréversible.', async () => {

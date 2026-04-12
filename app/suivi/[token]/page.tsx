@@ -372,23 +372,7 @@ export default function SuiviProPage() {
         </div>
       </main>
 
-      {/* CSS print */}
-      <style jsx global>{`
-        @media print {
-          .preferences-block { display: none !important; }
-        }
-      `}</style>
-      <style jsx global>{`
-        @media print {
-          body { background: white !important; }
-          .print\\:hidden { display: none !important; }
-          .print\\:bg-white { background: white !important; }
-          .print\\:text-black { color: black !important; }
-          .print\\:text-gray-500 { color: #6b7280 !important; }
-          .shadow-sm, .shadow-lg { box-shadow: none !important; }
-          .rounded-xl { border-radius: 4px !important; }
-        }
-      `}</style>
+      {/* Print styles handled by Tailwind print: utilities on individual elements */}
     </div>
   );
 }

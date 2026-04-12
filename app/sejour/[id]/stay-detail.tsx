@@ -152,9 +152,13 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
   // Enrichment data
   const stayUrl = String(stay?.sourceUrl ?? "").trim();
   const pdfUrl = stay?.pdfUrl ?? null;
-  const contentKidsParsed = typeof stay?.contentKids === 'string' ? JSON.parse(stay.contentKids) : stay?.contentKids;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let contentKidsParsed: any = stay?.contentKids;
+  if (typeof stay?.contentKids === 'string') {
+    try { contentKidsParsed = JSON.parse(stay.contentKids); } catch { contentKidsParsed = null; }
+  }
   const allDepartureCities: DepartureData[] = contentKidsParsed?.departureCities ?? [];
-  const sessionsFormatted = contentKidsParsed?.sessionsFormatted ?? [];
+  const sessionsFormatted: SessionData[] = contentKidsParsed?.sessionsFormatted ?? [];
 
   const departureCities = allDepartureCities.map((dc: DepartureData) => ({
     city: dc.city === 'sans_transport' ? 'Sans transport' : (dc.city || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),

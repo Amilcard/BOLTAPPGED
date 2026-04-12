@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { sendInscriptionConfirmation, sendAdminNewInscriptionNotification, sendStructureCodeEmail, sendNewEducateurAlert } from '@/lib/email';
 import { randomBytes } from 'crypto';
 import { auditLog, getClientIp } from '@/lib/audit-log';
+import { isRateLimited } from '@/lib/rate-limit';
 const inscriptionSchema = z.object({
   staySlug: z.string().min(1),
   sessionDate: z.string().min(1), // Date de début session
@@ -45,6 +46,15 @@ const PAYMENT_METHOD_MAP: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting DB-backed — persiste entre cold starts (complément middleware in-memory)
+    const ip = getClientIp(request) ?? 'unknown';
+    if (await isRateLimited('insc', ip, 5, 5)) {
+      return NextResponse.json(
+        { error: { code: 'RATE_LIMITED', message: 'Trop de requêtes. Réessayez dans quelques minutes.' } },
+        { status: 429, headers: { 'Retry-After': '300' } }
+      );
+    }
+
     const supabase = getSupabase();       // service_role — pour INSERT, structures, anti-doublon
     const supabasePublic = getSupabaseUser(); // anon — pour SELECT publics (prix, sessions, stays)
     const body = await request.json();

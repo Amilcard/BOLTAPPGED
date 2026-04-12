@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
 import { sendSouhaitNotificationEducateur } from '@/lib/email';
 import { generateEducateurAggregateToken } from '@/lib/educateur-token';
+import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 /**
  * POST /api/souhaits
  * Crée un souhait côté serveur et envoie un email à l'éducateur.
@@ -14,6 +15,14 @@ import { generateEducateurAggregateToken } from '@/lib/educateur-token';
  */
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIpFromHeaders(req.headers);
+    if (await isRateLimited('wish', ip, 10, 5)) {
+      return NextResponse.json(
+        { error: { code: 'RATE_LIMITED', message: 'Trop de requêtes. Réessayez dans quelques minutes.' } },
+        { status: 429, headers: { 'Retry-After': '300' } }
+      );
+    }
+
     const body = await req.json();
     const {
       kidSessionToken,   // UUID localStorage du kid

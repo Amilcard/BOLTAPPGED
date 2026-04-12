@@ -174,7 +174,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
   const isKids = mode === 'kids';
   const isPro = !isKids;
-  const canSeePrices = isPro && (isAuthenticated || proEmailVerified);
+  const canSeePrices = isPro;
   const slug = stay?.slug ?? '';
   const isAlreadyInWishlist = mounted && !!getWishlistMotivation(slug);
 

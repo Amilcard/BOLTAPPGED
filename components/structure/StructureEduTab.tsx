@@ -162,18 +162,18 @@ export default function StructureEduTab({
 
       {/* ── BANDEAU URGENCE ASTREINTE ── */}
       <div className="bg-red-50 border border-red-200 rounded-xl p-4 sticky top-0 z-20">
-        <div className="flex items-center gap-3 mb-2">
-          <Phone className="w-5 h-5 text-red-700 flex-shrink-0" />
-          <div>
-            <p className="font-bold text-red-800 text-sm">GED Astreinte H24</p>
-            <a href="tel:0423161671" className="text-xl font-bold text-red-900 min-h-[44px] flex items-center">04 23 16 16 71</a>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Phone className="w-5 h-5 text-red-700 flex-shrink-0" />
+            <div>
+              <p className="font-bold text-red-800 text-sm">GED Astreinte 24h/24 — 7j/7</p>
+              <a href="tel:0423161671" className="text-xl font-bold text-red-900 min-h-[44px] flex items-center">04 23 16 16 71</a>
+            </div>
           </div>
-        </div>
-        <div className="flex flex-wrap gap-3 text-xs font-medium">
-          <span className="px-2 py-1 bg-red-100 text-red-800 rounded">SAMU 15</span>
-          <span className="px-2 py-1 bg-red-100 text-red-800 rounded">Police 17</span>
-          <span className="px-2 py-1 bg-red-100 text-red-800 rounded">Pompiers 18</span>
-          <span className="px-2 py-1 bg-red-100 text-red-800 rounded">Enfants en danger 119</span>
+          <div className="text-right hidden sm:block">
+            <p className="text-xs text-red-600 font-medium">Bureau</p>
+            <p className="text-sm font-bold text-red-800">lun.–ven. 9h–18h</p>
+          </div>
         </div>
       </div>
 
@@ -212,7 +212,7 @@ export default function StructureEduTab({
                 </div>
                 <div className="text-right flex-1 min-w-0">
                   <p className={`text-3xl font-bold ${kpi.accent}`}>{kpi.value}</p>
-                  <p className="text-xs text-gray-500 mt-0.5 truncate">{kpi.label}</p>
+                  <p className="text-xs font-semibold text-gray-600 mt-0.5 leading-tight">{kpi.label}</p>
                 </div>
               </div>
               <div className="flex items-center justify-between mt-3">
@@ -355,7 +355,26 @@ export default function StructureEduTab({
       {/* BILAN */}
       {openSection === 'bilan' && (
         <div className="animate-in fade-in duration-200">
-          <BilanReadOnly inscriptions={inscriptions} incidents={incidents} calls={calls} notes={notes} />
+          {!timelineLoaded ? (
+            <div className="flex items-center justify-center py-10">
+              <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+            </div>
+          ) : (
+            <BilanReadOnly inscriptions={inscriptions} incidents={incidents} calls={calls} notes={notes} />
+          )}
+        </div>
+      )}
+
+      {/* ── CODE ACCES compact (direction/cds uniquement) ── */}
+      {(role === 'direction' || role === 'cds' || role === 'cds_delegated') && (
+        <div className="border border-gray-100 rounded-xl p-4 bg-gray-50 mt-2">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Code d&apos;accès cadre d&apos;astreinte</p>
+          <div className="flex items-center gap-3 flex-wrap">
+            <code className="font-mono font-bold text-base tracking-widest text-primary bg-white border border-gray-200 px-3 py-1.5 rounded-lg">
+              {code}
+            </code>
+            <p className="text-xs text-gray-400">À transmettre uniquement aux personnes autorisées.</p>
+          </div>
         </div>
       )}
 

@@ -297,7 +297,7 @@ export default function StructureAdminTab({
         <div className="mt-8 border-l-4 border-amber-400 bg-amber-50 rounded-xl p-6">
           <div className="flex items-center gap-2 mb-1">
             <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-900 uppercase tracking-wide">
-              {role === 'direction' ? 'Directeur' : 'CDS · Délégué'}
+              {role === 'direction' ? 'Directeur' : 'Cadre d\'astreinte · Délégué'}
             </span>
             <h3 className="font-semibold text-amber-900">Codes d&apos;accès de la structure</h3>
           </div>
@@ -307,9 +307,9 @@ export default function StructureAdminTab({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             {!structure.isMigrated && (
             <div className="bg-white rounded-lg p-4 border border-amber-200">
-              <p className="text-xs font-semibold text-gray-700 mb-1">Code CDS — 6 caractères</p>
+              <p className="text-xs font-semibold text-gray-700 mb-1">Code Cadre d&apos;astreinte — 6 caractères</p>
               <p className="text-xs text-gray-400 mb-3">
-                À donner à votre chef de service. Permet de voir la liste des inscriptions de la structure.
+                À donner à votre cadre d&apos;astreinte. Permet de voir la liste des inscriptions de la structure.
               </p>
               <code className="font-mono font-bold text-lg tracking-widest text-primary bg-gray-50 px-3 py-1.5 rounded-lg block text-center">
                 {structure.code || '——'}
@@ -331,10 +331,10 @@ export default function StructureAdminTab({
           {role === 'direction' && (
             <>
             <div className="border-t border-amber-200 pt-5">
-              <p className="text-sm font-semibold text-amber-900 mb-1">Déléguer la gestion des codes à votre CDS</p>
+              <p className="text-sm font-semibold text-amber-900 mb-1">Déléguer la gestion des codes à votre cadre d&apos;astreinte</p>
               <p className="text-xs text-amber-700 mb-4">
-                En cas d&apos;absence, vous pouvez autoriser votre chef de service à accéder aux codes pendant une période limitée (90 jours maximum).
-                Le CDS verra un bandeau indiquant qu&apos;il bénéficie d&apos;un accès temporaire.
+                En cas d&apos;absence, vous pouvez autoriser votre cadre d&apos;astreinte à accéder aux codes pendant une période limitée (90 jours maximum).
+                Le cadre d&apos;astreinte verra un bandeau indiquant qu&apos;il bénéficie d&apos;un accès temporaire.
               </p>
               <div className="flex flex-wrap gap-4 items-end">
                 <div>

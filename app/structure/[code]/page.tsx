@@ -383,18 +383,25 @@ export default function StructureDashboard() {
         {/* ── Contact (commun aux deux onglets) ── */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-8">
           <h3 className="font-semibold text-gray-800 mb-3">Contact Groupe &amp; Découverte</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
             <div>
               <p className="text-gray-500 text-xs">Email</p>
               <p className="font-medium">contact@groupeetdecouverte.fr</p>
             </div>
             <div>
-              <p className="text-gray-500 text-xs">Téléphone</p>
+              <p className="text-gray-500 text-xs">Téléphone bureau</p>
               <p className="font-medium">04 23 16 16 71</p>
+              <p className="text-xs text-gray-400">lun.–ven. 9h–18h</p>
             </div>
             <div>
-              <p className="text-gray-500 text-xs">Horaires</p>
-              <p className="font-medium">lun.–ven. 9h–17h</p>
+              <p className="text-gray-500 text-xs">Astreinte 24h/24 — 7j/7</p>
+              <p className="font-medium font-mono tracking-wide">04 23 16 16 71</p>
+              <p className="text-xs text-gray-400">Urgences séjour uniquement</p>
+            </div>
+            <div>
+              <p className="text-gray-500 text-xs">Réf. GED</p>
+              <p className="font-mono font-bold text-primary text-sm">{data?.structure?.id?.slice(0, 8).toUpperCase() ?? '—'}</p>
+              <p className="text-xs text-gray-400">À rappeler en cas de contact</p>
             </div>
           </div>
         </div>

@@ -22,7 +22,7 @@ export async function GET(
   const { code } = await params;
 
   // Validation format : 6 ou 10 chars alphanum
-  if (!code || !/^[A-Z0-9]{6}$/i.test(code) && !/^[A-Z0-9]{10}$/i.test(code)) {
+  if (!code || (!/^[A-Z0-9]{6}$/i.test(code) && !/^[A-Z0-9]{10}$/i.test(code))) {
     return NextResponse.json(
       { error: { code: 'INVALID_CODE', message: 'Format de code invalide.' } },
       { status: 400 }

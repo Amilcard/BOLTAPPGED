@@ -91,9 +91,10 @@ export async function PATCH(
     );
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  if (fromDate < today) {
+  // Comparer dates ISO (YYYY-MM-DD) pour eviter les problemes timezone UTC vs local
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const fromStr = fromDate.toISOString().slice(0, 10);
+  if (fromStr < todayStr) {
     return NextResponse.json(
       { error: { code: 'PAST_DATE', message: 'La date de début ne peut pas être dans le passé.' } },
       { status: 400 }

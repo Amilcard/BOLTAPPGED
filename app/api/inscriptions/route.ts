@@ -367,7 +367,7 @@ export async function POST(request: NextRequest) {
       .eq('referent_email', data.email)
       .eq('sejour_slug', data.staySlug)
       .eq('session_date', normalizedDate)
-      .eq('jeune_date_naissance', data.childBirthDate)
+      .eq('jeune_date_naissance', (data.childBirthDate as string).split('T')[0])
       .not('status', 'eq', 'annulee')
       .maybeSingle();
 

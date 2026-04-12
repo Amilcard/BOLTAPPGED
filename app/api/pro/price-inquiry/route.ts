@@ -23,7 +23,8 @@ async function checkRateLimitWithoutIncrement(email: string): Promise<boolean> {
     if (!entry || new Date(entry.window_start) < windowStart) return false;
     return entry.attempt_count >= RATE_LIMIT_MAX;
   } catch {
-    return false;
+    // fail-closed : previent spam email si DB inaccessible
+    return true;
   }
 }
 

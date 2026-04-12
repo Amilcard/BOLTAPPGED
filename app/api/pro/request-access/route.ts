@@ -43,8 +43,8 @@ async function isRateLimited(email: string): Promise<boolean> {
 
     return false;
   } catch {
-    // fail-open : ne pas bloquer si erreur rate limiting
-    return false;
+    // fail-closed : previent spam email si DB inaccessible
+    return true;
   }
 }
 

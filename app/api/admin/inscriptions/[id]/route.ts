@@ -199,9 +199,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
  * DELETE /api/admin/inscriptions/[id]
  * Supprime une inscription et ses donnees liees (dossier enfant, propositions).
  */
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: inscriptionId } = await params;
+    if (!UUID_REGEX.test(inscriptionId)) {
+      return NextResponse.json({ error: { code: 'INVALID_ID', message: 'ID invalide.' } }, { status: 400 });
+    }
     const supabase = getSupabase();
     const auth = await requireAdmin(req);
     if (!auth) {

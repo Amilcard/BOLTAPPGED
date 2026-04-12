@@ -36,12 +36,15 @@ export async function POST(
     || (stay as Record<string, string>).title
     || staySlug;
 
-  // Récupérer les personnes non encore notifiées
+  // Atomic : marquer comme notifiees ET retourner les rows en une seule operation
+  // Previent les double-notifications si requete concurrente
+  const now = new Date().toISOString();
   const { data: waitlist } = await supabase
     .from('gd_waitlist')
-    .select('id, email, nom')
+    .update({ notified_at: now })
     .eq('sejour_slug', staySlug)
-    .is('notified_at', null);
+    .is('notified_at', null)
+    .select('id, email, nom');
 
   if (!waitlist || waitlist.length === 0) {
     return NextResponse.json({ ok: true, sent: 0, message: 'Aucune personne en attente.' });
@@ -109,13 +112,7 @@ export async function POST(
     }
   }
 
-  // Marquer comme notifiés
-  if (notifiedIds.length > 0) {
-    await supabase
-      .from('gd_waitlist')
-      .update({ notified_at: new Date().toISOString() })
-      .in('id', notifiedIds);
-  }
+  // notified_at deja positionne atomiquement en amont (UPDATE ... RETURNING)
 
   return NextResponse.json({ ok: true, sent, total: waitlist.length });
 }

@@ -135,7 +135,12 @@ export async function POST(req: NextRequest) {
         .setProtectedHeader({ alg: 'HS256' })
         .setExpirationTime('5m')
         .sign(encodedSecret);
-      return NextResponse.json({ requires2fa: true, pendingToken });
+      // pendingToken en httpOnly cookie (jamais dans le body — RGPD)
+      const { setPendingCookie } = await import('@/lib/auth-cookies');
+      return setPendingCookie(
+        NextResponse.json({ requires2fa: true }),
+        pendingToken
+      );
     }
 
     // Pas de 2FA — session normale 8h

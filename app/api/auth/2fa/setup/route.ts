@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '@/lib/auth-middleware';
+import { requireAdmin } from '@/lib/auth-middleware';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { generateSecret, generateOtpAuthUrl, getQrCodeUrl } from '@/lib/totp';
 
@@ -11,8 +11,8 @@ import { generateSecret, generateOtpAuthUrl, getQrCodeUrl } from '@/lib/totp';
  */
 export async function POST(req: NextRequest) {
   try {
-    const auth = await verifyAuth(req);
-    if (!auth) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    const auth = await requireAdmin(req);
+    if (!auth) return NextResponse.json({ error: 'Accès réservé aux administrateurs.' }, { status: 403 });
 
     const secret = generateSecret();
     const otpAuthUrl = generateOtpAuthUrl(auth.email, secret);

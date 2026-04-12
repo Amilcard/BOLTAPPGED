@@ -16,7 +16,7 @@ function LoginForm() {
   const [error, setError] = useState('');
   // 2FA
   const [requires2fa, setRequires2fa] = useState(false);
-  const [pendingToken, setPendingToken] = useState('');
+  // pendingToken migré en httpOnly cookie — plus de state client
   const [totpCode, setTotpCode] = useState('');
   // Reset password
   const [resetMode, setResetMode] = useState(false);
@@ -43,7 +43,7 @@ function LoginForm() {
       if (!res.ok) throw new Error(data?.error ?? 'Identifiants incorrects');
 
       if (data.requires2fa) {
-        setPendingToken(data.pendingToken);
+        // pendingToken est dans un cookie httpOnly — pas besoin de le stocker côté client
         setRequires2fa(true);
         return;
       }
@@ -66,7 +66,8 @@ function LoginForm() {
       const res = await fetch('/api/auth/2fa/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pendingToken, code: totpCode }),
+        credentials: 'include', // envoie le cookie gd_pending_2fa
+        body: JSON.stringify({ code: totpCode }),
       });
 
       const data = await res.json();
@@ -252,7 +253,7 @@ function LoginForm() {
 
               <button
                 type="button"
-                onClick={() => { setRequires2fa(false); setPendingToken(''); setError(''); }}
+                onClick={() => { setRequires2fa(false); setError(''); }}
                 className="w-full text-sm text-primary-500 hover:text-primary"
               >
                 Retour à la connexion

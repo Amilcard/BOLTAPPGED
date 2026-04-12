@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { verifyToken } from '@/lib/totp';
-import { setSessionCookie } from '@/lib/auth-cookies';
+import { setSessionCookie, clearPendingCookie } from '@/lib/auth-cookies';
 import { SignJWT, jwtVerify } from 'jose';
 
 const MAX_2FA_ATTEMPTS = 5;
@@ -55,7 +55,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { pendingToken, code } = await req.json();
+    const { code } = await req.json();
+    const pendingToken = req.cookies.get('gd_pending_2fa')?.value;
     if (!pendingToken || !code) {
       return NextResponse.json({ error: 'Champs requis manquants' }, { status: 400 });
     }
@@ -95,10 +96,11 @@ export async function POST(req: NextRequest) {
       .setExpirationTime('8h')
       .sign(encodedSecret);
 
-    return setSessionCookie(
-      NextResponse.json({ ok: true, user: { email: payload.email, role: payload.role } }),
+    const response = setSessionCookie(
+      NextResponse.json({ ok: true, user: { role: payload.role } }),
       fullToken
     );
+    return clearPendingCookie(response);
   } catch (error) {
     console.error('POST /api/auth/2fa/verify error:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });

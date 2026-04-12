@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
 import { resolveCodeToStructure } from '@/lib/structure';
 import { auditLog } from '@/lib/audit-log';
+import { structureRateLimitGuard } from '@/lib/rate-limit-structure';
 
 /**
  * PATCH /api/structure/[code]/delegation
@@ -18,6 +19,9 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+  const rateLimited = await structureRateLimitGuard(req);
+  if (rateLimited) return rateLimited;
+
   const { code } = await params;
   if (!code || !/^[A-Z0-9]{10}$/i.test(code)) {
     return NextResponse.json(

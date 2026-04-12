@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
 import { resolveCodeToStructure } from '@/lib/structure';
 import { auditLog } from '@/lib/audit-log';
+import { structureRateLimitGuard } from '@/lib/rate-limit-structure';
 
 /**
  * GET /api/structure/[code]/medical
@@ -15,6 +16,9 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+  const rateLimited = await structureRateLimitGuard(_req);
+  if (rateLimited) return rateLimited;
+
   const { code } = await params;
   const resolved = await resolveCodeToStructure(code);
   if (!resolved || resolved.role === 'secretariat') {
@@ -72,6 +76,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+  const rateLimited = await structureRateLimitGuard(req);
+  if (rateLimited) return rateLimited;
+
   const { code } = await params;
   const resolved = await resolveCodeToStructure(code);
   if (!resolved || resolved.role === 'secretariat') {

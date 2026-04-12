@@ -69,6 +69,19 @@ export async function resolveCodeToStructure(
     if (data.code_revoked_at) return null;
     if (data.code_expires_at && data.code_expires_at < now) return null;
 
+    // Structure migrée vers gd_structure_access_codes ? → refuser fallback legacy
+    const { count: migratedCount } = await supabase
+      .from('gd_structure_access_codes')
+      .select('id', { count: 'exact', head: true })
+      .eq('structure_id', data.id)
+      .eq('active', true);
+
+    if (migratedCount && migratedCount > 0) {
+      // Structure migrée : le code legacy ne doit plus donner accès
+      // L'utilisateur doit utiliser son code personnel depuis gd_structure_access_codes
+      return null;
+    }
+
     return {
       structure: data,
       role: 'cds',
@@ -91,6 +104,17 @@ export async function resolveCodeToStructure(
     if (!data) return null;
     if (data.code_directeur_revoked_at) return null;
     if (data.code_directeur_expires_at && data.code_directeur_expires_at < now) return null;
+
+    // Structure migrée vers gd_structure_access_codes ? → refuser fallback legacy
+    const { count: migratedCount } = await supabase
+      .from('gd_structure_access_codes')
+      .select('id', { count: 'exact', head: true })
+      .eq('structure_id', data.id)
+      .eq('active', true);
+
+    if (migratedCount && migratedCount > 0) {
+      return null;
+    }
 
     return {
       structure: data,

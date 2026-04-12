@@ -4,56 +4,7 @@ import { getSupabase } from '@/lib/supabase-server';
 import { enrichInscriptions, type InscriptionRaw } from '@/lib/inscription-enrichment';
 import { auditLog } from '@/lib/audit-log';
 import { resolveCodeToStructure } from '@/lib/structure';
-
-// Rate limiting : 10 tentatives / 15 min par IP (anti brute-force)
-const STRUCT_MAX_ATTEMPTS = 10;
-const STRUCT_WINDOW_MINUTES = 15;
-
-function getClientIp(req: NextRequest): string {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    req.headers.get('x-real-ip') ||
-    'unknown'
-  );
-}
-
-async function isStructureRateLimited(ip: string): Promise<boolean> {
-  try {
-    const supabase = getSupabase();
-    const now = new Date();
-    const windowStart = new Date(now.getTime() - STRUCT_WINDOW_MINUTES * 60 * 1000);
-
-    const { data: entry } = await supabase
-      .from('gd_login_attempts')
-      .select('attempt_count, window_start')
-      .eq('ip', `struct:${ip}`)
-      .single();
-
-    if (!entry || new Date(entry.window_start) < windowStart) {
-      await supabase
-        .from('gd_login_attempts')
-        .upsert(
-          { ip: `struct:${ip}`, attempt_count: 1, window_start: now.toISOString() },
-          { onConflict: 'ip' }
-        );
-      return false;
-    }
-
-    if (entry.attempt_count >= STRUCT_MAX_ATTEMPTS) {
-      return true;
-    }
-
-    await supabase
-      .from('gd_login_attempts')
-      .update({ attempt_count: entry.attempt_count + 1 })
-      .eq('ip', `struct:${ip}`);
-
-    return false;
-  } catch {
-    // fail-closed : données enfants ASE — bloquer en cas d'erreur (comme login)
-    return true;
-  }
-}
+import { structureRateLimitGuard, getStructureClientIp } from '@/lib/rate-limit-structure';
 
 // resolveCodeToStructure et StructureRole déplacés vers @/lib/structure
 
@@ -79,13 +30,8 @@ export async function GET(
   }
 
   // Rate limiting anti brute-force
-  const ip = getClientIp(_req);
-  if (await isStructureRateLimited(ip)) {
-    return NextResponse.json(
-      { error: { code: 'RATE_LIMITED', message: 'Trop de tentatives. Réessayez dans quelques minutes.' } },
-      { status: 429, headers: { 'Retry-After': '900' } }
-    );
-  }
+  const rateLimited = await structureRateLimitGuard(_req);
+  if (rateLimited) return rateLimited;
 
   // Résolution code → structure + rôle
   const resolved = await resolveCodeToStructure(code);
@@ -106,7 +52,7 @@ export async function GET(
     resourceType: 'inscription',
     resourceId: structureId,
     actorType: 'referent',
-    metadata: { access_type: 'structure_code', role, roles, ip, code_length: code.length },
+    metadata: { access_type: 'structure_code', role, roles, ip: getStructureClientIp(_req), code_length: code.length },
   });
 
   // Récupérer les inscriptions rattachées
@@ -176,6 +122,10 @@ export async function POST(
   if (!code) {
     return NextResponse.json({ error: { code: 'MISSING_CODE' } }, { status: 400 });
   }
+
+  // Rate limiting anti brute-force (même guard que GET)
+  const rateLimitedPost = await structureRateLimitGuard(_req);
+  if (rateLimitedPost) return rateLimitedPost;
 
   const supabase = getSupabase();
   const codeNorm = code.toUpperCase();

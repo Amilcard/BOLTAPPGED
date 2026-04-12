@@ -49,8 +49,10 @@ async function verifyAdminAuth(request: NextRequest): Promise<boolean> {
   if (!rawSecret) return false;
   try {
     const secret = new TextEncoder().encode(rawSecret);
-    await jwtVerify(token, secret);
-    return true;
+    const { payload } = await jwtVerify(token, secret);
+    const role = (payload as Record<string, unknown>).role;
+    // Seuls ADMIN et EDITOR accèdent à /admin/*
+    return role === 'ADMIN' || role === 'EDITOR';
   } catch {
     return false;
   }

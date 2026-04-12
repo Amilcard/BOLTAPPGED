@@ -4,6 +4,7 @@ import { getSupabase } from '@/lib/supabase-server';
 import { resolveCodeToStructure } from '@/lib/structure';
 import { auditLog } from '@/lib/audit-log';
 import { sendIncidentNotification } from '@/lib/email';
+import { structureRateLimitGuard } from '@/lib/rate-limit-structure';
 
 const VALID_CATEGORIES = ['medical', 'comportemental', 'fugue', 'accident', 'autre'] as const;
 const VALID_SEVERITIES = ['info', 'attention', 'urgent'] as const;
@@ -16,6 +17,9 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+  const rateLimited = await structureRateLimitGuard(_req);
+  if (rateLimited) return rateLimited;
+
   const { code } = await params;
   const resolved = await resolveCodeToStructure(code);
   if (!resolved || resolved.role === 'secretariat') {
@@ -47,6 +51,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+  const rateLimited = await structureRateLimitGuard(req);
+  if (rateLimited) return rateLimited;
+
   const { code } = await params;
   const resolved = await resolveCodeToStructure(code);
   if (!resolved || !['direction', 'cds', 'cds_delegated'].includes(resolved.role)) {

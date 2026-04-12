@@ -1,12 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Users, AlertTriangle, Phone, PhoneCall, FileText, Heart, ClipboardList, Shield } from 'lucide-react';
+import { Users, AlertTriangle, Phone, PhoneCall, FileText, Heart, ClipboardList, Shield, Lock, ChevronRight } from 'lucide-react';
 import IncidentsPanel from '@/components/structure/IncidentsPanel';
 import MedicalSummary from '@/components/structure/MedicalSummary';
 import CallsPanel from '@/components/structure/CallsPanel';
 import NotesPanel from '@/components/structure/NotesPanel';
+import ChildCard, { type ChildCardInscription } from '@/components/structure/ChildCard';
+import ChildTimeline from '@/components/structure/ChildTimeline';
+import EducatifActionsPanel from '@/components/structure/EducatifActionsPanel';
+import SejourAlertsBanner from '@/components/structure/SejourAlertsBanner';
+import BilanReadOnly from '@/components/structure/BilanReadOnly';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -20,6 +25,7 @@ interface Inscription {
   sejour_slug: string;
   status: string;
   besoins_specifiques?: string | null;
+  dossier_completude: { bulletin: boolean; sanitaire: boolean; liaison: boolean; renseignements: boolean } | null;
 }
 
 interface Props {
@@ -32,55 +38,89 @@ interface Props {
   medicalCount: number;
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-const EDU_STATUS: Record<string, { label: string; color: string; bg: string }> = {
-  validee:    { label: 'En séjour',   color: '#166534', bg: '#dcfce7' },
-  en_attente: { label: 'En attente',  color: '#1d4ed8', bg: '#dbeafe' },
-  refusee:    { label: 'Non retenu',  color: '#6b7280', bg: '#f3f4f6' },
-  annulee:    { label: 'Annulé',      color: '#6b7280', bg: '#f3f4f6' },
-};
-
 type Section = 'enfants' | 'incidents' | 'medical' | 'appels' | 'notes' | 'bilan' | null;
 
-// ── Composant ──���───────────────────────────────────────────────────────────
+// ── Composant ──────────────────────────────────────────────────────────────
 
 export default function StructureEduTab({
   code, role, inscriptions, incidentCounts,
   callsCount, notesCount, medicalCount,
 }: Props) {
   const [openSection, setOpenSection] = useState<Section>('enfants');
+  const [selectedEnfant, setSelectedEnfant] = useState<string | null>(null);
+
+  // Timeline data (lazy loaded)
+  const [notes, setNotes] = useState<Array<{ id: string; inscription_id: string; content: string; created_by: string; created_at: string }>>([]);
+  const [calls, setCalls] = useState<Array<{ id: string; inscription_id: string; call_type: string; direction: string; interlocuteur: string; resume: string; created_by: string; created_at: string }>>([]);
+  const [incidents, setIncidents] = useState<Array<{ id: string; inscription_id: string; category: string; severity: string; description: string; status: string; created_by: string; created_at: string }>>([]);
+  const [medical, setMedical] = useState<Array<{ id: string; inscription_id: string; event_type: string; description: string; created_by: string; created_at: string }>>([]);
+  const [timelineLoaded, setTimelineLoaded] = useState(false);
+
+  const canWrite = role === 'direction' || role === 'cds' || role === 'cds_delegated';
+  const showMedicalDetail = role === 'direction' || role === 'cds';
 
   const enfantsEnSejour = inscriptions.filter(i => i.status === 'validee');
   const totalIncidents = Object.values(incidentCounts).reduce((a, b) => a + b, 0);
   const enfantsAvecBesoins = inscriptions.filter(i => i.besoins_specifiques);
   const inscriptionsList = inscriptions.map(i => ({ id: i.id, jeune_prenom: i.jeune_prenom, jeune_nom: i.jeune_nom }));
 
+  // Lazy load timeline data when enfants section opens
+  const loadTimelineData = useCallback(async () => {
+    if (timelineLoaded) return;
+    try {
+      const [notesRes, callsRes, incRes, medRes] = await Promise.all([
+        fetch(`/api/structure/${code}/notes`),
+        fetch(`/api/structure/${code}/calls`),
+        fetch(`/api/structure/${code}/incidents`),
+        fetch(`/api/structure/${code}/medical`),
+      ]);
+      if (notesRes.ok) { const d = await notesRes.json(); setNotes(d.notes || d || []); }
+      if (callsRes.ok) { const d = await callsRes.json(); setCalls(d.calls || d || []); }
+      if (incRes.ok) { const d = await incRes.json(); setIncidents(d.incidents || d || []); }
+      if (medRes.ok) { const d = await medRes.json(); setMedical(d.detail || d.events || []); }
+      setTimelineLoaded(true);
+    } catch { /* silencieux — les panneaux individuels font aussi leur fetch */ }
+  }, [code, timelineLoaded]);
+
+  useEffect(() => {
+    if (openSection === 'enfants' || openSection === 'bilan') {
+      loadTimelineData();
+    }
+  }, [openSection, loadTimelineData]);
+
+  // Urgent incidents pour le bandeau
+  const urgentIncidents = incidents
+    .filter(e => e.severity === 'urgent' && e.status === 'ouvert')
+    .map(e => {
+      const ins = inscriptions.find(i => i.id === e.inscription_id);
+      return {
+        ...e,
+        enfant_nom: ins ? `${ins.jeune_prenom} ${ins.jeune_nom.charAt(0)}.` : 'Enfant',
+      };
+    });
+
+  // Selected enfant data
+  const selectedInscription = inscriptions.find(i => i.id === selectedEnfant);
+
   function toggle(section: Section) {
     setOpenSection(prev => prev === section ? null : section);
   }
 
-  // ── KPI cards data ──
+  // ── KPI cards ──
   const kpiCards: Array<{
-    key: Section;
-    label: string;
-    value: number | string;
-    sub: string;
-    icon: typeof Users;
-    color: string;
-    accent: string;
-    ring: string;
-    alert?: boolean;
+    key: Section; label: string; value: number | string; sub: string;
+    icon: typeof Users; color: string; accent: string; ring: string;
+    alert?: boolean; locked?: boolean;
   }> = [
     {
-      key: 'enfants', label: 'Enfants en séjour',
+      key: 'enfants', label: 'Enfants en sejour',
       value: enfantsEnSejour.length, sub: `${inscriptions.length} inscrit${inscriptions.length > 1 ? 's' : ''} au total`,
       icon: Users, color: 'bg-primary', accent: 'text-primary', ring: 'ring-primary/30',
     },
     {
-      key: 'incidents', label: 'Incidents',
+      key: 'incidents', label: 'Evenements',
       value: totalIncidents > 0 ? totalIncidents : 'RAS',
-      sub: totalIncidents > 0 ? 'Non résolus' : 'Aucun incident',
+      sub: totalIncidents > 0 ? 'Non resolus' : 'Aucun evenement',
       icon: AlertTriangle,
       color: totalIncidents > 0 ? 'bg-red-600' : 'bg-green-600',
       accent: totalIncidents > 0 ? 'text-red-700' : 'text-green-700',
@@ -88,26 +128,28 @@ export default function StructureEduTab({
       alert: totalIncidents > 0,
     },
     {
-      key: 'medical', label: 'Médical',
+      key: 'medical', label: 'Medical',
       value: medicalCount > 0 ? medicalCount : 'RAS',
-      sub: medicalCount > 0 ? 'Événement(s) tracé(s)' : 'Rien à signaler',
+      sub: medicalCount > 0 ? 'Evenement(s) trace(s)' : 'Rien a signaler',
       icon: Heart, color: 'bg-rose-500', accent: 'text-rose-700', ring: 'ring-rose-300',
+      locked: true,
     },
     {
       key: 'appels', label: 'Appels & Rappels',
       value: callsCount > 0 ? callsCount : '0',
-      sub: callsCount > 0 ? 'Appel(s) tracé(s)' : 'Aucun appel',
+      sub: callsCount > 0 ? 'Appel(s) trace(s)' : 'Aucun appel',
       icon: PhoneCall, color: 'bg-blue-500', accent: 'text-blue-700', ring: 'ring-blue-300',
     },
     {
       key: 'notes', label: 'Notes',
       value: notesCount > 0 ? notesCount : '0',
-      sub: notesCount > 0 ? 'Note(s) ajoutée(s)' : 'Aucune note',
+      sub: notesCount > 0 ? 'Note(s) ajoutee(s)' : 'Aucune note',
       icon: FileText, color: 'bg-violet-500', accent: 'text-violet-700', ring: 'ring-violet-300',
+      locked: true,
     },
     {
-      key: 'bilan', label: 'Bilan séjours',
-      value: enfantsEnSejour.length, sub: 'Synthèse par enfant',
+      key: 'bilan', label: 'Bilan sejours',
+      value: enfantsEnSejour.length, sub: 'Synthese par enfant',
       icon: ClipboardList, color: 'bg-gray-600', accent: 'text-gray-700', ring: 'ring-gray-300',
     },
   ];
@@ -115,7 +157,10 @@ export default function StructureEduTab({
   return (
     <div className="space-y-6">
 
-      {/* ── BANDEAU URGENCE ── */}
+      {/* ── ALERTES URGENTES (sticky) ── */}
+      <SejourAlertsBanner incidents={urgentIncidents} />
+
+      {/* ── BANDEAU URGENCE ASTREINTE ── */}
       <div className="bg-red-50 border border-red-200 rounded-xl p-4 sticky top-0 z-20">
         <div className="flex items-center gap-3 mb-2">
           <Phone className="w-5 h-5 text-red-700 flex-shrink-0" />
@@ -132,12 +177,12 @@ export default function StructureEduTab({
         </div>
       </div>
 
-      {/* ── Besoins spécifiques (alerte si > 0) ── */}
+      {/* ── Besoins specifiques ── */}
       {enfantsAvecBesoins.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <Shield className="w-4 h-4 text-amber-600" />
-            <p className="text-sm font-semibold text-amber-800">{enfantsAvecBesoins.length} enfant{enfantsAvecBesoins.length > 1 ? 's' : ''} avec besoins spécifiques</p>
+            <p className="text-sm font-semibold text-amber-800">{enfantsAvecBesoins.length} enfant{enfantsAvecBesoins.length > 1 ? 's' : ''} avec besoins specifiques</p>
           </div>
           <div className="space-y-1">
             {enfantsAvecBesoins.map(i => (
@@ -149,7 +194,7 @@ export default function StructureEduTab({
         </div>
       )}
 
-      {/* ── KPI CARDS GRILLE (cliquables → ouvrent le contenu) ── */}
+      {/* ── KPI CARDS ── */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {kpiCards.map(kpi => {
           const isOpen = openSection === kpi.key;
@@ -157,7 +202,7 @@ export default function StructureEduTab({
             <button
               key={kpi.key}
               onClick={() => toggle(kpi.key)}
-              className={`relative bg-white rounded-xl border-2 p-5 text-left transition-all hover:shadow-md ${
+              className={`relative bg-white rounded-xl border-2 p-5 text-left transition-all hover:shadow-md group ${
                 isOpen ? `${kpi.ring} ring-2 border-transparent shadow-md` : 'border-gray-100 hover:border-gray-200'
               } ${kpi.alert ? 'animate-pulse-subtle' : ''}`}
             >
@@ -170,7 +215,13 @@ export default function StructureEduTab({
                   <p className="text-xs text-gray-500 mt-0.5 truncate">{kpi.label}</p>
                 </div>
               </div>
-              <p className="text-[11px] text-gray-400 mt-3">{kpi.sub}</p>
+              <div className="flex items-center justify-between mt-3">
+                <p className="text-[11px] text-gray-400">{kpi.sub}</p>
+                <div className="flex items-center gap-1">
+                  {kpi.locked && <Lock className="w-3 h-3 text-gray-300" />}
+                  <ChevronRight className={`w-4 h-4 text-gray-300 transition-transform group-hover:text-gray-500 ${isOpen ? 'rotate-90' : ''}`} />
+                </div>
+              </div>
               {isOpen && (
                 <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-3 h-3 rotate-45 bg-white border-b-2 border-r-2 ${
                   kpi.ring.replace('ring-', 'border-').replace('/30', '')
@@ -181,81 +232,103 @@ export default function StructureEduTab({
         })}
       </div>
 
-      {/* ── CONTENU SECTION OUVERTE ── */}
-
-      {/* ENFANTS */}
+      {/* ── SECTION ENFANTS — NOUVEAU LAYOUT LISTE + PANEL ── */}
       {openSection === 'enfants' && (
-        <div className="space-y-3 animate-in fade-in duration-200">
-          <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+        <div className="animate-in fade-in duration-200">
+          <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-4">
             <Users className="w-4 h-4 text-primary" />
-            Enfants inscrits — suivi éducatif
+            Enfants inscrits — suivi educatif
             <span className="text-xs font-normal text-gray-400">
               {role === 'educateur' ? 'Vos inscriptions uniquement' : `${inscriptions.length} inscription(s)`}
             </span>
           </h3>
+
           {inscriptions.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-100 p-8 text-center text-gray-400">
               Aucune inscription pour le moment.
             </div>
-          ) : inscriptions.map(insc => {
-            const st = EDU_STATUS[insc.status] || EDU_STATUS.en_attente;
-            const incidents = incidentCounts[insc.id] ?? 0;
-            return (
-              <div key={insc.id} className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-sm transition">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-semibold text-gray-800">{insc.jeune_prenom} {insc.jeune_nom}</p>
-                      <span
-                        style={{ color: st.color, backgroundColor: st.bg }}
-                        className="px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap"
-                      >
-                        {st.label}
-                      </span>
-                      {incidents > 0 && (
-                        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 text-red-700">
-                          {incidents} incident{incidents > 1 ? 's' : ''}
-                        </span>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Colonne gauche : liste enfants */}
+              <div className="lg:col-span-4 space-y-3">
+                {inscriptions.map(ins => (
+                  <ChildCard
+                    key={ins.id}
+                    inscription={ins as ChildCardInscription}
+                    selected={selectedEnfant === ins.id}
+                    onSelect={setSelectedEnfant}
+                    canWrite={canWrite}
+                  />
+                ))}
+              </div>
+
+              {/* Colonne droite : panel detail */}
+              <div className="lg:col-span-8 space-y-6">
+                {/* Actions prioritaires */}
+                <EducatifActionsPanel
+                  inscriptions={inscriptions as ChildCardInscription[]}
+                  calls={calls}
+                  incidents={incidents}
+                  onSelectEnfant={setSelectedEnfant}
+                />
+
+                {/* Timeline enfant selectionne */}
+                {selectedInscription ? (
+                  <div className="bg-white rounded-xl border border-gray-100 p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-semibold text-gray-800">
+                        {selectedInscription.jeune_prenom} {selectedInscription.jeune_nom.charAt(0)}.
+                      </h4>
+                      {selectedInscription.suivi_token && (
+                        <Link
+                          href={`/suivi/${selectedInscription.suivi_token}`}
+                          className="text-xs text-primary hover:underline"
+                        >
+                          Dossier complet →
+                        </Link>
                       )}
                     </div>
-                    <p className="text-sm text-gray-500 truncate">{insc.sejour_titre}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Référent : {insc.referent_nom}</p>
-                    {insc.besoins_specifiques && (
-                      <div className="mt-2 p-2 bg-amber-50 border border-amber-100 rounded-lg text-xs text-amber-800">
-                        Besoins spécifiques : {insc.besoins_specifiques}
+                    {timelineLoaded ? (
+                      <ChildTimeline
+                        inscriptionId={selectedInscription.id}
+                        enfantNom={`${selectedInscription.jeune_prenom} ${selectedInscription.jeune_nom.charAt(0)}.`}
+                        notes={notes}
+                        appels={calls}
+                        evenements={incidents}
+                        medical={medical}
+                        showMedicalDetail={showMedicalDetail}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin h-6 w-6 border-3 border-primary border-t-transparent rounded-full" />
                       </div>
                     )}
                   </div>
-                  <div className="flex-shrink-0">
-                    {insc.suivi_token && (
-                      <Link
-                        href={`/suivi/${insc.suivi_token}`}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-primary bg-primary/5 rounded-lg hover:bg-primary/10 transition"
-                      >
-                        Dossier →
-                      </Link>
-                    )}
+                ) : (
+                  <div className="bg-white rounded-xl border border-gray-100 p-8 text-center text-gray-400">
+                    <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Selectionnez un enfant pour voir son suivi</p>
                   </div>
-                </div>
+                )}
               </div>
-            );
-          })}
+            </div>
+          )}
         </div>
       )}
 
-      {/* INCIDENTS */}
+      {/* EVENEMENTS */}
       {openSection === 'incidents' && (
         <div className="animate-in fade-in duration-200">
           <IncidentsPanel code={code} role={role || ''} inscriptions={inscriptionsList} />
         </div>
       )}
 
-      {/* MÉDICAL */}
+      {/* MEDICAL */}
       {openSection === 'medical' && (
         <div className="animate-in fade-in duration-200">
           <div className="flex items-center gap-2 mb-3 text-xs text-gray-400">
-            <Shield className="w-3.5 h-3.5" />
-            <span>Données Art. 9 RGPD — accès restreint et tracé</span>
+            <Lock className="w-3.5 h-3.5" />
+            <span>Donnees Art. 9 RGPD — acces restreint et trace</span>
           </div>
           <MedicalSummary code={code} role={role || ''} inscriptions={inscriptionsList} />
         </div>
@@ -272,8 +345,8 @@ export default function StructureEduTab({
       {openSection === 'notes' && (
         <div className="animate-in fade-in duration-200">
           <div className="flex items-center gap-2 mb-3 text-xs text-gray-400">
-            <Shield className="w-3.5 h-3.5" />
-            <span>Notes non éditables — traçabilité RGPD</span>
+            <Lock className="w-3.5 h-3.5" />
+            <span>Notes non editables — tracabilite RGPD</span>
           </div>
           <NotesPanel code={code} role={role || ''} inscriptions={inscriptionsList} />
         </div>
@@ -281,28 +354,8 @@ export default function StructureEduTab({
 
       {/* BILAN */}
       {openSection === 'bilan' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-in fade-in duration-200">
-          <h3 className="font-semibold text-gray-800 mb-4">Bilan séjours</h3>
-          <div className="space-y-2">
-            {enfantsEnSejour.length > 0 ? (
-              enfantsEnSejour.map(insc => {
-                const incidents = incidentCounts[insc.id] ?? 0;
-                return (
-                  <div key={insc.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-800 text-sm">{insc.jeune_prenom} {insc.jeune_nom}</p>
-                      <p className="text-xs text-gray-500">{insc.sejour_titre}</p>
-                    </div>
-                    <span className={`text-xs font-medium ${incidents > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                      {incidents > 0 ? `${incidents} incident(s) non résolu(s)` : 'Aucun incident'}
-                    </span>
-                  </div>
-                );
-              })
-            ) : (
-              <p className="text-sm text-gray-400">Aucun séjour validé pour le moment.</p>
-            )}
-          </div>
+        <div className="animate-in fade-in duration-200">
+          <BilanReadOnly inscriptions={inscriptions} incidents={incidents} />
         </div>
       )}
 

@@ -123,6 +123,9 @@
     "webpack": "^5.106.0",
     "zod": "^4.3.6"
   },
+  "overrides": {
+    "lodash": "^4.17.21"
+  },
   "browserslist": [
     "ie >= 11",
     "> 0.5%",

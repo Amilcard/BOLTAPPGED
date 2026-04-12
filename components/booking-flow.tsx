@@ -174,11 +174,18 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   const [loading, setLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
-  // Écouter le callback Turnstile
+  // Écouter le callback Turnstile + définir le callback global (sans dangerouslySetInnerHTML)
   useEffect(() => {
     const handler = (e: Event) => setTurnstileToken((e as CustomEvent).detail);
     window.addEventListener('turnstile-success', handler);
-    return () => window.removeEventListener('turnstile-success', handler);
+    (window as any).onTurnstileSuccess = (token: string) => {
+      (window as any).__turnstileToken = token;
+      window.dispatchEvent(new CustomEvent('turnstile-success', { detail: token }));
+    };
+    return () => {
+      window.removeEventListener('turnstile-success', handler);
+      delete (window as any).onTurnstileSuccess;
+    };
   }, []);
 
   const [error, setError] = useState('');
@@ -1203,11 +1210,6 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                 src="https://challenges.cloudflare.com/turnstile/v0/api.js"
                 async
                 defer
-              />
-              <script
-                dangerouslySetInnerHTML={{
-                  __html: `window.onTurnstileSuccess = function(token) { window.__turnstileToken = token; window.dispatchEvent(new CustomEvent('turnstile-success', { detail: token })); };`,
-                }}
               />
             </div>
           )}

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
 
-const STRUCT_MAX_ATTEMPTS = 10;
+const STRUCT_MAX_ATTEMPTS = 50;
 const STRUCT_WINDOW_MINUTES = 15;
 
 export function getStructureClientIp(req: NextRequest): string {

@@ -52,7 +52,7 @@ export default function StructureEduTab({
   // Timeline data (lazy loaded)
   const [notes, setNotes] = useState<Array<{ id: string; inscription_id: string; content: string; created_by: string; created_at: string }>>([]);
   const [calls, setCalls] = useState<Array<{ id: string; inscription_id: string; call_type: string; direction: string; interlocuteur: string; resume: string; created_by: string; created_at: string }>>([]);
-  const [incidents, setIncidents] = useState<Array<{ id: string; inscription_id: string; category: string; severity: string; description: string; status: string; created_by: string; created_at: string }>>([]);
+  const [incidents, setIncidents] = useState<Array<{ id: string; inscription_id: string; category: string; severity: string; titre?: string | null; description: string; status: string; created_by: string; created_at: string; vu_at?: string | null; vu_by_code?: string | null }>>([]);
   const [medical, setMedical] = useState<Array<{ id: string; inscription_id: string; event_type: string; description: string; created_by: string; created_at: string }>>([]);
   const [timelineLoaded, setTimelineLoaded] = useState(false);
 
@@ -158,7 +158,7 @@ export default function StructureEduTab({
     <div className="space-y-6">
 
       {/* ── ALERTES URGENTES (sticky) ── */}
-      <SejourAlertsBanner incidents={urgentIncidents} />
+      <SejourAlertsBanner incidents={urgentIncidents} structureCode={code} />
 
       {/* ── BANDEAU URGENCE ASTREINTE ── */}
       <div className="bg-red-50 border border-red-200 rounded-xl p-4 sticky top-0 z-20">

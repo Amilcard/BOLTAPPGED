@@ -31,7 +31,7 @@ export async function GET(
 
   const { data, error } = await supabase
     .from('gd_incidents')
-    .select('id, inscription_id, category, severity, status, description, resolved_at, created_by, created_at')
+    .select('id, inscription_id, category, severity, status, titre, description, resolved_at, resolution_note, vu_at, vu_by_code, created_by, created_at')
     .eq('structure_id', structureId)
     .order('created_at', { ascending: false });
 
@@ -67,7 +67,7 @@ export async function POST(
     return NextResponse.json({ error: 'Corps de requête invalide.' }, { status: 400 });
   }
 
-  const { inscription_id, category, severity, description } = body;
+  const { inscription_id, category, severity, description, titre } = body;
 
   if (!inscription_id || typeof inscription_id !== 'string') {
     return NextResponse.json({ error: 'inscription_id requis.' }, { status: 400 });
@@ -104,6 +104,7 @@ export async function POST(
       inscription_id,
       category,
       severity,
+      titre: titre && typeof titre === 'string' ? titre.trim() : null,
       description: description.trim(),
       created_by: resolved.email || 'unknown',
     })
@@ -127,29 +128,31 @@ export async function POST(
 
   // Email notification si gravité >= attention
   if (severity === 'attention' || severity === 'urgent') {
-    // Récupérer les emails des référents direction/CDS de la structure
-    const { data: accessCodes } = await supabase
-      .from('gd_structure_access_codes')
-      .select('email, role')
-      .eq('structure_id', structureId)
-      .eq('active', true)
-      .in('role', ['direction', 'cds', 'cds_delegated'])
-      .not('email', 'is', null);
+    const [{ data: accessCodes }, { data: inscData }, { data: structureData }] = await Promise.all([
+      supabase
+        .from('gd_structure_access_codes')
+        .select('email, role')
+        .eq('structure_id', structureId)
+        .eq('active', true)
+        .in('role', ['direction', 'cds', 'cds_delegated'])
+        .not('email', 'is', null),
+      supabase.from('gd_inscriptions').select('jeune_prenom').eq('id', inscription_id).single(),
+      // Pour urgent : inclure aussi l'email de contact principal de la structure
+      severity === 'urgent'
+        ? supabase.from('gd_structures').select('email').eq('id', structureId).single()
+        : Promise.resolve({ data: null }),
+    ]);
 
-    const emails = (accessCodes ?? [])
-      .map((ac: { email: string | null; role: string }) => ac.email)
-      .filter((e): e is string => !!e);
+    const emails = new Set<string>(
+      (accessCodes ?? [])
+        .map((ac: { email: string | null }) => ac.email)
+        .filter((e): e is string => !!e)
+    );
+    if (structureData?.email) emails.add(structureData.email);
 
-    // Récupérer le prénom de l'enfant
-    const { data: inscData } = await supabase
-      .from('gd_inscriptions')
-      .select('jeune_prenom')
-      .eq('id', inscription_id)
-      .single();
-
-    if (emails.length > 0) {
+    if (emails.size > 0) {
       try {
-        await sendIncidentNotification(emails, {
+        await sendIncidentNotification([...emails], {
           structureName: (resolved.structure as { name?: string }).name || 'Structure',
           jeunePrenom: inscData?.jeune_prenom || 'Enfant',
           category: category as string,
@@ -188,18 +191,49 @@ export async function PATCH(
     return NextResponse.json({ error: 'Corps de requête invalide.' }, { status: 400 });
   }
 
-  const { incident_id, status } = body;
+  const { incident_id, status, action, resolution_note } = body;
   const VALID_STATUSES = ['ouvert', 'en_cours', 'resolu'] as const;
+  const VALID_ACTIONS = ['vu'] as const;
 
   if (!incident_id || typeof incident_id !== 'string') {
     return NextResponse.json({ error: 'incident_id requis.' }, { status: 400 });
   }
-  if (!status || !VALID_STATUSES.includes(status as typeof VALID_STATUSES[number])) {
-    return NextResponse.json({ error: 'Statut invalide. Valeurs : ouvert, en_cours, resolu.' }, { status: 400 });
-  }
 
   const supabase = getSupabase();
   const structureId = resolved.structure.id as string;
+
+  // Action spéciale : accusé de réception (vu)
+  if (action === 'vu') {
+    const { error: vuError } = await supabase
+      .from('gd_incidents')
+      .update({ vu_at: new Date().toISOString(), vu_by_code: resolved.email || resolved.role })
+      .eq('id', incident_id)
+      .eq('structure_id', structureId)
+      .is('vu_at', null); // Idempotent : ne pas écraser un vu existant
+
+    if (vuError) {
+      console.error('[incidents PATCH vu] error:', vuError.message);
+      return NextResponse.json({ error: 'Erreur accusé réception.' }, { status: 500 });
+    }
+
+    await auditLog(supabase, {
+      action: 'update',
+      resourceType: 'structure',
+      resourceId: incident_id,
+      actorType: 'referent',
+      actorId: resolved.email || undefined,
+      metadata: { type: 'incident_vu', role: resolved.role },
+    });
+
+    return NextResponse.json({ ok: true, action: 'vu' });
+  }
+
+  if (!status || !VALID_STATUSES.includes(status as typeof VALID_STATUSES[number])) {
+    return NextResponse.json(
+      { error: `Action ou statut invalide. Statuts : ${VALID_STATUSES.join(', ')} — Actions : ${VALID_ACTIONS.join(', ')}` },
+      { status: 400 }
+    );
+  }
 
   const updateData: Record<string, unknown> = {
     status,
@@ -207,6 +241,9 @@ export async function PATCH(
   };
   if (status === 'resolu') {
     updateData.resolved_at = new Date().toISOString();
+    if (resolution_note && typeof resolution_note === 'string') {
+      updateData.resolution_note = resolution_note.trim();
+    }
   } else {
     updateData.resolved_at = null;
   }

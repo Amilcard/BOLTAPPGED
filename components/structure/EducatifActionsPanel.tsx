@@ -49,16 +49,6 @@ const EducatifActionsPanel = React.memo(function EducatifActionsPanel({
     inscriptions.forEach(ins => {
       const nom = `${ins.jeune_prenom} ${ins.jeune_nom.charAt(0)}.`;
 
-      // P1 : Fiche incomplete
-      const d = ins.dossier_completude;
-      const score = d ? [d.bulletin, d.sanitaire, d.liaison, d.renseignements].filter(Boolean).length : 0;
-      if (score < 4) {
-        result.push({
-          id: `fiche-${ins.id}`, inscriptionId: ins.id, enfantNom: nom,
-          type: 'fiche', label: `Completer fiche (${score}/4)`, priorite: 1,
-        });
-      }
-
       // P1 : Statut en attente
       if (ins.status === 'en_attente') {
         result.push({

@@ -59,9 +59,9 @@ const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incident
                 <p className="text-xs text-gray-500">{ins.sejour_titre}</p>
               </div>
               {insIncidents.length === 0 ? (
-                <div className="flex items-center gap-1 text-green-600">
+                <div className="flex items-center gap-1 text-gray-400">
                   <CheckCircle className="w-4 h-4" />
-                  <span className="text-xs font-medium">RAS</span>
+                  <span className="text-xs font-medium">0 evenement</span>
                 </div>
               ) : (
                 <span className="text-xs font-medium text-amber-600">

@@ -119,8 +119,8 @@ export default function StructureEduTab({
     },
     {
       key: 'incidents', label: 'Evenements',
-      value: totalIncidents > 0 ? totalIncidents : 'RAS',
-      sub: totalIncidents > 0 ? 'Non resolus' : 'Aucun evenement',
+      value: totalIncidents > 0 ? totalIncidents : 0,
+      sub: totalIncidents > 0 ? 'Non resolus' : 'Aucun evenement signale',
       icon: AlertTriangle,
       color: totalIncidents > 0 ? 'bg-red-600' : 'bg-green-600',
       accent: totalIncidents > 0 ? 'text-red-700' : 'text-green-700',
@@ -129,8 +129,8 @@ export default function StructureEduTab({
     },
     {
       key: 'medical', label: 'Medical',
-      value: medicalCount > 0 ? medicalCount : 'RAS',
-      sub: medicalCount > 0 ? 'Evenement(s) trace(s)' : 'Rien a signaler',
+      value: medicalCount > 0 ? medicalCount : 0,
+      sub: medicalCount > 0 ? 'Evenement(s) trace(s)' : 'Aucun signalement',
       icon: Heart, color: 'bg-rose-500', accent: 'text-rose-700', ring: 'ring-rose-300',
       locked: true,
     },

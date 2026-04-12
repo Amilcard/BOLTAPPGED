@@ -138,13 +138,17 @@ export async function POST(
   const supabase = getSupabase();
   const codeNorm = code.toUpperCase();
 
-  // Identifier la structure par code CDS ou directeur
-  const column = codeNorm.length === 10 ? 'code_directeur' : 'code';
+  // Résolution via resolveCodeToStructure (gd_structure_access_codes en priorité, fallback legacy)
+  const resolved = await resolveCodeToStructure(codeNorm);
+  if (!resolved) {
+    return NextResponse.json({ error: { code: 'NOT_FOUND' } }, { status: 404 });
+  }
+
+  // Récupérer rgpd_accepted_at depuis gd_structures
   const { data: structure } = await supabase
     .from('gd_structures')
     .select('id, rgpd_accepted_at')
-    .eq(column, codeNorm)
-    .eq('status', 'active')
+    .eq('id', resolved.structure.id)
     .single();
 
   if (!structure) {

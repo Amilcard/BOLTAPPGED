@@ -279,11 +279,11 @@ export default function StructureAdminTab({
 
       {/* ── Bandeau délégation active (CDS délégué) ── */}
       {role === 'cds_delegated' && structure.delegationUntil && (
-        <div className="mt-8 border-l-4 border-amber-400 bg-amber-50 rounded-xl p-5 flex items-start gap-3">
-          <span className="text-amber-500 text-xl" aria-hidden="true">&#9203;</span>
+        <div className="mt-8 border-l-4 border-secondary bg-white rounded-brand shadow-card p-5 flex items-start gap-3">
+          <span className="text-secondary text-xl" aria-hidden="true">&#9203;</span>
           <div>
-            <p className="font-semibold text-amber-900 text-sm">Accès délégué par votre directeur</p>
-            <p className="text-xs text-amber-700 mt-0.5">
+            <p className="font-semibold text-primary text-sm">Accès délégué par votre directeur</p>
+            <p className="text-xs text-primary-400 mt-0.5">
               Votre directeur vous a accordé un accès temporaire à la gestion des codes jusqu&apos;au{' '}
               <strong>{new Date(structure.delegationUntil).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</strong>.
               Après cette date, seul le directeur pourra gérer les codes.
@@ -294,19 +294,19 @@ export default function StructureAdminTab({
 
       {/* ── Section Directeur / CDS délégué : Codes d'accès ── */}
       {(role === 'direction' || role === 'cds_delegated') && (
-        <div className="mt-8 border-l-4 border-amber-400 bg-amber-50 rounded-xl p-6">
+        <div className="mt-8 bg-white rounded-brand shadow-card border border-brand-border p-6">
           <div className="flex items-center gap-2 mb-1">
-            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-900 uppercase tracking-wide">
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-secondary text-white uppercase tracking-wide">
               {role === 'direction' ? 'Directeur' : 'Cadre d\'astreinte · Délégué'}
             </span>
-            <h3 className="font-semibold text-amber-900">Codes d&apos;accès de la structure</h3>
+            <h3 className="font-semibold text-primary">Codes d&apos;accès de la structure</h3>
           </div>
-          <p className="text-xs text-amber-700 mb-4">
+          <p className="text-xs text-primary-400 mb-4">
             Ces codes permettent à votre équipe d&apos;accéder aux inscriptions. Ne les partagez qu&apos;avec les personnes autorisées.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             {!structure.isMigrated && (
-            <div className="bg-white rounded-lg p-4 border border-amber-200">
+            <div className="bg-white rounded-lg p-4 border border-brand-border">
               <p className="text-xs font-semibold text-gray-700 mb-1">Code Cadre d&apos;astreinte — 6 caractères</p>
               <p className="text-xs text-gray-400 mb-3">
                 À donner à votre cadre d&apos;astreinte. Permet de voir la liste des inscriptions de la structure.
@@ -316,12 +316,12 @@ export default function StructureAdminTab({
               </code>
             </div>
             )}
-            <div className="bg-white rounded-lg p-4 border border-amber-200">
+            <div className="bg-white rounded-lg p-4 border border-brand-border">
               <p className="text-xs font-semibold text-gray-700 mb-1">Code Directeur — 10 caractères</p>
               <p className="text-xs text-gray-400 mb-3">
                 Code personnel du directeur. Donne accès à la gestion des délégations. Ne pas diffuser.
               </p>
-              <code className="font-mono font-bold text-lg tracking-widest text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg block text-center">
+              <code className="font-mono font-bold text-lg tracking-widest text-secondary bg-secondary-50 px-3 py-1.5 rounded-lg block text-center">
                 {code}
               </code>
             </div>
@@ -330,9 +330,9 @@ export default function StructureAdminTab({
           {/* Délégation et paramètres — visible uniquement pour le directeur */}
           {role === 'direction' && (
             <>
-            <div className="border-t border-amber-200 pt-5">
-              <p className="text-sm font-semibold text-amber-900 mb-1">Déléguer la gestion des codes à votre cadre d&apos;astreinte</p>
-              <p className="text-xs text-amber-700 mb-4">
+            <div className="border-t border-brand-border pt-5">
+              <p className="text-sm font-semibold text-primary mb-1">Déléguer la gestion des codes à votre cadre d&apos;astreinte</p>
+              <p className="text-xs text-primary-400 mb-4">
                 En cas d&apos;absence, vous pouvez autoriser votre cadre d&apos;astreinte à accéder aux codes pendant une période limitée (90 jours maximum).
                 Le cadre d&apos;astreinte verra un bandeau indiquant qu&apos;il bénéficie d&apos;un accès temporaire.
               </p>
@@ -344,7 +344,7 @@ export default function StructureAdminTab({
                     value={delegFrom}
                     onChange={e => setDelegFrom(e.target.value)}
                     min={new Date().toISOString().slice(0, 10)}
-                    className="px-3 py-2 border border-amber-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                    className="px-3 py-2 border border-brand-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-secondary bg-white"
                   />
                 </div>
                 <div>
@@ -354,7 +354,7 @@ export default function StructureAdminTab({
                     value={delegUntil}
                     onChange={e => setDelegUntil(e.target.value)}
                     min={delegFrom || new Date().toISOString().slice(0, 10)}
-                    className="px-3 py-2 border border-amber-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                    className="px-3 py-2 border border-brand-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-secondary bg-white"
                   />
                 </div>
                 <button
@@ -379,7 +379,7 @@ export default function StructureAdminTab({
                     }
                     setDelegSaving(false);
                   }}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
+                  className="px-4 py-2 bg-secondary hover:bg-secondary-600 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
                 >
                   {delegSaving ? 'Enregistrement…' : 'Enregistrer la délégation'}
                 </button>
@@ -423,9 +423,9 @@ export default function StructureAdminTab({
             </div>
 
             {/* Modifier l'email de contact */}
-            <div className="border-t border-amber-200 pt-5 mt-5">
-              <p className="text-sm font-semibold text-amber-900 mb-1">Email de contact de la structure</p>
-              <p className="text-xs text-amber-700 mb-3">
+            <div className="border-t border-brand-border pt-5 mt-5">
+              <p className="text-sm font-semibold text-primary mb-1">Email de contact de la structure</p>
+              <p className="text-xs text-primary-400 mb-3">
                 Cet email est utilisé par GED pour vous contacter. Vérifiez qu&apos;il est à jour.
               </p>
               <div className="flex gap-3 items-end flex-wrap">
@@ -436,7 +436,7 @@ export default function StructureAdminTab({
                     value={emailEdit}
                     onChange={e => setEmailEdit(e.target.value)}
                     placeholder={structure.email || 'email@votrestructure.fr'}
-                    className="w-full px-3 py-2 border border-amber-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                    className="w-full px-3 py-2 border border-brand-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-secondary bg-white"
                   />
                 </div>
                 <button
@@ -461,7 +461,7 @@ export default function StructureAdminTab({
                     }
                     setEmailSaving(false);
                   }}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
+                  className="px-4 py-2 bg-secondary hover:bg-secondary-600 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
                 >
                   {emailSaving ? 'Enregistrement…' : 'Mettre à jour'}
                 </button>
@@ -474,7 +474,7 @@ export default function StructureAdminTab({
             </div>
             </>
           )}
-          <p className="text-xs text-amber-600 mt-5">
+          <p className="text-xs text-primary-400 mt-5">
             Pour régénérer un code : <a href="mailto:contact@groupeetdecouverte.fr" className="underline font-medium">contact@groupeetdecouverte.fr</a>
           </p>
         </div>

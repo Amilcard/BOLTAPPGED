@@ -34,12 +34,12 @@ function getClient() {
   return _supabaseGed
 }
 
-// Proxy object: existing callers use `supabaseGed.from(...)` unchanged.
-export const supabaseGed = new Proxy({} as ReturnType<typeof createClient<Database>>, {
-  get(_target, prop) {
-    return (getClient() as unknown as Record<string | symbol, unknown>)[prop]
-  },
-})
+// Export direct du client lazy — remplace le Proxy non-typé
+export const supabaseGed = {
+  get from() { return getClient().from.bind(getClient()); },
+  get rpc() { return getClient().rpc.bind(getClient()); },
+  get auth() { return getClient().auth; },
+};
 
 // Types
 export interface StayFilters {

@@ -171,7 +171,7 @@ export default function IncidentsPanel({ code, role, inscriptions }: Props) {
       )}
 
       {incidents.length === 0 ? (
-        <div className="p-8 text-center text-gray-400">Aucun fait marquant signale.</div>
+        <div className="p-8 text-center text-gray-400">Aucun fait marquant signal\u00e9.</div>
       ) : (
         <div className="space-y-3">
           {incidents.map(inc => (

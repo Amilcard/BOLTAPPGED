@@ -131,17 +131,17 @@ const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incident
               ) : sejourTermine ? (
                 <div className="flex items-center gap-1.5 bg-gray-100 border border-gray-200 rounded-lg px-2.5 py-1 flex-shrink-0">
                   <ClipboardCheck className="w-3.5 h-3.5 text-gray-500" />
-                  <span className="text-xs font-medium text-gray-600">Termine — bilan final attendu</span>
+                  <span className="text-xs font-medium text-gray-600">Termin\u00e9 — bilan final attendu</span>
                 </div>
               ) : bilanDate ? (
                 <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1 flex-shrink-0">
                   <Send className="w-3.5 h-3.5 text-blue-600" />
-                  <span className="text-xs font-medium text-blue-700">Envoye le {bilanDate}</span>
+                  <span className="text-xs font-medium text-blue-700">Envoy\u00e9 le {bilanDate}</span>
                 </div>
               ) : sejourPasCommence ? (
                 <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1 flex-shrink-0">
                   <ClipboardCheck className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs font-medium text-gray-500">Non debute</span>
+                  <span className="text-xs font-medium text-gray-500">Non d\u00e9but\u00e9</span>
                 </div>
               ) : isSuiviEnCours ? (
                 <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-lg px-2.5 py-1 flex-shrink-0">
@@ -151,12 +151,12 @@ const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incident
               ) : isEnRetard ? (
                 <div className="flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1 flex-shrink-0">
                   <ClipboardCheck className="w-3.5 h-3.5 text-red-500" />
-                  <span className="text-xs font-medium text-red-700">En retard ({bilanDeadline ? relative(bilanDeadline) : ''})</span>
+                  <span className="text-xs font-medium text-red-700">Bilan interm\u00e9diaire en retard ({bilanDeadline ? relative(bilanDeadline) : ''})</span>
                 </div>
               ) : bilanDeadline ? (
                 <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1 flex-shrink-0">
                   <ClipboardCheck className="w-3.5 h-3.5 text-amber-500" />
-                  <span className="text-xs font-medium text-amber-700">A transmettre avant le {fmt(bilanDeadline.toISOString())} ({relative(bilanDeadline)})</span>
+                  <span className="text-xs font-medium text-amber-700">\u00c0 transmettre avant le {fmt(bilanDeadline.toISOString())} ({relative(bilanDeadline)})</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1 flex-shrink-0">
@@ -168,9 +168,9 @@ const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incident
 
             {/* Suivi terrain masqué si séjour pas commencé ou terminé */}
             {sejourPasCommence ? (
-              <p className="text-xs text-gray-400 italic">Sejour non debute — aucune activite a afficher.</p>
+              <p className="text-xs text-gray-400 italic">S\u00e9jour non d\u00e9but\u00e9 — aucune activit\u00e9 \u00e0 afficher.</p>
             ) : sejourTermine ? (
-              <p className="text-xs text-gray-400 italic">Sejour termine le {sessionEnd ? fmt(sessionEnd.toISOString()) : ''}. {bilanDate ? 'Bilan transmis.' : 'Bilan final en attente.'}</p>
+              <p className="text-xs text-gray-400 italic">S\u00e9jour termin\u00e9 le {sessionEnd ? fmt(sessionEnd.toISOString()) : ''}. {bilanDate ? 'Bilan transmis.' : 'Bilan final en attente.'}</p>
             ) : (<>
             {/* Evenements */}
             {insIncidents.length > 0 && (

@@ -38,7 +38,7 @@ interface Props {
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  validee:    { label: 'En sejour',   color: 'text-green-700', bg: 'bg-green-100' },
+  validee:    { label: 'En s\u00e9jour',   color: 'text-green-700', bg: 'bg-green-100' },
   en_attente: { label: 'En attente',  color: 'text-amber-700', bg: 'bg-amber-100' },
   refusee:    { label: 'Non retenu',  color: 'text-gray-600',  bg: 'bg-gray-100' },
   annulee:    { label: 'Annule',      color: 'text-gray-600',  bg: 'bg-gray-100' },
@@ -72,14 +72,14 @@ const ChildCard = React.memo(function ChildCard({
     const start = new Date(ins.session_date);
     start.setHours(0, 0, 0, 0);
     const diffStart = Math.ceil((start.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffStart > 0) return `Depart dans ${diffStart}j`;
-    if (!ins.session_end_date) return `En sejour — J+${Math.abs(diffStart)}`;
+    if (diffStart > 0) return `D\u00e9part dans ${diffStart}j`;
+    if (!ins.session_end_date) return `En s\u00e9jour — J+${Math.abs(diffStart)}`;
     const end = new Date(ins.session_end_date);
     end.setHours(0, 0, 0, 0);
     const diffEnd = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffEnd < 0) return `Termine le ${end.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}`;
+    if (diffEnd < 0) return `Termin\u00e9 le ${end.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}`;
     if (diffEnd <= 2) return `Retour dans ${diffEnd}j`;
-    return `En sejour — J+${Math.abs(diffStart)}`;
+    return `En s\u00e9jour — J+${Math.abs(diffStart)}`;
   })();
 
   return (

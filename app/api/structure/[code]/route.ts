@@ -112,7 +112,16 @@ export async function GET(
     .eq('structure_id', structureId);
   const isMigrated = (migratedCount ?? 0) > 0;
 
+  // Souhaits enfants rattachés à la structure (parcours kids→pro)
+  const { data: souhaits } = await supabase
+    .from('gd_souhaits')
+    .select('id, kid_prenom, sejour_titre, motivation, status, created_at')
+    .eq('structure_id', structureId)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
   return NextResponse.json({
+    souhaits: souhaits || [],
     structure: {
       id: structureId,
       name: s.name,

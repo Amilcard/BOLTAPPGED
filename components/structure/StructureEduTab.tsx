@@ -29,6 +29,15 @@ interface Inscription {
   dossier_completude: { bulletin: boolean; sanitaire: boolean; liaison: boolean; renseignements: boolean } | null;
 }
 
+interface SouhaitData {
+  id: string;
+  kid_prenom: string;
+  sejour_titre: string;
+  motivation: string;
+  status: string;
+  created_at: string;
+}
+
 interface Props {
   code: string;
   role: string | null;
@@ -37,6 +46,7 @@ interface Props {
   callsCount: number;
   notesCount: number;
   medicalCount: number;
+  souhaits?: SouhaitData[];
 }
 
 type Section = 'enfants' | 'incidents' | 'medical' | 'appels' | 'notes' | 'bilan' | null;
@@ -45,7 +55,7 @@ type Section = 'enfants' | 'incidents' | 'medical' | 'appels' | 'notes' | 'bilan
 
 export default function StructureEduTab({
   code, role, inscriptions, incidentCounts,
-  callsCount, notesCount, medicalCount,
+  callsCount, notesCount, medicalCount, souhaits = [],
 }: Props) {
   const [openSection, setOpenSection] = useState<Section>('enfants');
   const [selectedEnfant, setSelectedEnfant] = useState<string | null>(
@@ -299,6 +309,7 @@ export default function StructureEduTab({
                         appels={calls}
                         evenements={incidents}
                         medical={medical}
+                        souhaits={souhaits}
                         showMedicalDetail={showMedicalDetail}
                       />
                     ) : (

@@ -51,12 +51,22 @@ interface Inscription {
   besoins_specifiques?: string | null;
 }
 
+interface SouhaitData {
+  id: string;
+  kid_prenom: string;
+  sejour_titre: string;
+  motivation: string;
+  status: string;
+  created_at: string;
+}
+
 interface StructureData {
   structure: StructureInfo;
   role: 'direction' | 'cds' | 'cds_delegated' | 'secretariat' | 'educateur';
   roles: string[];
   accessEmail: string | null;
   inscriptions: Inscription[];
+  souhaits?: SouhaitData[];
 }
 
 // ── Constantes ─────────────────────────────────────────────────────────────
@@ -345,6 +355,7 @@ export default function StructureDashboard() {
             callsCount={callsCount}
             notesCount={notesCount}
             medicalCount={medicalCount}
+            souhaits={data?.souhaits || []}
           />
         )}
 

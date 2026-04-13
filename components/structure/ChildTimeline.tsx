@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { FileText, Phone, AlertTriangle, Heart, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { FileText, Phone, AlertTriangle, Heart, ArrowUpRight, ArrowDownLeft, Star } from 'lucide-react';
 
 // ── Types ──
 
 interface TimelineEvent {
   id: string;
-  type: 'note' | 'appel' | 'evenement' | 'medical';
+  type: 'note' | 'appel' | 'evenement' | 'medical' | 'souhait';
   date: string;
   auteur: string;
   label: string;
@@ -22,6 +22,8 @@ interface Appel { id: string; inscription_id: string; call_type: string; directi
 interface Incident { id: string; inscription_id: string; category: string; severity: string; description: string; status: string; created_by: string; created_at: string; }
 interface MedicalEvent { id: string; inscription_id: string; event_type: string; description: string; created_by: string; created_at: string; }
 
+interface Souhait { id: string; kid_prenom: string; sejour_titre: string; motivation: string; status: string; created_at: string; }
+
 interface Props {
   inscriptionId: string;
   enfantNom: string;
@@ -29,6 +31,7 @@ interface Props {
   appels: Appel[];
   evenements: Incident[];
   medical: MedicalEvent[];
+  souhaits?: Souhait[];
   showMedicalDetail: boolean; // false pour educateur (compteur seul)
 }
 
@@ -38,6 +41,7 @@ const TYPE_CONFIG = {
   note:      { icon: FileText,     color: 'text-gray-500',  bg: 'bg-gray-50',  border: 'border-l-gray-300',  label: 'Note' },
   appel:     { icon: Phone,        color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-l-emerald-400', label: 'Appel' },
   evenement: { icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-l-amber-400', label: 'Fait marquant' },
+  souhait:   { icon: Star,         color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-l-violet-400', label: 'Souhait enfant' },
   medical:   { icon: Heart,        color: 'text-blue-600',  bg: 'bg-blue-50',  border: 'border-l-blue-400',  label: 'Medical' },
 };
 
@@ -56,7 +60,7 @@ function formatDate(iso: string): string {
 // ── Composant ──
 
 const ChildTimeline = React.memo(function ChildTimeline({
-  inscriptionId, enfantNom, notes, appels, evenements, medical, showMedicalDetail,
+  inscriptionId, enfantNom, notes, appels, evenements, medical, souhaits = [], showMedicalDetail,
 }: Props) {
   const timeline = useMemo(() => {
     const events: TimelineEvent[] = [];
@@ -83,6 +87,17 @@ const ChildTimeline = React.memo(function ChildTimeline({
         auteur: e.created_by, label: `Evenement ${e.category}`,
         detail: e.description, niveau: e.severity as 'info' | 'attention' | 'urgent',
         status: e.status,
+      }));
+
+    // Souhaits enfants (parcours kids→pro)
+    souhaits
+      .filter(s => s.kid_prenom.toLowerCase() === enfantNom.split(' ')[0]?.toLowerCase())
+      .forEach(s => events.push({
+        id: `souhait-${s.id}`, type: 'souhait', date: s.created_at,
+        auteur: s.kid_prenom,
+        label: `Souhait — ${s.sejour_titre}`,
+        detail: s.motivation,
+        status: s.status === 'emis' ? 'À étudier' : s.status === 'vu' ? 'Vu par le référent' : s.status,
       }));
 
     if (showMedicalDetail) {

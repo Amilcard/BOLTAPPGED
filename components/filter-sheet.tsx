@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { X, RotateCcw } from 'lucide-react';
 import type { ViewMode } from '@/lib/types';
 import {
@@ -69,15 +69,45 @@ export function FilterSheet({
   const hasActiveFilters = filters.ages.length > 0 || filters.periodes.length > 0 ||
     filters.thematiques.length > 0 || (filters.budgetMax !== undefined && filters.budgetMax < budgetMax);
 
+  const sheetRef = useRef<HTMLDivElement>(null);
+
+  // Focus trap : garde le focus dans la sheet quand ouverte
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      onClose();
+      return;
+    }
+    if (e.key !== 'Tab' || !sheetRef.current) return;
+
+    const focusable = sheetRef.current.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable.length === 0) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }, [onClose]);
+
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
+    if (!isOpen) return;
+    window.addEventListener('keydown', handleKeyDown);
+    // Focus le premier élément focusable à l'ouverture
+    const timer = setTimeout(() => {
+      sheetRef.current?.querySelector<HTMLElement>('button')?.focus();
+    }, 100);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      clearTimeout(timer);
     };
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+  }, [isOpen, handleKeyDown]);
 
   if (!isOpen) return null;
 
@@ -90,7 +120,13 @@ export function FilterSheet({
       />
 
       {/* Sheet - LOT GRAPHISME 1: Cleaner design */}
-      <div className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl max-h-[85vh] overflow-hidden flex flex-col animate-in slide-in-from-bottom duration-300 shadow-xl">
+      <div
+        ref={sheetRef}
+        role="dialog"
+        aria-label="Filtres de recherche"
+        aria-modal="true"
+        className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl max-h-[85vh] overflow-hidden flex flex-col animate-in slide-in-from-bottom duration-300 shadow-xl"
+      >
         {/* Grabber */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 bg-gray-300 rounded-full" />
@@ -214,6 +250,8 @@ export function FilterSheet({
                     step={budgetRange.step}
                     value={filters.budgetMax ?? budgetRange.max}
                     onChange={(e) => onFiltersChange({ ...filters, budgetMax: parseInt(e.target.value) })}
+                    aria-label="Budget maximum"
+                    aria-valuetext={filters.budgetMax === undefined || filters.budgetMax >= budgetRange.max ? 'Tous les budgets' : `${filters.budgetMax}€ maximum`}
                     className="w-full h-2 bg-gray-200 rounded-full appearance-none cursor-pointer accent-primary"
                   />
                   <div className="flex justify-between mt-3 text-sm">

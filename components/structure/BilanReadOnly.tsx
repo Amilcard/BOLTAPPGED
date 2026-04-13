@@ -38,6 +38,7 @@ interface Inscription {
   jeune_prenom: string;
   jeune_nom: string;
   sejour_titre: string;
+  session_date?: string | null;
   status: string;
 }
 
@@ -80,9 +81,15 @@ const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incident
         const insNotes     = notes.filter(n => n.inscription_id === ins.id).sort((a, b) => b.created_at.localeCompare(a.created_at));
         const hasUrgent    = insIncidents.some(e => e.severity === 'urgent' && e.status === 'ouvert');
 
-        // Date du dernier bilan transmis = dernier appel type "bilan" ou note de type cadre
+        // Logique bilan intelligente : deadline = session_start + 5 jours
         const bilanCall = insCalls.find(c => c.call_type === 'bilan' || c.resume?.toLowerCase().includes('bilan') || c.resume?.toLowerCase().includes('cadre'));
         const bilanDate = bilanCall ? fmt(bilanCall.created_at) : null;
+
+        const sessionStart = ins.session_date ? new Date(ins.session_date) : null;
+        const bilanDeadline = sessionStart ? new Date(sessionStart.getTime() + 5 * 24 * 60 * 60 * 1000) : null;
+        const now = new Date();
+        const isEnRetard = bilanDeadline && !bilanDate && now > bilanDeadline;
+        const sejourPasCommence = sessionStart && now < sessionStart;
 
         return (
           <div key={ins.id} className={`rounded-xl border p-4 ${hasUrgent ? 'border-red-200 bg-red-50/50' : 'border-gray-100 bg-white'}`}>
@@ -92,11 +99,26 @@ const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incident
                 <p className="font-medium text-gray-900 text-sm">{ins.jeune_prenom} {ins.jeune_nom.charAt(0)}.</p>
                 <p className="text-xs text-gray-500">{ins.sejour_titre}</p>
               </div>
-              {/* Bilan transmis au cadre astreinte */}
+              {/* Bilan intelligent */}
               {bilanDate ? (
                 <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1 flex-shrink-0">
                   <Send className="w-3.5 h-3.5 text-blue-600" />
-                  <span className="text-xs font-medium text-blue-700">Bilan transmis au cadre astreinte le {bilanDate}</span>
+                  <span className="text-xs font-medium text-blue-700">Envoye le {bilanDate}</span>
+                </div>
+              ) : sejourPasCommence ? (
+                <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1 flex-shrink-0">
+                  <ClipboardCheck className="w-3.5 h-3.5 text-gray-400" />
+                  <span className="text-xs font-medium text-gray-500">Sejour pas encore commence</span>
+                </div>
+              ) : isEnRetard ? (
+                <div className="flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1 flex-shrink-0">
+                  <ClipboardCheck className="w-3.5 h-3.5 text-red-500" />
+                  <span className="text-xs font-medium text-red-700">En retard — attendu avant le {bilanDeadline ? fmt(bilanDeadline.toISOString()) : ''}</span>
+                </div>
+              ) : bilanDeadline ? (
+                <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1 flex-shrink-0">
+                  <ClipboardCheck className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="text-xs font-medium text-amber-700">A transmettre avant le {fmt(bilanDeadline.toISOString())}</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1 flex-shrink-0">

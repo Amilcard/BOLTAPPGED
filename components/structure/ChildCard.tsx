@@ -18,6 +18,7 @@ export interface ChildCardInscription {
   referent_nom: string;
   sejour_titre: string;
   sejour_slug: string;
+  session_date?: string | null;
   status: string;
   besoins_specifiques?: string | null;
   dossier_completude: DossierCompletude | null;

@@ -140,6 +140,10 @@ const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incident
               )}
             </div>
 
+            {/* Suivi terrain masqué si séjour pas commencé */}
+            {sejourPasCommence ? (
+              <p className="text-xs text-gray-400 italic">Aucune activite avant le debut du sejour.</p>
+            ) : (<>
             {/* Evenements */}
             {insIncidents.length > 0 && (
               <div className="space-y-1 mb-3">
@@ -198,6 +202,7 @@ const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incident
             {insIncidents.length === 0 && insCalls.length === 0 && insNotes.length === 0 && (
               <p className="text-xs text-gray-400 italic">Aucun element terrain enregistre — veuillez documenter le suivi.</p>
             )}
+            </>)}
           </div>
         );
       })}

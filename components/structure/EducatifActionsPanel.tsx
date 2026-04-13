@@ -29,6 +29,14 @@ const PRIORITE_STYLES: Record<number, string> = {
   2: 'border-l-blue-300 bg-blue-50',
 };
 
+const PRIORITE_BADGES: Record<number, { label: string; className: string }> = {
+  0: { label: 'Urgent', className: 'bg-red-100 text-red-700' },
+  1: { label: 'À traiter', className: 'bg-amber-100 text-amber-700' },
+  2: { label: 'Suivi', className: 'bg-blue-100 text-blue-700' },
+};
+
+const MAX_VISIBLE_ACTIONS = 5;
+
 const TYPE_ICONS = {
   fiche: FileCheck,
   appel: Phone,
@@ -53,17 +61,32 @@ const EducatifActionsPanel = React.memo(function EducatifActionsPanel({
       if (ins.status === 'en_attente') {
         result.push({
           id: `valid-${ins.id}`, inscriptionId: ins.id, enfantNom: nom,
-          type: 'validation', label: 'Inscription en attente', priorite: 1,
+          type: 'validation', label: 'Valider inscription', priorite: 1,
         });
       }
 
-      // P2 : Pas d'appel trace depuis 7 jours
+      // P1 : Fiches incomplètes (au moins 1 fiche manquante)
+      const compl = ins.dossier_completude;
+      const fichesIncompletes = compl && (!compl.bulletin || !compl.sanitaire || !compl.liaison || !compl.renseignements);
+      if (ins.status === 'validee' && fichesIncompletes) {
+        result.push({
+          id: `fiche-${ins.id}`, inscriptionId: ins.id, enfantNom: nom,
+          type: 'fiche', label: 'Compléter dossier — pièces manquantes', priorite: 1,
+        });
+      }
+
+      // P2 : Pas d'appel tracé depuis 5 jours (plus strict en séjour)
       const insAppels = calls.filter(c => c.inscription_id === ins.id);
       const dernierAppel = insAppels.length > 0 ? insAppels.sort((a, b) => b.created_at.localeCompare(a.created_at))[0] : null;
-      if (!dernierAppel || daysSince(dernierAppel.created_at) > 7) {
+      const joursDepuis = dernierAppel ? daysSince(dernierAppel.created_at) : 999;
+      if (joursDepuis > 5) {
         result.push({
           id: `appel-${ins.id}`, inscriptionId: ins.id, enfantNom: nom,
-          type: 'appel', label: dernierAppel ? `Dernier appel il y a ${daysSince(dernierAppel.created_at)}j` : 'Aucun appel trace', priorite: 2,
+          type: 'appel',
+          label: dernierAppel
+            ? `Relancer — dernier appel il y a ${joursDepuis}j`
+            : 'Appeler famille — aucun appel tracé',
+          priorite: 2,
         });
       }
 
@@ -91,13 +114,17 @@ const EducatifActionsPanel = React.memo(function EducatifActionsPanel({
     );
   }
 
+  const visibleActions = actions.slice(0, MAX_VISIBLE_ACTIONS);
+  const hiddenCount = actions.length - visibleActions.length;
+
   return (
     <div className="space-y-2">
       <h4 className="text-sm font-semibold text-gray-700">
         Actions a faire ({actions.length})
       </h4>
-      {actions.map(action => {
+      {visibleActions.map(action => {
         const Icon = TYPE_ICONS[action.type];
+        const badge = PRIORITE_BADGES[action.priorite];
         return (
           <button
             key={action.id}
@@ -107,7 +134,12 @@ const EducatifActionsPanel = React.memo(function EducatifActionsPanel({
             <div className="flex items-center gap-2 min-w-0">
               <Icon className="w-4 h-4 flex-shrink-0 text-gray-500" />
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{action.enfantNom}</p>
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {action.enfantNom}
+                  <span className={`ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${badge.className}`}>
+                    {badge.label}
+                  </span>
+                </p>
                 <p className="text-xs text-gray-600 truncate">{action.label}</p>
               </div>
             </div>
@@ -115,6 +147,9 @@ const EducatifActionsPanel = React.memo(function EducatifActionsPanel({
           </button>
         );
       })}
+      {hiddenCount > 0 && (
+        <p className="text-xs text-gray-400 text-center pt-1">+ {hiddenCount} action{hiddenCount > 1 ? 's' : ''}</p>
+      )}
     </div>
   );
 });

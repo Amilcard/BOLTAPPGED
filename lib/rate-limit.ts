@@ -19,32 +19,55 @@ export async function isRateLimited(
   try {
     const supabase = getSupabase();
     const key = `${prefix}:${ip}`;
-    const now = new Date();
-    const windowStart = new Date(now.getTime() - windowMin * 60 * 1000);
 
-    const { data: entry } = await supabase
-      .from('gd_login_attempts')
-      .select('attempt_count, window_start')
-      .eq('ip', key)
-      .single();
+    // RPC atomique — une seule opération SQL, pas de race condition
+    const { data, error } = await supabase.rpc('check_rate_limit', {
+      p_key: key,
+      p_limit: limit,
+      p_window_minutes: windowMin,
+    });
 
-    if (!entry || new Date(entry.window_start) < windowStart) {
-      await supabase
-        .from('gd_login_attempts')
-        .upsert({ ip: key, attempt_count: 1, window_start: now.toISOString() }, { onConflict: 'ip' });
-      return false;
+    if (error) {
+      // Fallback legacy si RPC pas encore déployée
+      return await isRateLimitedLegacy(key, limit, windowMin);
     }
 
-    if (entry.attempt_count >= limit) return true;
-
-    await supabase
-      .from('gd_login_attempts')
-      .update({ attempt_count: entry.attempt_count + 1 })
-      .eq('ip', key);
-    return false;
+    return data === true;
   } catch {
     return true; // fail-closed : bloquer si la DB est indisponible (sécurité ASE)
   }
+}
+
+/** Fallback non-atomique — utilisé uniquement si la RPC n'est pas encore déployée */
+async function isRateLimitedLegacy(
+  key: string,
+  limit: number,
+  windowMin: number
+): Promise<boolean> {
+  const supabase = getSupabase();
+  const now = new Date();
+  const windowStart = new Date(now.getTime() - windowMin * 60 * 1000);
+
+  const { data: entry } = await supabase
+    .from('gd_login_attempts')
+    .select('attempt_count, window_start')
+    .eq('ip', key)
+    .single();
+
+  if (!entry || new Date(entry.window_start) < windowStart) {
+    await supabase
+      .from('gd_login_attempts')
+      .upsert({ ip: key, attempt_count: 1, window_start: now.toISOString() }, { onConflict: 'ip' });
+    return false;
+  }
+
+  if (entry.attempt_count >= limit) return true;
+
+  await supabase
+    .from('gd_login_attempts')
+    .update({ attempt_count: entry.attempt_count + 1 })
+    .eq('ip', key);
+  return false;
 }
 
 export function getClientIpFromHeaders(headers: Headers): string {

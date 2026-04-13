@@ -8,6 +8,7 @@ import MedicalSummary from '@/components/structure/MedicalSummary';
 import CallsPanel from '@/components/structure/CallsPanel';
 import NotesPanel from '@/components/structure/NotesPanel';
 import ChildCard, { type ChildCardInscription } from '@/components/structure/ChildCard';
+import CodeAccesBox from '@/components/structure/CodeAccesBox';
 import ChildTimeline from '@/components/structure/ChildTimeline';
 import EducatifActionsPanel from '@/components/structure/EducatifActionsPanel';
 import SejourAlertsBanner from '@/components/structure/SejourAlertsBanner';
@@ -47,7 +48,9 @@ export default function StructureEduTab({
   callsCount, notesCount, medicalCount,
 }: Props) {
   const [openSection, setOpenSection] = useState<Section>('enfants');
-  const [selectedEnfant, setSelectedEnfant] = useState<string | null>(null);
+  const [selectedEnfant, setSelectedEnfant] = useState<string | null>(
+    inscriptions.length > 0 ? inscriptions[0].id : null
+  );
 
   // Timeline data (lazy loaded)
   const [notes, setNotes] = useState<Array<{ id: string; inscription_id: string; content: string; created_by: string; created_at: string }>>([]);
@@ -167,7 +170,7 @@ export default function StructureEduTab({
             <Phone className="w-5 h-5 text-red-700 flex-shrink-0" />
             <div>
               <p className="font-bold text-red-800 text-sm">GED Astreinte 24h/24 — 7j/7</p>
-              <a href="tel:0423161671" className="text-xl font-bold text-red-900 min-h-[44px] flex items-center">04 23 16 16 71</a>
+              <p className="text-xl font-bold text-red-900">06 •• •• •• ••</p>
             </div>
           </div>
           <div className="text-right hidden sm:block">
@@ -367,15 +370,7 @@ export default function StructureEduTab({
 
       {/* ── CODE ACCES compact (direction/cds uniquement) ── */}
       {(role === 'direction' || role === 'cds' || role === 'cds_delegated') && (
-        <div className="border border-gray-100 rounded-xl p-4 bg-gray-50 mt-2">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Code d&apos;accès cadre d&apos;astreinte</p>
-          <div className="flex items-center gap-3 flex-wrap">
-            <code className="font-mono font-bold text-base tracking-widest text-primary bg-white border border-gray-200 px-3 py-1.5 rounded-lg">
-              {code}
-            </code>
-            <p className="text-xs text-gray-400">À transmettre uniquement aux personnes autorisées.</p>
-          </div>
-        </div>
+        <CodeAccesBox code={code} />
       )}
 
     </div>

@@ -77,7 +77,7 @@ const ChildCard = React.memo(function ChildCard({
     const end = new Date(ins.session_end_date);
     end.setHours(0, 0, 0, 0);
     const diffEnd = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffEnd < 0) return `Termine`;
+    if (diffEnd < 0) return `Termine le ${end.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}`;
     if (diffEnd <= 2) return `Retour dans ${diffEnd}j`;
     return `En sejour — J+${Math.abs(diffStart)}`;
   })();

@@ -96,8 +96,11 @@ const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incident
 
         // Logique bilan intelligente — cohérence métier protection enfance
         const sessionStart = ins.session_date ? new Date(ins.session_date) : null;
+        const sessionEnd = ins.session_end_date ? new Date(ins.session_end_date) : null;
         const now = new Date();
+        now.setHours(0, 0, 0, 0);
         const sejourPasCommence = sessionStart && now < sessionStart;
+        const sejourTermine = sessionEnd && now > sessionEnd;
 
         // Ignorer les appels bilan antérieurs au début du séjour (incohérents)
         const bilanCall = insCalls.find(c =>
@@ -120,7 +123,17 @@ const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incident
                 <p className="text-xs text-gray-500">{ins.sejour_titre}</p>
               </div>
               {/* Bilan intelligent */}
-              {bilanDate ? (
+              {sejourTermine && bilanDate ? (
+                <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1 flex-shrink-0">
+                  <Send className="w-3.5 h-3.5 text-blue-600" />
+                  <span className="text-xs font-medium text-blue-700">Bilan final envoye le {bilanDate}</span>
+                </div>
+              ) : sejourTermine ? (
+                <div className="flex items-center gap-1.5 bg-gray-100 border border-gray-200 rounded-lg px-2.5 py-1 flex-shrink-0">
+                  <ClipboardCheck className="w-3.5 h-3.5 text-gray-500" />
+                  <span className="text-xs font-medium text-gray-600">Termine — bilan final attendu</span>
+                </div>
+              ) : bilanDate ? (
                 <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1 flex-shrink-0">
                   <Send className="w-3.5 h-3.5 text-blue-600" />
                   <span className="text-xs font-medium text-blue-700">Envoye le {bilanDate}</span>
@@ -153,9 +166,11 @@ const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incident
               )}
             </div>
 
-            {/* Suivi terrain masqué si séjour pas commencé */}
+            {/* Suivi terrain masqué si séjour pas commencé ou terminé */}
             {sejourPasCommence ? (
               <p className="text-xs text-gray-400 italic">Sejour non debute — aucune activite a afficher.</p>
+            ) : sejourTermine ? (
+              <p className="text-xs text-gray-400 italic">Sejour termine le {sessionEnd ? fmt(sessionEnd.toISOString()) : ''}. {bilanDate ? 'Bilan transmis.' : 'Bilan final en attente.'}</p>
             ) : (<>
             {/* Evenements */}
             {insIncidents.length > 0 && (

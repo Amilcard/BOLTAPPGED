@@ -37,7 +37,7 @@ interface Props {
 const TYPE_CONFIG = {
   note:      { icon: FileText,     color: 'text-gray-500',  bg: 'bg-gray-50',  border: 'border-l-gray-300',  label: 'Note' },
   appel:     { icon: Phone,        color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-l-emerald-400', label: 'Appel' },
-  evenement: { icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-l-amber-400', label: 'Evenement' },
+  evenement: { icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-l-amber-400', label: 'Fait marquant' },
   medical:   { icon: Heart,        color: 'text-blue-600',  bg: 'bg-blue-50',  border: 'border-l-blue-400',  label: 'Medical' },
 };
 

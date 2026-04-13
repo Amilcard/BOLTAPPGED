@@ -114,7 +114,7 @@ export default function IncidentsPanel({ code, role, inscriptions }: Props) {
   };
 
   if (loading) return <div className="p-6 text-center text-gray-400">Chargement...</div>;
-  if (loadError) return <div className="p-4 bg-secondary-50 border border-secondary-200 rounded-xl text-sm text-secondary-700" role="alert">Impossible de charger les evenements. Rechargez la page ou contactez GED.</div>;
+  if (loadError) return <div className="p-4 bg-secondary-50 border border-secondary-200 rounded-xl text-sm text-secondary-700" role="alert">Impossible de charger les faits marquants. Rechargez la page ou contactez GED.</div>;
 
   return (
     <div className="space-y-4">
@@ -125,7 +125,7 @@ export default function IncidentsPanel({ code, role, inscriptions }: Props) {
             className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition"
           >
             {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-            {showForm ? 'Annuler' : 'Signaler un evenement'}
+            {showForm ? 'Annuler' : 'Signaler un fait marquant'}
           </button>
         </div>
       )}
@@ -161,7 +161,7 @@ export default function IncidentsPanel({ code, role, inscriptions }: Props) {
           </div>
           <div>
             <label htmlFor="inc-desc" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea id="inc-desc" name="description" required minLength={5} rows={3} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Decrire l'evenement..." />
+            <textarea id="inc-desc" name="description" required minLength={5} rows={3} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Decrire le fait marquant..." />
           </div>
           {submitError && <p className="text-sm text-red-600">Erreur lors du signalement. Veuillez réessayer.</p>}
           <button type="submit" disabled={submitting} className="px-4 py-2 bg-secondary text-white rounded-lg text-sm font-medium hover:bg-secondary-600 transition disabled:opacity-50">
@@ -171,7 +171,7 @@ export default function IncidentsPanel({ code, role, inscriptions }: Props) {
       )}
 
       {incidents.length === 0 ? (
-        <div className="p-8 text-center text-gray-400">Aucun evenement signale.</div>
+        <div className="p-8 text-center text-gray-400">Aucun fait marquant signale.</div>
       ) : (
         <div className="space-y-3">
           {incidents.map(inc => (

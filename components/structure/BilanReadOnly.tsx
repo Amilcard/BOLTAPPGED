@@ -175,7 +175,7 @@ const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incident
             {/* Evenements */}
             {insIncidents.length > 0 && (
               <div className="space-y-1 mb-3">
-                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Evenements signales</p>
+                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Faits marquants</p>
                 {insIncidents.slice(0, 3).map(e => (
                   <div key={e.id} className="flex items-start gap-2">
                     <AlertTriangle className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${SEVERITY_STYLES[e.severity] || 'text-gray-400'}`} />

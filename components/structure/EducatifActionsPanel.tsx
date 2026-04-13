@@ -97,7 +97,7 @@ const EducatifActionsPanel = React.memo(function EducatifActionsPanel({
       urgents.forEach(e => {
         result.push({
           id: `evt-${e.id}`, inscriptionId: ins.id, enfantNom: nom,
-          type: 'evenement', label: 'Evenement urgent', priorite: 0,
+          type: 'evenement', label: 'Fait marquant urgent', priorite: 0,
         });
       });
     });

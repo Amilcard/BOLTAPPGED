@@ -121,9 +121,9 @@ export default function StructureEduTab({
       icon: Users, color: 'bg-primary', accent: 'text-primary', ring: 'ring-primary/30',
     },
     {
-      key: 'incidents', label: 'Evenements',
+      key: 'incidents', label: 'Faits marquants',
       value: totalIncidents > 0 ? totalIncidents : 0,
-      sub: totalIncidents > 0 ? 'Non resolus' : 'Aucun evenement signale',
+      sub: totalIncidents > 0 ? 'Fait(s) signale(s)' : 'Aucun fait signale',
       icon: AlertTriangle,
       color: totalIncidents > 0 ? 'bg-red-600' : 'bg-green-600',
       accent: totalIncidents > 0 ? 'text-red-700' : 'text-green-700',

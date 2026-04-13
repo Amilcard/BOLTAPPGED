@@ -86,6 +86,22 @@ export async function GET(
   // Enrichir (logique partagée avec /api/admin/inscriptions)
   const enriched = enrichInscriptions((inscriptions || []) as InscriptionRaw[]);
 
+  // Lookup session_end_date (join gd_stay_sessions par slug + start_date)
+  const sessionDates = enriched.map(i => ({ slug: i.sejour_slug, start: (i as Record<string, unknown>).session_date })).filter(s => s.slug && s.start);
+  if (sessionDates.length > 0) {
+    const { data: sessions } = await supabase
+      .from('gd_stay_sessions')
+      .select('stay_slug, start_date, end_date')
+      .in('stay_slug', [...new Set(sessionDates.map(s => s.slug))]);
+    if (sessions) {
+      const sessionMap = new Map(sessions.map(s => [`${s.stay_slug}|${s.start_date}`, s.end_date]));
+      enriched.forEach((ins: Record<string, unknown>) => {
+        const key = `${ins.sejour_slug}|${ins.session_date}`;
+        ins.session_end_date = sessionMap.get(key) || null;
+      });
+    }
+  }
+
   const s = structure as Record<string, unknown>;
   const showCodes = role === 'direction' || role === 'cds_delegated';
 

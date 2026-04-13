@@ -19,6 +19,7 @@ export interface ChildCardInscription {
   sejour_titre: string;
   sejour_slug: string;
   session_date?: string | null;
+  session_end_date?: string | null;
   status: string;
   besoins_specifiques?: string | null;
   dossier_completude: DossierCompletude | null;
@@ -63,6 +64,24 @@ const ChildCard = React.memo(function ChildCard({
   const status = STATUS_MAP[ins.status] || STATUS_MAP.en_attente;
   const scoreColor = score === 4 ? 'text-green-600 bg-green-50' : score >= 2 ? 'text-amber-600 bg-amber-50' : 'text-red-600 bg-red-50';
 
+  // Countdown label
+  const countdownLabel = (() => {
+    if (!ins.session_date) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const start = new Date(ins.session_date);
+    start.setHours(0, 0, 0, 0);
+    const diffStart = Math.ceil((start.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffStart > 0) return `Depart dans ${diffStart}j`;
+    if (!ins.session_end_date) return `En sejour — J+${Math.abs(diffStart)}`;
+    const end = new Date(ins.session_end_date);
+    end.setHours(0, 0, 0, 0);
+    const diffEnd = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffEnd < 0) return `Termine`;
+    if (diffEnd <= 2) return `Retour dans ${diffEnd}j`;
+    return `En sejour — J+${Math.abs(diffStart)}`;
+  })();
+
   return (
     <button
       onClick={() => onSelect(ins.id)}
@@ -89,6 +108,7 @@ const ChildCard = React.memo(function ChildCard({
             )}
           </div>
           <p className="text-xs text-gray-500 mt-1 truncate">{ins.sejour_titre}</p>
+          {countdownLabel && <p className="text-[11px] text-primary-400 mt-0.5">{countdownLabel}</p>}
           <p className="text-xs text-gray-400 mt-0.5">Ref. {ins.referent_nom}</p>
         </div>
         <span className={`text-xs font-bold px-2 py-1 rounded-lg flex-shrink-0 ${scoreColor}`}>

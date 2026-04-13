@@ -39,7 +39,20 @@ interface Inscription {
   jeune_nom: string;
   sejour_titre: string;
   session_date?: string | null;
+  session_end_date?: string | null;
   status: string;
+}
+
+function relative(target: Date): string {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const t = new Date(target);
+  t.setHours(0, 0, 0, 0);
+  const diff = Math.ceil((t.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (diff === 0) return "aujourd'hui";
+  if (diff === 1) return 'demain';
+  if (diff > 0) return `dans ${diff}j`;
+  return `il y a ${Math.abs(diff)}j`;
 }
 
 interface Props {
@@ -115,7 +128,7 @@ const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incident
               ) : sejourPasCommence ? (
                 <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1 flex-shrink-0">
                   <ClipboardCheck className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs font-medium text-gray-500">Sejour pas encore commence</span>
+                  <span className="text-xs font-medium text-gray-500">Non debute</span>
                 </div>
               ) : isSuiviEnCours ? (
                 <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-lg px-2.5 py-1 flex-shrink-0">
@@ -125,12 +138,12 @@ const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incident
               ) : isEnRetard ? (
                 <div className="flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1 flex-shrink-0">
                   <ClipboardCheck className="w-3.5 h-3.5 text-red-500" />
-                  <span className="text-xs font-medium text-red-700">En retard — attendu avant le {bilanDeadline ? fmt(bilanDeadline.toISOString()) : ''}</span>
+                  <span className="text-xs font-medium text-red-700">En retard ({bilanDeadline ? relative(bilanDeadline) : ''})</span>
                 </div>
               ) : bilanDeadline ? (
                 <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1 flex-shrink-0">
                   <ClipboardCheck className="w-3.5 h-3.5 text-amber-500" />
-                  <span className="text-xs font-medium text-amber-700">A transmettre avant le {fmt(bilanDeadline.toISOString())}</span>
+                  <span className="text-xs font-medium text-amber-700">A transmettre avant le {fmt(bilanDeadline.toISOString())} ({relative(bilanDeadline)})</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1 flex-shrink-0">
@@ -142,7 +155,7 @@ const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incident
 
             {/* Suivi terrain masqué si séjour pas commencé */}
             {sejourPasCommence ? (
-              <p className="text-xs text-gray-400 italic">Aucune activite avant le debut du sejour.</p>
+              <p className="text-xs text-gray-400 italic">Sejour non debute — aucune activite a afficher.</p>
             ) : (<>
             {/* Evenements */}
             {insIncidents.length > 0 && (

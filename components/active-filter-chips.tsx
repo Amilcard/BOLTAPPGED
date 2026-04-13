@@ -113,7 +113,8 @@ export function ActiveFilterChips({
             {chip.label}
             <button
               onClick={chip.onRemove}
-              className="p-0.5 hover:bg-gray-100 rounded-full transition"
+              aria-label={`Supprimer le filtre ${chip.label}`}
+              className="p-1.5 min-w-[32px] min-h-[32px] flex items-center justify-center hover:bg-gray-100 rounded-full transition"
             >
               <X className="w-3 h-3 text-gray-400" />
             </button>

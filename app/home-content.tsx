@@ -44,7 +44,7 @@ function StayGrid({ title, stays, columns = 3 }: { title: string; stays: Stay[];
   return (
     <section className="pb-6">
       <div className="max-w-7xl mx-auto px-4">
-        {title && <h2 className="text-lg font-semibold text-gray-900 mb-4">{title}</h2>}
+        {title && <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>}
         <div className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-${columns}`}>
           {stays.map((stay) => (
             <StayCard key={stay.id} stay={stay} />

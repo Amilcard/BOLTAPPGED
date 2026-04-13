@@ -122,7 +122,7 @@ export function ProGateModal({ open, onClose, variant, sejourSlug, reserverParam
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
               />
             </div>
-            {error && <p className="text-xs text-red-500">{error}</p>}
+            {error && <p className="text-xs text-red-500" role="alert">{error}</p>}
             <p className="text-[11px] text-gray-400">
               Votre email est utilisé uniquement pour vous identifier en tant que professionnel. Il n&apos;est ni partagé ni utilisé à des fins commerciales.
             </p>
@@ -171,7 +171,7 @@ export function ProGateModal({ open, onClose, variant, sejourSlug, reserverParam
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
               />
             </div>
-            {error && <p className="text-xs text-red-500">{error}</p>}
+            {error && <p className="text-xs text-red-500" role="alert">{error}</p>}
             <Button onClick={handleSubmitEmail} className="w-full">
               Voir les tarifs détaillés
               <ArrowRight className="w-4 h-4 ml-1" />

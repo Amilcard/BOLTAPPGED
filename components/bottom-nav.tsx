@@ -49,7 +49,7 @@ export function BottomNav() {
               key={item.key}
               onClick={() => handleClick(item)}
               className={`relative flex flex-col items-center justify-center flex-1 h-full transition-colors ${
-                active ? 'text-primary' : 'text-gray-500 hover:text-primary'
+                active ? 'text-primary' : 'text-gray-600 hover:text-primary'
               }`}
             >
               <div className="relative">

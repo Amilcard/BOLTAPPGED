@@ -57,7 +57,7 @@ export function StayCard({ stay }: { stay: Stay }) {
         <div className="flex flex-col flex-1 p-5">
 
           {/* Metadata Row (Structure forcée 2 lignes pour alignement Titre) */}
-          <div className="mb-3 text-[10px] font-heading font-bold uppercase tracking-widest text-dark/60 flex flex-col gap-1">
+          <div className="mb-3 text-[10px] font-heading font-bold uppercase tracking-widest text-primary/60 flex flex-col gap-1">
             {/* Ligne 1: Age + Durée */}
             <div className="flex items-center gap-2">
               <span>{(stay?.ageRangesDisplay && !stay.ageRangesDisplay.startsWith('0-0')) ? stay.ageRangesDisplay : (stay?.ageMin && stay?.ageMax ? `${stay.ageMin}-${stay.ageMax} ANS` : 'ENFANTS')}</span>
@@ -71,7 +71,7 @@ export function StayCard({ stay }: { stay: Stay }) {
           </div>
 
           {/* Ligne 1: Titre (Dark Blue #2E4053) */}
-          <h3 className="text-lg font-extrabold text-dark font-heading leading-tight line-clamp-2 mb-2 group-hover:text-primary transition-colors min-h-[3rem]">
+          <h3 className="text-lg font-extrabold text-primary font-heading leading-tight line-clamp-2 mb-2 group-hover:text-primary transition-colors min-h-[3rem]">
             {displayTitle ?? 'Séjour sans titre'}
           </h3>
 
@@ -92,7 +92,7 @@ export function StayCard({ stay }: { stay: Stay }) {
             )}
 
             {/* CTA Minimalist */}
-            <span className="px-3 py-1.5 border border-gray-300 rounded-full text-xs font-bold text-dark transition-all duration-300 group-hover:bg-secondary group-hover:text-white group-hover:border-secondary">
+            <span className="px-3 py-1.5 border border-gray-300 rounded-full text-xs font-bold text-primary transition-all duration-300 group-hover:bg-secondary group-hover:text-white group-hover:border-secondary">
               En savoir +
             </span>
           </div>

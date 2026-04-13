@@ -81,6 +81,17 @@ export async function POST(request: NextRequest) {
     const data = parsed.data;
     const normalizedDate = data.sessionDate.split('T')[0];
 
+    // Vérification âge 3-17 ans (réglementaire — séjours éducatifs mineurs)
+    const birthDate = new Date(data.childBirthDate);
+    const sessionStart = new Date(normalizedDate);
+    const ageAtSession = Math.floor((sessionStart.getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+    if (ageAtSession < 3 || ageAtSession > 17) {
+      return NextResponse.json(
+        { error: { code: 'AGE_INVALID', message: `Âge au séjour : ${ageAtSession} ans. Les séjours sont réservés aux 3-17 ans.` } },
+        { status: 400 }
+      );
+    }
+
     // Vérifier que le séjour existe
     const { data: stayRows } = await supabase
       .from('gd_stays')

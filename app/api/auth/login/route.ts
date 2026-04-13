@@ -3,70 +3,18 @@ import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { setSessionCookie } from '@/lib/auth-cookies';
 import { SignJWT } from 'jose';
+import { isRateLimited as isRateLimitedAtomic, getClientIpFromHeaders } from '@/lib/rate-limit';
 
 const MAX_ATTEMPTS = 5;
 const WINDOW_MINUTES = 15;
 
-// getClientIp consolidé — import depuis lib/rate-limit
-import { getClientIpFromHeaders } from '@/lib/rate-limit';
 function getClientIp(req: NextRequest): string {
   return getClientIpFromHeaders(req.headers);
 }
 
-/**
- * Rate limiting persistant via Supabase (table gd_login_attempts).
- * Résiste au multi-instance Vercel contrairement au Map en mémoire.
- *
- * La table est créée par la migration sql/025_login_rate_limiting.sql :
- *   gd_login_attempts(ip TEXT PK, attempt_count INT, window_start TIMESTAMPTZ)
- */
-async function isRateLimited(ip: string): Promise<boolean> {
-  try {
-    const supabase = getSupabaseAdmin();
-    const now = new Date();
-    const windowStart = new Date(now.getTime() - WINDOW_MINUTES * 60 * 1000);
-
-    // Lire l'entrée existante
-    const { data: entry } = await supabase
-      .from('gd_login_attempts')
-      .select('attempt_count, window_start')
-      .eq('ip', ip)
-      .single();
-
-    // Pas d'entrée ou fenêtre expirée → reset
-    if (!entry || new Date(entry.window_start) < windowStart) {
-      await supabase
-        .from('gd_login_attempts')
-        .upsert(
-          { ip, attempt_count: 1, window_start: now.toISOString() },
-          { onConflict: 'ip' }
-        );
-      return false;
-    }
-
-    // Trop de tentatives dans la fenêtre
-    if (entry.attempt_count >= MAX_ATTEMPTS) {
-      return true;
-    }
-
-    // Incrémenter le compteur
-    await supabase
-      .from('gd_login_attempts')
-      .update({ attempt_count: entry.attempt_count + 1 })
-      .eq('ip', ip);
-
-    return false;
-  } catch (err) {
-    // Fail-closed : si on ne peut pas vérifier, on bloque par précaution
-    // (données enfants ASE — mieux bloquer que laisser passer)
-    console.error('[rate-limit] Erreur DB, fail-closed:', err);
-    return true;
-  }
-}
-
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
-  if (await isRateLimited(ip)) {
+  if (await isRateLimitedAtomic('login', ip, MAX_ATTEMPTS, WINDOW_MINUTES)) {
     return NextResponse.json(
       { error: 'Trop de tentatives. Réessayez dans 15 minutes.' },
       { status: 429, headers: { 'Retry-After': '900' } }

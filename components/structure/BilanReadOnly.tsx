@@ -81,15 +81,22 @@ const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incident
         const insNotes     = notes.filter(n => n.inscription_id === ins.id).sort((a, b) => b.created_at.localeCompare(a.created_at));
         const hasUrgent    = insIncidents.some(e => e.severity === 'urgent' && e.status === 'ouvert');
 
-        // Logique bilan intelligente : deadline = session_start + 5 jours
-        const bilanCall = insCalls.find(c => c.call_type === 'bilan' || c.resume?.toLowerCase().includes('bilan') || c.resume?.toLowerCase().includes('cadre'));
+        // Logique bilan intelligente — cohérence métier protection enfance
+        const sessionStart = ins.session_date ? new Date(ins.session_date) : null;
+        const now = new Date();
+        const sejourPasCommence = sessionStart && now < sessionStart;
+
+        // Ignorer les appels bilan antérieurs au début du séjour (incohérents)
+        const bilanCall = insCalls.find(c =>
+          (c.call_type === 'bilan' || c.resume?.toLowerCase().includes('bilan') || c.resume?.toLowerCase().includes('cadre'))
+          && (!sessionStart || new Date(c.created_at) >= sessionStart)
+        );
         const bilanDate = bilanCall ? fmt(bilanCall.created_at) : null;
 
-        const sessionStart = ins.session_date ? new Date(ins.session_date) : null;
         const bilanDeadline = sessionStart ? new Date(sessionStart.getTime() + 5 * 24 * 60 * 60 * 1000) : null;
-        const now = new Date();
-        const isEnRetard = bilanDeadline && !bilanDate && now > bilanDeadline;
-        const sejourPasCommence = sessionStart && now < sessionStart;
+        const suiviJ3 = sessionStart ? new Date(sessionStart.getTime() + 3 * 24 * 60 * 60 * 1000) : null;
+        const isSuiviEnCours = sessionStart && !sejourPasCommence && suiviJ3 && now < suiviJ3 && !bilanDate;
+        const isEnRetard = bilanDeadline && !bilanDate && !isSuiviEnCours && now > bilanDeadline;
 
         return (
           <div key={ins.id} className={`rounded-xl border p-4 ${hasUrgent ? 'border-red-200 bg-red-50/50' : 'border-gray-100 bg-white'}`}>
@@ -109,6 +116,11 @@ const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incident
                 <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1 flex-shrink-0">
                   <ClipboardCheck className="w-3.5 h-3.5 text-gray-400" />
                   <span className="text-xs font-medium text-gray-500">Sejour pas encore commence</span>
+                </div>
+              ) : isSuiviEnCours ? (
+                <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-lg px-2.5 py-1 flex-shrink-0">
+                  <ClipboardCheck className="w-3.5 h-3.5 text-green-500" />
+                  <span className="text-xs font-medium text-green-700">Suivi en cours</span>
                 </div>
               ) : isEnRetard ? (
                 <div className="flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1 flex-shrink-0">

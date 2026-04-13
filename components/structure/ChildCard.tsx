@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { FileText, Phone, AlertCircle } from 'lucide-react';
+import { getDemoNow } from '@/lib/demo-date';
 
 interface DossierCompletude {
   bulletin: boolean;
@@ -67,7 +68,7 @@ const ChildCard = React.memo(function ChildCard({
   // Countdown label
   const countdownLabel = (() => {
     if (!ins.session_date) return null;
-    const today = new Date();
+    const today = getDemoNow();
     today.setHours(0, 0, 0, 0);
     const start = new Date(ins.session_date);
     start.setHours(0, 0, 0, 0);

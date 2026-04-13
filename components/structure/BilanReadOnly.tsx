@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { AlertTriangle, Phone, FileText, ClipboardCheck, Send } from 'lucide-react';
+import { getDemoNow } from '@/lib/demo-date';
 
 interface Incident {
   id: string;
@@ -44,7 +45,7 @@ interface Inscription {
 }
 
 function relative(target: Date): string {
-  const today = new Date();
+  const today = getDemoNow();
   today.setHours(0, 0, 0, 0);
   const t = new Date(target);
   t.setHours(0, 0, 0, 0);
@@ -97,7 +98,7 @@ const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incident
         // Logique bilan intelligente — cohérence métier protection enfance
         const sessionStart = ins.session_date ? new Date(ins.session_date) : null;
         const sessionEnd = ins.session_end_date ? new Date(ins.session_end_date) : null;
-        const now = new Date();
+        const now = getDemoNow();
         now.setHours(0, 0, 0, 0);
         const sejourPasCommence = sessionStart && now < sessionStart;
         const sejourTermine = sessionEnd && now > sessionEnd;
@@ -151,7 +152,7 @@ const BilanReadOnly = React.memo(function BilanReadOnly({ inscriptions, incident
               ) : isEnRetard ? (
                 <div className="flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1 flex-shrink-0">
                   <ClipboardCheck className="w-3.5 h-3.5 text-red-500" />
-                  <span className="text-xs font-medium text-red-700">Bilan interm\u00e9diaire en retard ({bilanDeadline ? relative(bilanDeadline) : ''})</span>
+                  <span className="text-xs font-medium text-red-700">Bilan interm\u00e9diaire en retard (depuis {bilanDeadline ? Math.abs(Math.ceil((now.getTime() - bilanDeadline.getTime()) / (1000 * 60 * 60 * 24))) : '?'} j)</span>
                 </div>
               ) : bilanDeadline ? (
                 <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1 flex-shrink-0">

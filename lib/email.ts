@@ -150,7 +150,7 @@ export async function sendAdminNewInscriptionNotification(data: InscriptionEmail
             <li><strong>Montant :</strong> ${data.priceTotal.toFixed(2)} €</li>
             ${data.paymentMethod ? `<li><strong>Paiement :</strong> ${data.paymentMethod}</li>` : ''}
           </ul>
-          <p><a href="https://app.groupeetdecouverte.fr/admin/demandes" style="background: #2a383f; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none;">Voir dans l'admin</a></p>
+          <p><a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://app.groupeetdecouverte.fr'}/admin/demandes" style="background: #2a383f; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none;">Voir dans l'admin</a></p>
         </div>
       `,
     });
@@ -196,7 +196,7 @@ export async function sendPaymentConfirmedAdminNotification(data: {
               ${data.dossierRef ? `<tr><td style="padding: 6px 0; color: #6b7280;">Dossier</td><td style="padding: 6px 0; font-family: monospace;">${data.dossierRef}</td></tr>` : ''}
               <tr><td style="padding: 6px 0; color: #6b7280;">Montant</td><td style="padding: 6px 0; font-weight: bold; color: #16a34a;">${data.amount.toFixed(2)} €</td></tr>
             </table>
-            <p style="margin-top: 16px;"><a href="https://app.groupeetdecouverte.fr/admin/demandes" style="background: #2a383f; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-size: 14px;">Voir dans l'admin</a></p>
+            <p style="margin-top: 16px;"><a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://app.groupeetdecouverte.fr'}/admin/demandes" style="background: #2a383f; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-size: 14px;">Voir dans l'admin</a></p>
           </div>
         </div>
       `,
@@ -693,7 +693,7 @@ export async function sendPriceInquiryToEducateur(data: PriceInquiryData): Promi
             ${prixSection}
             <p style="color: #444;">Ces tarifs sont adaptés selon votre type de structure (ASE, MECS, foyer). Accédez à l'espace professionnel pour inscrire un enfant sur ce séjour.</p>
             <div style="text-align:center;margin:24px 0">
-              <a href="https://app.groupeetdecouverte.fr/acceder-pro?sejour=${data.sejourSlug}"
+              <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://app.groupeetdecouverte.fr'}/acceder-pro?sejour=${data.sejourSlug}"
                  style="display:inline-block;background:#1d4ed8;color:white;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px">
                 Inscrire un enfant sur ce séjour →
               </a>
@@ -704,7 +704,7 @@ export async function sendPriceInquiryToEducateur(data: PriceInquiryData): Promi
             </p>
             <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 24px 0;" />
             <p style="color: #999; font-size: 12px; margin: 0;">Groupe &amp; Découverte — Séjours éducatifs pour enfants ASE<br>
-            <a href="https://app.groupeetdecouverte.fr" style="color: #999;">app.groupeetdecouverte.fr</a></p>
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://app.groupeetdecouverte.fr'}" style="color: #999;">app.groupeetdecouverte.fr</a></p>
           </div>
         </div>
       `,

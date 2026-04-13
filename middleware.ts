@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
+import { getClientIpFromHeaders } from '@/lib/rate-limit';
 
 // ---------------------------------------------------------------------------
 // Rate limiter in-memory (Edge-compatible, per warm instance)
@@ -15,11 +16,7 @@ const RATE_LIMITS: Record<string, { limit: number; windowMs: number }> = {
 };
 
 function getClientIp(req: NextRequest): string {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    req.headers.get('x-real-ip') ??
-    'unknown'
-  );
+  return getClientIpFromHeaders(req.headers);
 }
 
 function checkRateLimit(path: string, ip: string): boolean {

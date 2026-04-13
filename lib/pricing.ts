@@ -127,42 +127,6 @@ export class GedPricing {
   }
 
   /**
-   * Calculer le surcoût durée selon la règle GED "arrondi favorable"
-   * Règle officielle DB : durées proches de référence → forfait de référence
-   * Source de vérité : gd_session_prices (93% sessions appliquent cette règle)
-   */
-  private static getDurationSurcharge(durationDays: number): number {
-    const { DURATION_SURCHARGE } = this.CONFIG;
-
-    // Durées exactes de référence
-    if (durationDays === 7) return DURATION_SURCHARGE[7];   // 180€
-    if (durationDays === 14) return DURATION_SURCHARGE[14]; // 240€
-    if (durationDays === 21) return DURATION_SURCHARGE[21]; // 410€
-
-    // Règle "arrondi favorable" : durées proches → forfait de référence
-    // Observé en DB : 6j (93% à 180€), 11-13j (94% à 240€), 18-20j (93% à 410€)
-
-    // Groupe 7j : 5-8j → forfait 180€
-    if (durationDays >= 5 && durationDays <= 8) {
-      return DURATION_SURCHARGE[7]; // 180€
-    }
-
-    // Groupe 14j : 11-15j → forfait 240€
-    if (durationDays >= 11 && durationDays <= 15) {
-      return DURATION_SURCHARGE[14]; // 240€
-    }
-
-    // Groupe 21j : 18-22j → forfait 410€
-    if (durationDays >= 18 && durationDays <= 22) {
-      return DURATION_SURCHARGE[21]; // 410€
-    }
-
-    // Durées hors forfait : pas de markup (rare, ex: 3-4j, 9-10j, 16-17j, 23j+)
-    // Note: En DB, ces durées ont markup = 0€
-    return 0;
-  }
-
-  /**
    * Vérifie si une ville est une ville de départ GED
    */
   static isGedDepartureCity(city: string): boolean {

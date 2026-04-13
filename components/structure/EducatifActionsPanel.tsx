@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { ClipboardList, Phone, AlertCircle, FileCheck } from 'lucide-react';
+import { getDemoNow } from '@/lib/demo-date';
 import type { ChildCardInscription } from './ChildCard';
 
 interface Call { id: string; inscription_id: string; created_at: string; }
@@ -45,7 +46,7 @@ const TYPE_ICONS = {
 };
 
 function daysSince(iso: string): number {
-  return Math.floor((Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24));
+  return Math.floor((getDemoNow().getTime() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24));
 }
 
 const EducatifActionsPanel = React.memo(function EducatifActionsPanel({

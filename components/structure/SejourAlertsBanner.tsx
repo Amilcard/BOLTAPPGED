@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { AlertOctagon, Phone, Eye, CheckCircle } from 'lucide-react';
+import { getDemoNow } from '@/lib/demo-date';
 
 interface UrgentIncident {
   id: string;
@@ -24,7 +25,7 @@ interface Props {
 }
 
 function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
+  const diff = getDemoNow().getTime() - new Date(iso).getTime();
   const hours = Math.floor(diff / (1000 * 60 * 60));
   if (hours < 1) return 'Il y a moins d\'1h';
   if (hours < 24) return `Il y a ${hours}h`;

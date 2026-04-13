@@ -232,7 +232,7 @@ describe('Webhook Stripe — /api/webhooks/stripe', () => {
     }));
 
     const req = makeRequest(JSON.stringify(event));
-    const res = await POST(req as unknown as NextRequest);
+    const _res = await POST(req as unknown as NextRequest);
 
     expect(mockSupabaseUpdate).toHaveBeenCalledWith(
       'gd_inscriptions',

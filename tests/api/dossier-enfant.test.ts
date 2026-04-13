@@ -26,8 +26,6 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 
 const INTEGRATION = process.env.RUN_INTEGRATION === 'true';
-const itIntegration = INTEGRATION ? it : it.skip;
-
 const BASE_URL = process.env.BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 const TOKEN = process.env.TEST_SUIVI_TOKEN || '';
 const INSCRIPTION_ID = process.env.TEST_INSCRIPTION_ID || '';
@@ -35,8 +33,6 @@ const ADMIN_SESSION = process.env.TEST_ADMIN_SESSION || '';
 
 // UUID invalide utilisable comme fausse valeur
 const FAKE_UUID = '00000000-0000-0000-0000-000000000000';
-const VALID_UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 // Vérifie que l'URL de base répond (sinon tous les tests fetch échoueront avec ECONNREFUSED)
 let serverReachable = false;
 let _skippedNoServer = 0;

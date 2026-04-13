@@ -42,7 +42,7 @@ const REFERENT_EMAIL = 'marie.dupont@test.fr';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function makeGetRequest(token: string, id = INSCRIPTION_ID): NextRequest {
+function makeGetRequest(token: string, _id = INSCRIPTION_ID): NextRequest {
   return {
     nextUrl: { searchParams: { get: (k: string) => k === 'token' ? token : null } },
   } as unknown as NextRequest;
@@ -84,7 +84,7 @@ function setupMocks(opts: {
     ownershipFail = false,
   } = opts;
 
-  let inscriptionCalls = 0;
+  let _inscriptionCalls = 0;
 
   mockFrom.mockImplementation((table: string) => {
     if (table === 'gd_inscriptions') {
@@ -92,7 +92,7 @@ function setupMocks(opts: {
         select: () => ({
           eq: () => {
             const singleFn = () => {
-              inscriptionCalls++;
+              _inscriptionCalls++;
               if (ownershipFail) return { data: null, error: null };
               return { data: { referent_email: REFERENT_EMAIL, sejour_slug: sejourSlug }, error: null };
             };

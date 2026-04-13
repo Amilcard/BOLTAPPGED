@@ -110,7 +110,7 @@ const ChildTimeline = React.memo(function ChildTimeline({
     }
 
     return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [inscriptionId, notes, appels, evenements, medical, showMedicalDetail]);
+  }, [inscriptionId, notes, appels, evenements, medical, showMedicalDetail, enfantNom, souhaits]);
 
   if (timeline.length === 0) {
     return (

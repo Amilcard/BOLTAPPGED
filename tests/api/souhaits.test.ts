@@ -93,7 +93,7 @@ function setupCreatePath(opts: {
             }),
           }),
         }),
-        insert: (data: Record<string, unknown>) => ({
+        insert: (_data: Record<string, unknown>) => ({
           select: () => ({
             single: () => ({
               data: {
@@ -105,7 +105,7 @@ function setupCreatePath(opts: {
             }),
           }),
         }),
-        update: (data: Record<string, unknown>) => ({
+        update: (_data: Record<string, unknown>) => ({
           eq: () => ({ error: null }),
         }),
       };

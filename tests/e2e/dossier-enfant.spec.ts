@@ -126,7 +126,6 @@ test.describe('Dossier enfant — parcours référent', () => {
     await page.waitForTimeout(300);
 
     // La zone PJ doit contenir du texte ou un input file
-    const pjContent = page.locator('input[type="file"], text=documents, text=pièces jointes').first();
     // On vérifie a minima que la page est toujours stable après le clic
     await expect(page.locator('[data-testid="tab-pj"]')).toBeVisible();
   });

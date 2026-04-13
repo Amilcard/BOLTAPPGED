@@ -31,9 +31,6 @@ const mockOrder   = jest.fn();
 const mockEq      = jest.fn();
 const mockFrom    = jest.fn();
 
-const mockUpsert  = jest.fn();
-const mockInsert  = jest.fn();
-
 jest.mock('@/lib/supabase-server', () => ({
   getSupabase:      jest.fn(() => ({ from: mockFrom })),
   getSupabaseAdmin: jest.fn(() => ({ from: mockFrom })),
@@ -51,7 +48,7 @@ const mockSendEmail = emailLib.sendSouhaitNotificationEducateur as jest.Mock;
 const VALID_KID_TOKEN  = 'aaaaaaaa-0000-0000-0000-000000000001';
 const VALID_KID_TOKEN2 = 'aaaaaaaa-0000-0000-0000-000000000002';
 
-function makeGetRequest(kidToken: string) {
+function makeGetRequest(_kidToken: string) {
   return {
     nextUrl: { searchParams: new URLSearchParams() },
   } as unknown as NextRequest;

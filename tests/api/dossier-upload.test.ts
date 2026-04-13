@@ -91,14 +91,14 @@ function makeDeleteRequest(body: Record<string, unknown>): NextRequest {
 
 /** Mock ownership OK + dossier existant avec documents_joints vide */
 function setupOwnershipOk(dossierExists = true) {
-  let inscriptionCalls = 0;
+  let _inscriptionCalls = 0;
   mockFrom.mockImplementation((table: string) => {
     if (table === 'gd_inscriptions') {
       return {
         select: () => ({
           eq: () => {
             const singleFn = () => {
-              inscriptionCalls++;
+              _inscriptionCalls++;
               return { data: { referent_email: REFERENT_EMAIL }, error: null };
             };
             return { is: () => ({ single: singleFn }), single: singleFn };

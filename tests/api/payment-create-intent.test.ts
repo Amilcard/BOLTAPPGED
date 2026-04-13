@@ -160,7 +160,7 @@ describe('POST /api/payment/create-intent', () => {
   it('race condition : 0 lignes mises à jour → récupère intent concurrent → 200', async () => {
     // Simule : .update().eq().is().select() retourne 0 lignes
     // Puis .select().eq().single() retourne l'intent de la requête concurrente
-    let callCount = 0;
+    let _callCount = 0;
     mockSupabaseFrom.mockImplementation(() => ({
       select: () => ({
         eq: () => ({
@@ -168,7 +168,7 @@ describe('POST /api/payment/create-intent', () => {
             single: () => ({ data: VALID_INSCRIPTION, error: null }),
           }),
           single: () => {
-            callCount++;
+            _callCount++;
             // 2ème appel = récupération après race condition
             return { data: { stripe_payment_intent_id: 'pi_concurrent_789' }, error: null };
           },

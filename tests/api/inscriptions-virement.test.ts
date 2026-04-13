@@ -22,18 +22,18 @@ process.env.NEXT_PUBLIC_SITE_URL = 'http://localhost:3000';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
-let lastInsertData: Record<string, unknown> | null = null;
+let _lastInsertData: Record<string, unknown> | null = null;
 
 const mockSingle = jest.fn();
 const mockEq = jest.fn().mockReturnValue({ single: mockSingle });
 const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
 const mockInsert = jest.fn().mockImplementation((data: unknown) => {
-  lastInsertData = data as Record<string, unknown>;
+  _lastInsertData = data as Record<string, unknown>;
   return { select: jest.fn().mockReturnValue({ single: mockSingle }) };
 });
 const mockRpc = jest.fn();
 
-const mockFrom = jest.fn().mockImplementation((table: string) => {
+const mockFrom = jest.fn().mockImplementation((_table: string) => {
   return {
     select: mockSelect,
     insert: mockInsert,
@@ -151,7 +151,7 @@ function setupHappyPath() {
           }),
         }),
         insert: jest.fn().mockImplementation((data: unknown) => {
-          lastInsertData = data as Record<string, unknown>;
+          _lastInsertData = data as Record<string, unknown>;
           return {
             select: jest.fn().mockReturnValue({
               single: jest.fn().mockResolvedValue({
@@ -219,7 +219,7 @@ function setupHappyPath() {
 describe('POST /api/inscriptions — virement & chèque', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    lastInsertData = null;
+    _lastInsertData = null;
   });
 
   it('renvoie 400 si email manquant', async () => {

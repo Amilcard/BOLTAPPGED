@@ -170,7 +170,7 @@ export default function StructureEduTab({
             <Phone className="w-5 h-5 text-red-700 flex-shrink-0" />
             <div>
               <p className="font-bold text-red-800 text-sm">GED Astreinte 24h/24 — 7j/7</p>
-              <p className="text-xl font-bold text-red-900">06 •• •• •• ••</p>
+              <p className="text-xl font-bold text-red-900">06 12 34 56 78</p>
             </div>
           </div>
           <div className="text-right hidden sm:block">

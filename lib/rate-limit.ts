@@ -43,7 +43,7 @@ export async function isRateLimited(
       .eq('ip', key);
     return false;
   } catch {
-    return false; // fail-open : ne pas bloquer si la DB est indisponible
+    return true; // fail-closed : bloquer si la DB est indisponible (sécurité ASE)
   }
 }
 

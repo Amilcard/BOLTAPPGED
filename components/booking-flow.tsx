@@ -745,7 +745,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                           setStep1(prev => ({
                             ...prev,
                             structureVerified: true,
-                            structureId: json.structureId,
+                            structureId: null, // ID non exposé par l'API (sécurité)
                             structureName: json.name,
                             structureAddress: json.address || '',
                             structurePostalCode: json.postalCode || '',

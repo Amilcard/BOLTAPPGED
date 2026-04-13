@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
+import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 
 /**
  * POST /api/waitlist
@@ -9,6 +10,14 @@ import { getSupabase } from '@/lib/supabase-server';
  */
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIpFromHeaders(req.headers);
+    if (await isRateLimited('waitlist', ip, 10, 5)) {
+      return NextResponse.json(
+        { error: 'Trop de tentatives. Réessayez dans quelques minutes.' },
+        { status: 429, headers: { 'Retry-After': '300' } }
+      );
+    }
+
     const { email, sejourSlug, nom } = await req.json();
 
     if (!email || !sejourSlug || !email.includes('@')) {

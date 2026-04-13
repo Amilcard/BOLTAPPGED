@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 
 const PRIMARY = rgb(0.165, 0.220, 0.247);   // #2a383f
 const SECONDARY = rgb(0.871, 0.451, 0.337);  // #de7356
@@ -42,6 +43,14 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const ip = getClientIpFromHeaders(req.headers);
+    if (await isRateLimited('recap-pdf', ip, 5, 5)) {
+      return NextResponse.json(
+        { error: { code: 'RATE_LIMITED', message: 'Trop de tentatives. Réessayez dans quelques minutes.' } },
+        { status: 429, headers: { 'Retry-After': '300' } }
+      );
+    }
+
     const { id } = await params;
     const token = req.nextUrl.searchParams.get('token');
 

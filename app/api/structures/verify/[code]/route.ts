@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
+import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 
 /**
  * GET /api/structures/verify/[code]
@@ -15,6 +16,14 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+  const ip = getClientIpFromHeaders(req.headers);
+  if (await isRateLimited('struct-verify', ip, 15, 5)) {
+    return NextResponse.json(
+      { valid: false, error: 'Trop de tentatives. Réessayez dans quelques minutes.' },
+      { status: 429, headers: { 'Retry-After': '300' } }
+    );
+  }
+
   const { code } = await params;
 
   // Validation format : 6 caractères alphanum majuscules
@@ -38,7 +47,6 @@ export async function GET(
 
     return NextResponse.json({
       valid: true,
-      structureId: data.id,
       name: data.name,
       city: data.city,
       postalCode: data.postal_code,

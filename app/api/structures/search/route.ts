@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
 import { GdStructureSearchResult } from '@/lib/types';
+import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 
 /**
  * GET /api/structures/search?cp=76600
@@ -11,6 +12,14 @@ import { GdStructureSearchResult } from '@/lib/types';
  * Utilisé dans BookingFlow pour détecter les doublons.
  */
 export async function GET(req: NextRequest) {
+  const ip = getClientIpFromHeaders(req.headers);
+  if (await isRateLimited('struct-search', ip, 10, 5)) {
+    return NextResponse.json(
+      { error: 'Trop de tentatives. Réessayez dans quelques minutes.' },
+      { status: 429, headers: { 'Retry-After': '300' } }
+    );
+  }
+
   const cp = req.nextUrl.searchParams.get('cp');
 
   if (!cp || !/^\d{5}$/.test(cp)) {

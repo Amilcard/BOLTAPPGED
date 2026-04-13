@@ -44,6 +44,7 @@ END;
 $$;
 
 -- Autoriser l'appel via service_role uniquement
+ALTER FUNCTION check_rate_limit(TEXT, INT, INT) SET search_path = public;
 REVOKE ALL ON FUNCTION check_rate_limit FROM PUBLIC;
 REVOKE ALL ON FUNCTION check_rate_limit FROM anon;
 REVOKE ALL ON FUNCTION check_rate_limit FROM authenticated;

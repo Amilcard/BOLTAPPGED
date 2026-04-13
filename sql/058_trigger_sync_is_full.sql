@@ -23,6 +23,8 @@ END;
 $$;
 
 -- Drop si existe déjà (idempotent)
+ALTER FUNCTION sync_is_full_to_sessions() SET search_path = public;
+
 DROP TRIGGER IF EXISTS trg_sync_is_full ON gd_session_prices;
 
 CREATE TRIGGER trg_sync_is_full

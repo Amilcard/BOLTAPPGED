@@ -58,6 +58,13 @@ export async function GET(req: NextRequest) {
   }
   const medEventsDeleted = expiredEvents?.length ?? 0;
 
+  // Purge tokens JWT révoqués déjà expirés (ne servent plus, RGPD minimisation)
+  const { error: errRevoked } = await supabase
+    .from('gd_revoked_tokens')
+    .delete()
+    .lt('expires_at', new Date().toISOString());
+  if (errRevoked) errors.push(`revoked_tokens: ${errRevoked.message}`);
+
   // Purge audit logs > 3 ans (recommandation CNIL)
   const { data: auditOldResult, error: errAuditOld } = await supabase.rpc('purge_old_audit_logs');
   if (errAuditOld) errors.push(`audit_logs_3y: ${errAuditOld.message}`);
@@ -67,7 +74,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, errors }, { status: 500 });
   }
 
-  console.log(`[rgpd-purge] audit_logs_12m: ${auditResult ?? 0}, medical_data: ${medicalResult ?? 0}, medical_events: ${medEventsDeleted}, login_attempts: ${loginResult ?? 'ok'}, audit_logs_3y: ${auditOldResult ?? 'ok'}`);
+  console.log(`[rgpd-purge] audit_logs_12m: ${auditResult ?? 0}, medical_data: ${medicalResult ?? 0}, medical_events: ${medEventsDeleted}, login_attempts: ${loginResult ?? 'ok'}, revoked_tokens: ok, audit_logs_3y: ${auditOldResult ?? 'ok'}`);
 
   return NextResponse.json({
     ok: true,
@@ -76,6 +83,7 @@ export async function GET(req: NextRequest) {
       medical_data: medicalResult ?? 0,
       medical_events_3m: medEventsDeleted,
       login_attempts_24h: loginResult ?? 'ok',
+      revoked_tokens: 'ok',
       audit_logs_3y: auditOldResult ?? 'ok',
     },
   });

@@ -12,7 +12,8 @@ const htmlEscape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
 
 // Domaine groupeetdecouverte.fr vérifié sur Resend
 const FROM_EMAIL = 'Groupe & Découverte <noreply@groupeetdecouverte.fr>';
-const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'contact@groupeetdecouverte.fr,groupeetdecouverte@gmail.com';
+const ADMIN_EMAIL = (process.env.ADMIN_NOTIFICATION_EMAIL || 'contact@groupeetdecouverte.fr,groupeetdecouverte@gmail.com')
+  .split(',').map(e => e.trim()).filter(Boolean);
 
 interface InscriptionEmailData {
   referentNom: string;

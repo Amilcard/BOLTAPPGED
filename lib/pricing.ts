@@ -355,8 +355,8 @@ export interface EnrichmentSessionData {
 function isoToDDMM(isoDate: string): string {
   const d = new Date(isoDate);
   if (isNaN(d.getTime())) return '';
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
   return `${day}/${month}`;
 }
 

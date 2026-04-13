@@ -178,6 +178,9 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+  const rateLimited = await structureRateLimitGuard(req);
+  if (rateLimited) return rateLimited;
+
   const { code } = await params;
   const resolved = await resolveCodeToStructure(code);
   if (!resolved || !['direction', 'cds', 'cds_delegated'].includes(resolved.role)) {

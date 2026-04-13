@@ -1,6 +1,8 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
+import { verifyOwnership } from '@/lib/verify-ownership';
+import { auditLog } from '@/lib/audit-log';
 
 const DOC_LABELS: Record<string, string> = {
   bulletin: "Bulletin d'inscription",
@@ -34,15 +36,10 @@ export async function POST(
 
     const supabase = getSupabase();
 
-    // Vérifier ownership
-    const { data: source } = await supabase
-      .from('gd_inscriptions')
-      .select('referent_email')
-      .eq('suivi_token', token)
-      .single();
-
-    if (!source) {
-      return NextResponse.json({ error: 'Token invalide.' }, { status: 404 });
+    // Vérifier ownership via fonction centralisée (expiration + referent_email)
+    const ownership = await verifyOwnership(supabase, token, inscriptionId);
+    if (!ownership.ok) {
+      return NextResponse.json({ error: ownership.message }, { status: ownership.status });
     }
 
     const { data: inscription } = await supabase
@@ -51,8 +48,8 @@ export async function POST(
       .eq('id', inscriptionId)
       .single();
 
-    if (!inscription || inscription.referent_email !== (source as Record<string, string>).referent_email) {
-      return NextResponse.json({ error: 'Accès non autorisé.' }, { status: 403 });
+    if (!inscription) {
+      return NextResponse.json({ error: 'Inscription introuvable.' }, { status: 404 });
     }
 
     // Appel interne — résolution URL compatible Vercel preview + prod
@@ -120,6 +117,17 @@ export async function POST(
       console.error('[pdf-email] Resend error:', await resendRes.text());
       return NextResponse.json({ error: 'Envoi email échoué.' }, { status: 500 });
     }
+
+    // Audit RGPD — traçabilité envoi document nominatif
+    auditLog(supabase, {
+      action: 'download',
+      resourceType: 'document',
+      resourceId: inscriptionId,
+      inscriptionId,
+      actorType: 'referent',
+      actorId: ownership.referentEmail,
+      metadata: { type, sentTo: insc.referent_email, channel: 'email' },
+    }).catch(() => {});
 
     return NextResponse.json({ ok: true, sentTo: insc.referent_email });
   } catch (err) {

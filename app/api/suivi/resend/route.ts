@@ -28,7 +28,7 @@ async function isResendRateLimited(ip: string): Promise<boolean> {
       .eq('ip', `resend:${ip}`);
     return false;
   } catch {
-    return false; // fail-open
+    return true; // fail-closed — en cas d'erreur DB, bloquer par précaution
   }
 }
 

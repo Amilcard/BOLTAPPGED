@@ -149,6 +149,129 @@ export type Database = {
           },
         ]
       }
+      gd_admin_2fa: {
+        Row: {
+          created_at: string | null
+          enabled: boolean | null
+          totp_secret: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          enabled?: boolean | null
+          totp_secret: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          enabled?: boolean | null
+          totp_secret?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      gd_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_type: string
+          created_at: string
+          id: string
+          inscription_id: string | null
+          integrity_hash: string | null
+          ip_address: string | null
+          metadata: Json | null
+          resource_id: string
+          resource_type: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_type: string
+          created_at?: string
+          id?: string
+          inscription_id?: string | null
+          integrity_hash?: string | null
+          ip_address?: string | null
+          metadata?: Json | null
+          resource_id: string
+          resource_type: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_type?: string
+          created_at?: string
+          id?: string
+          inscription_id?: string | null
+          integrity_hash?: string | null
+          ip_address?: string | null
+          metadata?: Json | null
+          resource_id?: string
+          resource_type?: string
+        }
+        Relationships: []
+      }
+      gd_calls: {
+        Row: {
+          call_date: string
+          call_type: string
+          created_at: string
+          created_by: string
+          direction: string
+          id: string
+          inscription_id: string | null
+          interlocuteur: string
+          parent_accord: boolean | null
+          resume: string
+          structure_id: string
+        }
+        Insert: {
+          call_date?: string
+          call_type: string
+          created_at?: string
+          created_by: string
+          direction: string
+          id?: string
+          inscription_id?: string | null
+          interlocuteur: string
+          parent_accord?: boolean | null
+          resume: string
+          structure_id: string
+        }
+        Update: {
+          call_date?: string
+          call_type?: string
+          created_at?: string
+          created_by?: string
+          direction?: string
+          id?: string
+          inscription_id?: string | null
+          interlocuteur?: string
+          parent_accord?: boolean | null
+          resume?: string
+          structure_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gd_calls_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "gd_inscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gd_calls_structure_id_fkey"
+            columns: ["structure_id"]
+            isOneToOne: false
+            referencedRelation: "gd_structures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gd_dossier_enfant: {
         Row: {
           bulletin_complement: Json | null
@@ -232,6 +355,116 @@ export type Database = {
         }
         Relationships: []
       }
+      gd_educateur_emails: {
+        Row: {
+          actif: boolean | null
+          created_at: string | null
+          email_perso: string | null
+          email_pro: string
+          id: string
+          nom: string | null
+          prenom: string | null
+          structure_id: string | null
+        }
+        Insert: {
+          actif?: boolean | null
+          created_at?: string | null
+          email_perso?: string | null
+          email_pro: string
+          id?: string
+          nom?: string | null
+          prenom?: string | null
+          structure_id?: string | null
+        }
+        Update: {
+          actif?: boolean | null
+          created_at?: string | null
+          email_perso?: string | null
+          email_pro?: string
+          id?: string
+          nom?: string | null
+          prenom?: string | null
+          structure_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gd_educateur_emails_structure_id_fkey"
+            columns: ["structure_id"]
+            isOneToOne: false
+            referencedRelation: "gd_structures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gd_incidents: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          inscription_id: string
+          resolution_note: string | null
+          resolved_at: string | null
+          severity: string
+          status: string
+          structure_id: string
+          titre: string | null
+          updated_at: string
+          vu_at: string | null
+          vu_by_code: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by: string
+          description: string
+          id?: string
+          inscription_id: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          severity: string
+          status?: string
+          structure_id: string
+          titre?: string | null
+          updated_at?: string
+          vu_at?: string | null
+          vu_by_code?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          inscription_id?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          structure_id?: string
+          titre?: string | null
+          updated_at?: string
+          vu_at?: string | null
+          vu_by_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gd_incidents_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "gd_inscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gd_incidents_structure_id_fkey"
+            columns: ["structure_id"]
+            isOneToOne: false
+            referencedRelation: "gd_structures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gd_inscription_status_logs: {
         Row: {
           changed_at: string | null
@@ -275,17 +508,24 @@ export type Database = {
           consent_at: string | null
           consignes_communication: string | null
           created_at: string | null
+          deleted_at: string | null
           documents_status: string | null
           dossier_ref: string | null
+          email_pro_attendu: string | null
+          email_type: string | null
           equipe_informee: boolean | null
           id: string
+          inscription_urgence: boolean | null
           jeune_besoins: string | null
           jeune_date_naissance: string
           jeune_nom: string
           jeune_prenom: string
+          jeune_sexe: string | null
           note_pro: string | null
           options_educatives: string | null
           organisation: string | null
+          parental_consent_at: string | null
+          parental_consent_version: string | null
           payment_method: string | null
           payment_reference: string | null
           payment_status: string | null
@@ -294,11 +534,6 @@ export type Database = {
           pref_canal_contact: string | null
           pref_nouvelles_sejour: string | null
           price_total: number | null
-          price_locked: boolean | null
-          price_source: string | null
-          prix_sejour: number | null
-          prix_transport: number | null
-          prix_encadrement: number | null
           referent_email: string | null
           referent_fonction: string | null
           referent_nom: string | null
@@ -316,7 +551,11 @@ export type Database = {
           structure_pending_name: string | null
           structure_postal_code: string | null
           structure_type: string | null
+          structure_validation_statut: string | null
+          structure_validee_at: string | null
+          structure_validee_par: string | null
           suivi_token: string | null
+          suivi_token_expires_at: string | null
           updated_at: string | null
         }
         Insert: {
@@ -326,17 +565,24 @@ export type Database = {
           consent_at?: string | null
           consignes_communication?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           documents_status?: string | null
           dossier_ref?: string | null
+          email_pro_attendu?: string | null
+          email_type?: string | null
           equipe_informee?: boolean | null
           id?: string
+          inscription_urgence?: boolean | null
           jeune_besoins?: string | null
           jeune_date_naissance: string
           jeune_nom: string
           jeune_prenom: string
+          jeune_sexe?: string | null
           note_pro?: string | null
           options_educatives?: string | null
           organisation?: string | null
+          parental_consent_at?: string | null
+          parental_consent_version?: string | null
           payment_method?: string | null
           payment_reference?: string | null
           payment_status?: string | null
@@ -345,11 +591,6 @@ export type Database = {
           pref_canal_contact?: string | null
           pref_nouvelles_sejour?: string | null
           price_total?: number | null
-          price_locked?: boolean | null
-          price_source?: string | null
-          prix_sejour?: number | null
-          prix_transport?: number | null
-          prix_encadrement?: number | null
           referent_email?: string | null
           referent_fonction?: string | null
           referent_nom?: string | null
@@ -367,7 +608,11 @@ export type Database = {
           structure_pending_name?: string | null
           structure_postal_code?: string | null
           structure_type?: string | null
+          structure_validation_statut?: string | null
+          structure_validee_at?: string | null
+          structure_validee_par?: string | null
           suivi_token?: string | null
+          suivi_token_expires_at?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -377,17 +622,24 @@ export type Database = {
           consent_at?: string | null
           consignes_communication?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           documents_status?: string | null
           dossier_ref?: string | null
+          email_pro_attendu?: string | null
+          email_type?: string | null
           equipe_informee?: boolean | null
           id?: string
+          inscription_urgence?: boolean | null
           jeune_besoins?: string | null
           jeune_date_naissance?: string
           jeune_nom?: string
           jeune_prenom?: string
+          jeune_sexe?: string | null
           note_pro?: string | null
           options_educatives?: string | null
           organisation?: string | null
+          parental_consent_at?: string | null
+          parental_consent_version?: string | null
           payment_method?: string | null
           payment_reference?: string | null
           payment_status?: string | null
@@ -396,11 +648,6 @@ export type Database = {
           pref_canal_contact?: string | null
           pref_nouvelles_sejour?: string | null
           price_total?: number | null
-          price_locked?: boolean | null
-          price_source?: string | null
-          prix_sejour?: number | null
-          prix_transport?: number | null
-          prix_encadrement?: number | null
           referent_email?: string | null
           referent_fonction?: string | null
           referent_nom?: string | null
@@ -418,7 +665,11 @@ export type Database = {
           structure_pending_name?: string | null
           structure_postal_code?: string | null
           structure_type?: string | null
+          structure_validation_statut?: string | null
+          structure_validee_at?: string | null
+          structure_validee_par?: string | null
           suivi_token?: string | null
+          suivi_token_expires_at?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -458,6 +709,138 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      gd_login_attempts: {
+        Row: {
+          attempt_count: number
+          ip: string
+          window_start: string
+        }
+        Insert: {
+          attempt_count?: number
+          ip: string
+          window_start?: string
+        }
+        Update: {
+          attempt_count?: number
+          ip?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      gd_medical_events: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string
+          event_type: string
+          id: string
+          inscription_id: string
+          structure_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description: string
+          event_type: string
+          id?: string
+          inscription_id: string
+          structure_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string
+          event_type?: string
+          id?: string
+          inscription_id?: string
+          structure_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gd_medical_events_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "gd_inscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gd_medical_events_structure_id_fkey"
+            columns: ["structure_id"]
+            isOneToOne: false
+            referencedRelation: "gd_structures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gd_notes: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string
+          id: string
+          inscription_id: string
+          structure_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by: string
+          id?: string
+          inscription_id: string
+          structure_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          inscription_id?: string
+          structure_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gd_notes_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "gd_inscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gd_notes_structure_id_fkey"
+            columns: ["structure_id"]
+            isOneToOne: false
+            referencedRelation: "gd_structures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gd_parametres_ged: {
+        Row: {
+          email_contact: string | null
+          id: string
+          nom_directeur: string | null
+          tel_astreinte: string | null
+          tel_directeur_colo: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          email_contact?: string | null
+          id?: string
+          nom_directeur?: string | null
+          tel_astreinte?: string | null
+          tel_directeur_colo?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          email_contact?: string | null
+          id?: string
+          nom_directeur?: string | null
+          tel_astreinte?: string | null
+          tel_directeur_colo?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       gd_processed_events: {
         Row: {
@@ -595,6 +978,87 @@ export type Database = {
           },
         ]
       }
+      gd_rappels_internes: {
+        Row: {
+          canal: string
+          created_at: string | null
+          destinataire_email: string
+          expediteur_email: string
+          expediteur_role: string
+          id: string
+          inscription_id: string | null
+          lu: boolean | null
+          lu_at: string | null
+          message: string
+          pieces_manquantes: string[] | null
+          structure_id: string | null
+          type: string
+        }
+        Insert: {
+          canal: string
+          created_at?: string | null
+          destinataire_email: string
+          expediteur_email: string
+          expediteur_role: string
+          id?: string
+          inscription_id?: string | null
+          lu?: boolean | null
+          lu_at?: string | null
+          message: string
+          pieces_manquantes?: string[] | null
+          structure_id?: string | null
+          type: string
+        }
+        Update: {
+          canal?: string
+          created_at?: string | null
+          destinataire_email?: string
+          expediteur_email?: string
+          expediteur_role?: string
+          id?: string
+          inscription_id?: string | null
+          lu?: boolean | null
+          lu_at?: string | null
+          message?: string
+          pieces_manquantes?: string[] | null
+          structure_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gd_rappels_internes_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "gd_inscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gd_rappels_internes_structure_id_fkey"
+            columns: ["structure_id"]
+            isOneToOne: false
+            referencedRelation: "gd_structures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gd_revoked_tokens: {
+        Row: {
+          expires_at: string
+          jti: string
+          revoked_at: string | null
+        }
+        Insert: {
+          expires_at: string
+          jti: string
+          revoked_at?: string | null
+        }
+        Update: {
+          expires_at?: string
+          jti?: string
+          revoked_at?: string | null
+        }
+        Relationships: []
+      }
       gd_session_prices: {
         Row: {
           base_price_eur: number
@@ -666,51 +1130,14 @@ export type Database = {
           },
         ]
       }
-      gd_session_prices_backup_align_enddate_2026_02_22: {
-        Row: {
-          base_price_eur: number | null
-          city_departure: string | null
-          currency: string | null
-          end_date: string | null
-          is_full: boolean | null
-          price_ged_total: number | null
-          start_date: string | null
-          stay_slug: string | null
-          transport_surcharge_ged: number | null
-          transport_surcharge_ufoval: number | null
-        }
-        Insert: {
-          base_price_eur?: number | null
-          city_departure?: string | null
-          currency?: string | null
-          end_date?: string | null
-          is_full?: boolean | null
-          price_ged_total?: number | null
-          start_date?: string | null
-          stay_slug?: string | null
-          transport_surcharge_ged?: number | null
-          transport_surcharge_ufoval?: number | null
-        }
-        Update: {
-          base_price_eur?: number | null
-          city_departure?: string | null
-          currency?: string | null
-          end_date?: string | null
-          is_full?: boolean | null
-          price_ged_total?: number | null
-          start_date?: string | null
-          stay_slug?: string | null
-          transport_surcharge_ged?: number | null
-          transport_surcharge_ufoval?: number | null
-        }
-        Relationships: []
-      }
       gd_souhaits: {
         Row: {
+          choix_mode: string | null
           created_at: string | null
           educateur_email: string
           educateur_prenom: string | null
           educateur_token: string | null
+          educateur_token_expires_at: string | null
           id: string
           inscription_id: string | null
           kid_prenom: string
@@ -728,10 +1155,12 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          choix_mode?: string | null
           created_at?: string | null
           educateur_email: string
           educateur_prenom?: string | null
           educateur_token?: string | null
+          educateur_token_expires_at?: string | null
           id?: string
           inscription_id?: string | null
           kid_prenom: string
@@ -749,10 +1178,12 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          choix_mode?: string | null
           created_at?: string | null
           educateur_email?: string
           educateur_prenom?: string | null
           educateur_token?: string | null
+          educateur_token_expires_at?: string | null
           id?: string
           inscription_id?: string | null
           kid_prenom?: string
@@ -865,96 +1296,6 @@ export type Database = {
             referencedColumns: ["slug"]
           },
         ]
-      }
-      gd_stay_sessions_backup_6jours_ptits_puisotins: {
-        Row: {
-          age_max: number | null
-          age_min: number | null
-          city_departure: string | null
-          created_at: string | null
-          end_date: string | null
-          import_batch_ts: string | null
-          price: number | null
-          price_ged: number | null
-          seats_left: number | null
-          start_date: string | null
-          stay_slug: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          age_max?: number | null
-          age_min?: number | null
-          city_departure?: string | null
-          created_at?: string | null
-          end_date?: string | null
-          import_batch_ts?: string | null
-          price?: number | null
-          price_ged?: number | null
-          seats_left?: number | null
-          start_date?: string | null
-          stay_slug?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          age_max?: number | null
-          age_min?: number | null
-          city_departure?: string | null
-          created_at?: string | null
-          end_date?: string | null
-          import_batch_ts?: string | null
-          price?: number | null
-          price_ged?: number | null
-          seats_left?: number | null
-          start_date?: string | null
-          stay_slug?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      gd_stay_sessions_backup_8jours_20260217: {
-        Row: {
-          age_max: number | null
-          age_min: number | null
-          city_departure: string | null
-          created_at: string | null
-          end_date: string | null
-          import_batch_ts: string | null
-          price: number | null
-          price_ged: number | null
-          seats_left: number | null
-          start_date: string | null
-          stay_slug: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          age_max?: number | null
-          age_min?: number | null
-          city_departure?: string | null
-          created_at?: string | null
-          end_date?: string | null
-          import_batch_ts?: string | null
-          price?: number | null
-          price_ged?: number | null
-          seats_left?: number | null
-          start_date?: string | null
-          stay_slug?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          age_max?: number | null
-          age_min?: number | null
-          city_departure?: string | null
-          created_at?: string | null
-          end_date?: string | null
-          import_batch_ts?: string | null
-          price?: number | null
-          price_ged?: number | null
-          seats_left?: number | null
-          start_date?: string | null
-          stay_slug?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
       }
       gd_stay_themes: {
         Row: {
@@ -1121,19 +1462,84 @@ export type Database = {
         }
         Relationships: []
       }
+      gd_structure_access_codes: {
+        Row: {
+          active: boolean | null
+          code: string
+          created_at: string | null
+          email: string | null
+          expires_at: string | null
+          id: string
+          label: string | null
+          nom: string | null
+          prenom: string | null
+          role: string
+          roles: string[] | null
+          structure_id: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          code: string
+          created_at?: string | null
+          email?: string | null
+          expires_at?: string | null
+          id?: string
+          label?: string | null
+          nom?: string | null
+          prenom?: string | null
+          role: string
+          roles?: string[] | null
+          structure_id?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          code?: string
+          created_at?: string | null
+          email?: string | null
+          expires_at?: string | null
+          id?: string
+          label?: string | null
+          nom?: string | null
+          prenom?: string | null
+          role?: string
+          roles?: string[] | null
+          structure_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gd_structure_access_codes_structure_id_fkey"
+            columns: ["structure_id"]
+            isOneToOne: false
+            referencedRelation: "gd_structures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gd_structures: {
         Row: {
           address: string | null
           address_private: boolean
           city: string | null
           code: string | null
+          code_directeur: string | null
+          code_directeur_expires_at: string | null
+          code_directeur_generated_at: string | null
+          code_directeur_revoked_at: string | null
+          code_expires_at: string | null
+          code_generated_at: string | null
+          code_revoked_at: string | null
           created_at: string | null
           created_by_email: string | null
+          delegated_to_email: string | null
+          delegation_active_from: string | null
+          delegation_active_until: string | null
           domain: string | null
           email: string | null
           id: string
           name: string
           postal_code: string | null
+          rgpd_accepted_at: string | null
+          rgpd_accepted_by: string | null
           status: string
           type: string | null
           updated_at: string | null
@@ -1143,13 +1549,25 @@ export type Database = {
           address_private?: boolean
           city?: string | null
           code?: string | null
+          code_directeur?: string | null
+          code_directeur_expires_at?: string | null
+          code_directeur_generated_at?: string | null
+          code_directeur_revoked_at?: string | null
+          code_expires_at?: string | null
+          code_generated_at?: string | null
+          code_revoked_at?: string | null
           created_at?: string | null
           created_by_email?: string | null
+          delegated_to_email?: string | null
+          delegation_active_from?: string | null
+          delegation_active_until?: string | null
           domain?: string | null
           email?: string | null
           id?: string
           name: string
           postal_code?: string | null
+          rgpd_accepted_at?: string | null
+          rgpd_accepted_by?: string | null
           status?: string
           type?: string | null
           updated_at?: string | null
@@ -1159,18 +1577,348 @@ export type Database = {
           address_private?: boolean
           city?: string | null
           code?: string | null
+          code_directeur?: string | null
+          code_directeur_expires_at?: string | null
+          code_directeur_generated_at?: string | null
+          code_directeur_revoked_at?: string | null
+          code_expires_at?: string | null
+          code_generated_at?: string | null
+          code_revoked_at?: string | null
           created_at?: string | null
           created_by_email?: string | null
+          delegated_to_email?: string | null
+          delegation_active_from?: string | null
+          delegation_active_until?: string | null
           domain?: string | null
           email?: string | null
           id?: string
           name?: string
           postal_code?: string | null
+          rgpd_accepted_at?: string | null
+          rgpd_accepted_by?: string | null
           status?: string
           type?: string | null
           updated_at?: string | null
         }
         Relationships: []
+      }
+      gd_suivi_appels: {
+        Row: {
+          created_at: string | null
+          direction: string
+          duree_minutes: number | null
+          emetteur: string
+          id: string
+          inscription_id: string | null
+          motif: string | null
+          recepteur: string
+          resume: string | null
+          saisi_par: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          direction: string
+          duree_minutes?: number | null
+          emetteur: string
+          id?: string
+          inscription_id?: string | null
+          motif?: string | null
+          recepteur: string
+          resume?: string | null
+          saisi_par?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          direction?: string
+          duree_minutes?: number | null
+          emetteur?: string
+          id?: string
+          inscription_id?: string | null
+          motif?: string | null
+          recepteur?: string
+          resume?: string | null
+          saisi_par?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gd_suivi_appels_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "gd_inscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gd_suivi_incidents: {
+        Row: {
+          clos: boolean | null
+          clos_at: string | null
+          clos_par: string | null
+          created_at: string | null
+          date_incident: string
+          description: string
+          famille_informee: boolean | null
+          famille_informee_at: string | null
+          gravite: string
+          id: string
+          inscription_id: string | null
+          lieu: string | null
+          mesures_prises: string | null
+          rapatriement_accompagnant: string | null
+          rapatriement_destination: string | null
+          rapatriement_motif: string | null
+          saisi_par: string | null
+          signale_par: string | null
+          signale_par_nom: string | null
+          structure_id: string | null
+          structure_informee: boolean | null
+          structure_informee_at: string | null
+          suite_donnee: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          clos?: boolean | null
+          clos_at?: string | null
+          clos_par?: string | null
+          created_at?: string | null
+          date_incident: string
+          description: string
+          famille_informee?: boolean | null
+          famille_informee_at?: string | null
+          gravite: string
+          id?: string
+          inscription_id?: string | null
+          lieu?: string | null
+          mesures_prises?: string | null
+          rapatriement_accompagnant?: string | null
+          rapatriement_destination?: string | null
+          rapatriement_motif?: string | null
+          saisi_par?: string | null
+          signale_par?: string | null
+          signale_par_nom?: string | null
+          structure_id?: string | null
+          structure_informee?: boolean | null
+          structure_informee_at?: string | null
+          suite_donnee?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          clos?: boolean | null
+          clos_at?: string | null
+          clos_par?: string | null
+          created_at?: string | null
+          date_incident?: string
+          description?: string
+          famille_informee?: boolean | null
+          famille_informee_at?: string | null
+          gravite?: string
+          id?: string
+          inscription_id?: string | null
+          lieu?: string | null
+          mesures_prises?: string | null
+          rapatriement_accompagnant?: string | null
+          rapatriement_destination?: string | null
+          rapatriement_motif?: string | null
+          saisi_par?: string | null
+          signale_par?: string | null
+          signale_par_nom?: string | null
+          structure_id?: string | null
+          structure_informee?: boolean | null
+          structure_informee_at?: string | null
+          suite_donnee?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gd_suivi_incidents_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "gd_inscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gd_suivi_incidents_structure_id_fkey"
+            columns: ["structure_id"]
+            isOneToOne: false
+            referencedRelation: "gd_structures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gd_suivi_medical: {
+        Row: {
+          created_at: string | null
+          date_consultation: string
+          famille_informee: boolean | null
+          famille_informee_at: string | null
+          id: string
+          inscription_id: string | null
+          lieu: string | null
+          motif: string
+          praticien: string | null
+          saisi_par: string | null
+          structure_informee: boolean | null
+          suite_donnee: string | null
+          traitement_prescrit: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date_consultation: string
+          famille_informee?: boolean | null
+          famille_informee_at?: string | null
+          id?: string
+          inscription_id?: string | null
+          lieu?: string | null
+          motif: string
+          praticien?: string | null
+          saisi_par?: string | null
+          structure_informee?: boolean | null
+          suite_donnee?: string | null
+          traitement_prescrit?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date_consultation?: string
+          famille_informee?: boolean | null
+          famille_informee_at?: string | null
+          id?: string
+          inscription_id?: string | null
+          lieu?: string | null
+          motif?: string
+          praticien?: string | null
+          saisi_par?: string | null
+          structure_informee?: boolean | null
+          suite_donnee?: string | null
+          traitement_prescrit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gd_suivi_medical_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "gd_inscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gd_suivi_messages: {
+        Row: {
+          auteur: string
+          auteur_nom: string | null
+          auteur_role: string | null
+          created_at: string | null
+          id: string
+          inscription_id: string | null
+          lu: boolean | null
+          lu_at: string | null
+          message: string
+        }
+        Insert: {
+          auteur: string
+          auteur_nom?: string | null
+          auteur_role?: string | null
+          created_at?: string | null
+          id?: string
+          inscription_id?: string | null
+          lu?: boolean | null
+          lu_at?: string | null
+          message: string
+        }
+        Update: {
+          auteur?: string
+          auteur_nom?: string | null
+          auteur_role?: string | null
+          created_at?: string | null
+          id?: string
+          inscription_id?: string | null
+          lu?: boolean | null
+          lu_at?: string | null
+          message?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gd_suivi_messages_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "gd_inscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gd_suivi_sejour: {
+        Row: {
+          bilan_attention: string | null
+          bilan_positifs: string | null
+          consultation_medicale: boolean | null
+          consultation_medicale_date: string | null
+          consultation_medicale_motif: string | null
+          consultation_medicale_suite: string | null
+          created_at: string | null
+          dernier_contact: string | null
+          fiche_liaison_validee: boolean | null
+          fiche_liaison_validee_at: string | null
+          id: string
+          inscription_id: string | null
+          nb_appels: number | null
+          nb_mails: number | null
+          points_attention: string | null
+          structure_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bilan_attention?: string | null
+          bilan_positifs?: string | null
+          consultation_medicale?: boolean | null
+          consultation_medicale_date?: string | null
+          consultation_medicale_motif?: string | null
+          consultation_medicale_suite?: string | null
+          created_at?: string | null
+          dernier_contact?: string | null
+          fiche_liaison_validee?: boolean | null
+          fiche_liaison_validee_at?: string | null
+          id?: string
+          inscription_id?: string | null
+          nb_appels?: number | null
+          nb_mails?: number | null
+          points_attention?: string | null
+          structure_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bilan_attention?: string | null
+          bilan_positifs?: string | null
+          consultation_medicale?: boolean | null
+          consultation_medicale_date?: string | null
+          consultation_medicale_motif?: string | null
+          consultation_medicale_suite?: string | null
+          created_at?: string | null
+          dernier_contact?: string | null
+          fiche_liaison_validee?: boolean | null
+          fiche_liaison_validee_at?: string | null
+          id?: string
+          inscription_id?: string | null
+          nb_appels?: number | null
+          nb_mails?: number | null
+          points_attention?: string | null
+          structure_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gd_suivi_sejour_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: true
+            referencedRelation: "gd_inscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gd_suivi_sejour_structure_id_fkey"
+            columns: ["structure_id"]
+            isOneToOne: false
+            referencedRelation: "gd_structures"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       gd_waitlist: {
         Row: {
@@ -1324,41 +2072,6 @@ export type Database = {
           type?: string
         }
         Relationships: []
-      }
-      payment_status_logs: {
-        Row: {
-          changed_at: string | null
-          id: string
-          inscription_id: string | null
-          new_status: string
-          note: string | null
-          old_status: string | null
-        }
-        Insert: {
-          changed_at?: string | null
-          id?: string
-          inscription_id?: string | null
-          new_status: string
-          note?: string | null
-          old_status?: string | null
-        }
-        Update: {
-          changed_at?: string | null
-          id?: string
-          inscription_id?: string | null
-          new_status?: string
-          note?: string | null
-          old_status?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "payment_status_logs_inscription_id_fkey"
-            columns: ["inscription_id"]
-            isOneToOne: false
-            referencedRelation: "gd_inscriptions"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       sejours_images: {
         Row: {
@@ -1668,6 +2381,10 @@ export type Database = {
       }
     }
     Functions: {
+      check_rate_limit: {
+        Args: { p_key: string; p_limit: number; p_window_minutes: number }
+        Returns: boolean
+      }
       estimate_financial_aid: {
         Args: { p_qf: number; p_qpv: boolean; p_sejour_price: number }
         Returns: {
@@ -1681,6 +2398,9 @@ export type Database = {
         Args: { p_slug: string; p_start_date: string }
         Returns: Json
       }
+      gd_purge_expired_audit_logs: { Args: never; Returns: number }
+      gd_purge_expired_medical_data: { Args: never; Returns: number }
+      generate_director_code: { Args: never; Returns: string }
       generate_structure_code: { Args: never; Returns: string }
       get_random_sejour_image: {
         Args: { sejour_slug: string }
@@ -1792,6 +2512,9 @@ export type Database = {
         Args: { p_source_id: string; p_target_id: string }
         Returns: undefined
       }
+      purge_old_audit_logs: { Args: never; Returns: undefined }
+      purge_old_login_attempts: { Args: never; Returns: undefined }
+      purge_revoked_tokens: { Args: never; Returns: undefined }
       sync_stay_sessions: { Args: never; Returns: number }
     }
     Enums: {
@@ -1925,3 +2648,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+

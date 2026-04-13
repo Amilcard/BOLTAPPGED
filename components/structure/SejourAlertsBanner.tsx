@@ -45,15 +45,16 @@ const SejourAlertsBanner = React.memo(function SejourAlertsBanner({
   async function handleVu(incidentId: string) {
     setLoadingVu(incidentId);
     try {
-      await fetch(`/api/structure/${structureCode}/incidents`, {
+      const res = await fetch(`/api/structure/${structureCode}/incidents`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ incident_id: incidentId, action: 'vu' }),
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setVuDone(prev => new Set(prev).add(incidentId));
       onVu?.(incidentId);
     } catch {
-      // silencieux — l'alerte reste visible
+      // Échec silencieux — l'alerte reste visible, pas de faux succès
     } finally {
       setLoadingVu(null);
     }

@@ -12,6 +12,16 @@ function getStripe() {
 }
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit DB-backed (5 req/5min par IP) — protection CPU Stripe
+    const { isRateLimited, getClientIpFromHeaders } = await import('@/lib/rate-limit');
+    const ip = getClientIpFromHeaders(req.headers);
+    if (await isRateLimited('payment', ip, 5, 5)) {
+      return NextResponse.json(
+        { error: 'Trop de tentatives. Réessayez dans quelques minutes.' },
+        { status: 429, headers: { 'Retry-After': '300' } }
+      );
+    }
+
     const stripe = getStripe();
     const supabase = getSupabase();
     const { inscriptionId, suivi_token } = await req.json();

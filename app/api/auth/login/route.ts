@@ -7,12 +7,10 @@ import { SignJWT } from 'jose';
 const MAX_ATTEMPTS = 5;
 const WINDOW_MINUTES = 15;
 
+// getClientIp consolidé — import depuis lib/rate-limit
+import { getClientIpFromHeaders } from '@/lib/rate-limit';
 function getClientIp(req: NextRequest): string {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
-    req.headers.get('x-real-ip') ||
-    'unknown'
-  );
+  return getClientIpFromHeaders(req.headers);
 }
 
 /**

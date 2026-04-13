@@ -7,12 +7,10 @@ import { SignJWT } from 'jose';
 const MAX_ATTEMPTS = 10;
 const WINDOW_MINUTES = 5;
 
+// getClientIp consolidé — import depuis lib/rate-limit
+import { getClientIpFromHeaders } from '@/lib/rate-limit';
 function getClientIp(req: NextRequest): string {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    req.headers.get('x-real-ip') ||
-    'unknown'
-  );
+  return getClientIpFromHeaders(req.headers);
 }
 
 /**
@@ -122,12 +120,14 @@ export async function POST(req: NextRequest) {
     }
 
     const encodedSecret = new TextEncoder().encode(secret);
+    const jti = crypto.randomUUID();
     const token = await new SignJWT({
       role: 'pro',
       structureCode: codeNorm,
       structureName: structure.name,
       email: email.toLowerCase().trim(),
       type: 'pro_session',
+      jti,
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('30m')

@@ -9,8 +9,11 @@ interface Incident {
   category: string;
   severity: string;
   status: string;
+  titre?: string | null;
   description: string;
   created_at: string;
+  vu_at?: string | null;
+  resolution_note?: string | null;
 }
 
 interface Call {

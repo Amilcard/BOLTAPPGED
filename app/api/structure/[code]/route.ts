@@ -144,11 +144,12 @@ export async function POST(
     return NextResponse.json({ error: { code: 'NOT_FOUND' } }, { status: 404 });
   }
 
-  // Récupérer rgpd_accepted_at depuis gd_structures
+  // Récupérer rgpd_accepted_at depuis gd_structures — vérifier status = active
   const { data: structure } = await supabase
     .from('gd_structures')
     .select('id, rgpd_accepted_at')
     .eq('id', resolved.structure.id)
+    .eq('status', 'active')
     .single();
 
   if (!structure) {

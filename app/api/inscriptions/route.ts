@@ -6,6 +6,7 @@ import { sendInscriptionConfirmation, sendAdminNewInscriptionNotification, sendS
 import { randomBytes } from 'crypto';
 import { auditLog, getClientIp } from '@/lib/audit-log';
 import { isRateLimited } from '@/lib/rate-limit';
+import { resolveCodeToStructure } from '@/lib/structure';
 const inscriptionSchema = z.object({
   staySlug: z.string().min(1),
   sessionDate: z.string().min(1), // Date de début session
@@ -77,7 +78,13 @@ export async function POST(request: NextRequest) {
 
     // ── Vérification Turnstile (skip si clé non configurée — env de test) ──
     const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
-    if (turnstileSecret && body.turnstileToken) {
+    if (turnstileSecret) {
+      if (!body.turnstileToken) {
+        return NextResponse.json(
+          { error: { code: 'CAPTCHA_REQUIRED', message: 'Vérification anti-robot requise.' } },
+          { status: 400 }
+        );
+      }
       const tvRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -393,19 +400,15 @@ export async function POST(request: NextRequest) {
     let structurePendingName: string | null = null;
 
     if (data.structureCode) {
-      // L'éducateur a un code → vérifier et rattacher
-      const { data: struct } = await supabase
-        .from('gd_structures')
-        .select('id')
-        .eq('code', data.structureCode.toUpperCase())
-        .eq('status', 'active')
-        .single();
+      // L'éducateur a un code → résolution via resolveCodeToStructure
+      // Supporte codes CDS (6 chars), directeur (10 chars) et gd_structure_access_codes
+      const resolved = await resolveCodeToStructure(data.structureCode);
 
-      if (struct) {
-        structureId = struct.id;
+      if (resolved) {
+        structureId = resolved.structure.id as string;
       } else {
-        // Code invalide → on continue sans bloquer, mais on log
-        console.warn('[inscriptions] Code structure invalide:', data.structureCode);
+        // Code invalide ou expiré/révoqué → on continue sans bloquer, mais on log
+        console.warn('[inscriptions] Code structure invalide ou expiré');
         structurePendingName = data.structureName;
       }
     } else {

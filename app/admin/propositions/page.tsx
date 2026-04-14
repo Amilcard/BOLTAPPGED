@@ -61,6 +61,7 @@ export default function PropositionsPage() {
   const [showPreviewForm, setShowPreviewForm] = useState(false); // Aperçu avant envoi
   const [preview, setPreview] = useState<Proposition | null>(null); // Aperçu proposition existante
   const [submitting, setSubmitting] = useState(false);
+  const [rowLoading, setRowLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
 
   // Form state
@@ -191,7 +192,9 @@ export default function PropositionsPage() {
   const deleteProposition = (e: React.MouseEvent, id: string, enfant: string) => {
     e.preventDefault();
     e.stopPropagation();
+    if (rowLoading) return;
     confirm(`Supprimer la proposition de ${enfant} ? Cette action est irréversible.`, async () => {
+      setRowLoading(id);
       try {
         const res = await fetch('/api/admin/propositions', {
           method: 'DELETE',
@@ -206,20 +209,31 @@ export default function PropositionsPage() {
         loadPropositions();
       } catch {
         toast('Erreur réseau');
+      } finally {
+        setRowLoading(null);
       }
     });
   };
 
   const updateStatus = async (id: string, status: string) => {
+    if (rowLoading) return;
+    setRowLoading(id);
     try {
-      await fetch('/api/admin/propositions', {
+      const res = await fetch('/api/admin/propositions', {
         method: 'PATCH',
         headers: authHeaders(),
         body: JSON.stringify({ id, status }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast(`Erreur mise à jour : ${err?.error || res.status}`);
+      }
       void loadPropositions();
     } catch (err) {
       console.error('Error updating status:', err);
+      toast('Erreur réseau');
+    } finally {
+      setRowLoading(null);
     }
   };
 

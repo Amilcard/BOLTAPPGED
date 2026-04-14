@@ -20,6 +20,7 @@ interface UrgentIncident {
 interface Props {
   incidents: UrgentIncident[];
   structureCode: string;
+  role?: string;
   onCall?: (inscriptionId: string) => void;
   onVu?: (incidentId: string) => void;
 }
@@ -35,9 +36,11 @@ function timeAgo(iso: string): string {
 const SejourAlertsBanner = React.memo(function SejourAlertsBanner({
   incidents,
   structureCode,
+  role,
   onCall,
   onVu,
 }: Props) {
+  const canMarkVu = role !== 'educateur';
   const [loadingVu, setLoadingVu] = useState<string | null>(null);
   const [vuDone, setVuDone] = useState<Set<string>>(new Set());
   const [vuError, setVuError] = useState<string | null>(null);
@@ -95,7 +98,7 @@ const SejourAlertsBanner = React.memo(function SejourAlertsBanner({
                 </div>
               </div>
               <div className="flex flex-col gap-2 flex-shrink-0">
-                {!isVu && (
+                {!isVu && canMarkVu && (
                   <button
                     onClick={() => handleVu(inc.id)}
                     disabled={loadingVu === inc.id}

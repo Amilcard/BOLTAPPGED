@@ -33,7 +33,7 @@ function checkRateLimit(path: string, ip: string): boolean {
   }
 
   entry.count++;
-  return entry.count > cfg.limit;
+  return entry.count >= cfg.limit;
 }
 
 // ---------------------------------------------------------------------------

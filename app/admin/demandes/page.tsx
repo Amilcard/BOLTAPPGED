@@ -37,6 +37,7 @@ export default function AdminDemandes() {
   const { confirm, toast } = useAdminUI();
   const [inscriptions, setInscriptions] = useState<InscriptionSupabase[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusChanging, setStatusChanging] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [structures, setStructures] = useState<StructureOption[]>([]);
   const [selectedStructure, setSelectedStructure] = useState('');
@@ -82,17 +83,22 @@ export default function AdminDemandes() {
     const DESTRUCTIVE = ['refusee', 'annulee'];
     const LABELS: Record<string, string> = { refusee: 'Refusée', annulee: 'Annulée' };
     const doChange = async () => {
-      // nosemgrep: javascript.lang.security.audit.ssrf.http-request.js-ssrf -- relative URL, UUID validated above
-      const res = await fetch(`/api/admin/inscriptions/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        toast(`Erreur mise à jour statut : ${err?.error?.message ?? 'Erreur inconnue'}`);
+      setStatusChanging(id);
+      try {
+        // nosemgrep: javascript.lang.security.audit.ssrf.http-request.js-ssrf -- relative URL, UUID validated above
+        const res = await fetch(`/api/admin/inscriptions/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          toast(`Erreur mise à jour statut : ${err?.error?.message ?? 'Erreur inconnue'}`);
+        }
+        void fetchInscriptions();
+      } finally {
+        setStatusChanging(null);
       }
-      void fetchInscriptions();
     };
     if (DESTRUCTIVE.includes(status)) {
       const statusLabel = Object.prototype.hasOwnProperty.call(LABELS, status) ? LABELS[status] : status;
@@ -257,7 +263,8 @@ export default function AdminDemandes() {
                       <td className="px-4 py-4" onClick={e => e.stopPropagation()}>
                         <select
                           aria-label={`Statut de ${insc.jeune_prenom || ''} ${insc.jeune_nom || ''}`}
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${statusStyle.color} cursor-pointer`}
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${statusStyle.color} cursor-pointer disabled:opacity-50 disabled:cursor-wait`}
+                          disabled={statusChanging === insc.id}
                           value={insc.status}
                           onChange={(e) => { void handleStatusChange(insc.id, e.target.value); }}
                         >

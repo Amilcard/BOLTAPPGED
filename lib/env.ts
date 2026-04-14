@@ -49,6 +49,8 @@ const serverSchema = clientSchema.extend({
   ORG_BANK_BRANCH: z.string().optional(),
   // Cron RGPD — requis (purge données médicales + expiration codes)
   CRON_SECRET: z.string().min(16),
+  // Cloudflare Turnstile — anti-bot (optionnel si non déployé)
+  TURNSTILE_SECRET_KEY: z.string().min(10).optional(),
 });
 
 // ── Parsing sécurisé ─────────────────────────────────────────────────────────

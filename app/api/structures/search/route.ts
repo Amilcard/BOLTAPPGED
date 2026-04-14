@@ -60,6 +60,10 @@ export async function GET(req: NextRequest) {
 function maskEmail(email: string): string {
   const [local, domain] = email.split('@');
   if (!local || !domain) return '***@***';
-  const masked = local[0] + '****';
-  return `${masked}@${domain}`;
+  // Masquer aussi le domaine pour éviter l'énumération des structures par domaine email
+  const maskedLocal = local[0] + '****';
+  const domainParts = domain.split('.');
+  const tld = domainParts.at(-1) ?? '***';
+  const maskedDomain = '***.' + tld;
+  return `${maskedLocal}@${maskedDomain}`;
 }

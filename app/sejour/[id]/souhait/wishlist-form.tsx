@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Heart, Share2, Compass, AlertCircle, Info, Loader2 } from 'lucide-react';
+import { Heart, Share2, Compass, AlertCircle, Info, Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { updateWishlistMotivation } from '@/lib/utils';
@@ -30,6 +30,7 @@ export function WishlistForm({ stayTitle, staySlug }: WishlistFormProps) {
   const [prenomReferent, setPrenomReferent] = useState('');
   const [emailStructure, setEmailStructure] = useState('');
   const [choixMode, setChoixMode] = useState<string | null>(null);
+  const [avecFrere, setAvecFrere] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [showMailtoWarning, setShowMailtoWarning] = useState(false);
@@ -100,6 +101,7 @@ export function WishlistForm({ stayTitle, staySlug }: WishlistFormProps) {
           educateurEmail: finalEmail,
           educateurPrenom: prenomReferent.trim() || undefined,
           choixMode: choixMode || undefined,
+          avecFrere: avecFrere || undefined,
         }),
       });
 
@@ -143,6 +145,14 @@ export function WishlistForm({ stayTitle, staySlug }: WishlistFormProps) {
 
   return (
     <div className="bg-card rounded-brand shadow-card p-6">
+      {/* Retour au séjour */}
+      <Link
+        href={`/sejour/${staySlug}`}
+        className="inline-flex items-center gap-1 text-sm text-primary-400 hover:text-primary mb-4 transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" /> Retour au séjour
+      </Link>
+
       {/* Heart icon */}
       <div className="flex justify-center mb-4">
         <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center">
@@ -151,7 +161,7 @@ export function WishlistForm({ stayTitle, staySlug }: WishlistFormProps) {
       </div>
 
       <h1 className="text-lg font-bold text-primary text-center mb-1">
-        {saved ? 'Super choix !' : 'Mon souhait'}
+        {saved ? 'Super choix !' : 'Ce séjour m\u2019intéresse'}
       </h1>
       <p className="text-sm text-primary-500 text-center mb-6">{stayTitle}</p>
 
@@ -280,6 +290,19 @@ export function WishlistForm({ stayTitle, staySlug }: WishlistFormProps) {
         </div>
       </div>
 
+      {/* Partir avec frère/soeur */}
+      <div className="mb-4">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={avecFrere}
+            onChange={(e) => setAvecFrere(e.target.checked)}
+            className="w-4 h-4 rounded border-gray-300 text-secondary focus:ring-secondary"
+          />
+          <span className="text-sm text-primary">Je souhaite partir avec mon fr\u00e8re ou ma soeur</span>
+        </label>
+      </div>
+
       {/* Motivation field */}
       <div className="mb-4">
         <Label htmlFor="motivation" className="block text-sm font-medium text-primary mb-2">
@@ -296,7 +319,7 @@ export function WishlistForm({ stayTitle, staySlug }: WishlistFormProps) {
               setErrors(prev => { const { motivation: _motivation, ...rest } = prev; return rest; });
             }
           }}
-          placeholder="Ex: avec qui tu veux partir, ce que tu veux d\u00e9couvrir, ce que tu veux apprendre, ce qui te fait envie\u2026"
+          placeholder="Ex: ce qui me donne envie, ce que j'aimerais d\u00e9couvrir, avec qui j'aimerais partir..."
           className="resize-none focus-visible:ring-secondary"
           rows={3}
           required

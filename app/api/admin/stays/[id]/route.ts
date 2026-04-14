@@ -3,7 +3,7 @@ import { requireEditor, requireAdmin } from '@/lib/auth-middleware';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
-// PUT toggle published (seul champ modifiable depuis admin pour l'instant)
+// PUT update stay fields
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -22,7 +22,21 @@ export async function PUT(
 
     const supabase = getSupabaseAdmin();
     const updateData: Record<string, unknown> = {};
+
+    // Whitelist des champs modifiables (pas de mass-assignment)
     if (body.published !== undefined) updateData.published = body.published;
+    if (body.title !== undefined) { updateData.title = body.title; updateData.marketing_title = body.title; }
+    if (body.descriptionShort !== undefined) updateData.description_short = body.descriptionShort;
+    if (body.programme !== undefined) updateData.programme = Array.isArray(body.programme) ? body.programme : null;
+    if (body.geography !== undefined) updateData.location_region = body.geography;
+    if (body.accommodation !== undefined) updateData.accommodation = body.accommodation;
+    if (body.supervision !== undefined) updateData.supervision = body.supervision;
+    if (body.priceFrom !== undefined) updateData.price_from = body.priceFrom;
+    if (body.durationDays !== undefined) updateData.duration_days = body.durationDays;
+    if (body.period !== undefined) updateData.period = body.period;
+    if (body.ageMin !== undefined) updateData.age_min = body.ageMin;
+    if (body.ageMax !== undefined) updateData.age_max = body.ageMax;
+    if (body.imageCover !== undefined) updateData.image_cover = body.imageCover;
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json(

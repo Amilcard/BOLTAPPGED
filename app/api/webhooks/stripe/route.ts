@@ -122,14 +122,19 @@ export async function POST(req: NextRequest) {
           break;
         }
 
-        // Montant vérifié, marquer comme payé
-        const { error } = await supabase
+        // Montant vérifié, marquer comme payé (guard: seulement depuis pending_payment ou failed)
+        const { error, count } = await supabase
           .from('gd_inscriptions')
           .update({
             payment_status: 'paid',
             payment_validated_at: new Date().toISOString(),
           })
-          .eq('id', inscriptionId);
+          .eq('id', inscriptionId)
+          .in('payment_status', ['pending_payment', 'failed']);
+
+        if (!error && count === 0) {
+          console.warn('[webhook/stripe] succeeded but inscription not in expected state, skipping update', { inscriptionId });
+        }
 
         if (error) {
           console.error('Error updating payment status — rollback claim:', error);
@@ -181,7 +186,8 @@ export async function POST(req: NextRequest) {
           .update({
             payment_status: 'failed',
           })
-          .eq('id', inscriptionId);
+          .eq('id', inscriptionId)
+          .in('payment_status', ['pending_payment']);
 
         if (error) {
           console.error('Error updating failed payment status — rollback claim:', error);

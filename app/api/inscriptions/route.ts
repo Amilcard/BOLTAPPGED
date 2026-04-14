@@ -290,9 +290,9 @@ export async function POST(request: NextRequest) {
       data.priceTotal = serverCityPrice;
     }
 
-    // ── CAPACITY CHECK atomique via RPC (SELECT FOR UPDATE) ──
+    // ── CAPACITY CHECK + DECREMENT atomique via RPC (SELECT FOR UPDATE + UPDATE) ──
     const { data: capacityCheck, error: rpcError } = await supabase
-      .rpc('gd_check_session_capacity', {
+      .rpc('gd_check_and_decrement_capacity', {
         p_slug: data.staySlug,
         p_start_date: normalizedDate,
       });

@@ -406,7 +406,7 @@ export default function StructureDashboard() {
             </div>
             <div>
               <p className="text-gray-500 text-xs mb-1">Astreinte 24h/24 — 7j/7</p>
-              <a href="tel:0612345678" className="font-medium font-mono tracking-wide hover:text-primary">06 12 34 56 78</a>
+              <a href="tel:0423161671" className="font-medium font-mono tracking-wide hover:text-primary">04 23 16 16 71</a>
               <p className="text-xs text-gray-400">Urgences séjour uniquement</p>
             </div>
             <div>

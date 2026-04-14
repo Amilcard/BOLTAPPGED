@@ -65,3 +65,74 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+// POST create a new stay
+export async function POST(request: NextRequest) {
+  const auth = await requireEditor(request);
+  if (!auth) {
+    return NextResponse.json(
+      { error: { code: 'UNAUTHORIZED', message: 'Accès réservé aux éditeurs et administrateurs.' } },
+      { status: 403 }
+    );
+  }
+
+  try {
+    const body = await request.json();
+    const title = (body.title || '').trim();
+    if (!title) {
+      return NextResponse.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'Le titre est obligatoire.' } },
+        { status: 400 }
+      );
+    }
+
+    // Générer un slug unique à partir du titre
+    const slug = title
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      || `sejour-${Date.now()}`;
+
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase
+      .from('gd_stays')
+      .insert({
+        slug,
+        title,
+        marketing_title: title,
+        description_short: body.descriptionShort || null,
+        programme: Array.isArray(body.programme) ? body.programme : null,
+        location_region: body.geography || null,
+        accommodation: body.accommodation || null,
+        supervision: body.supervision || null,
+        price_from: body.priceFrom || null,
+        duration_days: body.durationDays || null,
+        period: body.period || 'ete',
+        age_min: body.ageMin || null,
+        age_max: body.ageMax || null,
+        image_cover: body.imageCover || null,
+        published: body.published ?? false,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      if ((error as { code?: string }).code === '23505') {
+        return NextResponse.json(
+          { error: { code: 'DUPLICATE', message: 'Un séjour avec ce titre existe déjà.' } },
+          { status: 409 }
+        );
+      }
+      throw error;
+    }
+
+    return NextResponse.json(data, { status: 201 });
+  } catch (error) {
+    console.error('POST /api/admin/stays error:', error);
+    return NextResponse.json(
+      { error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur' } },
+      { status: 500 }
+    );
+  }
+}

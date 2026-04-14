@@ -197,17 +197,25 @@ export function ProGateModal({ open, onClose, variant, sejourSlug, reserverParam
         </DialogHeader>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200 mt-2">
+        <div role="tablist" aria-label="Type d'accès" className="flex border-b border-gray-200 mt-2">
           <button
+            role="tab"
+            aria-selected={tab === 'code'}
+            aria-controls="tab-panel-code"
+            id="tab-code"
             onClick={() => { setTab('code'); setError(''); }}
             className={`flex-1 py-2.5 text-sm font-medium border-b-2 transition-colors ${
               tab === 'code' ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'
             }`}
           >
-            <KeyRound className="w-4 h-4 inline mr-1.5" />
+            <KeyRound className="w-4 h-4 inline mr-1.5" aria-hidden="true" />
             J&apos;ai un code
           </button>
           <button
+            role="tab"
+            aria-selected={tab === 'no-code'}
+            aria-controls="tab-panel-no-code"
+            id="tab-no-code"
             onClick={() => { setTab('no-code'); setError(''); }}
             className={`flex-1 py-2.5 text-sm font-medium border-b-2 transition-colors ${
               tab === 'no-code' ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'
@@ -218,7 +226,7 @@ export function ProGateModal({ open, onClose, variant, sejourSlug, reserverParam
         </div>
 
         {tab === 'code' ? (
-          <div className="space-y-3 mt-3">
+          <div role="tabpanel" id="tab-panel-code" aria-labelledby="tab-code" className="space-y-3 mt-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Email professionnel</label>
               <div className="relative">
@@ -260,7 +268,7 @@ export function ProGateModal({ open, onClose, variant, sejourSlug, reserverParam
 
             <Button
               onClick={handleProAuth}
-              disabled={loading || !email || structureCode.length < 6}
+              disabled={loading || !email || (structureCode.length !== 6 && structureCode.length !== 10)}
               className="w-full"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ArrowRight className="w-4 h-4 mr-2" />}
@@ -268,7 +276,7 @@ export function ProGateModal({ open, onClose, variant, sejourSlug, reserverParam
             </Button>
           </div>
         ) : (
-          <div className="space-y-4 mt-3">
+          <div role="tabpanel" id="tab-panel-no-code" aria-labelledby="tab-no-code" className="space-y-4 mt-3">
             <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
               <p className="text-sm text-blue-800 font-medium mb-1">
                 Votre structure n&apos;est pas encore enregistrée ?

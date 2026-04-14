@@ -5,6 +5,26 @@ import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { headers } from 'next/headers';
 import { sendPaymentConfirmedAdminNotification } from '@/lib/email';
 
+// ── Helpers idempotency ──
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function claimEvent(supabase: any, eventId: string, eventType: string): Promise<boolean> {
+  const { data } = await supabase
+    .from('gd_processed_events')
+    .upsert(
+      { event_id: eventId, event_type: eventType, processed_at: new Date().toISOString() },
+      { onConflict: 'event_id', ignoreDuplicates: true }
+    )
+    .select('id')
+    .maybeSingle();
+  return !!data;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function rollbackClaim(supabase: any, eventId: string): Promise<void> {
+  await supabase.from('gd_processed_events').delete().eq('event_id', eventId);
+}
+
 function getStripe() {
   const stripeKey = process.env.STRIPE_SECRET_KEY;
   if (!stripeKey) throw new Error('STRIPE_SECRET_KEY is not configured');
@@ -65,18 +85,8 @@ export async function POST(req: NextRequest) {
           break;
         }
 
-        // Claim atomique — si une invocation concurrente a déjà claim, on skip
-        const { data: claimed } = await supabase
-          .from('gd_processed_events')
-          .upsert(
-            { event_id: event.id, event_type: event.type, processed_at: new Date().toISOString() },
-            { onConflict: 'event_id', ignoreDuplicates: true }
-          )
-          .select('id')
-          .maybeSingle();
-
-        if (!claimed) {
-          console.log(`Event ${event.id} already claimed by concurrent invocation, skipping`);
+        // Claim atomique
+        if (!(await claimEvent(supabase, event.id, event.type))) {
           return NextResponse.json({ received: true, skipped: true });
         }
 
@@ -90,7 +100,7 @@ export async function POST(req: NextRequest) {
         if (!inscription) {
           console.error('webhook: inscription not found for payment intent — rollback claim, Stripe réessaiera', { inscriptionId, eventId: event.id });
           // Rollback claim pour permettre le retry Stripe
-          await supabase.from('gd_processed_events').delete().eq('event_id', event.id);
+          await rollbackClaim(supabase, event.id);
           return NextResponse.json({ error: 'inscription not found' }, { status: 500 });
         }
 
@@ -138,7 +148,7 @@ export async function POST(req: NextRequest) {
 
         if (error) {
           console.error('Error updating payment status — rollback claim:', error);
-          await supabase.from('gd_processed_events').delete().eq('event_id', event.id);
+          await rollbackClaim(supabase, event.id);
           return NextResponse.json({ error: 'DB update failed' }, { status: 500 });
         } else {
           console.log('[webhook/stripe] payment_intent.succeeded processed');
@@ -168,16 +178,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Claim atomique
-        const { data: claimedFail } = await supabase
-          .from('gd_processed_events')
-          .upsert(
-            { event_id: event.id, event_type: event.type, processed_at: new Date().toISOString() },
-            { onConflict: 'event_id', ignoreDuplicates: true }
-          )
-          .select('id')
-          .maybeSingle();
-
-        if (!claimedFail) {
+        if (!(await claimEvent(supabase, event.id, event.type))) {
           return NextResponse.json({ received: true, skipped: true });
         }
 
@@ -191,7 +192,7 @@ export async function POST(req: NextRequest) {
 
         if (error) {
           console.error('Error updating failed payment status — rollback claim:', error);
-          await supabase.from('gd_processed_events').delete().eq('event_id', event.id);
+          await rollbackClaim(supabase, event.id);
           return NextResponse.json({ error: 'DB update failed' }, { status: 500 });
         } else {
           console.log('[webhook/stripe] payment_intent.payment_failed processed');

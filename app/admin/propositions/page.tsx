@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Plus, FileDown, Check, X, Clock, Send, Loader2, Receipt, Eye, Download, Trash2 } from 'lucide-react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useAdminUI } from '@/components/admin/admin-ui';
 
 interface Sejour {
@@ -285,21 +286,25 @@ export default function PropositionsPage() {
             <h3 className="font-medium text-gray-700 mb-3">Structure sociale</h3>
             <div className="grid grid-cols-2 gap-4">
               <input
+                aria-label="Nom de la structure"
                 type="text" placeholder="Nom de la structure *" required
                 value={form.structure_nom} onChange={e => setForm({ ...form, structure_nom: e.target.value })}
                 className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
               />
               <input
+                aria-label="Adresse"
                 type="text" placeholder="Adresse"
                 value={form.structure_adresse} onChange={e => setForm({ ...form, structure_adresse: e.target.value })}
                 className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
               />
               <input
+                aria-label="Code postal"
                 type="text" placeholder="Code postal"
                 value={form.structure_cp} onChange={e => setForm({ ...form, structure_cp: e.target.value })}
                 className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
               />
               <input
+                aria-label="Ville"
                 type="text" placeholder="Ville"
                 value={form.structure_ville} onChange={e => setForm({ ...form, structure_ville: e.target.value })}
                 className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
@@ -312,11 +317,13 @@ export default function PropositionsPage() {
             <h3 className="font-medium text-gray-700 mb-3">Enfant</h3>
             <div className="grid grid-cols-2 gap-4">
               <input
+                aria-label="Nom de l'enfant"
                 type="text" placeholder="Nom de l'enfant *" required
                 value={form.enfant_nom} onChange={e => setForm({ ...form, enfant_nom: e.target.value })}
                 className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
               />
               <input
+                aria-label="Prénom de l'enfant"
                 type="text" placeholder="Prénom de l'enfant *" required
                 value={form.enfant_prenom} onChange={e => setForm({ ...form, enfant_prenom: e.target.value })}
                 className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
@@ -329,6 +336,7 @@ export default function PropositionsPage() {
             <h3 className="font-medium text-gray-700 mb-3">Séjour</h3>
             <div className="grid grid-cols-2 gap-4">
               <select
+                aria-label="Séjour"
                 required value={form.sejour_slug}
                 onChange={e => setForm({ ...form, sejour_slug: e.target.value, session_start: '', session_end: '', ville_depart: '' })}
                 className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
@@ -340,6 +348,7 @@ export default function PropositionsPage() {
               </select>
 
               <select
+                aria-label="Session"
                 required value={`${form.session_start}|${form.session_end}`}
                 onChange={e => {
                   const [start, end] = e.target.value.split('|');
@@ -357,6 +366,7 @@ export default function PropositionsPage() {
               </select>
 
               <select
+                aria-label="Ville de départ"
                 required value={form.ville_depart}
                 onChange={e => setForm({ ...form, ville_depart: e.target.value })}
                 className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
@@ -584,9 +594,16 @@ export default function PropositionsPage() {
       )}
 
       {/* APERÇU VISUEL */}
-      {preview && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setPreview(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
+      <DialogPrimitive.Root open={!!preview} onOpenChange={(open) => { if (!open) setPreview(null); }}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 bg-black/50 z-50" />
+          <DialogPrimitive.Content
+            className="fixed inset-0 flex items-center justify-center z-50 p-4 focus:outline-none"
+            aria-describedby={undefined}
+          >
+            <DialogPrimitive.Title className="sr-only">Aperçu proposition tarifaire</DialogPrimitive.Title>
+          {preview && (
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-auto">
             {/* Header orange */}
             <div className="bg-orange-500 text-white px-8 py-5 rounded-t-2xl">
               <div className="flex items-center justify-between">
@@ -680,8 +697,10 @@ export default function PropositionsPage() {
               </div>
             </div>
           </div>
-        </div>
-      )}
+          )}
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
     </div>
   );
 }

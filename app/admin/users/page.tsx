@@ -1,9 +1,9 @@
 'use client';
 
-
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useAdminUI } from '@/components/admin/admin-ui';
 import { Button } from '@/components/ui/button';
 import { getStoredUser } from '@/lib/utils';
@@ -132,25 +132,36 @@ function UserForm({ user, onClose, onSave }: { user: User | null; onClose: () =>
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-        <div className="p-6 border-b">
-          <h2 className="text-xl font-bold">{user ? 'Modifier' : 'Nouvel'} utilisateur</h2>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <input className="w-full border rounded-lg px-4 py-2" type="email" placeholder="Email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required />
-          <input className="w-full border rounded-lg px-4 py-2" type="password" placeholder={user ? 'Nouveau mot de passe (optionnel)' : 'Mot de passe'} value={form.password} onChange={e => setForm({...form, password: e.target.value})} required={!user} />
-          <select className="w-full border rounded-lg px-4 py-2" value={form.role} onChange={e => setForm({...form, role: e.target.value})}>
-            {ROLES.map((role) => (
-              <option key={role} value={role}>{role}</option>
-            ))}
-          </select>
-          <div className="flex gap-4 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1">Annuler</Button>
-            <Button type="submit" className="flex-1">Enregistrer</Button>
+    <DialogPrimitive.Root open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 bg-black/50 z-50" />
+        <DialogPrimitive.Content
+          className="fixed inset-0 flex items-center justify-center z-50 p-4 focus:outline-none"
+          aria-describedby={undefined}
+        >
+          <DialogPrimitive.Title className="sr-only">
+            {user ? 'Modifier utilisateur' : 'Nouvel utilisateur'}
+          </DialogPrimitive.Title>
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+            <div className="p-6 border-b">
+              <h2 className="text-xl font-bold" aria-hidden="true">{user ? 'Modifier' : 'Nouvel'} utilisateur</h2>
+            </div>
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <input aria-label="Email" className="w-full border rounded-lg px-4 py-2" type="email" placeholder="Email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required />
+              <input aria-label={user ? 'Nouveau mot de passe (optionnel)' : 'Mot de passe'} className="w-full border rounded-lg px-4 py-2" type="password" placeholder={user ? 'Nouveau mot de passe (optionnel)' : 'Mot de passe'} value={form.password} onChange={e => setForm({...form, password: e.target.value})} required={!user} />
+              <select aria-label="Rôle" className="w-full border rounded-lg px-4 py-2" value={form.role} onChange={e => setForm({...form, role: e.target.value})}>
+                {ROLES.map((role) => (
+                  <option key={role} value={role}>{role}</option>
+                ))}
+              </select>
+              <div className="flex gap-4 pt-4">
+                <Button type="button" variant="outline" onClick={onClose} className="flex-1">Annuler</Button>
+                <Button type="submit" className="flex-1">Enregistrer</Button>
+              </div>
+            </form>
           </div>
-        </form>
-      </div>
-    </div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }

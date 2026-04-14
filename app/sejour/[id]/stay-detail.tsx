@@ -129,7 +129,7 @@ function PriceInquiryBlock({ sejourSlug }: { sejourSlug: string; sejourTitle: st
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition disabled:opacity-50"
+          className="w-full py-2.5 bg-secondary text-white rounded-pill text-sm font-medium hover:bg-secondary/90 transition disabled:opacity-50"
         >
           {loading ? 'Envoi en cours…' : 'Recevoir les tarifs par email'}
         </button>

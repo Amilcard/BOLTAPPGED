@@ -180,7 +180,7 @@ export default function StructureDashboard() {
           </p>
           <Link
             href="/structure/login"
-            className="inline-block px-6 py-2.5 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition text-sm"
+            className="inline-block px-6 py-2.5 bg-secondary text-white rounded-pill font-medium hover:bg-secondary/90 transition text-sm"
           >
             Réessayer
           </Link>
@@ -234,7 +234,7 @@ export default function StructureDashboard() {
           <button
             onClick={handleAcceptRgpd}
             disabled={rgpdLoading}
-            className="w-full py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition disabled:opacity-50"
+            className="w-full py-3 bg-secondary text-white rounded-pill font-medium hover:bg-secondary/90 transition disabled:opacity-50"
           >
             {rgpdLoading ? 'Enregistrement…' : 'J\'accepte et j\'accède aux données'}
           </button>

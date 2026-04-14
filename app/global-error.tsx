@@ -34,7 +34,7 @@ export default function GlobalError({
           <div className="space-y-3">
             <button
               onClick={() => { setCountdown(0); }}
-              className="w-full bg-primary text-white font-medium py-3 px-6 rounded-lg hover:bg-primary/90 transition-colors"
+              className="w-full bg-secondary text-white font-medium py-3 px-6 rounded-pill hover:bg-secondary/90 transition-colors"
             >
               Réessayer maintenant
             </button>

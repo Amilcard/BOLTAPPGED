@@ -122,7 +122,7 @@ export default function IncidentsPanel({ code, role, inscriptions }: Props) {
         <div className="flex justify-end">
           <button
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition"
+            className="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-pill text-sm font-medium hover:bg-secondary/90 transition"
           >
             {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
             {showForm ? 'Annuler' : 'Signaler un fait marquant'}

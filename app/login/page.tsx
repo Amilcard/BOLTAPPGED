@@ -145,8 +145,9 @@ function LoginForm() {
                 Saisissez votre email et nous vous enverrons un lien de réinitialisation.
               </p>
               <div>
-                <label className="block text-sm font-medium text-primary-600 mb-1">Email</label>
+                <label htmlFor="reset-email" className="block text-sm font-medium text-primary-600 mb-1">Email</label>
                 <input
+                  id="reset-email"
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
@@ -160,7 +161,7 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={resetLoading}
-                className="w-full py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3 bg-secondary text-white rounded-pill font-medium hover:bg-secondary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {resetLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                 {resetLoading ? 'Envoi...' : 'Envoyer le lien'}
@@ -176,9 +177,11 @@ function LoginForm() {
           ) : !requires2fa ? (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-primary-600 mb-1">Email</label>
+                <label htmlFor="login-email" className="block text-sm font-medium text-primary-600 mb-1">Email</label>
                 <input
+                  id="login-email"
                   type="email"
+                  autoComplete="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   required
@@ -186,9 +189,11 @@ function LoginForm() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-primary-600 mb-1">Mot de passe</label>
+                <label htmlFor="login-password" className="block text-sm font-medium text-primary-600 mb-1">Mot de passe</label>
                 <input
+                  id="login-password"
                   type="password"
+                  autoComplete="current-password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   required
@@ -203,7 +208,7 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3 bg-secondary text-white rounded-pill font-medium hover:bg-secondary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                 {loading ? 'Connexion...' : 'Se connecter'}
@@ -245,7 +250,7 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={loading || totpCode.length !== 6}
-                className="w-full py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3 bg-secondary text-white rounded-pill font-medium hover:bg-secondary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                 {loading ? 'Vérification...' : 'Vérifier'}

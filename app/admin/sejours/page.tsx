@@ -5,12 +5,13 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState } from 'react';
 import { formatPrice } from '@/lib/utils';
 import { Plus, Pencil, Trash2, Eye, EyeOff, Bell } from 'lucide-react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Button } from '@/components/ui/button';
 import { Stay, StayWithWaitlist } from '@/lib/types';
 import { useAdminUI } from '@/components/admin/admin-ui';
 
 export default function AdminSejours() {
-  const { confirm } = useAdminUI();
+  const { confirm, toast } = useAdminUI();
   const [stays, setStays] = useState<StayWithWaitlist[]>([]);
   const [editingStay, setEditingStay] = useState<Stay | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -39,7 +40,7 @@ export default function AdminSejours() {
       });
       if (res.ok) {
         const { sent } = await res.json();
-        alert(`${sent} email(s) envoyé(s).`);
+        toast(`${sent} email(s) envoyé(s).`);
         fetchStays();
       }
     });
@@ -168,10 +169,14 @@ function StayForm({ stay, onClose, onSave }: { stay: Stay | null; onClose: () =>
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <DialogPrimitive.Root open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 bg-black/50 z-50" />
+        <DialogPrimitive.Content className="fixed inset-0 flex items-center justify-center z-50 p-4 focus:outline-none" aria-describedby={undefined}>
+          <DialogPrimitive.Title className="sr-only">{stay ? 'Modifier séjour' : 'Nouveau séjour'}</DialogPrimitive.Title>
       <div className="bg-white rounded-brand shadow-brand-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b">
-          <h2 className="text-xl font-bold">{stay ? 'Modifier' : 'Nouveau'} séjour</h2>
+          <h2 className="text-xl font-bold" aria-hidden="true">{stay ? 'Modifier' : 'Nouveau'} séjour</h2>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <input className="w-full border rounded-lg px-4 py-2" placeholder="Titre" value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
@@ -206,6 +211,8 @@ function StayForm({ stay, onClose, onSave }: { stay: Stay | null; onClose: () =>
           </div>
         </form>
       </div>
-    </div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }

@@ -238,7 +238,7 @@ export default function PropositionsPage() {
       setTimeout(() => URL.revokeObjectURL(url), 60000);
     } catch (err) {
       console.error('Error downloading PDF:', err);
-      alert('Erreur lors de la génération du PDF');
+      toast('Erreur lors de la génération du PDF');
     }
   };
 

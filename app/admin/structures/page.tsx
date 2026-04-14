@@ -42,7 +42,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default function AdminStructures() {
-  const { confirm } = useAdminUI();
+  const { confirm, toast } = useAdminUI();
   const [structures, setStructures] = useState<Structure[]>([]);
   const [orphans, setOrphans] = useState<Orphan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,7 +130,7 @@ export default function AdminStructures() {
 
     const matchingStructures = structures.filter(s => s.postalCode === orphan.postalCode);
     if (matchingStructures.length === 0) {
-      alert('Aucune structure active trouvée sur ce code postal. Créez la structure d\'abord.');
+      toast('Aucune structure active trouvée sur ce code postal. Créez la structure d\'abord.');
       return;
     }
 

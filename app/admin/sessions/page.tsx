@@ -4,6 +4,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { formatDate } from '@/lib/utils';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Button } from '@/components/ui/button';
 import { Stay, StaySession } from '@/lib/types';
 import { useAdminUI } from '@/components/admin/admin-ui';
@@ -134,10 +135,14 @@ function SessionForm({ session, stayId, onClose, onSave }: { session: StaySessio
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <DialogPrimitive.Root open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 bg-black/50 z-50" />
+        <DialogPrimitive.Content className="fixed inset-0 flex items-center justify-center z-50 p-4 focus:outline-none" aria-describedby={undefined}>
+          <DialogPrimitive.Title className="sr-only">{session ? 'Modifier session' : 'Nouvelle session'}</DialogPrimitive.Title>
       <div className="bg-white rounded-brand shadow-brand-xl max-w-md w-full">
         <div className="p-6 border-b">
-          <h2 className="text-xl font-bold">{session ? 'Modifier' : 'Nouvelle'} session</h2>
+          <h2 className="text-xl font-bold" aria-hidden="true">{session ? 'Modifier' : 'Nouvelle'} session</h2>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
@@ -158,6 +163,8 @@ function SessionForm({ session, stayId, onClose, onSave }: { session: StaySessio
           </div>
         </form>
       </div>
-    </div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }

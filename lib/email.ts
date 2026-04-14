@@ -298,14 +298,14 @@ export async function sendSouhaitNotificationEducateur(data: SouhaitEmailData) {
             <h2 style="color: #2a383f;">Un souhait de séjour à traiter</h2>
             <p>Bonjour${prenom},</p>
             <p><strong>${htmlEscape(data.kidPrenom)}</strong> a noté un souhait pour le séjour :</p>
-            <div style="background: #f9fafb; border-left: 4px solid #e07a5f; padding: 16px; margin: 16px 0; border-radius: 4px;">
+            <div style="background: #f9fafb; border-left: 4px solid #de7356; padding: 16px; margin: 16px 0; border-radius: 4px;">
               <p style="margin: 0 0 8px; font-weight: bold; color: #2a383f;">${htmlEscape(data.sejourTitre)}</p>
               <p style="margin: 0; color: #4b5563; font-style: italic;">&laquo; ${htmlEscape(data.motivation)} &raquo;</p>
             </div>
             <p>Cliquez sur le bouton ci-dessous pour consulter ce souhait et y répondre :</p>
             <div style="text-align: center; margin: 24px 0;">
               <a href="${data.lienReponse}"
-                 style="display: inline-block; background: #e07a5f; color: white; padding: 14px 28px; border-radius: 9999px; text-decoration: none; font-weight: bold; font-size: 15px;">
+                 style="display: inline-block; background: #de7356; color: white; padding: 14px 28px; border-radius: 9999px; text-decoration: none; font-weight: bold; font-size: 15px;">
                 Voir le souhait et répondre
               </a>
             </div>

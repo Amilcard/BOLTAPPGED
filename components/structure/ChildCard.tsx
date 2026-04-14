@@ -88,7 +88,7 @@ const ChildCard = React.memo(function ChildCard({
       onClick={() => onSelect(ins.id)}
       className={`w-full text-left p-4 rounded-xl border-2 transition-all hover:shadow-md ${
         selected
-          ? 'border-[#145587] bg-blue-50/50 shadow-md'
+          ? 'border-primary bg-blue-50/50 shadow-card'
           : 'border-gray-100 bg-white hover:border-gray-200'
       }`}
     >

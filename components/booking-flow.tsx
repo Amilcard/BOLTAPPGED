@@ -79,7 +79,7 @@ const CARD_ELEMENT_OPTIONS = {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       color: '#1a1a2e',
       '::placeholder': { color: '#9ca3af' },
-      iconColor: '#e07a5f',
+      iconColor: '#de7356',
     },
     invalid: {
       color: '#dc2626',

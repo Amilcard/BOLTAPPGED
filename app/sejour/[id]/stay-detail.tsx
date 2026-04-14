@@ -586,7 +586,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
               return (
                 <section className={`relative overflow-hidden rounded-xl bg-opacity-10 border-l-4 p-6 ${themeStyle.borderColor.replace('border-', 'bg-').replace('600', '50')} ${themeStyle.borderColor}`}>
-                  <h3 className="text-lg font-bold text-[#1A2B4B] mb-4 flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-primary mb-4 flex items-center gap-2">
                     <Check className={`w-5 h-5 ${themeStyle.textColor}`} />
                     {canSeePrices ? 'Inclus dans votre tarif Sérénité' : 'Inclus dans le séjour'}
                   </h3>

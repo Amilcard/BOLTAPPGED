@@ -127,7 +127,7 @@ export async function POST(
       actorType: 'referent',
       actorId: ownership.referentEmail,
       metadata: { type, sentTo: insc.referent_email, channel: 'email' },
-    }).catch(() => {});
+    }).catch((err) => { console.error('[pdf-email] auditLog failed:', err); });
 
     return NextResponse.json({ ok: true, sentTo: insc.referent_email });
   } catch (err) {

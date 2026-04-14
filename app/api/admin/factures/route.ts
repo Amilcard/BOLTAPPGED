@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
       actorType: 'admin',
       actorId: auth.email,
       metadata: { count: result.length },
-    }).catch(() => {});
+    }).catch((err) => { console.error('[factures GET] auditLog failed:', err); });
 
     return NextResponse.json({ factures: result });
   } catch (err: unknown) {

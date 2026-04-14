@@ -121,17 +121,32 @@ function SessionForm({ session, stayId, onClose, onSave }: { session: StaySessio
     endDate: session?.endDate?.split('T')[0] || '',
     seatsTotal: session?.seatsTotal || 20,
   });
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
+    setSubmitError(null);
     const url = session ? `/api/admin/stays/${stayId}/sessions/${session.id}` : `/api/admin/stays/${stayId}/sessions`;
     const method = session ? 'PUT' : 'POST';
-    await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-    onSave();
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        onSave();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setSubmitError(data?.error?.message ?? 'Erreur lors de l\'enregistrement.');
+      }
+    } catch {
+      setSubmitError('Erreur réseau. Vérifiez votre connexion.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -157,9 +172,10 @@ function SessionForm({ session, stayId, onClose, onSave }: { session: StaySessio
             <label className="block text-sm font-medium mb-1">Places totales</label>
             <input type="number" className="w-full border rounded-lg px-4 py-2" value={form.seatsTotal} onChange={e => setForm({...form, seatsTotal: +e.target.value})} required />
           </div>
+          {submitError && <p className="text-sm text-red-600" role="alert">{submitError}</p>}
           <div className="flex gap-4 pt-4">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">Annuler</Button>
-            <Button type="submit" className="flex-1">Enregistrer</Button>
+            <Button type="submit" disabled={submitting} className="flex-1">{submitting ? 'Envoi...' : 'Enregistrer'}</Button>
           </div>
         </form>
       </div>

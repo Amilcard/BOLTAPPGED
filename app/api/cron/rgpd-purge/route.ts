@@ -38,11 +38,9 @@ export async function GET(req: NextRequest) {
   // Fallback : created_at + 111j pour les events orphelins (sans inscription liée)
   const purgeThreshold = new Date(Date.now() - (90 + 21) * 24 * 60 * 60 * 1000).toISOString();
 
-  // Chemin 1 — events liés à une inscription expirée (left join → inclut orphelins)
+  // Chemin 1 — events liés à une inscription avec session_date expirée (via RPC — PostgREST ne supporte pas .lt() sur colonnes jointes)
   const { data: linkedEvents, error: errFetchLinked } = await supabase
-    .from('gd_medical_events')
-    .select('id, inscription:gd_inscriptions(session_date)')
-    .lt('inscription.session_date', purgeThreshold);
+    .rpc('gd_get_expired_linked_medical_events', { threshold: purgeThreshold });
 
   // Chemin 2 — events orphelins (inscription_id null)
   const { data: orphanEvents, error: errFetchOrphan } = await supabase

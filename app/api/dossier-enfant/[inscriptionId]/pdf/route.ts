@@ -474,7 +474,7 @@ export async function GET(
       actorType: 'referent',
       actorId: ownership.referentEmail,
       metadata: { type: docType, channel: 'direct' },
-    }).catch(() => {});
+    }).catch((err) => { console.error('[pdf GET] auditLog failed:', err); });
 
     return new NextResponse(pdfBytes, {
       headers: {

@@ -3,6 +3,22 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Building2, Search, Link2, GitMerge, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 import { useAdminUI } from '@/components/admin/admin-ui';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Structure {
   id: string;
@@ -54,6 +70,13 @@ export default function AdminStructures() {
   const [expandedInscriptions, setExpandedInscriptions] = useState<Record<string, unknown>[]>([]);
   const [mergeSource, setMergeSource] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState('');
+  // Picker dialog state (replaces native prompt)
+  const [linkPicker, setLinkPicker] = useState<{
+    orphanId: string;
+    orphan: Orphan;
+    matchingStructures: Structure[];
+  } | null>(null);
+  const [pickerSelectedId, setPickerSelectedId] = useState('');
 
   const headers = { 'Content-Type': 'application/json' };
 
@@ -124,7 +147,6 @@ export default function AdminStructures() {
 
   // Rattachement orpheline
   const handleLink = (orphanId: string) => {
-    // Utiliser un prompt simple : on sélectionne la première structure qui match le CP
     const orphan = orphans.find(o => o.id === orphanId);
     if (!orphan) return;
 
@@ -134,32 +156,25 @@ export default function AdminStructures() {
       return;
     }
 
-    const structId = matchingStructures.length === 1
-      ? matchingStructures[0].id
-      : prompt(
-          `Plusieurs structures sur ${orphan.postalCode} :\n${matchingStructures.map((s, i) => `${i + 1}. ${s.name} (${s.code})`).join('\n')}\n\nEntrez le numéro :`,
-        );
-
-    let selectedId = '';
     if (matchingStructures.length === 1) {
-      selectedId = matchingStructures[0].id;
-    } else if (structId) {
-      const idx = parseInt(structId) - 1;
-      if (idx >= 0 && idx < matchingStructures.length) {
-        selectedId = matchingStructures[idx].id;
-      }
+      // Single match: go straight to confirm
+      confirmAndLink(orphan, matchingStructures[0].id);
+    } else {
+      // Multiple matches: open picker dialog
+      setPickerSelectedId('');
+      setLinkPicker({ orphanId, orphan, matchingStructures });
     }
+  };
 
-    if (!selectedId) return;
+  const confirmAndLink = (orphan: Orphan, selectedId: string) => {
     const selectedName = structures.find(s => s.id === selectedId)?.name || '';
-
     confirm(
       `Rattacher l'inscription ${orphan.dossierRef} (${orphan.jeunePrenom}) à "${selectedName}" ?`,
       async () => {
         const res = await fetch('/api/admin/structures/link', {
           method: 'PATCH',
           headers,
-          body: JSON.stringify({ inscriptionId: orphanId, structureId: selectedId }),
+          body: JSON.stringify({ inscriptionId: orphan.id, structureId: selectedId }),
         });
         if (res.ok) {
           setSuccessMsg(`Inscription ${orphan.dossierRef} rattachée à "${selectedName}"`);
@@ -168,6 +183,13 @@ export default function AdminStructures() {
         }
       }
     );
+  };
+
+  const handlePickerConfirm = () => {
+    if (!linkPicker || !pickerSelectedId) return;
+    const { orphan } = linkPicker;
+    setLinkPicker(null);
+    confirmAndLink(orphan, pickerSelectedId);
   };
 
   return (
@@ -371,6 +393,35 @@ export default function AdminStructures() {
           </table>
         </div>
       )}
+
+      {/* Picker dialog — replaces native prompt() for multi-structure selection */}
+      <Dialog open={!!linkPicker} onOpenChange={(open) => { if (!open) setLinkPicker(null); }}>
+        <DialogContent className="rounded-brand">
+          <DialogHeader>
+            <DialogTitle>Choisir la structure</DialogTitle>
+            <DialogDescription>
+              Plusieurs structures trouvées sur le code postal {linkPicker?.orphan.postalCode}.
+              Sélectionnez celle à rattacher.
+            </DialogDescription>
+          </DialogHeader>
+          <Select value={pickerSelectedId} onValueChange={setPickerSelectedId}>
+            <SelectTrigger aria-label="Structure">
+              <SelectValue placeholder="Sélectionner une structure" />
+            </SelectTrigger>
+            <SelectContent>
+              {linkPicker?.matchingStructures.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.name} ({s.code})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setLinkPicker(null)}>Annuler</Button>
+            <Button onClick={handlePickerConfirm} disabled={!pickerSelectedId}>Confirmer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

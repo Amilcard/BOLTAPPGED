@@ -228,6 +228,20 @@ In `app/sejour/[id]/stay-detail.tsx`:
 - RGPD : données enfants ASE — protection maximale
 - Secrets : jamais de fallback hardcodé en prod
 
+## Charte graphique — OBLIGATOIRE
+
+**Avant toute modification UI/UX, consulter `docs/CHARTE_GRAPHIQUE.md`.**
+
+Regles cles (le doc complet fait reference) :
+- **Secondary (#de7356 terracotta) = CTA/boutons d'action** — primary (#2a383f) = titres/texte seulement
+- **Composants shadcn obligatoires** : `<Button>`, `<Input>`, `<Select>`, `<Badge>`, `<Tabs>`, `<Skeleton>` — zero inline
+- **Zero hex hardcode** hors palette — tout passe par les tokens Tailwind
+- **Cartes** : `rounded-brand` + `shadow-card` — pas de `rounded-xl` ou `shadow` generique
+- **Focus ring unique** : `ring-secondary` (terracotta) partout
+- **Accessibilite** : `role="alert"` sur erreurs, labels sur inputs, tap targets 44px, `aria-hidden` sur decoratif
+- **Typo back-office** : echelle reduite (text-2xl max) — pas les tailles vitrine (text-5xl)
+- **Checklist avant merge** : voir section 15 du doc
+
 ## Important Conventions
 
 ### File Organization

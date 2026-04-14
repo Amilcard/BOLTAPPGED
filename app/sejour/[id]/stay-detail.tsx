@@ -31,7 +31,7 @@ import type { Stay, StaySession, RawSessionData } from '@/lib/types';
 import { formatDateLong, getWishlistMotivation, addToWishlist } from '@/lib/utils';
 import { getPriceBreakdown, findSessionPrice, getMinSessionPrice } from '@/lib/pricing';
 import { useApp } from '@/components/providers';
-import { WishlistModal } from '@/components/wishlist-modal';
+
 import { ProGateModal } from '@/components/pro-gate-modal';
 import { Button } from '@/components/ui/button';
 
@@ -143,8 +143,8 @@ function PriceInquiryBlock({ sejourSlug }: { sejourSlug: string; sejourTitle: st
 
 export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], price_base?: number | null, price_unit?: string, pro_price_note?: string, sourceUrl?: string | null, pdfUrl?: string | null, geoLabel?: string | null, geoPrecision?: string | null, accommodationLabel?: string | null, contentKids?: Record<string, unknown> | null, rawSessions?: RawSessionData[], images?: string[] } }) {
   const { mode, mounted, refreshWishlist, isAuthenticated: _isAuthenticated, proEmailVerified } = useApp();
-  const _router = useRouter();
-  const [showWishlistModal, setShowWishlistModal] = useState(false);
+  const router = useRouter();
+
   const [showProAuthModal, setShowProAuthModal] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [showDepartures, setShowDepartures] = useState(false);
@@ -242,8 +242,8 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
     if (slug) {
       addToWishlist(slug);
       refreshWishlist();
+      router.push(`/sejour/${slug}/souhait`);
     }
-    setShowWishlistModal(true);
   };
 
   const handleShare = async () => {
@@ -871,16 +871,6 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
           </div>
         </div>
       </div>
-
-      {showWishlistModal && (
-        <WishlistModal
-          isOpen={showWishlistModal}
-          onClose={() => setShowWishlistModal(false)}
-          stayTitle={displayTitle ?? ''}
-          staySlug={slug}
-          stayUrl={typeof window !== 'undefined' ? window.location.href : ''}
-        />
-      )}
 
       {/* Modal auth pro — inscription */}
       <ProGateModal

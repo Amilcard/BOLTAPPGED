@@ -460,7 +460,7 @@ export async function POST(request: NextRequest) {
 
           // Si des structures existaient déjà sur ce CP → alerte admin
           if (existingOnCP && existingOnCP.length > 0) {
-            sendNewEducateurAlert({
+            await sendNewEducateurAlert({
               existingStructures: existingOnCP as Array<{ name: string; code: string; city: string }>,
               newEducateurNom: data.socialWorkerName,
               newEducateurEmail: data.email,

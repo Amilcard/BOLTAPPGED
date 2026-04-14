@@ -265,7 +265,7 @@ export default function PropositionsPage() {
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition"
+          className="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-pill hover:bg-secondary/90 transition"
         >
           <Plus size={20} />
           Nouvelle proposition
@@ -401,7 +401,7 @@ export default function PropositionsPage() {
             </button>
             <button
               type="submit" disabled={submitting}
-              className="flex items-center gap-2 px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-2 bg-secondary text-white rounded-pill hover:bg-secondary/90 transition disabled:opacity-50"
             >
               <Eye size={18} />
               Aperçu de la proposition
@@ -411,8 +411,8 @@ export default function PropositionsPage() {
 
         {/* APERÇU AVANT CONFIRMATION */}
         {showPreviewForm && (
-          <div className="bg-white rounded-brand shadow-card-lg border-2 border-orange-200 p-6 space-y-6">
-            <div className="bg-orange-500 text-white px-6 py-4 rounded-lg -mx-6 -mt-6">
+          <div className="bg-white rounded-brand shadow-brand-lg border-2 border-orange-200 p-6 space-y-6">
+            <div className="bg-secondary text-white px-6 py-4 rounded-lg -mx-6 -mt-6">
               <p className="text-sm opacity-80">Association Groupe et Découverte</p>
               <h2 className="text-xl font-bold mt-1">Proposition Tarifaire — Aperçu</h2>
             </div>
@@ -490,7 +490,7 @@ export default function PropositionsPage() {
               </button>
               <button
                 onClick={handleConfirm} disabled={submitting}
-                className="flex items-center gap-2 px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2 bg-secondary text-white rounded-pill hover:bg-secondary/90 transition disabled:opacity-50"
               >
                 {submitting ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
                 Confirmer et enregistrer
@@ -605,7 +605,7 @@ export default function PropositionsPage() {
           {preview && (
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-auto">
             {/* Header orange */}
-            <div className="bg-orange-500 text-white px-8 py-5 rounded-t-2xl">
+            <div className="bg-secondary text-white px-8 py-5 rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm opacity-80">Association Groupe et Découverte</p>
@@ -689,7 +689,7 @@ export default function PropositionsPage() {
                 </span>
                 <button
                   onClick={() => { downloadPdf(preview.id); }}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-secondary text-white rounded-pill hover:bg-secondary/90 transition"
                 >
                   <Download size={18} />
                   Télécharger le PDF

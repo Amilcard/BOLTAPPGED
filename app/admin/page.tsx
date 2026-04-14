@@ -87,7 +87,7 @@ export default function AdminDashboard() {
   const cards = [
     { label: 'Séjours', value: stats?.stays ?? '-', icon: Map, color: 'bg-primary' },
     { label: 'Sessions', value: stats?.sessions ?? '-', icon: Calendar, color: 'bg-accent' },
-    { label: 'Demandes', value: stats?.bookings ?? '-', icon: FileText, color: 'bg-orange-500' },
+    { label: 'Demandes', value: stats?.bookings ?? '-', icon: FileText, color: 'bg-secondary' },
     { label: 'Nouvelles', value: stats?.bookingsNew ?? '-', icon: Users, color: 'bg-red-500' },
   ];
 

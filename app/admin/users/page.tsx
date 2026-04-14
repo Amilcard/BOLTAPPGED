@@ -117,18 +117,33 @@ function UserForm({ user, onClose, onSave }: { user: User | null; onClose: () =>
     password: '',
     role: user?.role || 'EDITOR',
   });
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
+    setSubmitError(null);
     const url = user ? `/api/admin/users/${user.id}` : '/api/admin/users';
     const method = user ? 'PUT' : 'POST';
     const body = user ? { email: form.email, role: form.role, ...(form.password && { password: form.password }) } : form;
-    await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    onSave();
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        onSave();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setSubmitError(data?.error?.message ?? 'Erreur lors de l\'enregistrement.');
+      }
+    } catch {
+      setSubmitError('Erreur réseau. Vérifiez votre connexion.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -142,7 +157,7 @@ function UserForm({ user, onClose, onSave }: { user: User | null; onClose: () =>
           <DialogPrimitive.Title className="sr-only">
             {user ? 'Modifier utilisateur' : 'Nouvel utilisateur'}
           </DialogPrimitive.Title>
-          <div className="bg-white rounded-brand shadow-card-xl max-w-md w-full">
+          <div className="bg-white rounded-brand shadow-brand-xl max-w-md w-full">
             <div className="p-6 border-b">
               <h2 className="text-xl font-bold" aria-hidden="true">{user ? 'Modifier' : 'Nouvel'} utilisateur</h2>
             </div>
@@ -154,9 +169,10 @@ function UserForm({ user, onClose, onSave }: { user: User | null; onClose: () =>
                   <option key={role} value={role}>{role}</option>
                 ))}
               </select>
+              {submitError && <p className="text-sm text-red-600" role="alert">{submitError}</p>}
               <div className="flex gap-4 pt-4">
                 <Button type="button" variant="outline" onClick={onClose} className="flex-1">Annuler</Button>
-                <Button type="submit" className="flex-1">Enregistrer</Button>
+                <Button type="submit" disabled={submitting} className="flex-1">{submitting ? 'Envoi...' : 'Enregistrer'}</Button>
               </div>
             </form>
           </div>

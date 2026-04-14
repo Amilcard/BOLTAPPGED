@@ -209,7 +209,7 @@ export default function InscriptionDetailPage() {
               href={suiviUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition text-sm"
+              className="flex items-center gap-2 px-3 py-2 bg-secondary text-white rounded-pill hover:bg-secondary/90 transition text-sm"
             >
               <ExternalLink size={16} />
               Vue referent

@@ -28,12 +28,22 @@ export async function GET(
   const supabase = getSupabase();
   const structureId = resolved.structure.id as string;
 
-  // Éducateur : compteur uniquement (RGPD — pas de détail médical)
-  if (resolved.role === 'educateur') {
+  // Éducateur : compteur uniquement, SCOPÉ à ses propres inscriptions (RGPD Art. 9)
+  if (resolved.role === 'educateur' && resolved.email) {
+    const { data: myInscriptions } = await supabase
+      .from('gd_inscriptions')
+      .select('id')
+      .eq('structure_id', structureId)
+      .eq('referent_email', resolved.email);
+
+    const ids = (myInscriptions ?? []).map((i: { id: string }) => i.id);
+    if (ids.length === 0) return NextResponse.json({ count: 0, detail: null });
+
     const { count, error } = await supabase
       .from('gd_medical_events')
       .select('id', { count: 'exact', head: true })
-      .eq('structure_id', structureId);
+      .eq('structure_id', structureId)
+      .in('inscription_id', ids);
 
     if (error) {
       console.error('[medical GET count] error:', error.message);

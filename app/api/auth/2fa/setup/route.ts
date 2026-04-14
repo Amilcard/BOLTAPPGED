@@ -23,7 +23,8 @@ export async function POST(req: NextRequest) {
       { onConflict: 'user_id' }
     );
 
-    return NextResponse.json({ qrCodeUrl, secret });
+    // Secret non exposé dans la réponse — disponible uniquement via le QR code
+    return NextResponse.json({ qrCodeUrl });
   } catch (error) {
     console.error('POST /api/auth/2fa/setup error:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });

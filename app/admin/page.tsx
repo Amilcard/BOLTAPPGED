@@ -165,6 +165,7 @@ export default function AdminDashboard() {
                 <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
                 <Tooltip />
+                {/* primary token from tailwind.config.ts */}
                 <Bar dataKey="inscriptions" fill="#2a383f" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

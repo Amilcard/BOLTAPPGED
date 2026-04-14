@@ -46,17 +46,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // IDEMPOTENCY : vérifier si cet event a déjà été traité
-    const { data: existingEvent } = await supabase
-      .from('gd_processed_events')
-      .select('id')
-      .eq('event_id', event.id)
-      .single();
-
-    if (existingEvent) {
-      console.log(`Event ${event.id} already processed, skipping`);
-      return NextResponse.json({ received: true, skipped: true });
-    }
+    // IDEMPOTENCY ATOMIQUE : claim l'event AVANT la business logic
+    // Utilise INSERT ON CONFLICT (UNIQUE sur event_id) pour éviter le TOCTOU
+    // Ne claim que si on a un inscriptionId (sinon Stripe doit réessayer)
 
     // Flag : ne marquer comme traité que si le traitement est complet
     let shouldRecordEvent = true;
@@ -71,6 +63,21 @@ export async function POST(req: NextRequest) {
           console.error('Missing inscriptionId in payment intent metadata — Stripe réessaiera');
           shouldRecordEvent = false; // Ne PAS enregistrer → Stripe réessaiera
           break;
+        }
+
+        // Claim atomique — si une invocation concurrente a déjà claim, on skip
+        const { data: claimed } = await supabase
+          .from('gd_processed_events')
+          .upsert(
+            { event_id: event.id, event_type: event.type, processed_at: new Date().toISOString() },
+            { onConflict: 'event_id', ignoreDuplicates: true }
+          )
+          .select('id')
+          .maybeSingle();
+
+        if (!claimed) {
+          console.log(`Event ${event.id} already claimed by concurrent invocation, skipping`);
+          return NextResponse.json({ received: true, skipped: true });
         }
 
         // VÉRIFICATION MONTANT : comparer Stripe vs DB
@@ -155,6 +162,20 @@ export async function POST(req: NextRequest) {
           break;
         }
 
+        // Claim atomique
+        const { data: claimedFail } = await supabase
+          .from('gd_processed_events')
+          .upsert(
+            { event_id: event.id, event_type: event.type, processed_at: new Date().toISOString() },
+            { onConflict: 'event_id', ignoreDuplicates: true }
+          )
+          .select('id')
+          .maybeSingle();
+
+        if (!claimedFail) {
+          return NextResponse.json({ received: true, skipped: true });
+        }
+
         const { error } = await supabase
           .from('gd_inscriptions')
           .update({
@@ -175,20 +196,8 @@ export async function POST(req: NextRequest) {
         console.log(`Unhandled event type: ${event.type}`);
     }
 
-    // IDEMPOTENCY : enregistrer l'event comme traité SEULEMENT si le traitement est complet
-    // Si shouldRecordEvent = false → Stripe réessaiera (metadata manquant, inscription pas encore créée)
-    if (shouldRecordEvent) {
-      await supabase
-        .from('gd_processed_events')
-        .upsert(
-          {
-            event_id: event.id,
-            event_type: event.type,
-            processed_at: new Date().toISOString(),
-          },
-          { onConflict: 'event_id', ignoreDuplicates: true }
-        );
-    }
+    // Events avec shouldRecordEvent = false (inscriptionId manquant) ne sont pas claim
+    // → Stripe réessaiera. Les events claim atomiquement dans chaque case ci-dessus.
 
     return NextResponse.json({ received: true });
   } catch (error: unknown) {

@@ -67,13 +67,14 @@ const SejourAlertsBanner = React.memo(function SejourAlertsBanner({
   }
 
   return (
-    <div className="sticky top-0 z-30 space-y-2" role="alert" aria-label="Alertes incidents urgents">
+    <div className="sticky top-0 z-30 space-y-2" aria-label="Alertes incidents urgents">
       {vuError && <p className="text-sm text-red-600 px-4">{vuError}</p>}
       {incidents.map(inc => {
         const isVu = !!inc.vu_at || vuDone.has(inc.id);
         return (
           <div
             key={inc.id}
+            role={!isVu ? 'alert' : undefined}
             className={`border-2 rounded-xl p-4 ${isVu ? 'bg-orange-50 border-orange-200' : 'bg-red-50 border-red-300 animate-pulse-subtle'}`}
           >
             <div className="flex items-start gap-3">

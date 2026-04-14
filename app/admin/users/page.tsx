@@ -42,8 +42,11 @@ export default function AdminUsers() {
   };
 
   // Guard : ADMIN uniquement — EDITOR/VIEWER redirigés
-  const storedUser = getStoredUser();
-  const isAdmin = storedUser?.role === 'ADMIN';
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    const storedUser = getStoredUser();
+    setIsAdmin(storedUser?.role === 'ADMIN');
+  }, []);
 
   useEffect(() => {
     if (!isAdmin) {

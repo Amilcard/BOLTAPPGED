@@ -44,19 +44,28 @@ export async function GET(req: NextRequest) {
     .select('id, inscription:gd_inscriptions(session_date)')
     .lt('inscription.session_date', purgeThreshold);
 
-  // Chemin 2 — events orphelins (inscription_id null ou inscription sans session_date)
+  // Chemin 2 — events orphelins (inscription_id null)
   const { data: orphanEvents, error: errFetchOrphan } = await supabase
     .from('gd_medical_events')
     .select('id')
     .is('inscription_id', null)
     .lt('created_at', purgeThreshold);
 
+  // Chemin 3 — events liés à une inscription SANS session_date (fallback: created_at)
+  const { data: noDateEvents, error: errFetchNoDate } = await supabase
+    .from('gd_medical_events')
+    .select('id, inscription:gd_inscriptions!inner(session_date)')
+    .is('inscription.session_date', null)
+    .lt('created_at', purgeThreshold);
+
   if (errFetchLinked) errors.push(`medical_events_fetch_linked: ${errFetchLinked.message}`);
   if (errFetchOrphan) errors.push(`medical_events_fetch_orphan: ${errFetchOrphan.message}`);
+  if (errFetchNoDate) errors.push(`medical_events_fetch_no_date: ${errFetchNoDate.message}`);
 
   const linkedIds = (linkedEvents ?? []).map((e: { id: string }) => e.id);
   const orphanIds = (orphanEvents ?? []).map((e: { id: string }) => e.id);
-  const idsToDelete = [...new Set([...linkedIds, ...orphanIds])];
+  const noDateIds = (noDateEvents ?? []).map((e: { id: string }) => e.id);
+  const idsToDelete = [...new Set([...linkedIds, ...orphanIds, ...noDateIds])];
 
   if (idsToDelete.length > 0) {
     for (let i = 0; i < idsToDelete.length; i += 100) {

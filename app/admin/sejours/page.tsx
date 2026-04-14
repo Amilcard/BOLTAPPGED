@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { formatPrice } from '@/lib/utils';
 import { Plus, Pencil, Trash2, Eye, EyeOff, Bell } from 'lucide-react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
@@ -16,12 +16,12 @@ export default function AdminSejours() {
   const [editingStay, setEditingStay] = useState<Stay | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
-  const fetchStays = async () => {
+  const fetchStays = useCallback(async () => {
     const res = await fetch('/api/admin/stays');
     if (res.ok) setStays(await res.json());
-  };
+  }, []);
 
-  useEffect(() => { fetchStays(); }, []);
+  useEffect(() => { fetchStays(); }, [fetchStays]);
 
   const handleDelete = (id: string) => {
     confirm('Supprimer ce séjour ? Cette action est irréversible.', async () => {

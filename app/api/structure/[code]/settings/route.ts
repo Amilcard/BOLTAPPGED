@@ -15,6 +15,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+ try {
   const rateLimited = await structureRateLimitGuard(req);
   if (rateLimited) return rateLimited;
 
@@ -95,4 +96,8 @@ export async function PATCH(
   });
 
   return NextResponse.json({ updated: true, email });
+ } catch (err) {
+  console.error('PATCH /api/structure/[code]/settings error:', err);
+  return NextResponse.json({ error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur' } }, { status: 500 });
+ }
 }

@@ -19,6 +19,7 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+ try {
   const { code } = await params;
 
   // Validation format : 6 ou 10 chars alphanum
@@ -141,6 +142,10 @@ export async function GET(
     accessEmail,
     inscriptions: enriched,
   });
+ } catch (err) {
+  console.error('GET /api/structure/[code] error:', err);
+  return NextResponse.json({ error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur' } }, { status: 500 });
+ }
 }
 
 /**
@@ -151,6 +156,7 @@ export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+ try {
   const { code } = await params;
   if (!code) {
     return NextResponse.json({ error: { code: 'MISSING_CODE' } }, { status: 400 });
@@ -208,4 +214,8 @@ export async function POST(
   });
 
   return NextResponse.json({ accepted: true, acceptedAt: new Date().toISOString() });
+ } catch (err) {
+  console.error('POST /api/structure/[code] error:', err);
+  return NextResponse.json({ error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur' } }, { status: 500 });
+ }
 }

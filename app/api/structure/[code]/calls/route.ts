@@ -17,6 +17,7 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+ try {
   const rateLimited = await structureRateLimitGuard(_req);
   if (rateLimited) return rateLimited;
 
@@ -58,6 +59,10 @@ export async function GET(
   }
 
   return NextResponse.json({ calls: data ?? [] });
+ } catch (err) {
+  console.error('GET /api/structure/[code]/calls error:', err);
+  return NextResponse.json({ error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur' } }, { status: 500 });
+ }
 }
 
 /**
@@ -68,6 +73,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+ try {
   const rateLimited = await structureRateLimitGuard(req);
   if (rateLimited) return rateLimited;
 
@@ -152,4 +158,8 @@ export async function POST(
   });
 
   return NextResponse.json({ ok: true, id: call.id }, { status: 201 });
+ } catch (err) {
+  console.error('POST /api/structure/[code]/calls error:', err);
+  return NextResponse.json({ error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur' } }, { status: 500 });
+ }
 }

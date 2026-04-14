@@ -14,9 +14,12 @@ export default function GlobalError({
   reset: () => void;
 }) {
   const [countdown, setCountdown] = useState(5);
+  const [retries, setRetries] = useState(0);
+  const maxRetries = 3;
 
   useEffect(() => {
-    if (countdown === 0) { reset(); return; }
+    if (retries >= maxRetries) return;
+    if (countdown === 0) { setRetries(r => r + 1); reset(); return; }
     const t = setTimeout(() => setCountdown(c => c - 1), 1000);
     return () => clearTimeout(t);
   }, [countdown, reset]);

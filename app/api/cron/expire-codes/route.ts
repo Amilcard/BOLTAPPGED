@@ -50,10 +50,23 @@ export async function GET(req: NextRequest) {
     console.error('[expire-codes] Erreur révocation codes Directeur:', errDir.message);
   }
 
+  // Désactiver les codes gd_structure_access_codes expirés (migration 042+)
+  const { data: revokedAccess, error: errAccess } = await supabase
+    .from('gd_structure_access_codes')
+    .update({ active: false })
+    .lt('expires_at', now)
+    .eq('active', true)
+    .select('id');
+
+  if (errAccess) {
+    console.error('[expire-codes] Erreur désactivation gd_structure_access_codes:', errAccess.message);
+  }
+
   const countCds = revokedCds?.length ?? 0;
   const countDir = revokedDir?.length ?? 0;
+  const countAccess = revokedAccess?.length ?? 0;
 
-  console.log(`[expire-codes] codes CDS révoqués: ${countCds}, codes Directeur révoqués: ${countDir}`);
+  console.log(`[expire-codes] codes CDS révoqués: ${countCds}, codes Directeur révoqués: ${countDir}, access_codes désactivés: ${countAccess}`);
 
   // Audit log — tracer les révocations réussies même en cas d'erreur partielle
   if (countCds + countDir > 0) {

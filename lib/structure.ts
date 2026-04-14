@@ -44,10 +44,18 @@ export async function resolveCodeToStructure(
 
     if (!structure) return null;
 
+    // Runtime guard — rejeter les rôles inconnus (sécurité)
+    const VALID_ROLES: StructureRole[] = ['direction', 'cds', 'cds_delegated', 'secretariat', 'educateur'];
+    const resolvedRole = accessCode.role as string;
+    if (!VALID_ROLES.includes(resolvedRole as StructureRole)) {
+      console.error(`[structure] Rôle inconnu dans gd_structure_access_codes: ${resolvedRole}`);
+      return null;
+    }
+
     return {
       structure,
-      role: accessCode.role as StructureRole,
-      roles: accessCode.roles || [accessCode.role],
+      role: resolvedRole as StructureRole,
+      roles: accessCode.roles || [resolvedRole],
       email: accessCode.email,
       prenom: accessCode.prenom,
       nom: accessCode.nom,
@@ -85,7 +93,7 @@ export async function resolveCodeToStructure(
     return {
       structure: data,
       role: 'cds',
-      roles: ['cds', 'admin', 'educatif'],
+      roles: ['cds', 'secretariat', 'educateur'],
       email: null,
       prenom: null,
       nom: null,
@@ -119,7 +127,7 @@ export async function resolveCodeToStructure(
     return {
       structure: data,
       role: 'direction',
-      roles: ['direction', 'cds', 'admin', 'educatif'],
+      roles: ['direction', 'cds', 'secretariat', 'educateur'],
       email: null,
       prenom: null,
       nom: null,

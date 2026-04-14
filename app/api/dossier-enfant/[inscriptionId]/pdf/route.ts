@@ -1,6 +1,8 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase-server';
+import { verifyOwnership } from '@/lib/verify-ownership';
+import { auditLog } from '@/lib/audit-log';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { readFile } from 'fs/promises';
 import path from 'path';
@@ -41,33 +43,24 @@ export async function GET(
 
     const supabase = getSupabase();
 
-    // Vérifier ownership
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(token) || !uuidRegex.test(inscriptionId)) {
+    // Vérifier ownership (centralisé — inclut expiration token RGPD)
+    const ownership = await verifyOwnership(supabase, token, inscriptionId);
+    if (!ownership.ok) {
       return NextResponse.json(
-        { error: { code: 'INVALID_PARAMS', message: 'Paramètres invalides.' } },
-        { status: 400 }
+        { error: { code: ownership.code, message: ownership.message } },
+        { status: ownership.status }
       );
     }
 
-    const { data: sourceRaw } = await supabase
-      .from('gd_inscriptions')
-      .select('referent_email')
-      .eq('suivi_token', token)
-      .single();
-    const source = sourceRaw as { referent_email: string } | null;
-    if (!source) {
-      return NextResponse.json({ error: { code: 'NOT_FOUND', message: 'Token invalide.' } }, { status: 404 });
-    }
-
+    // Données inscription pour le PDF
     const { data: targetRaw } = await supabase
       .from('gd_inscriptions')
       .select('referent_email, jeune_prenom, jeune_nom, jeune_date_naissance, sejour_slug, session_date, referent_nom, organisation, city_departure')
       .eq('id', inscriptionId)
       .single();
     const inscription = targetRaw as Record<string, string> | null;
-    if (!inscription || inscription.referent_email !== source.referent_email) {
-      return NextResponse.json({ error: { code: 'FORBIDDEN', message: 'Accès non autorisé.' } }, { status: 403 });
+    if (!inscription) {
+      return NextResponse.json({ error: { code: 'NOT_FOUND', message: 'Inscription introuvable.' } }, { status: 404 });
     }
 
     // Charger le dossier enfant
@@ -471,6 +464,17 @@ export async function GET(
     };
 
     const fileName = Object.prototype.hasOwnProperty.call(fileNames, docType) ? fileNames[docType] : `document_${inscription.jeune_prenom}_${inscription.jeune_nom}.pdf`;
+
+    // Audit RGPD Art. 9 — tracer chaque téléchargement de document contenant des données sensibles
+    await auditLog(supabase, {
+      action: 'download',
+      resourceType: 'document',
+      resourceId: inscriptionId,
+      inscriptionId,
+      actorType: 'referent',
+      actorId: ownership.referentEmail,
+      metadata: { type: docType, channel: 'direct' },
+    }).catch(() => {});
 
     return new NextResponse(pdfBytes, {
       headers: {

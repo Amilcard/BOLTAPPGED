@@ -322,7 +322,7 @@ export default function StructureDashboard() {
         {/* ── Onglets Admin / Éducatif ── */}
         {(roles.includes('direction') || roles.includes('cds') || roles.includes('educateur') || roles.includes('secretariat')) && (
           <div className="flex border-b border-gray-200 mb-6 print:hidden">
-            {(roles.includes('admin') || roles.includes('direction') || roles.includes('cds') || roles.includes('secretariat')) && (
+            {(roles.includes('direction') || roles.includes('cds') || roles.includes('cds_delegated') || roles.includes('secretariat')) && (
               <button
                 onClick={() => setActiveTab('admin')}
                 className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
@@ -332,7 +332,7 @@ export default function StructureDashboard() {
                 Administratif
               </button>
             )}
-            {(roles.includes('educatif') || roles.includes('direction') || roles.includes('cds') || roles.includes('educateur')) && role !== 'secretariat' && (
+            {(roles.includes('direction') || roles.includes('cds') || roles.includes('cds_delegated') || roles.includes('educateur')) && role !== 'secretariat' && (
               <button
                 onClick={() => setActiveTab('educatif')}
                 className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
@@ -406,7 +406,7 @@ export default function StructureDashboard() {
             </div>
             <div>
               <p className="text-gray-500 text-xs mb-1">Astreinte 24h/24 — 7j/7</p>
-              <a href="tel:0423161671" className="font-medium font-mono tracking-wide hover:text-primary">04 23 16 16 71</a>
+              <a href="tel:0628057667" className="font-medium font-mono tracking-wide hover:text-primary">06 28 05 76 67</a>
               <p className="text-xs text-gray-400">Urgences séjour uniquement</p>
             </div>
             <div>

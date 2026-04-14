@@ -113,7 +113,7 @@ function LoginForm() {
           <ArrowLeft className="w-4 h-4" /> Retour au site
         </Link>
 
-        <div className="bg-white rounded-xl shadow-card p-8">
+        <div className="bg-white rounded-brand shadow-card p-8">
           <div className="flex items-center gap-2 text-primary mb-6">
             <Mountain className="w-8 h-8" />
             <span className="text-xl font-bold">

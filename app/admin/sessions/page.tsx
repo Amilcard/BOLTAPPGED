@@ -73,7 +73,7 @@ export default function AdminSessions() {
         />
       )}
 
-      <div className="bg-white rounded-xl shadow overflow-hidden">
+      <div className="bg-white rounded-brand shadow-card overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
@@ -135,7 +135,7 @@ function SessionForm({ session, stayId, onClose, onSave }: { session: StaySessio
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+      <div className="bg-white rounded-brand shadow-card-xl max-w-md w-full">
         <div className="p-6 border-b">
           <h2 className="text-xl font-bold">{session ? 'Modifier' : 'Nouvelle'} session</h2>
         </div>

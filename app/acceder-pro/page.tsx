@@ -66,7 +66,7 @@ function AccederProForm() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+          <div className="bg-white rounded-brand shadow-brand-lg p-8 text-center">
             <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Demande reçue !</h1>
             <p className="text-gray-600 mb-6">
@@ -106,7 +106,7 @@ function AccederProForm() {
           {sejourSlug ? 'Retour au séjour' : 'Retour au site'}
         </Link>
 
-        <div className="bg-white rounded-xl shadow-lg p-8">
+        <div className="bg-white rounded-brand shadow-brand-lg p-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Demandez votre accès professionnel
           </h1>

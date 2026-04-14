@@ -141,7 +141,7 @@ export default function AdminDemandes() {
     return (
       <div>
         <h1 className="text-3xl font-bold text-primary mb-8">Demandes</h1>
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white rounded-brand shadow-card-sm overflow-hidden">
           {[...Array(5)].map((_, i) => (
             // deepsource-ignore JS-0437 -- static array skeleton, i is the stable key
             <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-gray-100 animate-pulse">
@@ -200,11 +200,11 @@ export default function AdminDemandes() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="bg-white rounded-xl shadow p-8 text-center text-gray-500">
+        <div className="bg-white rounded-brand shadow-card p-8 text-center text-gray-500">
           Aucune inscription pour le moment.
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow overflow-hidden">
+        <div className="bg-white rounded-brand shadow-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50">

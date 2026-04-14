@@ -274,7 +274,7 @@ export default function PropositionsPage() {
 
       {/* FORMULAIRE DE CRÉATION */}
       {showForm && (<>
-        <form onSubmit={handlePreview} className="bg-white rounded-xl shadow p-6 space-y-6">
+        <form onSubmit={handlePreview} className="bg-white rounded-brand shadow-card p-6 space-y-6">
           <h2 className="text-lg font-semibold border-b pb-3">Nouvelle Proposition Tarifaire</h2>
 
           {error && (
@@ -411,7 +411,7 @@ export default function PropositionsPage() {
 
         {/* APERÇU AVANT CONFIRMATION */}
         {showPreviewForm && (
-          <div className="bg-white rounded-xl shadow-lg border-2 border-orange-200 p-6 space-y-6">
+          <div className="bg-white rounded-brand shadow-card-lg border-2 border-orange-200 p-6 space-y-6">
             <div className="bg-orange-500 text-white px-6 py-4 rounded-lg -mx-6 -mt-6">
               <p className="text-sm opacity-80">Association Groupe et Découverte</p>
               <h2 className="text-xl font-bold mt-1">Proposition Tarifaire — Aperçu</h2>
@@ -504,13 +504,13 @@ export default function PropositionsPage() {
       {loading ? (
         <div className="flex justify-center py-12"><Loader2 className="animate-spin" size={32} /></div>
       ) : propositions.length === 0 ? (
-        <div className="bg-white rounded-xl shadow p-12 text-center text-gray-500">
+        <div className="bg-white rounded-brand shadow-card p-12 text-center text-gray-500">
           <Receipt size={48} className="mx-auto mb-4 text-gray-300" />
           <p>Aucune proposition tarifaire pour le moment.</p>
           <p className="text-sm mt-2">Cliquez sur "Nouvelle proposition" pour en créer une.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow overflow-hidden">
+        <div className="bg-white rounded-brand shadow-card overflow-hidden">
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
               <tr>

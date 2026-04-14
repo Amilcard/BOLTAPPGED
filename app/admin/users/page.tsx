@@ -70,7 +70,7 @@ export default function AdminUsers() {
         />
       )}
 
-      <div className="bg-white rounded-xl shadow overflow-hidden">
+      <div className="bg-white rounded-brand shadow-card overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
@@ -142,7 +142,7 @@ function UserForm({ user, onClose, onSave }: { user: User | null; onClose: () =>
           <DialogPrimitive.Title className="sr-only">
             {user ? 'Modifier utilisateur' : 'Nouvel utilisateur'}
           </DialogPrimitive.Title>
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+          <div className="bg-white rounded-brand shadow-card-xl max-w-md w-full">
             <div className="p-6 border-b">
               <h2 className="text-xl font-bold" aria-hidden="true">{user ? 'Modifier' : 'Nouvel'} utilisateur</h2>
             </div>

@@ -226,7 +226,7 @@ export default function InscriptionDetailPage() {
       </div>
 
       {/* Statut principal */}
-      <div className="bg-white rounded-xl shadow p-6">
+      <div className="bg-white rounded-brand shadow-card p-6">
         <div className="flex items-center gap-6">
           <div>
             <label className="text-xs text-gray-500 uppercase font-medium">Statut inscription</label>
@@ -263,7 +263,7 @@ export default function InscriptionDetailPage() {
 
       <div className="grid grid-cols-2 gap-6">
         {/* Sejour */}
-        <div className="bg-white rounded-xl shadow p-6">
+        <div className="bg-white rounded-brand shadow-card p-6">
           <h2 className="text-lg font-semibold mb-4">Sejour</h2>
           <div className="space-y-3 text-sm">
             <div><span className="text-gray-500">Sejour :</span> <strong>{(insc as InscriptionEnriched).sejour_titre || insc.sejour_slug}</strong></div>
@@ -274,7 +274,7 @@ export default function InscriptionDetailPage() {
         </div>
 
         {/* Jeune */}
-        <div className="bg-white rounded-xl shadow p-6">
+        <div className="bg-white rounded-brand shadow-card p-6">
           <h2 className="text-lg font-semibold mb-4">Jeune</h2>
           <div className="space-y-3 text-sm">
             <div><span className="text-gray-500">Prenom :</span> <strong>{insc.jeune_prenom}</strong></div>
@@ -284,7 +284,7 @@ export default function InscriptionDetailPage() {
         </div>
 
         {/* Referent */}
-        <div className="bg-white rounded-xl shadow p-6">
+        <div className="bg-white rounded-brand shadow-card p-6">
           <h2 className="text-lg font-semibold mb-4">Referent / Structure</h2>
           <div className="space-y-3 text-sm">
             {insc.organisation && <div><span className="text-gray-500">Structure / Organisme :</span> <strong>{insc.organisation}</strong></div>}
@@ -295,7 +295,7 @@ export default function InscriptionDetailPage() {
         </div>
 
         {/* Suivi du sejour */}
-        <div className="bg-white rounded-xl shadow p-6">
+        <div className="bg-white rounded-brand shadow-card p-6">
           <h2 className="text-lg font-semibold mb-4">Suivi du sejour</h2>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -349,7 +349,7 @@ export default function InscriptionDetailPage() {
       </div>
 
       {/* Preferences de contact du referent (lecture seule) */}
-      <div className="bg-white rounded-xl shadow p-6">
+      <div className="bg-white rounded-brand shadow-card p-6">
         <h2 className="text-lg font-semibold mb-4">Préférences de contact</h2>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
@@ -386,7 +386,7 @@ export default function InscriptionDetailPage() {
       </div>
 
       {/* Dossier enfant */}
-      <div className="bg-white rounded-xl shadow p-6">
+      <div className="bg-white rounded-brand shadow-card p-6">
         <h2 className="text-lg font-semibold mb-4">Dossier enfant</h2>
         {dossierLoading ? (
           <div className="flex items-center gap-2 text-gray-400"><Loader2 size={16} className="animate-spin" /> Chargement...</div>
@@ -434,7 +434,7 @@ export default function InscriptionDetailPage() {
       {/* Rappel dossier incomplet */}
       {/* Visible si le dossier n'existe pas encore OU si ged_sent_at est null (pas encore soumis) */}
       {!dossier?.ged_sent_at && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl shadow p-6">
+        <div className="bg-amber-50 border border-amber-200 rounded-brand shadow-card p-6">
           <h2 className="text-lg font-semibold mb-2 text-amber-800">Relancer le référent</h2>
           <p className="text-sm text-amber-700 mb-4">Le dossier n'a pas encore été envoyé. Vous pouvez envoyer un email de rappel au référent.</p>
           <div className="flex items-center gap-3">
@@ -459,7 +459,7 @@ export default function InscriptionDetailPage() {
 
       {/* Lien suivi */}
       {suiviUrl && (
-        <div className="bg-white rounded-xl shadow p-6">
+        <div className="bg-white rounded-brand shadow-card p-6">
           <h2 className="text-lg font-semibold mb-3">Lien de suivi pro</h2>
           <div className="flex items-center gap-2">
             <input readOnly value={suiviUrl} className="flex-1 text-xs font-mono bg-gray-50 border rounded-lg px-3 py-2 text-gray-600" />
@@ -475,7 +475,7 @@ export default function InscriptionDetailPage() {
 
       {/* Notes */}
       {(insc.options_educatives || insc.remarques) && (
-        <div className="bg-white rounded-xl shadow p-6">
+        <div className="bg-white rounded-brand shadow-card p-6">
           <h2 className="text-lg font-semibold mb-3">Notes</h2>
           <div className="space-y-2 text-sm">
             {insc.options_educatives && <p><span className="text-gray-500">Options educatives :</span> {insc.options_educatives}</p>}
@@ -486,7 +486,7 @@ export default function InscriptionDetailPage() {
 
       {/* Autres inscriptions du même référent */}
       {autresInscriptions.length > 0 && (
-        <div className="bg-white rounded-xl shadow p-6 mb-4">
+        <div className="bg-white rounded-brand shadow-card p-6 mb-4">
           <h2 className="text-lg font-semibold mb-4 text-primary">
             Autres demandes de {insc.referent_nom} ({autresInscriptions.length})
           </h2>

@@ -117,7 +117,7 @@ export default function AdminDashboard() {
         {cards.map((card) => {
           const Icon = card.icon;
           return (
-            <div key={card.label} className="bg-white rounded-xl shadow p-6">
+            <div key={card.label} className="bg-white rounded-brand shadow-card p-6">
               <div className={`w-12 h-12 ${card.color} rounded-lg flex items-center justify-center mb-4`}>
                 <Icon className="text-white" size={24} />
               </div>
@@ -133,7 +133,7 @@ export default function AdminDashboard() {
 
         {/* Répartition par statut */}
         {pieData.length > 0 && (
-          <div className="bg-white rounded-xl shadow p-6">
+          <div className="bg-white rounded-brand shadow-card p-6">
             <h2 className="font-semibold text-primary mb-4">Répartition par statut</h2>
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
@@ -158,7 +158,7 @@ export default function AdminDashboard() {
 
         {/* Inscriptions 7 derniers jours */}
         {barData.length > 0 && (
-          <div className="bg-white rounded-xl shadow p-6">
+          <div className="bg-white rounded-brand shadow-card p-6">
             <h2 className="font-semibold text-primary mb-4">Inscriptions (7 derniers jours)</h2>
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={barData}>
@@ -174,7 +174,7 @@ export default function AdminDashboard() {
 
       {/* Top séjours */}
       {stats?.topSejours && stats.topSejours.length > 0 && (
-        <div className="bg-white rounded-xl shadow p-6">
+        <div className="bg-white rounded-brand shadow-card p-6">
           <h2 className="font-semibold text-primary mb-4">Top 5 séjours les plus demandés</h2>
           <div className="space-y-3">
             {stats.topSejours.map((s, i) => (

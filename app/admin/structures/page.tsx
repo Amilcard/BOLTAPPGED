@@ -232,7 +232,7 @@ export default function AdminStructures() {
 
       {/* Tab Structures */}
       {tab === 'structures' && !loading && (
-        <div className="bg-white rounded-xl shadow overflow-hidden">
+        <div className="bg-white rounded-brand shadow-card overflow-hidden">
           <table className="w-full text-left">
             <thead className="bg-gray-50 border-b">
               <tr>
@@ -334,7 +334,7 @@ export default function AdminStructures() {
 
       {/* Tab Orphelines */}
       {tab === 'orphelines' && !loading && (
-        <div className="bg-white rounded-xl shadow overflow-hidden">
+        <div className="bg-white rounded-brand shadow-card overflow-hidden">
           <table className="w-full text-left">
             <thead className="bg-amber-50 border-b">
               <tr>

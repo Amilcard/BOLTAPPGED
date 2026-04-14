@@ -28,6 +28,7 @@ export default function NotesPanel({ code, role, inscriptions }: Props) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
 
   const canWrite = role === 'direction' || role === 'cds' || role === 'cds_delegated';
@@ -51,6 +52,7 @@ export default function NotesPanel({ code, role, inscriptions }: Props) {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitting(true);
+    setSubmitError(null);
     const fd = new FormData(e.currentTarget);
     try {
       const res = await fetch(`/api/structure/${code}/notes`, {
@@ -64,9 +66,15 @@ export default function NotesPanel({ code, role, inscriptions }: Props) {
       });
       if (res.ok) {
         setShowForm(false);
+        setSubmitError(null);
         load();
+      } else {
+        const body = await res.json().catch(() => ({}));
+        setSubmitError(body?.error?.message ?? 'Erreur lors de l\'enregistrement. Réessayez.');
       }
-    } catch { /* silent */ }
+    } catch {
+      setSubmitError('Erreur réseau. Vérifiez votre connexion.');
+    }
     setSubmitting(false);
   };
 
@@ -107,6 +115,7 @@ export default function NotesPanel({ code, role, inscriptions }: Props) {
             <label htmlFor="note-content" className="block text-sm font-medium text-gray-700 mb-1">Note</label>
             <textarea id="note-content" name="content" required minLength={5} rows={4} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Observations, suivi, remarques..." />
           </div>
+          {submitError && <p className="text-sm text-red-600" role="alert">{submitError}</p>}
           <button type="submit" disabled={submitting} className="px-4 py-2 bg-secondary text-white rounded-lg text-sm font-medium hover:bg-secondary-600 transition disabled:opacity-50">
             {submitting ? 'Envoi...' : 'Enregistrer'}
           </button>

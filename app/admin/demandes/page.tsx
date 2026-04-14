@@ -176,6 +176,7 @@ export default function AdminDemandes() {
             <div className="relative">
               <Building2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <select
+                aria-label="Filtrer par structure"
                 value={selectedStructure}
                 onChange={e => setSelectedStructure(e.target.value)}
                 className="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 min-w-[200px]"
@@ -188,6 +189,7 @@ export default function AdminDemandes() {
             </div>
           )}
           <input
+            aria-label="Rechercher un référent, enfant ou structure"
             type="text"
             placeholder="Rechercher un référent, enfant, structure…"
             value={search}
@@ -225,7 +227,7 @@ export default function AdminDemandes() {
                   const paymentStyle = getPaymentStyle(insc.payment_status);
                   const isEnRetard = !(insc as InscriptionEnriched).ged_sent_at && daysSince(insc.created_at) > 7;
                   return (
-                    <tr key={insc.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => void router.push(`/admin/demandes/${insc.id}`)}>
+                    <tr key={insc.id} className="hover:bg-gray-50 cursor-pointer" tabIndex={0} onClick={() => void router.push(`/admin/demandes/${insc.id}`)} onKeyDown={(e) => { if (e.key === 'Enter') void router.push(`/admin/demandes/${insc.id}`); }}>
                       <td className="px-4 py-4 text-sm text-gray-500">
                         {formatDate(insc.created_at)}
                       </td>

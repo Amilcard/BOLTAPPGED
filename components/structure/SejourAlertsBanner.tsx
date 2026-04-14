@@ -40,11 +40,13 @@ const SejourAlertsBanner = React.memo(function SejourAlertsBanner({
 }: Props) {
   const [loadingVu, setLoadingVu] = useState<string | null>(null);
   const [vuDone, setVuDone] = useState<Set<string>>(new Set());
+  const [vuError, setVuError] = useState<string | null>(null);
 
   if (incidents.length === 0) return null;
 
   async function handleVu(incidentId: string) {
     setLoadingVu(incidentId);
+    setVuError(null);
     try {
       const res = await fetch(`/api/structure/${structureCode}/incidents`, {
         method: 'PATCH',
@@ -55,14 +57,15 @@ const SejourAlertsBanner = React.memo(function SejourAlertsBanner({
       setVuDone(prev => new Set(prev).add(incidentId));
       onVu?.(incidentId);
     } catch {
-      // Échec silencieux — l'alerte reste visible, pas de faux succès
+      setVuError('Impossible de marquer comme vu. Réessayez.');
     } finally {
       setLoadingVu(null);
     }
   }
 
   return (
-    <div className="sticky top-0 z-30 space-y-2">
+    <div className="sticky top-0 z-30 space-y-2" role="alert" aria-label="Alertes incidents urgents">
+      {vuError && <p className="text-sm text-red-600 px-4">{vuError}</p>}
       {incidents.map(inc => {
         const isVu = !!inc.vu_at || vuDone.has(inc.id);
         return (

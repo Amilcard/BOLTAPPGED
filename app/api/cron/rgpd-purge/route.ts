@@ -51,12 +51,9 @@ export async function GET(req: NextRequest) {
     .is('inscription_id', null)
     .lt('created_at', purgeThreshold);
 
-  // Chemin 3 — events liés à une inscription SANS session_date (fallback: created_at)
+  // Chemin 3 — events liés à une inscription SANS session_date (via RPC — PostgREST ne supporte pas .is() sur colonnes jointes)
   const { data: noDateEvents, error: errFetchNoDate } = await supabase
-    .from('gd_medical_events')
-    .select('id, inscription:gd_inscriptions!inner(session_date)')
-    .is('inscription.session_date', null)
-    .lt('created_at', purgeThreshold);
+    .rpc('gd_get_medical_events_null_session_date', { threshold: purgeThreshold });
 
   if (errFetchLinked) errors.push(`medical_events_fetch_linked: ${errFetchLinked.message}`);
   if (errFetchOrphan) errors.push(`medical_events_fetch_orphan: ${errFetchOrphan.message}`);

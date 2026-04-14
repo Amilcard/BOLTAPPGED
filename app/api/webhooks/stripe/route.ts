@@ -50,8 +50,8 @@ export async function POST(req: NextRequest) {
     // Utilise INSERT ON CONFLICT (UNIQUE sur event_id) pour éviter le TOCTOU
     // Ne claim que si on a un inscriptionId (sinon Stripe doit réessayer)
 
-    // Flag : ne marquer comme traité que si le traitement est complet
-    let shouldRecordEvent = true;
+    // Idempotency : chaque case fait un upsert-claim atomique AVANT la business logic.
+    // Si la business logic échoue post-claim, le claim est rollback + retour 500 → Stripe retry.
 
     // Traiter les événements
     switch (event.type) {
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
 
         if (!inscriptionId) {
           console.error('Missing inscriptionId in payment intent metadata — Stripe réessaiera');
-          shouldRecordEvent = false; // Ne PAS enregistrer → Stripe réessaiera
+          // Pas de claim → Stripe réessaiera
           break;
         }
 
@@ -88,9 +88,10 @@ export async function POST(req: NextRequest) {
           .single();
 
         if (!inscription) {
-          console.error('webhook: inscription not found for payment intent — Stripe réessaiera', { inscriptionId, eventId: event.id });
-          shouldRecordEvent = false; // Race condition possible → Stripe réessaiera
-          break;
+          console.error('webhook: inscription not found for payment intent — rollback claim, Stripe réessaiera', { inscriptionId, eventId: event.id });
+          // Rollback claim pour permettre le retry Stripe
+          await supabase.from('gd_processed_events').delete().eq('event_id', event.id);
+          return NextResponse.json({ error: 'inscription not found' }, { status: 500 });
         }
 
         const stripeAmountEur = paymentIntent.amount / 100;
@@ -117,8 +118,7 @@ export async function POST(req: NextRequest) {
             amount: stripeAmountEur,
             subject: `[ALERTE] AMOUNT MISMATCH — Stripe ${stripeAmountEur}€ vs DB ${dbAmount}€`,
           }).catch((err) => { console.error('[webhook/stripe] sendAmountMismatchAlert failed', err); });
-          // amount_mismatch est permanent — enregistrer l'event pour stopper les retries Stripe
-          shouldRecordEvent = true;
+          // amount_mismatch est permanent — claim déjà fait, Stripe ne réessaiera pas
           break;
         }
 
@@ -132,8 +132,9 @@ export async function POST(req: NextRequest) {
           .eq('id', inscriptionId);
 
         if (error) {
-          console.error('Error updating payment status:', error);
-          shouldRecordEvent = false;
+          console.error('Error updating payment status — rollback claim:', error);
+          await supabase.from('gd_processed_events').delete().eq('event_id', event.id);
+          return NextResponse.json({ error: 'DB update failed' }, { status: 500 });
         } else {
           console.log('[webhook/stripe] payment_intent.succeeded processed');
           // Notification admin non-bloquante
@@ -158,7 +159,6 @@ export async function POST(req: NextRequest) {
         const inscriptionId = paymentIntent.metadata.inscriptionId;
 
         if (!inscriptionId) {
-          shouldRecordEvent = false;
           break;
         }
 
@@ -184,8 +184,9 @@ export async function POST(req: NextRequest) {
           .eq('id', inscriptionId);
 
         if (error) {
-          console.error('Error updating failed payment status:', error);
-          shouldRecordEvent = false; // DB échoué → Stripe réessaiera
+          console.error('Error updating failed payment status — rollback claim:', error);
+          await supabase.from('gd_processed_events').delete().eq('event_id', event.id);
+          return NextResponse.json({ error: 'DB update failed' }, { status: 500 });
         } else {
           console.log('[webhook/stripe] payment_intent.payment_failed processed');
         }
@@ -196,8 +197,8 @@ export async function POST(req: NextRequest) {
         console.log(`Unhandled event type: ${event.type}`);
     }
 
-    // Events avec shouldRecordEvent = false (inscriptionId manquant) ne sont pas claim
-    // → Stripe réessaiera. Les events claim atomiquement dans chaque case ci-dessus.
+    // Events sans inscriptionId ne sont pas claim → Stripe réessaiera.
+    // Events avec business logic failure → claim rollback + 500 → Stripe réessaiera.
 
     return NextResponse.json({ received: true });
   } catch (error: unknown) {

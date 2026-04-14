@@ -352,7 +352,7 @@ export default function FacturesPage() {
           onSubmit={handlePreview}
           className="bg-white rounded-brand shadow-card p-6 space-y-6"
         >
-          <h2 className="text-lg font-semibold border-b pb-3 text-primary">Nouvelle Facture</h2>
+          <h2 className="text-lg font-semibold border-b pb-3 text-primary">Nouvelle facture</h2>
 
           {error && (
             <div role="alert" className="bg-destructive/10 text-destructive p-3 rounded-brand text-sm">

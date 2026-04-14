@@ -70,6 +70,15 @@ export async function GET(request: NextRequest) {
       paiements: paiementsMap[f.id as string] || [],
     }));
 
+    await auditLog(supabase, {
+      action: 'read',
+      resourceType: 'facture',
+      resourceId: 'admin_list',
+      actorType: 'admin',
+      actorId: auth.email,
+      metadata: { count: result.length },
+    }).catch(() => {});
+
     return NextResponse.json({ factures: result });
   } catch (err: unknown) {
     console.error('Error in GET /api/admin/factures:', err);
@@ -227,6 +236,7 @@ export async function PATCH(req: NextRequest) {
 
     const updates: Record<string, unknown> = { statut };
     if (statut === 'envoyee') updates.date_envoi = new Date().toISOString();
+    if (statut === 'annulee') updates.date_envoi = null;
 
     const { data, error } = await supabase
       .from('gd_factures')

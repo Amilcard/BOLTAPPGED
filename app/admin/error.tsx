@@ -16,7 +16,7 @@ export default function Error({
         <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
           <AlertCircle className="w-8 h-8 text-destructive" />
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-3">
+        <h1 className="text-2xl font-bold text-primary mb-3">
           Erreur administration
         </h1>
         <p className="text-gray-500 mb-8 leading-relaxed">

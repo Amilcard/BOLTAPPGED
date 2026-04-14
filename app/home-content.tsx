@@ -44,7 +44,7 @@ function StayGrid({ title, stays, columns = 3 }: { title: string; stays: Stay[];
   return (
     <section className="pb-6">
       <div className="max-w-7xl mx-auto px-4">
-        {title && <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>}
+        {title && <h3 className="text-lg font-semibold text-primary mb-4">{title}</h3>}
         <div className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-${columns}`}>
           {stays.map((stay) => (
             <StayCard key={stay.id} stay={stay} />
@@ -150,7 +150,7 @@ export function HomeContent({
   }, []);
 
   return (
-    <main className="bg-gray-50 flex flex-col">
+    <main className="bg-muted flex flex-col">
       {!hideInternalSearch && (
         <>
           <div id="sejours" className="scroll-mt-16">
@@ -189,7 +189,7 @@ export function HomeContent({
           {/* ... (Zero result UI) */}
           <div className="max-w-lg mx-auto px-4 text-center">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucun séjour trouvé</h3>
+              <h3 className="text-lg font-semibold text-primary mb-2">Aucun séjour trouvé</h3>
               <p className="text-gray-500 mb-6">
                 Essayez de modifier vos critères de recherche ou de réinitialiser les filtres.
               </p>

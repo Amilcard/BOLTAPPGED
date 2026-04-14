@@ -16,7 +16,7 @@ export default function Error({
           <AlertCircle className="w-8 h-8 text-destructive" />
         </div>
         
-        <h1 className="text-2xl font-bold text-gray-900 mb-3">
+        <h1 className="text-2xl font-bold text-primary mb-3">
           Une erreur est survenue
         </h1>
         

@@ -74,18 +74,18 @@ export default function EducateurSouhaitPage() {
   };
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-muted">
       <div className="text-gray-400 text-sm">Chargement...</div>
     </div>
   );
 
   if (error || !souhait) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
       <div className="bg-white rounded-2xl shadow-lg max-w-md w-full p-8 text-center">
         <div className="w-14 h-14 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-4"><LockKeyhole className="w-7 h-7 text-primary" /></div>
         <h1 className="text-xl font-bold text-gray-800 mb-2">Lien invalide ou expiré</h1>
         <p className="text-gray-600 mb-6">{error || 'Ce lien de souhait n\'est pas valide ou a expiré.'}</p>
-        <div className="bg-gray-50 rounded-xl p-4 text-left text-sm text-gray-600 mb-4">
+        <div className="bg-muted rounded-xl p-4 text-left text-sm text-gray-600 mb-4">
           <p className="font-medium text-gray-700 mb-1">Besoin d&apos;aide ?</p>
           <p>Contactez Groupe &amp; Découverte pour recevoir un nouveau lien :</p>
           <a href="mailto:contact@groupeetdecouverte.fr" className="text-primary hover:underline font-medium">
@@ -105,7 +105,7 @@ export default function EducateurSouhaitPage() {
   const prenom = souhait.educateur_prenom ? ` ${souhait.educateur_prenom}` : '';
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       {/* Header */}
       <header className="bg-primary text-white px-4 py-5">
         <div className="max-w-lg mx-auto">

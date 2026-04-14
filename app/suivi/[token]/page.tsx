@@ -116,7 +116,7 @@ export default function SuiviProPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-500">Chargement de votre suivi...</p>
@@ -130,7 +130,7 @@ export default function SuiviProPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       {/* Header simplifié (pas de nav vitrine, pas de header complet) */}
       <header className="bg-primary text-white print:bg-white print:text-black">
         <div className="max-w-5xl mx-auto px-4 py-5 flex items-center justify-between">
@@ -578,8 +578,8 @@ function ResendLinkBlock() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-8 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
+      <div className="bg-white rounded-brand shadow-brand-lg max-w-md w-full p-8 text-center">
         <div className="text-4xl mb-4">✉️</div>
         <h1 className="text-xl font-bold text-gray-800 mb-2">Ce lien n&apos;est plus actif</h1>
         <p className="text-gray-500 text-sm mb-1">

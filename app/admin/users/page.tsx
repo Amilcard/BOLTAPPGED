@@ -25,9 +25,20 @@ export default function AdminUsers() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
+  const [loadError, setLoadError] = useState(false);
+
   const fetchUsers = async () => {
-    const res = await fetch('/api/admin/users');
-    if (res.ok) setUsers(await res.json());
+    try {
+      const res = await fetch('/api/admin/users');
+      if (res.ok) {
+        setUsers(await res.json());
+        setLoadError(false);
+      } else {
+        setLoadError(true);
+      }
+    } catch {
+      setLoadError(true);
+    }
   };
 
   // Guard : ADMIN uniquement — EDITOR/VIEWER redirigés
@@ -69,6 +80,8 @@ export default function AdminUsers() {
           onSave={() => { fetchUsers(); setIsCreating(false); setEditingUser(null); }}
         />
       )}
+
+      {loadError && <p className="text-sm text-red-600 mb-4" role="alert">Erreur de chargement des utilisateurs. Rechargez la page.</p>}
 
       <div className="bg-white rounded-brand shadow-card overflow-hidden">
         <table className="w-full">

@@ -664,7 +664,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
               <section className="bg-white rounded-xl shadow-brand p-6">
                 <div className="flex items-center gap-2 mb-3">
                   <Bus className="w-5 h-5 text-primary" />
-                  <h2 className="text-lg font-bold text-gray-900">Villes de départ</h2>
+                  <h2 className="text-lg font-bold text-primary">Villes de départ</h2>
                   <span className="text-xs text-gray-500">({enrichment.departures.length} villes)</span>
                 </div>
 
@@ -732,7 +732,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
           {/* === SIDEBAR: SESSIONS & CTA === */}
           <div className="lg:col-span-1">
             <div className="sticky top-6 bg-white rounded-xl shadow-brand p-5">
-              <h3 className="font-bold text-gray-900 mb-1 text-base">Sessions disponibles</h3>
+              <h3 className="font-bold text-primary mb-1 text-base">Sessions disponibles</h3>
               {!isKids && (
                 <p className="text-xs text-primary-500 mb-3">Sélectionnez une session et une ville pour accéder à l'inscription.</p>
               )}
@@ -902,7 +902,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[80vh] overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-white border-b border-gray-100 p-6 pb-4 flex items-center justify-between">
               <div>
-                <h2 className="font-bold text-gray-900 text-xl">Villes de départ</h2>
+                <h2 className="font-bold text-primary text-xl">Villes de départ</h2>
                 <p className="text-sm text-gray-500 mt-1">
                   {enrichment.departures.length} villes disponibles
                 </p>

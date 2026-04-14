@@ -68,7 +68,7 @@ function AccederProForm() {
         <div className="w-full max-w-md">
           <div className="bg-white rounded-brand shadow-brand-lg p-8 text-center">
             <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Demande reçue !</h1>
+            <h1 className="text-2xl font-bold text-primary mb-2">Demande reçue !</h1>
             <p className="text-gray-600 mb-6">
               Vous recevrez vos identifiants à{' '}
               <span className="font-medium text-gray-900">{form.email}</span>{' '}
@@ -107,7 +107,7 @@ function AccederProForm() {
         </Link>
 
         <div className="bg-white rounded-brand shadow-brand-lg p-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl font-bold text-primary mb-2">
             Demandez votre accès professionnel
           </h1>
           <p className="text-sm text-gray-500 mb-6">

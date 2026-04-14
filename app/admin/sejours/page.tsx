@@ -179,28 +179,28 @@ function StayForm({ stay, onClose, onSave }: { stay: Stay | null; onClose: () =>
           <h2 className="text-xl font-bold" aria-hidden="true">{stay ? 'Modifier' : 'Nouveau'} séjour</h2>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <input className="w-full border rounded-lg px-4 py-2" placeholder="Titre" value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
-          <textarea className="w-full border rounded-lg px-4 py-2" placeholder="Description courte" rows={2} value={form.descriptionShort} onChange={e => setForm({...form, descriptionShort: e.target.value})} />
-          <textarea className="w-full border rounded-lg px-4 py-2" placeholder="Programme (1 ligne par item)" rows={4} value={form.programme} onChange={e => setForm({...form, programme: e.target.value})} />
+          <input aria-label="Titre" className="w-full border rounded-lg px-4 py-2" placeholder="Titre" value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
+          <textarea aria-label="Description courte" className="w-full border rounded-lg px-4 py-2" placeholder="Description courte" rows={2} value={form.descriptionShort} onChange={e => setForm({...form, descriptionShort: e.target.value})} />
+          <textarea aria-label="Programme" className="w-full border rounded-lg px-4 py-2" placeholder="Programme (1 ligne par item)" rows={4} value={form.programme} onChange={e => setForm({...form, programme: e.target.value})} />
           <div className="grid grid-cols-2 gap-4">
-            <input className="border rounded-lg px-4 py-2" placeholder="Géographie" value={form.geography} onChange={e => setForm({...form, geography: e.target.value})} />
-            <input className="border rounded-lg px-4 py-2" placeholder="Hébergement" value={form.accommodation} onChange={e => setForm({...form, accommodation: e.target.value})} />
+            <input aria-label="Géographie" className="border rounded-lg px-4 py-2" placeholder="Géographie" value={form.geography} onChange={e => setForm({...form, geography: e.target.value})} />
+            <input aria-label="Hébergement" className="border rounded-lg px-4 py-2" placeholder="Hébergement" value={form.accommodation} onChange={e => setForm({...form, accommodation: e.target.value})} />
           </div>
-          <input className="w-full border rounded-lg px-4 py-2" placeholder="Encadrement" value={form.supervision} onChange={e => setForm({...form, supervision: e.target.value})} />
+          <input aria-label="Encadrement" className="w-full border rounded-lg px-4 py-2" placeholder="Encadrement" value={form.supervision} onChange={e => setForm({...form, supervision: e.target.value})} />
           <div className="grid grid-cols-3 gap-4">
-            <input type="number" className="border rounded-lg px-4 py-2" placeholder="Prix" value={form.priceFrom} onChange={e => setForm({...form, priceFrom: +e.target.value})} />
-            <input type="number" className="border rounded-lg px-4 py-2" placeholder="Durée (jours)" value={form.durationDays} onChange={e => setForm({...form, durationDays: +e.target.value})} />
-            <select className="border rounded-lg px-4 py-2" value={form.period} onChange={e => setForm({...form, period: e.target.value})}>
+            <input aria-label="Prix" type="number" className="border rounded-lg px-4 py-2" placeholder="Prix" value={form.priceFrom} onChange={e => setForm({...form, priceFrom: +e.target.value})} />
+            <input aria-label="Durée en jours" type="number" className="border rounded-lg px-4 py-2" placeholder="Durée (jours)" value={form.durationDays} onChange={e => setForm({...form, durationDays: +e.target.value})} />
+            <select aria-label="Période" className="border rounded-lg px-4 py-2" value={form.period} onChange={e => setForm({...form, period: e.target.value})}>
               <option value="printemps">Printemps</option>
               <option value="ete">Été</option>
             </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <input type="number" className="border rounded-lg px-4 py-2" placeholder="Âge min" value={form.ageMin} onChange={e => setForm({...form, ageMin: +e.target.value})} />
-            <input type="number" className="border rounded-lg px-4 py-2" placeholder="Âge max" value={form.ageMax} onChange={e => setForm({...form, ageMax: +e.target.value})} />
+            <input aria-label="Âge minimum" type="number" className="border rounded-lg px-4 py-2" placeholder="Âge min" value={form.ageMin} onChange={e => setForm({...form, ageMin: +e.target.value})} />
+            <input aria-label="Âge maximum" type="number" className="border rounded-lg px-4 py-2" placeholder="Âge max" value={form.ageMax} onChange={e => setForm({...form, ageMax: +e.target.value})} />
           </div>
-          <input className="w-full border rounded-lg px-4 py-2" placeholder="Thèmes (séparés par virgule)" value={form.themes} onChange={e => setForm({...form, themes: e.target.value})} />
-          <input className="w-full border rounded-lg px-4 py-2" placeholder="URL image cover" value={form.imageCover} onChange={e => setForm({...form, imageCover: e.target.value})} />
+          <input aria-label="Thèmes" className="w-full border rounded-lg px-4 py-2" placeholder="Thèmes (séparés par virgule)" value={form.themes} onChange={e => setForm({...form, themes: e.target.value})} />
+          <input aria-label="URL image cover" className="w-full border rounded-lg px-4 py-2" placeholder="URL image cover" value={form.imageCover} onChange={e => setForm({...form, imageCover: e.target.value})} />
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={form.published} onChange={e => setForm({...form, published: e.target.checked})} />
             Publier immédiatement

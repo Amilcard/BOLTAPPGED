@@ -125,7 +125,7 @@ export function FilterSheet({
         role="dialog"
         aria-label="Filtres de recherche"
         aria-modal="true"
-        className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl max-h-[85vh] overflow-hidden flex flex-col animate-in slide-in-from-bottom duration-300 shadow-xl"
+        className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl max-h-[85vh] overflow-hidden flex flex-col animate-in slide-in-from-bottom duration-300 shadow-brand-xl"
       >
         {/* Grabber */}
         <div className="flex justify-center pt-3 pb-1">

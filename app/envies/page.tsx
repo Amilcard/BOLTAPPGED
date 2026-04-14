@@ -61,7 +61,7 @@ export default function EnviesPage() {
   if (!mounted) return null;
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-24">
+    <main className="min-h-screen bg-muted pb-24">
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-4 py-5 flex items-center gap-3">
         <Link

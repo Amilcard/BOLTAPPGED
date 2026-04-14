@@ -74,7 +74,7 @@ export default function EducateurSouhaitsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
           <p className="text-gray-500">On récupère les souhaits...</p>
@@ -85,7 +85,7 @@ export default function EducateurSouhaitsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-muted p-4">
         <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-8 text-center">
           <div className="w-14 h-14 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-4"><Link2 className="w-7 h-7 text-primary" /></div>
           <h1 className="text-xl font-bold text-gray-800 mb-2">Ce lien ne fonctionne plus</h1>
@@ -107,7 +107,7 @@ export default function EducateurSouhaitsPage() {
   const resolved = souhaits.filter(s => ['valide', 'refuse'].includes(s.status));
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       {/* Header */}
       <header className="bg-primary text-white">
         <div className="max-w-3xl mx-auto px-4 py-5">
@@ -244,7 +244,7 @@ function SouhaitCard({ souhait: initialSouhait }: { souhait: Souhait }) {
         )}
 
         {/* Motivation */}
-        <div className="mt-2 bg-gray-50 border-l-3 border-secondary/60 p-3 rounded-r-lg">
+        <div className="mt-2 bg-muted border-l-3 border-secondary/60 p-3 rounded-r-lg">
           <p className="text-sm text-gray-600 italic leading-relaxed">
             &laquo; {souhait.motivation} &raquo;
           </p>

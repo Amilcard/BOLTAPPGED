@@ -22,7 +22,7 @@ export default function GlobalError({
     if (countdown === 0) { setRetries(r => r + 1); reset(); return; }
     const t = setTimeout(() => setCountdown(c => c - 1), 1000);
     return () => clearTimeout(t);
-  }, [countdown, reset]);
+  }, [countdown, reset, retries]);
 
   return (
     <html lang="fr" className={rubik.className}>

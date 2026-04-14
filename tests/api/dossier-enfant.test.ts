@@ -25,7 +25,6 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 
-const INTEGRATION = process.env.RUN_INTEGRATION === 'true';
 const BASE_URL = process.env.BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 const TOKEN = process.env.TEST_SUIVI_TOKEN || '';
 const INSCRIPTION_ID = process.env.TEST_INSCRIPTION_ID || '';

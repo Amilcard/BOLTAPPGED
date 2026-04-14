@@ -1,16 +1,17 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
+import { resolveCodeToStructure } from '@/lib/structure';
 
 /**
  * GET /api/structures/verify/[code]
  *
- * Vérifie un code structure 6 caractères.
+ * Vérifie un code structure (6 ou 10 caractères).
  * Si valide : retourne les infos de la structure (nom, ville, CP, type).
  * Si invalide : retourne { valid: false }.
  *
  * Utilisé dans BookingFlow (onBlur du champ code) et dans /suivi/[token].
+ * Passe par resolveCodeToStructure pour honorer la migration gd_structure_access_codes.
  */
 export async function GET(
   req: NextRequest,
@@ -26,32 +27,26 @@ export async function GET(
 
   const { code } = await params;
 
-  // Validation format : 6 caractères alphanum majuscules
-  if (!code || !/^[A-Z0-9]{6}$/.test(code.toUpperCase())) {
+  // Validation format : 6 ou 10 caractères alphanum
+  if (!code || !/^[A-Z0-9]{6,10}$/.test(code.toUpperCase())) {
     return NextResponse.json({ valid: false, error: 'Format invalide' });
   }
 
   try {
-    const supabase = getSupabase();
+    const resolved = await resolveCodeToStructure(code);
 
-    const { data, error } = await supabase
-      .from('gd_structures')
-      .select('id, name, city, postal_code, type, address')
-      .eq('code', code.toUpperCase())
-      .eq('status', 'active')
-      .single();
-
-    if (error || !data) {
+    if (!resolved) {
       return NextResponse.json({ valid: false });
     }
 
+    const s = resolved.structure;
     return NextResponse.json({
       valid: true,
-      name: data.name,
-      city: data.city,
-      postalCode: data.postal_code,
-      type: data.type,
-      address: data.address,
+      name: s.name,
+      city: s.city,
+      postalCode: s.postal_code,
+      type: s.type,
+      address: s.address ?? null,
     });
   } catch (err) {
     console.error('[structures/verify] error:', err);

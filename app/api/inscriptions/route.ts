@@ -27,7 +27,7 @@ const inscriptionSchema = z.object({
   parentalConsent: z.boolean().optional(),
   paymentMethod: z.enum(['card', 'bank_transfer', 'cheque', 'transfer', 'check']).optional().default('bank_transfer'),
   // Champs structure (Phase 1 espace structure)
-  structureCode: z.string().regex(/^[A-Z0-9]{6}$/).optional(),  // Code 6 chars si connu
+  structureCode: z.string().regex(/^[A-Z0-9]{6,10}$/).optional(),  // Code 6 chars (CDS) ou 10 chars (directeur)
   structureName: z.string().min(1),               // Nom structure (obligatoire)
   structureAddress: z.string().optional(),         // Adresse
   structurePostalCode: z.string().regex(/^\d{5}$/),  // CP (obligatoire, 5 chiffres)
@@ -451,7 +451,7 @@ export async function POST(request: NextRequest) {
           structureId = newStruct.id;
           // Envoyer le code par email à l'éducateur (fire-and-forget)
           const codeRecipient = data.structureEmail || data.email;
-          sendStructureCodeEmail({
+          await sendStructureCodeEmail({
             recipientEmail: codeRecipient,
             structureName: data.structureName,
             structureCode: newStruct.code,

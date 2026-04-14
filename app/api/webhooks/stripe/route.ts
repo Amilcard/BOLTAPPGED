@@ -110,7 +110,8 @@ export async function POST(req: NextRequest) {
             amount: stripeAmountEur,
             subject: `⚠️ AMOUNT MISMATCH — Stripe ${stripeAmountEur}€ vs DB ${dbAmount}€`,
           }).catch((err) => { console.error('[webhook/stripe] sendAmountMismatchAlert failed', err); });
-          shouldRecordEvent = false;
+          // amount_mismatch est permanent — enregistrer l'event pour stopper les retries Stripe
+          shouldRecordEvent = true;
           break;
         }
 

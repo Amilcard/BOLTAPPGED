@@ -29,11 +29,28 @@ export async function GET(
   const supabase = getSupabase();
   const structureId = resolved.structure.id as string;
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('gd_calls')
     .select('id, inscription_id, call_type, direction, interlocuteur, resume, parent_accord, created_by, call_date, created_at')
     .eq('structure_id', structureId)
     .order('call_date', { ascending: false });
+
+  // Éducateur : lecture limitée à ses propres inscriptions (RGPD Art. 9)
+  if (resolved.role === 'educateur' && resolved.email) {
+    const { data: myInscriptions } = await supabase
+      .from('gd_inscriptions')
+      .select('id')
+      .eq('structure_id', structureId)
+      .eq('referent_email', resolved.email);
+
+    const ids = (myInscriptions ?? []).map((i: { id: string }) => i.id);
+    if (ids.length === 0) {
+      return NextResponse.json({ calls: [] });
+    }
+    query = query.in('inscription_id', ids);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('[calls GET] error:', error.message);

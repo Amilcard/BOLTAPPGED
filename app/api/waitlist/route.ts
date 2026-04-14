@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     const { email, sejourSlug, nom } = await req.json();
 
-    if (!email || !sejourSlug || !email.includes('@')) {
+    if (!email || !sejourSlug || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: 'Email et séjour requis.' }, { status: 400 });
     }
 

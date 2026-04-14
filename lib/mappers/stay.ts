@@ -49,7 +49,11 @@ export function mapDbStayToViewModel(
     titleKids: undefined,
     descriptionPro: undefined,
     descriptionKids: undefined,
-    programme: stay.programme ? (stay.programme as string).split('\n').filter(Boolean) : [],
+    programme: Array.isArray(stay.programme)
+      ? (stay.programme as unknown[]).filter((x): x is string => typeof x === 'string')
+      : stay.programme
+        ? String(stay.programme).split('\n').filter(Boolean)
+        : [],
     geography: (stay.location_region as string) || (stay.location_city as string) || '',
     accommodation: (stay.centre_name as string) || '',
     supervision: 'Équipe Groupe & Découverte',
@@ -62,8 +66,8 @@ export function mapDbStayToViewModel(
     imageCover: (Array.isArray(stay.images) ? (stay.images as string[])[0] : '') || '',
     images: Array.isArray(stay.images) ? (stay.images as string[]) : [],
     published: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: (stay.created_at as string) || new Date().toISOString(),
+    updatedAt: (stay.updated_at as string) || new Date().toISOString(),
     departureCity: null,
     educationalOption: null,
     geoLabel: (stay.location_city as string) || null,
@@ -75,7 +79,9 @@ export function mapDbStayToViewModel(
     },
     sourceUrl: (stay.source_url as string) || null,
     pdfUrl: (stay.pdf_url as string) || null,
-    price_base: (uniqueSessions[0]?.price_ged_total as number) || null,
+    price_base: uniqueSessions.length > 0
+      ? Math.min(...uniqueSessions.map(s => (s.price_ged_total as number) || Infinity).filter(isFinite))
+      : null,
     price_unit: '€',
     pro_price_note: 'Tarif communiqué aux professionnels',
     sessions: uniqueSessions.map((s) => ({

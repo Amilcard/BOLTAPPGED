@@ -66,9 +66,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // Renvoyer uniquement le lien de la plus récente inscription (fire-and-forget)
+    // Renvoyer uniquement le lien de la plus récente inscription
     const latest = inscriptions[0] as Record<string, unknown>;
-    sendInscriptionConfirmation({
+    await sendInscriptionConfirmation({
       referentNom:    (latest.referent_nom as string) || '',
       referentEmail:  latest.referent_email as string,
       jeunePrenom:    latest.jeune_prenom as string,

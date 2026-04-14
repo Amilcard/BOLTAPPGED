@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
 
     // 6. Reset rate limit après succès
     const supabase = getSupabaseAdmin();
-    supabase.from('gd_login_attempts').delete().eq('ip', `pro:${ip}`);
+    await supabase.from('gd_login_attempts').delete().eq('ip', `pro:${ip}`);
 
     return response;
   } catch (error) {

@@ -34,19 +34,31 @@ export async function GET(req: NextRequest) {
   if (errLogin) errors.push(`login_attempts: ${errLogin.message}`);
 
   // Purge gd_medical_events > 3 mois post-séjour (Art. 9 RGPD)
-  // Étape 1 : identifier les inscriptions dont la session est terminée depuis +3 mois
-  // On utilise session_date + 21j (durée max séjour) comme date de fin estimée
+  // Critère : session_date de l'inscription + 21j (durée max séjour) + 90j rétention
+  // Fallback : created_at + 111j pour les events orphelins (sans inscription liée)
   const purgeThreshold = new Date(Date.now() - (90 + 21) * 24 * 60 * 60 * 1000).toISOString();
-  const { data: expiredEvents, error: errFetchMed } = await supabase
+
+  // Chemin 1 — events liés à une inscription expirée (left join → inclut orphelins)
+  const { data: linkedEvents, error: errFetchLinked } = await supabase
     .from('gd_medical_events')
-    .select('id, inscription:gd_inscriptions!inner(session_date)')
+    .select('id, inscription:gd_inscriptions(session_date)')
     .lt('inscription.session_date', purgeThreshold);
 
-  if (errFetchMed) {
-    errors.push(`medical_events_fetch: ${errFetchMed.message}`);
-  } else if (expiredEvents && expiredEvents.length > 0) {
-    const idsToDelete = expiredEvents.map((e: { id: string }) => e.id);
-    // Suppression par batch de 100
+  // Chemin 2 — events orphelins (inscription_id null ou inscription sans session_date)
+  const { data: orphanEvents, error: errFetchOrphan } = await supabase
+    .from('gd_medical_events')
+    .select('id')
+    .is('inscription_id', null)
+    .lt('created_at', purgeThreshold);
+
+  if (errFetchLinked) errors.push(`medical_events_fetch_linked: ${errFetchLinked.message}`);
+  if (errFetchOrphan) errors.push(`medical_events_fetch_orphan: ${errFetchOrphan.message}`);
+
+  const linkedIds = (linkedEvents ?? []).map((e: { id: string }) => e.id);
+  const orphanIds = (orphanEvents ?? []).map((e: { id: string }) => e.id);
+  const idsToDelete = [...new Set([...linkedIds, ...orphanIds])];
+
+  if (idsToDelete.length > 0) {
     for (let i = 0; i < idsToDelete.length; i += 100) {
       const batch = idsToDelete.slice(i, i + 100);
       const { error: errDel } = await supabase
@@ -56,7 +68,7 @@ export async function GET(req: NextRequest) {
       if (errDel) errors.push(`medical_events_delete_batch_${i}: ${errDel.message}`);
     }
   }
-  const medEventsDeleted = expiredEvents?.length ?? 0;
+  const medEventsDeleted = idsToDelete.length;
 
   // Purge tokens JWT révoqués déjà expirés (ne servent plus, RGPD minimisation)
   const { error: errRevoked } = await supabase

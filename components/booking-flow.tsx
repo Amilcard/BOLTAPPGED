@@ -224,9 +224,10 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
 
   let sessionBasePrice: number | null = null;
   if (selectedSession && enrichmentSessions && enrichmentSessions.length > 0) {
+    // Forcer UTC pour éviter le décalage timezone local vs UTC sur les dates ISO
     const start = new Date(selectedSession.startDate);
-    const day = String(start.getDate()).padStart(2, '0');
-    const month = String(start.getMonth() + 1).padStart(2, '0');
+    const day = String(start.getUTCDate()).padStart(2, '0');
+    const month = String(start.getUTCMonth() + 1).padStart(2, '0');
     const dateStr = `${day}/${month}`;
     const found = enrichmentSessions.find((s: SessionPriceData) => s.date_text?.includes(dateStr));
     if (found) {
@@ -732,12 +733,12 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                   placeholder="Ex: CRF76H"
                   value={step1.structureCode}
                   onChange={e => {
-                    const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+                    const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
                     setStep1({ ...step1, structureCode: val, structureVerified: false, structureId: null });
                     setStructureCodeError('');
                   }}
                   onBlur={async () => {
-                    if (step1.structureCode.length === 6) {
+                    if (step1.structureCode.length === 6 || step1.structureCode.length === 10) {
                       try {
                         const res = await fetch(`/api/structures/verify/${step1.structureCode}`);
                         const json = await res.json();
@@ -762,7 +763,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                       } catch { setStructureCodeError('Erreur de vérification.'); }
                     }
                   }}
-                  maxLength={6}
+                  maxLength={10}
                   className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureVerified ? 'border-green-400 bg-green-50' : structureCodeError ? 'border-red-400' : 'border-primary-200'}`}
                 />
                 {step1.structureVerified && (

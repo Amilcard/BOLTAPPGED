@@ -63,11 +63,19 @@ export async function GET(
     }
   }
 
-  const result = (factures || []).map((f: Record<string, unknown>) => ({
-    ...f,
-    lignes: lignesMap[f.id as string] || [],
-    paiements: paiementsMap[f.id as string] || [],
-  }));
+  const result = (factures || []).map((f: Record<string, unknown>) => {
+    const paiements = paiementsMap[f.id as string] || [];
+    const montantPaye = paiements.reduce((sum: number, p: unknown) => sum + Number((p as Record<string, unknown>).montant || 0), 0);
+    const montantTotal = Number(f.montant_total || 0);
+    return {
+      ...f,
+      date: f.created_at,
+      montant_paye: montantPaye,
+      solde: montantTotal - montantPaye,
+      lignes: lignesMap[f.id as string] || [],
+      paiements,
+    };
+  });
 
   await auditLog(supabase, {
     action: 'read',

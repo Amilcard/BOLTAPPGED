@@ -134,13 +134,20 @@ export default function FacturesPage() {
 
   /* ───────── Data fetching ───────── */
 
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const loadFactures = useCallback(async () => {
     try {
+      setLoadError(null);
       const res = await fetch('/api/admin/factures', { headers: authHeaders() });
+      if (!res.ok) {
+        setLoadError('Erreur de chargement des factures. Rechargez la page.');
+        return;
+      }
       const data = await res.json();
       setFactures(data.factures || []);
     } catch {
-      console.error('Erreur chargement factures');
+      setLoadError('Erreur réseau. Vérifiez votre connexion.');
     } finally {
       setLoading(false);
     }
@@ -348,7 +355,7 @@ export default function FacturesPage() {
           <h2 className="text-lg font-semibold border-b pb-3 text-primary">Nouvelle Facture</h2>
 
           {error && (
-            <div role="alert" className="bg-red-50 text-destructive p-3 rounded-lg text-sm">
+            <div role="alert" className="bg-destructive/10 text-destructive p-3 rounded-brand text-sm">
               {error}
             </div>
           )}
@@ -556,8 +563,13 @@ export default function FacturesPage() {
       )}
 
       {/* ══════════ PREVIEW STEP ══════════ */}
-      {showForm && showPreview && (
-        <div className="bg-white rounded-brand shadow-brand-lg border-2 border-secondary-200 p-6 space-y-6">
+      <Dialog open={showForm && showPreview} onOpenChange={(open) => { if (!open) setShowPreview(false); }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-brand">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Aperçu facture</DialogTitle>
+            <DialogDescription>Vérifiez les informations avant de confirmer.</DialogDescription>
+          </DialogHeader>
+        <div className="space-y-6">
           <div className="bg-secondary text-white px-6 py-4 rounded-lg -mx-6 -mt-6">
             <p className="text-sm opacity-80">Association Groupe et Découverte</p>
             <h2 className="text-xl font-bold mt-1">Facture — Aperçu</h2>
@@ -612,7 +624,7 @@ export default function FacturesPage() {
           </div>
 
           {error && (
-            <div role="alert" className="bg-red-50 text-destructive p-3 rounded-lg text-sm">
+            <div role="alert" className="bg-destructive/10 text-destructive p-3 rounded-brand text-sm">
               {error}
             </div>
           )}
@@ -627,7 +639,8 @@ export default function FacturesPage() {
             </Button>
           </div>
         </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {/* ══════════ LIST ══════════ */}
       {loading ? (
@@ -635,6 +648,10 @@ export default function FacturesPage() {
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-12 w-full" />
           ))}
+        </div>
+      ) : loadError ? (
+        <div className="bg-destructive/10 text-destructive rounded-brand p-6 text-center" role="alert">
+          {loadError}
         </div>
       ) : factures.length === 0 ? (
         <div className="bg-white rounded-brand shadow-card p-12 text-center text-muted-foreground">
@@ -779,7 +796,7 @@ export default function FacturesPage() {
                   <span className="text-muted-foreground">Payé : {formatPrice(totalPaye)}</span>
                   <span className="font-semibold text-primary">Solde : {formatPrice(soldeRestant)}</span>
                 </div>
-                <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+                <div className="w-full h-3 bg-muted rounded-full overflow-hidden" role="progressbar" aria-valuenow={progressPct} aria-valuemin={0} aria-valuemax={100} aria-label="Progression paiement">
                   <div
                     className="h-full bg-secondary rounded-full transition-all duration-300"
                     style={{ width: `${progressPct}%` }}

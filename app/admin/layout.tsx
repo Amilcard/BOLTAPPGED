@@ -133,7 +133,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   );
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
+    <div className="min-h-screen bg-muted flex">
       {showIdleWarning && (
         <div role="alert" className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white text-sm font-medium px-4 py-2 flex items-center justify-between shadow-lg">
           <span>Déconnexion automatique dans 5 minutes pour inactivité.</span>

@@ -2,7 +2,7 @@
 
 export default function StructureError({ reset }: { error: Error; reset: () => void }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-muted">
       <div className="text-center max-w-md px-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-3">Une erreur est survenue</h2>
         <p className="text-sm text-gray-600 mb-6">

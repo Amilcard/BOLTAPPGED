@@ -64,7 +64,7 @@ function AccederProForm() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-muted flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="bg-white rounded-brand shadow-brand-lg p-8 text-center">
             <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
@@ -96,7 +96,7 @@ function AccederProForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-muted flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         <Link
           href={sejourSlug ? `/sejour/${sejourSlug}` : '/'}
@@ -265,7 +265,7 @@ function AccederProForm() {
 export default function AccederProPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-muted flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
       </div>
     }>

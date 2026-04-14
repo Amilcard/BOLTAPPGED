@@ -11,7 +11,7 @@ export default function Error({
   reset: () => void;
 }) {
   return (
-    <div className="min-h-[80vh] flex items-center justify-center bg-gray-50/50 p-4">
+    <div className="min-h-[80vh] flex items-center justify-center bg-muted/50 p-4">
       <div className="max-w-md w-full bg-white p-8 rounded-brand shadow-brand-lg text-center border border-gray-100/50">
         <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
           <AlertCircle className="w-8 h-8 text-destructive" />

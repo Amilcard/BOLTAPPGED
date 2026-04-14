@@ -62,7 +62,7 @@ function parseEnv<T extends z.ZodTypeAny>(schema: T, label: string): z.infer<T> 
       .map((i) => `  - ${i.path.join('.')}: ${i.message}`)
       .join('\n');
     throw new Error(
-      `❌ Variables d'environnement invalides (${label}) :\n${missing}\n\n` +
+      `[ERROR]Variables d'environnement invalides (${label}) :\n${missing}\n\n` +
       `Vérifiez votre .env.local ou les variables Vercel.`
     );
   }

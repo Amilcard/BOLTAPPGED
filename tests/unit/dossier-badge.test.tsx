@@ -6,7 +6,7 @@
  *   null        → "Non commencé"
  *   0-3/4       → "X/4 fiches" + indicateurs B/S/L/R/V/PJ
  *   4/4         → "Complet"
- *   gedSentAt   → "✓ Envoyé" (priorité sur isComplete)
+ *   gedSentAt   → "Envoyé" (priorité sur isComplete)
  *   vaccins/PJ  → indicateurs colorés selon présence
  */
 
@@ -48,7 +48,7 @@ describe('DossierBadge', () => {
     expect(screen.queryByText(/fiches/)).toBeNull();
   });
 
-  it('gedSentAt non null → "✓ Envoyé" (priorité sur isComplete)', () => {
+  it('gedSentAt non null → "Envoyé" (priorité sur isComplete)', () => {
     render(<DossierBadge
       completude={{ bulletin: true, sanitaire: true, liaison: true, renseignements: true }}
       gedSentAt="2026-03-31T10:00:00Z"

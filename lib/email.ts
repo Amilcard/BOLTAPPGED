@@ -86,7 +86,7 @@ export async function sendInscriptionConfirmation(data: InscriptionEmailData) {
                 <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">Domiciliation</td><td>${process.env.ORG_BANK_BRANCH || ''}</td></tr>
                 <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">Libellé</td><td><strong>${data.paymentReference || data.jeunePrenom}</strong></td></tr>
               </table>
-              <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 12px;">⚠️ Votre inscription sera validée à réception du règlement.</p>
+              <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 12px;">Attention :Votre inscription sera validée à réception du règlement.</p>
             </div>
             ` : ''}
 
@@ -99,7 +99,7 @@ export async function sendInscriptionConfirmation(data: InscriptionEmailData) {
                 <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">Adresse</td><td><strong>3 rue Flobert — 42000 Saint-Étienne</strong></td></tr>
                 <tr><td style="padding: 2px 8px 2px 0; color: #6b7280;">Référence au dos</td><td><strong>${data.paymentReference || data.jeunePrenom}</strong></td></tr>
               </table>
-              <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 12px;">⚠️ Votre inscription sera validée à réception du chèque.</p>
+              <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 12px;">Attention :Votre inscription sera validée à réception du chèque.</p>
             </div>
             ` : ''}
 
@@ -107,7 +107,7 @@ export async function sendInscriptionConfirmation(data: InscriptionEmailData) {
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
             <p style="color: #9ca3af; font-size: 12px;">Groupe &amp; Découverte — Séjours de vacances pour enfants et adolescents</p>
             <p style="font-size:11px;color:#6b7280;margin-top:24px;border-top:1px solid #e5e7eb;padding-top:12px;">
-              🔒 Les données collectées sont traitées conformément au RGPD et hébergées en Union européenne.
+              Securite :Les données collectées sont traitées conformément au RGPD et hébergées en Union européenne.
               Elles sont accessibles uniquement aux personnes habilitées et conservées pour la durée strictement nécessaire.
               Pour exercer vos droits : <a href="mailto:dpo@groupeetdecouverte.fr" style="color: #6b7280;">dpo@groupeetdecouverte.fr</a>
             </p>
@@ -249,7 +249,7 @@ export async function sendStatusChangeEmail(
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
             <p style="color: #9ca3af; font-size: 12px;">Groupe &amp; Découverte — Séjours de vacances pour enfants et adolescents</p>
             <p style="font-size:11px;color:#6b7280;margin-top:24px;border-top:1px solid #e5e7eb;padding-top:12px;">
-              🔒 Les données collectées sont traitées conformément au RGPD et hébergées en Union européenne.
+              Securite :Les données collectées sont traitées conformément au RGPD et hébergées en Union européenne.
               Elles sont accessibles uniquement aux personnes habilitées et conservées pour la durée strictement nécessaire.
               Pour exercer vos droits : <a href="mailto:dpo@groupeetdecouverte.fr" style="color: #6b7280;">dpo@groupeetdecouverte.fr</a>
             </p>
@@ -324,7 +324,7 @@ export async function sendSouhaitNotificationEducateur(data: SouhaitEmailData) {
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
             <p style="color: #9ca3af; font-size: 12px;">Groupe &amp; Découverte — Séjours de vacances pour enfants et adolescents</p>
             <p style="font-size:11px;color:#6b7280;margin-top:24px;border-top:1px solid #e5e7eb;padding-top:12px;">
-              🔒 Les données collectées sont traitées conformément au RGPD et hébergées en Union européenne.
+              Securite :Les données collectées sont traitées conformément au RGPD et hébergées en Union européenne.
               Elles sont accessibles uniquement aux personnes habilitées et conservées pour la durée strictement nécessaire.
               Pour exercer vos droits : <a href="mailto:dpo@groupeetdecouverte.fr" style="color: #6b7280;">dpo@groupeetdecouverte.fr</a>
             </p>
@@ -433,7 +433,7 @@ export async function sendRappelDossierIncomplet(data: {
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
             <p style="color: #9ca3af; font-size: 12px;">Groupe &amp; Découverte — Séjours de vacances pour enfants et adolescents</p>
             <p style="font-size:11px;color:#6b7280;margin-top:24px;border-top:1px solid #e5e7eb;padding-top:12px;">
-              🔒 Les données collectées sont traitées conformément au RGPD et hébergées en Union européenne.
+              Securite :Les données collectées sont traitées conformément au RGPD et hébergées en Union européenne.
               Elles sont accessibles uniquement aux personnes habilitées et conservées pour la durée strictement nécessaire.
               Pour exercer vos droits : <a href="mailto:dpo@groupeetdecouverte.fr" style="color: #6b7280;">dpo@groupeetdecouverte.fr</a>
             </p>
@@ -525,7 +525,7 @@ export async function sendDossierCompletEmail(data: {
           </div>
           <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
             <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-              <h2 style="color: #166534; margin: 0 0 8px 0; font-size: 18px;">Dossier complet ✓</h2>
+              <h2 style="color: #166534; margin: 0 0 8px 0; font-size: 18px;">Dossier complet</h2>
               <p style="margin: 0; color: #15803d; font-size: 14px;">Tous les documents ont bien été reçus.</p>
             </div>
             <p>Bonjour ${htmlEscape(data.referentNom)},</p>
@@ -535,7 +535,7 @@ export async function sendDossierCompletEmail(data: {
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
             <p style="color: #9ca3af; font-size: 12px;">Groupe &amp; Découverte — Séjours de vacances pour enfants et adolescents</p>
             <p style="font-size:11px;color:#6b7280;margin-top:24px;border-top:1px solid #e5e7eb;padding-top:12px;">
-              🔒 Les données collectées sont traitées conformément au RGPD et hébergées en Union européenne.
+              Securite :Les données collectées sont traitées conformément au RGPD et hébergées en Union européenne.
               Elles sont accessibles uniquement aux personnes habilitées et conservées pour la durée strictement nécessaire.
               Pour exercer vos droits : <a href="mailto:dpo@groupeetdecouverte.fr" style="color: #6b7280;">dpo@groupeetdecouverte.fr</a>
             </p>
@@ -589,7 +589,7 @@ export async function sendNewEducateurAlert(data: NewEducateurAlertData) {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: #D4AC0D; color: #333; padding: 16px 20px; border-radius: 8px 8px 0 0;">
-            <h2 style="margin: 0; font-size: 18px;">⚠️ Nouvel éducateur sans code structure</h2>
+            <h2 style="margin: 0; font-size: 18px;">Attention :Nouvel éducateur sans code structure</h2>
           </div>
           <div style="padding: 24px; background: #f9f9f9; border-radius: 0 0 8px 8px;">
             <p><strong>${data.newEducateurNom}</strong> (${data.newEducateurEmail}) vient d'inscrire un enfant pour la structure "<strong>${data.structureDeclaredName}</strong>" (CP ${data.postalCode}).</p>

@@ -159,7 +159,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
         </div>
 
         <h2 className="text-lg font-bold text-primary text-center mb-1">
-          {saved ? "Super choix 👌" : "Mon souhait"}
+          {saved ? "Super choix !" : "Mon souhait"}
         </h2>
         <p className="text-sm text-primary-500 text-center mb-6">{stayTitle}</p>
 
@@ -168,7 +168,7 @@ export function WishlistModal({ isOpen, onClose, stayTitle, staySlug, stayUrl }:
           <p className="text-sm text-primary">
             <span className="font-medium">
               {saved
-                ? `Super choix 👌 Pour que ton éducateur·trice le sache, clique sur "Envoyer à mon éducateur·trice".`
+                ? `Super choix ! Pour que ton éducateur·trice le sache, clique sur "Envoyer à mon éducateur·trice".`
                 : 'Dis-nous ce qui t\'attire. Ton éducateur·trice recevra ton choix.'
               }
             </span>

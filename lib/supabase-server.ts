@@ -15,7 +15,7 @@ export function getSupabaseAdmin(): SupabaseClient {
 
   if (!url || !key) {
     throw new Error(
-      '❌ NEXT_PUBLIC_SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY manquante.\n' +
+      '[ERROR]NEXT_PUBLIC_SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY manquante.\n' +
       'Vérifiez vos variables d\'environnement (.env.local ou Vercel).'
     );
   }
@@ -34,7 +34,7 @@ export const getSupabase = getSupabaseAdmin;
  * - SELECT sur données publiques (gd_stays, gd_session_prices, gd_stay_sessions)
  * - SELECT/PATCH scopés par ownership (gd_dossier_enfant, gd_inscriptions via token)
  *
- * ⚠️ NE PAS utiliser pour : INSERT cross-user, Storage, opérations admin
+ * NE PAS utiliser pour : INSERT cross-user, Storage, opérations admin
  */
 export function getSupabaseUser(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -42,7 +42,7 @@ export function getSupabaseUser(): SupabaseClient {
 
   if (!url || !key) {
     throw new Error(
-      '❌ NEXT_PUBLIC_SUPABASE_URL ou NEXT_PUBLIC_SUPABASE_ANON_KEY manquante.\n' +
+      '[ERROR]NEXT_PUBLIC_SUPABASE_URL ou NEXT_PUBLIC_SUPABASE_ANON_KEY manquante.\n' +
       'Vérifiez vos variables d\'environnement (.env.local ou Vercel).'
     );
   }

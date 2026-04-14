@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
             sejourSlug: (inscription.sejour_slug as string) || '',
             dossierRef: (inscription.dossier_ref as string) || '',
             amount: stripeAmountEur,
-            subject: `⚠️ AMOUNT MISMATCH — Stripe ${stripeAmountEur}€ vs DB ${dbAmount}€`,
+            subject: `[ALERTE] AMOUNT MISMATCH — Stripe ${stripeAmountEur}€ vs DB ${dbAmount}€`,
           }).catch((err) => { console.error('[webhook/stripe] sendAmountMismatchAlert failed', err); });
           // amount_mismatch est permanent — enregistrer l'event pour stopper les retries Stripe
           shouldRecordEvent = true;

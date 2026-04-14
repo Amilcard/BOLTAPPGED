@@ -1,5 +1,6 @@
 'use client';
 import { useRef, useEffect, useCallback } from 'react';
+import { Check } from 'lucide-react';
 
 interface SignaturePadProps {
   value?: string | null;
@@ -116,7 +117,7 @@ export function SignaturePad({ value, onChange, disabled = false, label }: Signa
         <p className="text-xs text-gray-400">Signez dans le cadre ci-dessus</p>
       )}
       {value && (
-        <p className="text-xs text-green-600">✓ Signature enregistrée</p>
+        <p className="text-xs text-green-600 flex items-center gap-1"><Check className="w-3 h-3" /> Signature enregistrée</p>
       )}
     </div>
   );

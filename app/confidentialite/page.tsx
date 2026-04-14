@@ -87,7 +87,7 @@ export default function ConfidentialitePage() {
           <Section title="2. Architecture de la plateforme et collecte de données">
             <h3 className="font-semibold text-primary-700">2.1 Espace Kids / Ados — accès totalement anonyme</h3>
             <InfoBox>
-              <p className="font-semibold text-green-700 mb-1">✓ Aucune donnée personnelle collectée</p>
+              <p className="font-semibold text-green-700 mb-1">Aucune donnée personnelle collectée</p>
               <p>
                 L&apos;espace kids/ados permet aux jeunes d&apos;explorer les séjours et d&apos;exprimer leurs souhaits
                 de façon totalement anonyme. Aucun compte n&apos;est créé, aucune information personnelle n&apos;est
@@ -109,7 +109,7 @@ export default function ConfidentialitePage() {
               ]}
             />
             <p className="text-xs text-orange-600 mt-2 font-medium">
-              ⚠️ Les données de santé (fiche sanitaire, documents médicaux) constituent une catégorie spéciale au sens de l&apos;article 9 du RGPD. Elles sont accessibles uniquement par le personnel habilité de l&apos;association et ne sont jamais communiquées à des tiers.
+              Attention : Les données de santé (fiche sanitaire, documents médicaux) constituent une catégorie spéciale au sens de l&apos;article 9 du RGPD. Elles sont accessibles uniquement par le personnel habilité de l&apos;association et ne sont jamais communiquées à des tiers.
             </p>
             <p className="text-xs text-gray-400 mt-2 italic">
               Principe de minimisation appliqué : seules les données strictement nécessaires à l&apos;organisation des séjours sont collectées.

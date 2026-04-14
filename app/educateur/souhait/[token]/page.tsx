@@ -22,7 +22,7 @@ const STATUT_CONFIG: Record<string, { label: string; color: string; bg: string }
   emis:          { label: 'En attente de réponse', color: 'text-orange-700', bg: 'bg-orange-50' },
   vu:            { label: 'Consulté', color: 'text-accent', bg: 'bg-muted' },
   en_discussion: { label: 'En discussion', color: 'text-secondary', bg: 'bg-secondary-50' },
-  valide:        { label: 'Validé ✓', color: 'text-primary', bg: 'bg-primary-50' },
+  valide:        { label: 'Validé', color: 'text-primary', bg: 'bg-primary-50' },
   refuse:        { label: 'Non retenu', color: 'text-red-700', bg: 'bg-red-50' },
 };
 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Check, ChevronDown, ChevronUp, Lock, Download } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Lock, Download, Mail, Phone } from 'lucide-react';
 import { DossierEnfantPanel } from '@/components/dossier-enfant/DossierEnfantPanel';
 
 // === Types locaux (lecture seule, pas besoin d'exporter) ===
@@ -580,7 +580,7 @@ function ResendLinkBlock() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted p-4">
       <div className="bg-white rounded-brand shadow-brand-lg max-w-md w-full p-8 text-center">
-        <div className="text-4xl mb-4">✉️</div>
+        <div className="mb-4"><Mail className="w-10 h-10 text-secondary mx-auto" /></div>
         <h1 className="text-xl font-bold text-gray-800 mb-2">Ce lien n&apos;est plus actif</h1>
         <p className="text-gray-500 text-sm mb-1">
           Ce lien a expiré pour des raisons de sécurité. Contactez votre structure pour obtenir un nouveau lien. Vos données restent protégées.
@@ -620,8 +620,8 @@ function ResendLinkBlock() {
         )}
 
         <div className="mt-6 text-xs text-gray-400 space-y-1">
-          <p>📞 <a href="tel:0423161671" className="hover:text-primary">04 23 16 16 71</a> — lun.–ven. 9h–17h</p>
-          <p>✉️ <a href="mailto:contact@groupeetdecouverte.fr" className="hover:text-primary">contact@groupeetdecouverte.fr</a></p>
+          <p><Phone className="w-3.5 h-3.5 inline mr-1" /><a href="tel:0423161671" className="hover:text-primary">04 23 16 16 71</a> — lun.–ven. 9h–17h</p>
+          <p><Mail className="w-3.5 h-3.5 inline mr-1" /><a href="mailto:contact@groupeetdecouverte.fr" className="hover:text-primary">contact@groupeetdecouverte.fr</a></p>
         </div>
       </div>
     </div>

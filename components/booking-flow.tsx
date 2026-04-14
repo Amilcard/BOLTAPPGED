@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Check, ChevronRight, ChevronLeft, Loader2, AlertCircle, Calendar, MapPin, CreditCard, Shield, Building2, LockKeyhole } from 'lucide-react';
+import { Check, ChevronRight, ChevronLeft, Loader2, AlertCircle, Calendar, CalendarDays, MapPin, CreditCard, Shield, Building2, LockKeyhole } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import type { Stay, StaySession} from '@/lib/types';
@@ -767,7 +767,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                   className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureVerified ? 'border-green-400 bg-green-50' : structureCodeError ? 'border-red-400' : 'border-primary-200'}`}
                 />
                 {step1.structureVerified && (
-                  <span className="flex items-center text-green-600 text-sm font-medium whitespace-nowrap">✓ Vérifié</span>
+                  <span className="flex items-center gap-1 text-green-600 text-sm font-medium whitespace-nowrap"><Check className="w-4 h-4" /> Vérifié</span>
                 )}
               </div>
               {structureCodeError && <p className="mt-1 text-xs text-red-500">{structureCodeError}</p>}
@@ -1380,7 +1380,7 @@ function WaitlistBlock({ sejourSlug }: { sejourSlug: string }) {
   if (status === 'done') {
     return (
       <div className="bg-green-50 border border-green-100 rounded-xl p-6 text-center">
-        <div className="text-3xl mb-3">✓</div>
+        <div className="mb-3"><Check className="w-8 h-8 text-green-600 mx-auto" /></div>
         <p className="font-medium text-gray-800 mb-1">Vous êtes sur la liste !</p>
         <p className="text-sm text-gray-500">
           Nous vous enverrons un email dès qu&apos;une place se libère pour ce séjour.
@@ -1395,7 +1395,7 @@ function WaitlistBlock({ sejourSlug }: { sejourSlug: string }) {
   return (
     <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
       <div className="text-center mb-4">
-        <div className="text-3xl mb-2">📅</div>
+        <div className="mb-2"><CalendarDays className="w-8 h-8 text-blue-500 mx-auto" /></div>
         <p className="font-medium text-gray-800">Aucune session disponible pour le moment</p>
         <p className="text-sm text-gray-500 mt-1">
           Laissez votre email — nous vous prévenons dès qu&apos;une place s&apos;ouvre.

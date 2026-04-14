@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import Link from 'next/link';
-import { ClipboardList, Stethoscope, Handshake, FileText, Paperclip, LockKeyhole } from 'lucide-react';
+import { ClipboardList, Stethoscope, Handshake, FileText, Paperclip, LockKeyhole, Download, Check } from 'lucide-react';
 import { DOC_OPT_LABELS } from '@/lib/dossier-shared';
 import { useDossierEnfant } from './useDossierEnfant';
 import { BulletinComplementForm } from './BulletinComplementForm';
@@ -106,10 +106,10 @@ function PdfDownloadButton({ inscriptionId, token, docType, label }: {
         disabled={downloading}
         className="px-3 py-2.5 min-h-[44px] bg-white border border-gray-300 hover:bg-gray-100 rounded-lg text-xs font-medium transition disabled:opacity-50 flex items-center gap-1"
       >
-        📥 {downloading ? 'Téléchargement...' : label}
+        <Download className="w-3.5 h-3.5 inline" /> {downloading ? 'Téléchargement...' : label}
       </button>
       {emailSent && (
-        <p className="text-xs text-green-700">✓ Document envoyé par email</p>
+        <p className="text-xs text-green-700 flex items-center gap-1"><Check className="w-3 h-3" /> Document envoyé par email</p>
       )}
       {downloadError && !emailSent && (
         <div className="text-xs text-amber-700 space-y-1">
@@ -381,7 +381,7 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
         className="w-full px-6 py-3 flex items-center justify-between text-sm text-gray-600 hover:bg-gray-50 transition"
       >
         <span className="font-medium flex flex-wrap items-center gap-2">
-          📄 Dossier enfant
+          <FileText className="w-4 h-4 inline" /> Dossier enfant
           {/* Badges par document — toujours visibles */}
           {dossier && (
             <>
@@ -395,16 +395,17 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                 <span
                   key={label}
                   title={title}
+                  aria-label={`${title} : ${done ? 'validé' : 'incomplet'}`}
                   className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                     done ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
                   }`}
                 >
-                  {done ? '✓' : '!'} {label}
+                  <span aria-hidden="true">{done ? <Check className="w-3 h-3 inline" /> : '!'}</span> {label}
                 </span>
               ))}
               {isComplete && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
-                  Dossier complet ✓
+                  <Check className="w-3 h-3 inline" /> Dossier complet
                 </span>
               )}
             </>
@@ -510,7 +511,7 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                     >
                       <tab.icon className="w-4 h-4" aria-hidden="true" />
                       {tab.label}
-                      {isComplete && <span className="text-primary text-xs">✓</span>}
+                      {isComplete && <Check className="w-3 h-3 text-primary" />}
                     </button>
                   );
                 })}

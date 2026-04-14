@@ -1,6 +1,6 @@
 'use client';
 
-import { MapPin, Mail } from 'lucide-react';
+import { MapPin, Mail, Clock } from 'lucide-react';
 
 interface CheckInstructionsProps {
   amount: number;
@@ -25,7 +25,7 @@ export function CheckInstructions({
     <div className="space-y-6">
       <div className="bg-gray-50 border-l-4 border-gray-500 p-4 rounded-r-xl">
         <p className="text-sm text-gray-700 font-medium">
-          ⏱️ Votre réservation sera confirmée sous 5-7 jours après réception du chèque
+          <Clock className="w-4 h-4 inline mr-1" /> Votre réservation sera confirmée sous 5-7 jours après réception du chèque
         </p>
       </div>
 

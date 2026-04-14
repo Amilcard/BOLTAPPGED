@@ -10,7 +10,7 @@ interface HomeCarouselsProps {
 }
 
 // === CONFIGURATION DES UNIVERS (3 carrousels) ===
-// ⚠️ WARNING: ORDRE VERROUILLÉ - Ne pas modifier sans validation UX
+// WARNING: ORDRE VERROUILLÉ - Ne pas modifier sans validation UX
 // Documentation complète: docs/CAROUSEL_RULES.md
 // Source de vérité: carousel_group (DB) → titre + sous-titre + ordre d'affichage
 // Fusionné: ALTITUDE_AVENTURE + OCEAN_FUN → AVENTURE_DECOUVERTE
@@ -124,23 +124,26 @@ export function HomeCarousels({ stays }: HomeCarouselsProps) {
                   onClick={() => scrollCarousel(section.id, 'left', maxScroll)}
                   className="p-2 rounded-full border border-gray-200 hover:border-secondary hover:text-secondary transition-colors disabled:opacity-20"
                   aria-label="Précédent"
+                  aria-controls={`carousel-${section.id}`}
                   disabled={currentScroll <= 0}
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  <ChevronLeft className="w-5 h-5" aria-hidden="true" />
                 </button>
                 <button
                   onClick={() => scrollCarousel(section.id, 'right', maxScroll)}
                   className="p-2 rounded-full border border-gray-200 hover:border-secondary hover:text-secondary transition-colors disabled:opacity-20"
                   aria-label="Suivant"
+                  aria-controls={`carousel-${section.id}`}
                   disabled={currentScroll >= maxScroll}
                 >
-                  <ChevronRight className="w-5 h-5" />
+                  <ChevronRight className="w-5 h-5" aria-hidden="true" />
                 </button>
               </div>
             </div>
 
             <div className="relative overflow-hidden">
               <div
+                id={`carousel-${section.id}`}
                 className="flex gap-4 transition-transform duration-300 ease-out"
                 style={{ transform: `translateX(-${currentScroll}px)` }}
               >

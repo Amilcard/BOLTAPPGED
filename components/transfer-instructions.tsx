@@ -1,6 +1,6 @@
 'use client';
 
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, Clock, AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 
 interface TransferInstructionsProps {
@@ -29,7 +29,7 @@ export function TransferInstructions({
     <div className="space-y-6">
       <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r-xl">
         <p className="text-sm text-orange-800 font-medium">
-          ⏱️ Votre réservation sera confirmée sous 2-3 jours après réception du virement
+          <Clock className="w-4 h-4 inline mr-1" /> Votre réservation sera confirmée sous 2-3 jours après réception du virement
         </p>
       </div>
 
@@ -92,7 +92,7 @@ export function TransferInstructions({
         <div className="bg-red-50 p-4 rounded-xl border-2 border-red-200">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold text-red-600 uppercase">
-              ⚠️ Référence obligatoire
+              <AlertTriangle className="w-3.5 h-3.5 inline mr-1" /> Référence obligatoire
             </span>
             <button
               onClick={() => copyToClipboard(paymentReference, 'ref')}

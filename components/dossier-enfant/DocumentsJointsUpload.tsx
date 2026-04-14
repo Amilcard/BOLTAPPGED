@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Lock, FileText } from 'lucide-react';
+import { Lock, FileText, Check, X as XIcon } from 'lucide-react';
 import { REQUIS_TO_JOINT, DOC_OPT_LABELS } from '@/lib/dossier-shared';
 
 interface DocJoint {
@@ -224,7 +224,7 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess, r
                 className="text-gray-400 hover:text-red-500 transition flex-shrink-0 ml-2"
                 title="Supprimer"
               >
-                ✕
+                <XIcon className="w-3.5 h-3.5" />
               </button>
             </div>
           ))}
@@ -238,7 +238,7 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess, r
             const uploaded = documents.some(d => d.type === dt.value);
             return (
               <span key={dt.value} className={`inline-flex items-center gap-1 mr-3 ${uploaded ? 'text-green-600' : 'text-gray-400'}`}>
-                {uploaded ? '✓' : '○'} {dt.label}
+                {uploaded ? <Check className="w-3 h-3" /> : <span className="w-3 h-3 inline-block rounded-full border border-gray-300" />} {dt.label}
               </span>
             );
           })}
@@ -260,7 +260,7 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess, r
                       uploaded ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                     }`}
                   >
-                    {uploaded ? '✓' : '!'} {label}
+                    {uploaded ? <Check className="w-3 h-3" /> : '!'} {label}
                   </span>
                 );
               })}

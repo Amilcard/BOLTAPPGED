@@ -90,7 +90,7 @@ export default function CgvPage() {
 
           <Section title="3. Disponibilité des sessions">
             <InfoBox variant="orange">
-              <p className="font-semibold mb-1">⚠ Information essentielle — Indisponibilité des sessions</p>
+              <p className="font-semibold mb-1">Attention :Information essentielle — Indisponibilité des sessions</p>
               <p>
                 Les séjours proposés dépendent de la disponibilité effective de nos structures et partenaires
                 (organismes d&apos;accueil, prestataires d&apos;animation, transporteurs, hébergeurs). Une session
@@ -126,10 +126,10 @@ export default function CgvPage() {
             <InfoBox>
               <p className="font-semibold mb-2">Moyens de paiement acceptés</p>
               <ul className="space-y-1">
-                <li>🏦 <strong>Virement bancaire</strong> — RIB communiqué sur devis ou facture</li>
+                <li><strong>Virement bancaire</strong> — RIB communiqué sur devis ou facture</li>
                 <li>— <strong>Chèque</strong> — à l&apos;ordre de « Association Groupe et Découverte »</li>
-                <li>💳 <strong>Carte bancaire</strong> — paiement sécurisé en ligne (Visa, Mastercard)</li>
-                <li>🎟 <strong>Coupon / bon CAF / aide financière</strong> — selon dispositifs en vigueur</li>
+                <li><strong>Carte bancaire</strong> — paiement sécurisé en ligne (Visa, Mastercard)</li>
+                <li><strong>Coupon / bon CAF / aide financière</strong> — selon dispositifs en vigueur</li>
               </ul>
             </InfoBox>
             <TableData
@@ -157,7 +157,7 @@ export default function CgvPage() {
 
           <Section title="6. Droit de rétractation">
             <InfoBox variant="orange">
-              <p className="font-semibold mb-1">⚠ Information importante</p>
+              <p className="font-semibold mb-1">Attention :Information importante</p>
               <p>
                 Conformément à l&apos;article L. 221-28 du Code de la consommation, le droit de rétractation de
                 14 jours <strong>ne s&apos;applique pas</strong> aux prestations de services de loisirs ou
@@ -221,7 +221,7 @@ export default function CgvPage() {
                 <li>— Consentement du responsable légal recueilli pour les mineurs de moins de 15 ans</li>
                 <li>— Données de santé supprimées automatiquement 3 mois après la fin du séjour</li>
                 <li>— Audit de tous les accès aux données sensibles</li>
-                <li>💳 Aucune donnée bancaire conservée (paiement délégué à Stripe, certifié PCI-DSS)</li>
+                <li>Aucune donnée bancaire conservée (paiement délégué à Stripe, certifié PCI-DSS)</li>
               </ul>
             </InfoBox>
             <p>

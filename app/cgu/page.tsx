@@ -59,7 +59,7 @@ export default function CguPage() {
           <Section title="2. Espaces d'accès">
             <h3 className="font-semibold text-primary-700">2.1 Espace Kids / Ados — accès anonyme</h3>
             <InfoBox variant="green">
-              <p className="font-semibold mb-1">✓ Aucun compte, aucune donnée</p>
+              <p className="font-semibold mb-1">Aucun compte, aucune donnée</p>
               <p>
                 Les enfants et adolescents accèdent à la plateforme sans création de compte ni saisie de données
                 personnelles. Cet espace leur permet d&apos;explorer les séjours et d&apos;envoyer leurs vœux à leur
@@ -96,7 +96,7 @@ export default function CguPage() {
 
           <Section title="4. Disponibilité des sessions">
             <InfoBox>
-              <p className="font-semibold mb-1">⚠ Information importante — Indisponibilité des sessions</p>
+              <p className="font-semibold mb-1">Attention :Information importante — Indisponibilité des sessions</p>
               <p>
                 Les séjours proposés dépendent de la disponibilité effective de nos partenaires. Une session peut
                 devenir indisponible après inscription pour des raisons indépendantes de la volonté de
@@ -150,8 +150,8 @@ export default function CguPage() {
                 <li>— Consentement du responsable légal obligatoire pour les mineurs de moins de 15 ans</li>
                 <li>— Traçabilité complète des accès aux données sensibles (journal d&apos;audit)</li>
                 <li>— Suppression automatique des données de santé 3 mois après la fin du séjour</li>
-                <li>🇪🇺 Données hébergées exclusivement en Union européenne</li>
-                <li>🔐 Liens de suivi sécurisés avec expiration automatique (30 jours)</li>
+                <li>— Données hébergées exclusivement en Union européenne</li>
+                <li>— Liens de suivi sécurisés avec expiration automatique (30 jours)</li>
               </ul>
             </InfoBox>
             <p>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Rubik } from 'next/font/google';
+import { CloudSun } from 'lucide-react';
 
 const rubik = Rubik({ subsets: ['latin'], display: 'swap' });
 
@@ -24,7 +25,7 @@ export default function GlobalError({
     <html lang="fr" className={rubik.className}>
       <body className="min-h-screen flex items-center justify-center bg-muted p-4">
         <div className="max-w-md w-full bg-white p-8 rounded-brand shadow-brand-lg text-center">
-          <div className="text-5xl mb-6">🌤️</div>
+          <div className="mb-6"><CloudSun className="w-12 h-12 text-secondary mx-auto" /></div>
           <h1 className="text-xl font-bold text-gray-800 mb-3">
             Une interruption momentanée
           </h1>

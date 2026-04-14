@@ -74,7 +74,7 @@ test.describe.skip('Page Vérification DB - Anti-régression', () => {
 
     // Si danger visible, fail le test
     if (hasDanger) {
-      throw new Error('❌ Régressions détectées dans la base de données !');
+      throw new Error('[ERROR] Régressions détectées dans la base de données !');
     }
   });
 

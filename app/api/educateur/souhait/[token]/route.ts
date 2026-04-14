@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 /**
  * GET /api/educateur/souhait/[token]
  * Retourne le souhait via educateur_token (magic link).
@@ -18,7 +18,7 @@ export async function GET(
       return NextResponse.json({ error: 'Lien invalide.' }, { status: 400 });
     }
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const { data, error } = await supabase
       .from('gd_souhaits')
       .select('id, kid_prenom, kid_prenom_referent, sejour_slug, sejour_titre, motivation, status, reponse_educateur, reponse_date, educateur_prenom, created_at, educateur_token_expires_at')
@@ -73,7 +73,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Statut invalide.' }, { status: 400 });
     }
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
 
     // Bloquer la modification d'un souhait déjà traité
     const { data: current } = await supabase

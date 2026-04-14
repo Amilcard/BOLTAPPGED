@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { requireEditor } from '@/lib/auth-middleware';
 import { auditLog } from '@/lib/audit-log';
 
@@ -20,7 +20,7 @@ export async function GET(
     }
 
     const { id } = await params;
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
 
     const { data, error } = await supabase
       .from('gd_facture_paiements')
@@ -56,7 +56,7 @@ export async function POST(
     }
 
     const { id: factureId } = await params;
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const body = await req.json();
 
     const { date_paiement, montant, methode, reference } = body;

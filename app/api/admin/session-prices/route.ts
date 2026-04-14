@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { requireEditor } from '@/lib/auth-middleware';
 /**
  * GET /api/admin/session-prices?stay_slug=xxx
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'stay_slug requis' }, { status: 400 });
     }
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const { data, error } = await supabase
       .from('gd_session_prices')
       .select('stay_slug, start_date, end_date, city_departure, base_price_eur, transport_surcharge_ged, price_ged_total')

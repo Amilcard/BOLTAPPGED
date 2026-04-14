@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 /**
  * GET /api/souhaits/kid/[kidToken]
  * Retourne les souhaits d'un kid via son kid_session_token (localStorage).
@@ -18,7 +18,7 @@ export async function GET(
       return NextResponse.json({ error: 'Token invalide.' }, { status: 400 });
     }
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const { data, error } = await supabase
       .from('gd_souhaits')
       .select('id, sejour_slug, sejour_titre, status, reponse_educateur, kid_prenom_referent, created_at, updated_at')

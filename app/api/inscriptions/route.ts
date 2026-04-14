@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase, getSupabaseUser } from '@/lib/supabase-server';
+import { getSupabaseAdmin, getSupabaseUser } from '@/lib/supabase-server';
 import { z } from 'zod';
 import { sendInscriptionConfirmation, sendAdminNewInscriptionNotification, sendStructureCodeEmail, sendNewEducateurAlert } from '@/lib/email';
 import { randomBytes } from 'crypto';
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = getSupabase();       // service_role — pour INSERT, structures, anti-doublon
+    const supabase = getSupabaseAdmin();       // service_role — pour INSERT, structures, anti-doublon
     const supabasePublic = getSupabaseUser(); // anon — pour SELECT publics (prix, sessions, stays)
     const body = await request.json();
 

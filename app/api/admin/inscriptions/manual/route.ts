@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireEditor } from '@/lib/auth-middleware';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendInscriptionConfirmation, sendChefDeServiceInvitation } from '@/lib/email';
 import { z } from 'zod';
 import { randomBytes } from 'crypto';
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const body = await request.json();
     const parsed = schema.safeParse(body);
 

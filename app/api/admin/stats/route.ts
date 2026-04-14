@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireEditor } from '@/lib/auth-middleware';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 /**
  * GET /api/admin/stats
  * Statistiques enrichies depuis Supabase (source de vérité).
@@ -12,7 +12,7 @@ import { getSupabase } from '@/lib/supabase-server';
  */
 export async function GET(req: NextRequest) {
   try {
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const auth = await requireEditor(req);
     if (!auth) return NextResponse.json({ error: { code: 'unauthorized', message: 'Non autorisé' } }, { status: 401 });
 

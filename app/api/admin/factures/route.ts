@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { requireEditor } from '@/lib/auth-middleware';
 import { auditLog } from '@/lib/audit-log';
 
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Accès réservé aux éditeurs et administrateurs.' }, { status: 403 });
     }
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
 
     const { data: factures, error } = await supabase
       .from('gd_factures')
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const body = await req.json();
 
     const {
@@ -203,7 +203,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const body = await req.json();
     const { id, statut } = body;
 
@@ -274,7 +274,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const { id } = await req.json();
 
     if (!id) {

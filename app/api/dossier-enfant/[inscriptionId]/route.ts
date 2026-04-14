@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { REQUIS_TO_JOINT } from '@/lib/dossier-shared';
 import { verifyOwnership } from '@/lib/verify-ownership';
 import { auditLog, getClientIp } from '@/lib/audit-log';
@@ -34,7 +34,7 @@ export async function GET(
       );
     }
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
 
     // Vérifier ownership via token
     const ownership = await verifyOwnership(supabase, token, inscriptionId);
@@ -178,7 +178,7 @@ export async function PATCH(
       );
     }
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
 
     // Vérifier ownership via token
     const ownership = await verifyOwnership(supabase, token, inscriptionId);
@@ -296,7 +296,7 @@ export async function PATCH(
 // REQUIS_TO_JOINT importé depuis @/lib/dossier-shared
 
 async function getDocsOptionnelsManquants(
-  supabase: ReturnType<typeof getSupabase>,
+  supabase: ReturnType<typeof getSupabaseAdmin>,
   inscriptionId: string,
   documentsJoints: Array<{ type: string }>
 ): Promise<{ requis: string[]; manquants: string[] }> {

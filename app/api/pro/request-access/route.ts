@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendProAccessConfirmation, sendProAccessAlertGED } from '@/lib/email';
 
 const MAX_REQUESTS = 2;
@@ -11,7 +11,7 @@ function isValidEmail(email: string): boolean {
 
 async function isRateLimited(email: string): Promise<boolean> {
   try {
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const key = `access_req:${email}`;
     const now = new Date();
     const windowStart = new Date(now.getTime() - WINDOW_MINUTES * 60 * 1000);
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
 
   // Enregistrement dans smart_form_submissions (fail-silently)
   try {
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     await supabase.from('smart_form_submissions').insert({
       form_type: 'pro_access_request',
       data: {

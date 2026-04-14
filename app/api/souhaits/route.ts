@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendSouhaitNotificationEducateur } from '@/lib/email';
 import { generateEducateurAggregateToken } from '@/lib/educateur-token';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email éducateur invalide.' }, { status: 400 });
     }
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
 
     // Extraire le domaine pour gd_structures
     const domain = educateurEmail.split('@')[1]?.toLowerCase();

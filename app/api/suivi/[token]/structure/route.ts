@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 /**
  * PATCH /api/suivi/[token]/structure
@@ -34,7 +34,7 @@ export async function PATCH(
       );
     }
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const body = await req.json();
     const { inscriptionId, structureCode } = body;
 

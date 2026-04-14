@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { verifyEducateurAggregateToken } from '@/lib/educateur-token';
 
 /**
@@ -19,7 +19,7 @@ export async function GET(
       return NextResponse.json({ error: 'Lien invalide ou expiré.' }, { status: 401 });
     }
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const { data, error } = await supabase
       .from('gd_souhaits')
       .select('id, kid_prenom, kid_prenom_referent, sejour_slug, sejour_titre, motivation, status, reponse_educateur, reponse_date, educateur_prenom, choix_mode, created_at')

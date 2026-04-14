@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { resolveCodeToStructure } from '@/lib/structure';
 import { auditLog } from '@/lib/audit-log';
 import { sendIncidentNotification } from '@/lib/email';
@@ -26,7 +26,7 @@ export async function GET(
     return NextResponse.json({ error: 'Accès refusé.' }, { status: 403 });
   }
 
-  const supabase = getSupabase();
+  const supabase = getSupabaseAdmin();
   const structureId = resolved.structure.id as string;
 
   const { data, error } = await supabase
@@ -82,7 +82,7 @@ export async function POST(
     return NextResponse.json({ error: 'Description requise (min 5 caractères).' }, { status: 400 });
   }
 
-  const supabase = getSupabase();
+  const supabase = getSupabaseAdmin();
   const structureId = resolved.structure.id as string;
 
   // Vérifier que l'inscription appartient à cette structure
@@ -202,7 +202,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'incident_id requis.' }, { status: 400 });
   }
 
-  const supabase = getSupabase();
+  const supabase = getSupabaseAdmin();
   const structureId = resolved.structure.id as string;
 
   // Action spéciale : accusé de réception (vu)

@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { GdStructureSearchResult } from '@/lib/types';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
 
     const { data, error } = await supabase
       .from('gd_structures')

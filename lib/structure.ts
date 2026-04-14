@@ -1,4 +1,4 @@
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 /**
  * Rôles structure — résolu depuis gd_structure_access_codes (priorité)
@@ -18,7 +18,7 @@ export interface ResolvedAccess {
 export async function resolveCodeToStructure(
   code: string
 ): Promise<ResolvedAccess | null> {
-  const supabase = getSupabase();
+  const supabase = getSupabaseAdmin();
   const codeNorm = code.toUpperCase();
   const now = new Date().toISOString();
 

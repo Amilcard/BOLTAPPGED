@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { enrichInscriptions, type InscriptionRaw } from '@/lib/inscription-enrichment';
 import { auditLog } from '@/lib/audit-log';
 import { resolveCodeToStructure } from '@/lib/structure';
@@ -44,7 +44,7 @@ export async function GET(
   }
 
   const { structure, role, roles, email: accessEmail } = resolved;
-  const supabase = getSupabase();
+  const supabase = getSupabaseAdmin();
   const structureId = structure.id as string;
 
   // Audit log — RGPD : tracer chaque accès aux données enfants
@@ -166,7 +166,7 @@ export async function POST(
   const rateLimitedPost = await structureRateLimitGuard(_req);
   if (rateLimitedPost) return rateLimitedPost;
 
-  const supabase = getSupabase();
+  const supabase = getSupabaseAdmin();
   const codeNorm = code.toUpperCase();
 
   // Résolution via resolveCodeToStructure (gd_structure_access_codes en priorité, fallback legacy)

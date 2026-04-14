@@ -1,22 +1,17 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
-import { resolveCodeToStructure } from '@/lib/structure';
+import { requireEditor } from '@/lib/auth-middleware';
 import { generateFacturePdf } from '@/lib/facture-pdf';
 
 /**
- * GET /api/structure/[code]/factures/pdf?id=UUID
- * PDF d'une facture pour la structure. Educateur et secrétariat exclus.
+ * GET /api/admin/factures/pdf?id=UUID — Génération PDF d'une facture
  */
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ code: string }> }
-) {
+export async function GET(req: NextRequest) {
   try {
-    const { code } = await params;
-    const resolved = await resolveCodeToStructure(code);
-    if (!resolved || resolved.role === 'educateur' || resolved.role === 'secretariat') {
-      return NextResponse.json({ error: 'Accès refusé.' }, { status: 403 });
+    const auth = await requireEditor(req);
+    if (!auth) {
+      return NextResponse.json({ error: 'Accès réservé aux éditeurs et administrateurs.' }, { status: 403 });
     }
 
     const id = req.nextUrl.searchParams.get('id');
@@ -25,33 +20,25 @@ export async function GET(
     }
 
     const supabase = getSupabaseAdmin();
-    const structureId = resolved.structure.id as string;
 
-    // Fetch facture and verify it belongs to this structure
-    const { data: facture, error: fetchErr } = await supabase
-      .from('gd_factures')
-      .select('*')
-      .eq('id', id)
-      .eq('structure_id', structureId)
-      .single();
-
-    if (fetchErr || !facture) {
-      return NextResponse.json({ error: 'Facture introuvable pour cette structure.' }, { status: 404 });
-    }
-
-    // Fetch lignes + paiements in parallel
-    const [lignesRes, paiementsRes] = await Promise.all([
+    // Fetch facture + lignes + paiements in parallel
+    const [factureRes, lignesRes, paiementsRes] = await Promise.all([
+      supabase.from('gd_factures').select('*').eq('id', id).single(),
       supabase.from('gd_facture_lignes').select('*').eq('facture_id', id).order('created_at', { ascending: true }),
       supabase.from('gd_facture_paiements').select('*').eq('facture_id', id).order('date_paiement', { ascending: true }),
     ]);
 
+    if (factureRes.error || !factureRes.data) {
+      return NextResponse.json({ error: 'Facture introuvable' }, { status: 404 });
+    }
+
     const pdfBytes = await generateFacturePdf(
-      facture as Record<string, unknown>,
+      factureRes.data as Record<string, unknown>,
       (lignesRes.data || []) as Record<string, unknown>[],
       (paiementsRes.data || []) as Record<string, unknown>[]
     );
 
-    const numero = (facture as Record<string, unknown>).numero || 'draft';
+    const numero = (factureRes.data as Record<string, unknown>).numero || 'draft';
     const filename = `Facture_${numero}.pdf`;
 
     return new NextResponse(pdfBytes, {

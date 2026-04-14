@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { headers } from 'next/headers';
 import { sendPaymentConfirmedAdminNotification } from '@/lib/email';
 
@@ -15,7 +15,7 @@ function getStripe() {
 export async function POST(req: NextRequest) {
   try {
     const stripe = getStripe();
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const body = await req.text();
     const headersList = await headers();
     const sig = headersList.get('stripe-signature');

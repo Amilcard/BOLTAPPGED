@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireEditor } from '@/lib/auth-middleware';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendRappelDossierIncomplet, sendRelanceAdminNotification } from '@/lib/email';
 /**
  * POST /api/admin/inscriptions/[id]/relance
@@ -14,7 +14,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
 
     const auth = await requireEditor(req);
     if (!auth) {

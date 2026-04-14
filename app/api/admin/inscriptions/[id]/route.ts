@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireEditor, requireAdmin } from '@/lib/auth-middleware';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendStatusChangeEmail } from '@/lib/email';
 import { auditLog } from '@/lib/audit-log';
 /**
@@ -12,7 +12,7 @@ import { auditLog } from '@/lib/audit-log';
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const auth = await requireEditor(req);
     if (!auth) {
       return NextResponse.json(
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const auth = await requireEditor(req);
     if (!auth) {
       return NextResponse.json(
@@ -207,7 +207,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     if (!UUID_REGEX.test(inscriptionId)) {
       return NextResponse.json({ error: { code: 'INVALID_ID', message: 'ID invalide.' } }, { status: 400 });
     }
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const auth = await requireAdmin(req);
     if (!auth) {
       return NextResponse.json(

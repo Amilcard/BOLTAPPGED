@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth-middleware';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 /**
  * GET /api/admin/structures/[id]/audit-log
@@ -26,7 +26,7 @@ export async function GET(
   const { searchParams } = new URL(req.url);
   const offset = parseInt(searchParams.get('offset') || '0', 10);
 
-  const supabase = getSupabase();
+  const supabase = getSupabaseAdmin();
 
   const { data: entries, error, count } = await supabase
     .from('gd_audit_log')

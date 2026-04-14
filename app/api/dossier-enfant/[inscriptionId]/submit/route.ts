@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendDossierCompletEmail, sendDossierGedAdminNotification } from '@/lib/email';
 import { REQUIS_TO_JOINT } from '@/lib/dossier-shared';
 import { verifyOwnership } from '@/lib/verify-ownership';
@@ -36,7 +36,7 @@ export async function POST(
       );
     }
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
 
     // 1. Vérifier ownership + expiration token (RGPD centralisé)
     const ownership = await verifyOwnership(supabase, token, inscriptionId);

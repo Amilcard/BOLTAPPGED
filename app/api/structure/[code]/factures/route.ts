@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { resolveCodeToStructure } from '@/lib/structure';
 import { auditLog } from '@/lib/audit-log';
 
@@ -18,7 +18,7 @@ export async function GET(
     return NextResponse.json({ error: 'Accès refusé.' }, { status: 403 });
   }
 
-  const supabase = getSupabase();
+  const supabase = getSupabaseAdmin();
   const structureId = resolved.structure.id as string;
 
   const { data: factures, error } = await supabase

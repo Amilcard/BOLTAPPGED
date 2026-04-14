@@ -25,8 +25,7 @@ export function getSupabaseAdmin(): SupabaseClient {
   });
 }
 
-// Alias pour compatibilité avec les routes qui utilisaient getSupabase()
-export const getSupabase = getSupabaseAdmin;
+// Legacy alias supprimé — utiliser getSupabaseAdmin() directement
 
 /**
  * Client Supabase côté serveur avec clé ANON (RLS actif).

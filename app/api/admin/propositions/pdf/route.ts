@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { requireEditor } from '@/lib/auth-middleware';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 // Couleurs GED
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     const id = req.nextUrl.searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID manquant' }, { status: 400 });
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const { data: prop } = await supabase
       .from('gd_propositions_tarifaires')
       .select('*')

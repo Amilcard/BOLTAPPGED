@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth-middleware';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { auditLog } from '@/lib/audit-log';
 
 /**
@@ -34,7 +34,7 @@ export async function POST(
     );
   }
 
-  const supabase = getSupabase();
+  const supabase = getSupabaseAdmin();
 
   // Vérifier que la structure existe
   const { data: structure } = await supabase

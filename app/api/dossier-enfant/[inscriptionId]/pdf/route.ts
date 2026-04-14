@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { verifyOwnership } from '@/lib/verify-ownership';
 import { auditLog } from '@/lib/audit-log';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
@@ -41,7 +41,7 @@ export async function GET(
       );
     }
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
 
     // Vérifier ownership (centralisé — inclut expiration token RGPD)
     const ownership = await verifyOwnership(supabase, token, inscriptionId);

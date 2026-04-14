@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { verifyOwnership } from '@/lib/verify-ownership';
 import { auditLog, getClientIp } from '@/lib/audit-log';
 const ALLOWED_TYPES = [
@@ -40,7 +40,7 @@ export async function POST(
       return NextResponse.json({ error: 'Token et inscriptionId requis.' }, { status: 400 });
     }
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
 
     if (!docType || !ALLOWED_TYPES.includes(docType as typeof ALLOWED_TYPES[number])) {
       return NextResponse.json({ error: `Type invalide. Types acceptes: ${ALLOWED_TYPES.join(', ')}` }, { status: 400 });
@@ -233,7 +233,7 @@ export async function GET(
       return NextResponse.json({ error: 'Parametres manquants.' }, { status: 400 });
     }
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const ownership = await verifyOwnership(supabase, token, inscriptionId);
     if (!ownership.ok) {
       return NextResponse.json({ error: { code: ownership.code, message: ownership.message } }, { status: ownership.status });
@@ -271,7 +271,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Parametres manquants.' }, { status: 400 });
     }
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const ownership = await verifyOwnership(supabase, token, inscriptionId);
     if (!ownership.ok) {
       return NextResponse.json({ error: { code: ownership.code, message: ownership.message } }, { status: ownership.status });

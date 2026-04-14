@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireEditor } from '@/lib/auth-middleware';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { auditLog } from '@/lib/audit-log';
 /**
  * GET /api/admin/dossier-enfant/[inscriptionId]
@@ -21,7 +21,7 @@ export async function GET(
     }
 
     const { inscriptionId } = await params;
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
 
     const { data: dossier, error: err } = await supabase
       .from('gd_dossier_enfant')

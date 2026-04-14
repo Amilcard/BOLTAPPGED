@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { resolveCodeToStructure } from '@/lib/structure';
 import { auditLog } from '@/lib/audit-log';
 import { structureRateLimitGuard } from '@/lib/rate-limit-structure';
@@ -52,7 +52,7 @@ export async function PATCH(
 
   // Suppression de la délégation
   if (from === null && until === null) {
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const { error } = await supabase
       .from('gd_structures')
       .update({ delegation_active_from: null, delegation_active_until: null })
@@ -118,7 +118,7 @@ export async function PATCH(
     );
   }
 
-  const supabase = getSupabase();
+  const supabase = getSupabaseAdmin();
   const { error } = await supabase
     .from('gd_structures')
     .update({

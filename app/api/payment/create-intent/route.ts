@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 function getStripe() {
   const stripeKey = process.env.STRIPE_SECRET_KEY;
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     }
 
     const stripe = getStripe();
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const { inscriptionId, suivi_token } = await req.json();
 
     if (!inscriptionId || !suivi_token) {

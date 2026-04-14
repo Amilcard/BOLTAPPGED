@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireEditor } from '@/lib/auth-middleware';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { enrichInscriptions, type InscriptionRaw } from '@/lib/inscription-enrichment';
 /**
  * GET /api/admin/inscriptions
@@ -10,7 +10,7 @@ import { enrichInscriptions, type InscriptionRaw } from '@/lib/inscription-enric
  */
 export async function GET(req: NextRequest) {
   try {
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const auth = await requireEditor(req);
     if (!auth) {
       return NextResponse.json(

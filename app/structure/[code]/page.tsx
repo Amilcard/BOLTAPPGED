@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Building2 } from 'lucide-react';
 import StructureAdminTab from '@/components/structure/StructureAdminTab';
 import StructureEduTab from '@/components/structure/StructureEduTab';
+import StructureFacturesTab from '@/components/structure/StructureFacturesTab';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -86,7 +87,7 @@ export default function StructureDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [role, setRole] = useState<'direction' | 'cds' | 'cds_delegated' | 'secretariat' | 'educateur' | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'admin' | 'educatif'>('admin');
+  const [activeTab, setActiveTab] = useState<'admin' | 'educatif' | 'factures'>('admin');
   const [delegFrom,  setDelegFrom]  = useState('');
   const [delegUntil, setDelegUntil] = useState('');
   const [delegSaving, setDelegSaving] = useState(false);
@@ -342,6 +343,16 @@ export default function StructureDashboard() {
                 Suivi éducatif
               </button>
             )}
+            {(role === 'direction' || role === 'cds' || role === 'cds_delegated') && (
+              <button
+                onClick={() => setActiveTab('factures')}
+                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'factures' ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                Factures
+              </button>
+            )}
           </div>
         )}
 
@@ -357,6 +368,11 @@ export default function StructureDashboard() {
             medicalCount={medicalCount}
             souhaits={data?.souhaits || []}
           />
+        )}
+
+        {/* ── Contenu onglet Factures ── */}
+        {activeTab === 'factures' && (
+          <StructureFacturesTab code={code} />
         )}
 
         {/* ── Contenu onglet Administratif ── */}

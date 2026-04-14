@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { requireEditor } from '@/lib/auth-middleware';
 
 const FROM_EMAIL = 'Groupe & Découverte <noreply@groupeetdecouverte.fr>';
@@ -19,7 +19,7 @@ export async function POST(
   }
 
   const { id: staySlug } = await params;
-  const supabase = getSupabase();
+  const supabase = getSupabaseAdmin();
 
   // Récupérer le titre du séjour
   const { data: stay } = await supabase

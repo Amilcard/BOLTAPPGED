@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendInscriptionConfirmation } from '@/lib/email';
 
 const RESEND_MAX = 3;
@@ -8,7 +8,7 @@ const RESEND_WINDOW_MIN = 10;
 
 async function isResendRateLimited(ip: string): Promise<boolean> {
   try {
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const windowStart = new Date(Date.now() - RESEND_WINDOW_MIN * 60 * 1000);
     const { data } = await supabase
       .from('gd_login_attempts')
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email invalide.' }, { status: 400 });
     }
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://app.groupeetdecouverte.fr';
 
     const { data: inscriptions } = await supabase

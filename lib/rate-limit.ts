@@ -1,4 +1,4 @@
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 /**
  * Rate limiter DB-backed via gd_login_attempts.
@@ -17,7 +17,7 @@ export async function isRateLimited(
   windowMin: number
 ): Promise<boolean> {
   try {
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const key = `${prefix}:${ip}`;
 
     // RPC atomique — une seule opération SQL, pas de race condition
@@ -44,7 +44,7 @@ async function isRateLimitedLegacy(
   limit: number,
   windowMin: number
 ): Promise<boolean> {
-  const supabase = getSupabase();
+  const supabase = getSupabaseAdmin();
   const now = new Date();
   const windowStart = new Date(now.getTime() - windowMin * 60 * 1000);
 

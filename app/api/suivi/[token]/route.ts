@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { verifyToken, verifyOwnership } from '@/lib/verify-ownership';
 import { auditLog, getClientIp } from '@/lib/audit-log';
 /**
@@ -19,7 +19,7 @@ export async function GET(
   try {
     const { token } = await params;
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
 
     // 1. Vérifier le token (validité + expiration RGPD) avec renouvellement sliding window
     const tokenCheck = await verifyToken(supabase, token, { renew: true });
@@ -154,7 +154,7 @@ export async function PATCH(
 ) {
   try {
     const { token } = await params;
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
     const body = await req.json();
     const { inscriptionId, field, value } = body;
 

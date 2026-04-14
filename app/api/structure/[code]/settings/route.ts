@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { resolveCodeToStructure } from '@/lib/structure';
 import { auditLog } from '@/lib/audit-log';
 import { structureRateLimitGuard } from '@/lib/rate-limit-structure';
@@ -71,7 +71,7 @@ export async function PATCH(
     );
   }
 
-  const supabase = getSupabase();
+  const supabase = getSupabaseAdmin();
   const structureId = structure.id as string;
 
   const { error: dbErr } = await supabase

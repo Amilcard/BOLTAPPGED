@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 
@@ -69,7 +69,7 @@ export async function GET(
       );
     }
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
 
     // Vérifier ownership via suivi_token
     const { data: inscription, error: err } = await supabase

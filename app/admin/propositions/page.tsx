@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Plus, FileDown, Check, X, Clock, Send, Loader2, Receipt, Eye, Download, Trash2 } from 'lucide-react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useAdminUI } from '@/components/admin/admin-ui';
+import { ENCADREMENT_EUR_PAR_SEMAINE } from '@/lib/constants';
 
 interface Sejour {
   slug: string;
@@ -185,7 +186,7 @@ export default function PropositionsPage() {
     const endDate = new Date(form.session_end);
     const diffDays = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     const nbSemaines = Math.max(1, Math.round(diffDays / 7));
-    const encadr = form.encadrement ? nbSemaines * 630 : 0;
+    const encadr = form.encadrement ? nbSemaines * ENCADREMENT_EUR_PAR_SEMAINE : 0;
     return { base, transport, encadrement: encadr, total: base + transport + encadr };
   };
 
@@ -400,7 +401,7 @@ export default function PropositionsPage() {
                   className="w-5 h-5 rounded text-primary focus:ring-primary-300"
                 />
                 <span className="text-sm">
-                  Encadrement renforcé (animateur dédié — 630 €/semaine)
+                  Encadrement renforcé (animateur dédié — {ENCADREMENT_EUR_PAR_SEMAINE} €/semaine)
                 </span>
               </label>
             </div>
@@ -460,7 +461,7 @@ export default function PropositionsPage() {
               {form.encadrement && (
                 <div>
                   <p className="text-xs text-gray-500 uppercase font-medium mb-1">Encadrement</p>
-                  <p className="font-medium text-orange-600">Animateur dédié (630 €/semaine)</p>
+                  <p className="font-medium text-orange-600">Animateur dédié ({ENCADREMENT_EUR_PAR_SEMAINE} €/semaine)</p>
                 </div>
               )}
             </div>

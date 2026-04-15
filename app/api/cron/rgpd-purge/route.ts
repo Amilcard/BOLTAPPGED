@@ -7,6 +7,8 @@ import { getSupabaseAdmin } from '@/lib/supabase-server';
  * Cron mensuel : purge des données RGPD expirées.
  * - Audit logs > 12 mois
  * - Données médicales > 3 mois après fin de séjour
+ * - Notes enfants > 12 mois (décision 2026-04-15)
+ * - Appels significatifs > 24 mois (décision 2026-04-15)
  * Protégé par CRON_SECRET (Vercel Cron).
  */
 export async function GET(req: NextRequest) {
@@ -85,12 +87,20 @@ export async function GET(req: NextRequest) {
   const { data: auditOldResult, error: errAuditOld } = await supabase.rpc('purge_old_audit_logs');
   if (errAuditOld) errors.push(`audit_logs_3y: ${errAuditOld.message}`);
 
+  // Purge gd_notes > 12 mois (migration 069 — décision rétention 2026-04-15)
+  const { data: notesResult, error: errNotes } = await supabase.rpc('gd_purge_expired_notes');
+  if (errNotes) errors.push(`notes_12m: ${errNotes.message}`);
+
+  // Purge gd_calls > 24 mois (migration 069 — décision rétention 2026-04-15)
+  const { data: callsResult, error: errCalls } = await supabase.rpc('gd_purge_expired_calls');
+  if (errCalls) errors.push(`calls_24m: ${errCalls.message}`);
+
   if (errors.length > 0) {
     console.error(`[rgpd-purge] ${errors.length} erreur(s):`, errors.join('; '));
     return NextResponse.json({ ok: false, errors }, { status: 500 });
   }
 
-  console.log(`[rgpd-purge] audit_logs_12m: ${auditResult ?? 0}, medical_data: ${medicalResult ?? 0}, medical_events: ${medEventsDeleted}, login_attempts: ${loginResult ?? 'ok'}, revoked_tokens: ok, audit_logs_3y: ${auditOldResult ?? 'ok'}`);
+  console.log(`[rgpd-purge] audit_logs_12m: ${auditResult ?? 0}, medical_data: ${medicalResult ?? 0}, medical_events: ${medEventsDeleted}, login_attempts: ${loginResult ?? 'ok'}, revoked_tokens: ok, audit_logs_3y: ${auditOldResult ?? 'ok'}, notes_12m: ${notesResult ?? 0}, calls_24m: ${callsResult ?? 0}`);
 
   return NextResponse.json({
     ok: true,
@@ -101,6 +111,8 @@ export async function GET(req: NextRequest) {
       login_attempts_24h: loginResult ?? 'ok',
       revoked_tokens: 'ok',
       audit_logs_3y: auditOldResult ?? 'ok',
+      notes_12m: notesResult ?? 0,
+      calls_24m: callsResult ?? 0,
     },
   });
 }

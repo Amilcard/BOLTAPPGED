@@ -116,7 +116,7 @@ describe('POST /api/auth/2fa/setup', () => {
     expect(res.status).toBe(401);
   });
 
-  it('JWT valide → 200 + qrCodeUrl + secret', async () => {
+  it('JWT valide → 200 + qrCodeUrl (secret NON exposé dans la réponse)', async () => {
     const mockUpsert = jest.fn().mockReturnValue({ error: null });
     mockFromInner.mockReturnValue({ upsert: mockUpsert });
 
@@ -125,7 +125,8 @@ describe('POST /api/auth/2fa/setup', () => {
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.qrCodeUrl).toBeDefined();
-    expect(json.secret).toBe('JBSWY3DPEHPK3PXP');
+    // La route retourne { qrCodeUrl } uniquement — le secret TOTP ne doit pas être exposé
+    expect(json.secret).toBeUndefined();
   });
 
   it('sauvegarde en base avec enabled: false', async () => {

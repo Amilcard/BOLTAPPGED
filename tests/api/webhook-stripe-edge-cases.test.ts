@@ -20,7 +20,7 @@ process.env.NEXTAUTH_SECRET = 'test-secret-32-chars-minimum-pad';
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
 
 jest.mock('next/headers', () => ({
-  headers: jest.fn().mockResolvedValue({
+  headers: jest.fn().mockReturnValue({
     get: (name: string) => (name === 'stripe-signature' ? 'sig_test_valid' : null),
   }),
 }));
@@ -37,16 +37,40 @@ let updateError: unknown = null;
 const mockSupabaseFrom = jest.fn().mockImplementation((table: string) => ({
   select: (..._args: unknown[]) => {
     mockSupabaseSelect(table, ..._args);
-    return { eq: (..._eqArgs: unknown[]) => ({ single: () => selectSingleResult }) };
+    return {
+      eq: (..._eqArgs: unknown[]) => ({
+        single: () => selectSingleResult,
+        maybeSingle: () => selectSingleResult,
+        in: () => ({ single: () => selectSingleResult }),
+      }),
+    };
   },
   update: (data: SupabaseRow) => {
     mockSupabaseUpdate(table, data);
-    return { eq: () => ({ error: updateError }) };
+    const result = { error: updateError, count: updateError ? 0 : 1 };
+    // Route : .update().eq('id', ...).in('payment_status', [...])
+    return {
+      eq: () => ({
+        in: () => result,
+        eq: () => result,
+        single: () => result,
+        ...result,
+      }),
+      in: () => result,
+    };
   },
   upsert: (data: SupabaseRow, opts?: unknown) => {
     mockSupabaseUpsert(table, data, opts);
-    return { error: null };
+    // claimEvent : .upsert().select('id').maybeSingle() → { data: { id: 'claimed' } } = claimed
+    return {
+      error: null,
+      select: () => ({
+        maybeSingle: () => ({ data: { id: 'claimed-event-id' }, error: null }),
+        single: () => ({ data: { id: 'claimed-event-id' }, error: null }),
+      }),
+    };
   },
+  delete: () => ({ eq: () => ({ error: null }) }),
 }));
 
 jest.mock('@/lib/supabase-server', () => ({
@@ -57,13 +81,16 @@ const mockConstructEvent = jest.fn();
 jest.mock('stripe', () => ({
   __esModule: true,
   default: jest.fn().mockImplementation(() => ({
-    webhooks: { constructEventAsync: mockConstructEvent },
+    // La route utilise constructEvent (synchrone) — pas constructEventAsync
+    webhooks: { constructEvent: mockConstructEvent },
   })),
 }));
 
 jest.mock('@/lib/email', () => ({
   sendInscriptionConfirmation: jest.fn().mockResolvedValue(undefined),
   sendPaymentFailedNotification: jest.fn().mockResolvedValue(undefined),
+  sendPaymentConfirmedAdminNotification: jest.fn().mockResolvedValue(undefined),
+  sendAdminNewInscriptionNotification: jest.fn().mockResolvedValue(undefined),
 }));
 
 import { POST } from '@/app/api/webhooks/stripe/route';
@@ -85,7 +112,7 @@ describe('Webhook Stripe — edge cases financiers', () => {
   });
 
   it('metadata.inscriptionId absent → 200 sans mise à jour BDD', async () => {
-    mockConstructEvent.mockResolvedValue({
+    mockConstructEvent.mockReturnValue({
       type: 'payment_intent.succeeded',
       data: {
         object: {
@@ -112,7 +139,7 @@ describe('Webhook Stripe — edge cases financiers', () => {
       },
       error: null,
     };
-    mockConstructEvent.mockResolvedValue({
+    mockConstructEvent.mockReturnValue({
       type: 'payment_intent.succeeded',
       data: {
         object: {
@@ -159,7 +186,7 @@ describe('Webhook Stripe — edge cases financiers', () => {
     // Simuler une erreur Supabase sur l'update
     updateError = { message: 'DB connection lost', code: '08006' };
 
-    mockConstructEvent.mockResolvedValue({
+    mockConstructEvent.mockReturnValue({
       type: 'payment_intent.succeeded',
       data: {
         object: {

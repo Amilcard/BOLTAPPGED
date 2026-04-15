@@ -66,7 +66,7 @@ Point d'arrivée : 383/391 tests, 0 suite KO.
 | M4 | Dual Supabase client | Session dédiée |
 | M5 | Emails silencieux si Resend down | Session dédiée |
 | M7 | Zod manquant sur 3 routes | Session dédiée |
-| M9 | FK NOT VALID non validées | **SQL prêt — exécuter en maintenance** (voir ci-dessous) |
+| M9 | FK NOT VALID non validées | ✅ **EXÉCUTÉ le 2026-04-15** — 3 contraintes `convalidated = true` |
 | M10–M13 | Dette mineure | Backlog |
 
 ---

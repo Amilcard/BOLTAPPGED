@@ -130,11 +130,6 @@ export default function EnviesPage() {
                       )}
 
                       <div className="flex items-center gap-3 flex-wrap">
-                        {item.prenom && (
-                          <span className="text-xs text-secondary font-medium bg-secondary/10 px-2 py-0.5 rounded-full">
-                            {item.prenom}
-                          </span>
-                        )}
                         <span className="flex items-center gap-1 text-xs text-gray-400">
                           <Clock className="w-3 h-3" />
                           {timeAgo(item.addedAt)}

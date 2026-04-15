@@ -32,7 +32,7 @@ process.env.NEXTAUTH_SECRET = 'test-secret-32-chars-minimum-here!!';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
-// Rate limiting mock chain — simule "pas de rate limit" pour gd_login_attempts
+// Rate limiting inline dans verify route — simule "pas de rate limit" pour gd_login_attempts
 const rlChain = {
   select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: null }) }) }),
   upsert: () => Promise.resolve({ error: null }),
@@ -65,6 +65,7 @@ jest.mock('@/lib/totp', () => ({
 // Mock auth-cookies pour éviter les Set-Cookie dans les tests
 jest.mock('@/lib/auth-cookies', () => ({
   setSessionCookie: jest.fn((res: unknown) => res),
+  clearPendingCookie: jest.fn((res: unknown) => res),
 }));
 
 import type { NextRequest } from 'next/server';
@@ -86,21 +87,25 @@ function makeAdminToken() {
   return jwt.sign({ userId: USER_ID, email: USER_EMAIL, role: USER_ROLE }, SECRET, { expiresIn: '8h' });
 }
 
-/** JWT pending2fa (après email/password, avant TOTP) */
-function makePendingToken(overrides: Record<string, unknown> = {}) {
-  return jwt.sign(
-    { userId: USER_ID, email: USER_EMAIL, role: USER_ROLE, pending2fa: true, ...overrides },
-    SECRET,
-    { expiresIn: '5m' }
-  );
+/** JWT pending2fa (après email/password, avant TOTP) — signé avec jose pour compatibilité route */
+async function makePendingToken(overrides: Record<string, unknown> = {}) {
+  const { SignJWT } = await import('jose');
+  const encodedSecret = new TextEncoder().encode(SECRET);
+  return await new SignJWT({ userId: USER_ID, email: USER_EMAIL, role: USER_ROLE, pending2fa: true, ...overrides })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('5m')
+    .sign(encodedSecret);
 }
 
-function makeRequest(body: Record<string, unknown>, authToken?: string): NextRequest {
+function makeRequest(body: Record<string, unknown>, authToken?: string, cookies?: Record<string, string>): NextRequest {
   const headers = new Map<string, string>();
   if (authToken) headers.set('authorization', `Bearer ${authToken}`);
+  const cookieMap = new Map<string, string>();
+  if (cookies) Object.entries(cookies).forEach(([k, v]) => cookieMap.set(k, v));
   return {
     json: () => Promise.resolve(body),
-    cookies: { get: () => undefined },
+    cookies: { get: (name: string) => cookieMap.has(name) ? { name, value: cookieMap.get(name) as string } : undefined },
     headers: { get: (k: string) => headers.get(k) ?? null },
   } as unknown as NextRequest;
 }
@@ -110,10 +115,10 @@ function makeRequest(body: Record<string, unknown>, authToken?: string): NextReq
 describe('POST /api/auth/2fa/setup', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('sans JWT → 401', async () => {
+  it('sans JWT → 403', async () => {
     const req = makeRequest({});
     const res = await setupPOST(req);
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(403);
   });
 
   it('JWT valide → 200 + qrCodeUrl (secret NON exposé dans la réponse)', async () => {
@@ -147,10 +152,10 @@ describe('POST /api/auth/2fa/setup', () => {
 describe('POST /api/auth/2fa/confirm', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('sans JWT → 401', async () => {
+  it('sans JWT → 403', async () => {
     const req = makeRequest({ code: '123456' });
     const res = await confirmPOST(req);
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(403);
   });
 
   it('2FA non configurée (pas de setup) → 404', async () => {
@@ -208,14 +213,17 @@ describe('POST /api/auth/2fa/verify', () => {
   });
 
   it('pendingToken JWT invalide/expiré → 401', async () => {
-    const req = makeRequest({ pendingToken: 'token.invalide.xxx', code: '123456' });
+    const req = makeRequest({ code: '123456' }, undefined, { gd_pending_2fa: 'token.invalide.xxx' });
     const res = await verifyPOST(req);
     expect(res.status).toBe(401);
   });
 
   it('token sans pending2fa: true → 401', async () => {
-    const tokenSansPending = jwt.sign({ userId: USER_ID, email: USER_EMAIL, role: USER_ROLE }, SECRET, { expiresIn: '5m' });
-    const req = makeRequest({ pendingToken: tokenSansPending, code: '123456' });
+    const { SignJWT } = await import('jose');
+    const encodedSecret = new TextEncoder().encode(SECRET);
+    const tokenSansPending = await new SignJWT({ userId: USER_ID, email: USER_EMAIL, role: USER_ROLE })
+      .setProtectedHeader({ alg: 'HS256' }).setIssuedAt().setExpirationTime('5m').sign(encodedSecret);
+    const req = makeRequest({ code: '123456' }, undefined, { gd_pending_2fa: tokenSansPending });
     const res = await verifyPOST(req);
     expect(res.status).toBe(401);
   });
@@ -225,7 +233,8 @@ describe('POST /api/auth/2fa/verify', () => {
       select: () => ({ eq: () => ({ single: () => ({ data: { totp_secret: 'SECRET', enabled: false }, error: null }) }) }),
     });
 
-    const req = makeRequest({ pendingToken: makePendingToken(), code: '123456' });
+    const token = await makePendingToken();
+    const req = makeRequest({ code: '123456' }, undefined, { gd_pending_2fa: token });
     const res = await verifyPOST(req);
     expect(res.status).toBe(400);
     const json = await res.json();
@@ -238,7 +247,8 @@ describe('POST /api/auth/2fa/verify', () => {
       select: () => ({ eq: () => ({ single: () => ({ data: { totp_secret: 'SECRET', enabled: true }, error: null }) }) }),
     });
 
-    const req = makeRequest({ pendingToken: makePendingToken(), code: '000000' });
+    const token = await makePendingToken();
+    const req = makeRequest({ code: '000000' }, undefined, { gd_pending_2fa: token });
     const res = await verifyPOST(req);
     expect(res.status).toBe(400);
     const json = await res.json();
@@ -251,7 +261,8 @@ describe('POST /api/auth/2fa/verify', () => {
       select: () => ({ eq: () => ({ single: () => ({ data: { totp_secret: 'SECRET', enabled: true }, error: null }) }) }),
     });
 
-    const req = makeRequest({ pendingToken: makePendingToken(), code: '123456' });
+    const token = await makePendingToken();
+    const req = makeRequest({ code: '123456' }, undefined, { gd_pending_2fa: token });
     const res = await verifyPOST(req);
     expect(res.status).toBe(200);
     const json = await res.json();

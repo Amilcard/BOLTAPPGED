@@ -120,7 +120,7 @@ export default function FacturesPage() {
   const [payForm, setPayForm] = useState({
     date_paiement: new Date().toISOString().slice(0, 10),
     montant: 0,
-    methode: 'Virement',
+    methode: 'virement',
     reference: '',
     note: '',
   });
@@ -291,7 +291,7 @@ export default function FacturesPage() {
     setPayForm({
       date_paiement: new Date().toISOString().slice(0, 10),
       montant: 0,
-      methode: 'Virement',
+      methode: 'virement',
       reference: '',
       note: '',
     });

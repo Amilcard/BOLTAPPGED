@@ -52,8 +52,7 @@ export interface WishlistItem {
   stayId: string;
   addedAt: string;
   motivation: string | null;
-  prenom?: string | null;
-  emailStructure?: string | null;
+  // RGPD: prenom et emailStructure retirés du localStorage (règle 9 CLAUDE.md)
 }
 
 export interface WishlistData {
@@ -118,20 +117,18 @@ export function removeFromWishlist(slug: string): string[] {
   return data.items.map(i => i.stayId);
 }
 
-export function updateWishlistMotivation(slug: string, motivation: string | null, prenom?: string | null, emailStructure?: string | null): void {
+export function updateWishlistMotivation(slug: string, motivation: string | null): void {
   if (typeof window === 'undefined') return;
   const data = getWishlistData();
   const item = data.items.find(i => i.stayId === slug);
   if (item) {
     item.motivation = motivation;
-    if (prenom !== undefined) item.prenom = prenom;
-    if (emailStructure !== undefined) item.emailStructure = emailStructure;
     saveWishlistData(data);
   }
 }
 
-// Check if user can add more requests (limit 3 per prenom+email in 30 days)
-export function canAddRequest(prenom: string, emailStructure: string): { allowed: boolean; message?: string } {
+// Check if user can add more requests (limit 3 stays in 30 days — RGPD: aucune PII comparée)
+export function canAddRequest(): { allowed: boolean; message?: string } {
   if (typeof window === 'undefined') return { allowed: true };
 
   const data = getWishlistData();
@@ -140,9 +137,7 @@ export function canAddRequest(prenom: string, emailStructure: string): { allowed
 
   const recentRequests = data.items.filter(item => {
     const itemDate = new Date(item.addedAt);
-    const matchesIdentity = item.prenom?.toLowerCase() === prenom.toLowerCase() &&
-                           item.emailStructure?.toLowerCase() === emailStructure.toLowerCase();
-    return matchesIdentity && itemDate >= thirtyDaysAgo;
+    return itemDate >= thirtyDaysAgo;
   });
 
   if (recentRequests.length >= 3) {

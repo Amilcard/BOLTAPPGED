@@ -87,22 +87,29 @@ describe('GET /api/admin/stats', () => {
   });
 
   it('EDITOR → 200 + structure clés attendues', async () => {
-    // 9 requêtes parallèles — mock générique qui couvre toutes les chaînes
+    // 9 requêtes parallèles + 1 post (top séjours titles) — mock universel récursif
     const empty = { count: 0, data: [], error: null };
-    const chainMock: Record<string, unknown> = {
-      eq: jest.fn().mockReturnValue({
-        is: jest.fn().mockResolvedValue(empty),
-      }),
-      is: jest.fn().mockResolvedValue(empty),
-      gte: jest.fn().mockReturnValue({
-        is: jest.fn().mockReturnValue({
-          order: jest.fn().mockResolvedValue({ data: [], error: null }),
-        }),
-        order: jest.fn().mockResolvedValue({ data: [], error: null }),
-      }),
-      ...empty,
-    };
-    mockFrom.mockReturnValue({ select: jest.fn().mockReturnValue(chainMock) });
+
+    // Proxy récursif : chaque méthode chaînée retourne le même proxy,
+    // et résout en empty quand attendu comme Promise (pour .then/.await)
+    function makeChainProxy(): Record<string, unknown> {
+      const handler: ProxyHandler<Record<string, unknown>> = {
+        get(_target, prop) {
+          if (prop === 'then') {
+            // Rend le proxy thenable → résout en empty
+            return (resolve: (v: unknown) => void) => resolve(empty);
+          }
+          if (prop === 'count') return 0;
+          if (prop === 'data') return [];
+          if (prop === 'error') return null;
+          // Toute méthode chaînée retourne un nouveau proxy
+          return jest.fn().mockReturnValue(new Proxy({}, handler));
+        },
+      };
+      return new Proxy({}, handler);
+    }
+
+    mockFrom.mockReturnValue(makeChainProxy());
 
     const res = await statsGet(r('/api/admin/stats', { token: EDITOR }));
     expect(res.status).toBe(200);

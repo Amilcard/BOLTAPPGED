@@ -1,63 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendPriceInquiryToEducateur, sendPriceInquiryAlertGED } from '@/lib/email';
+import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 const RATE_LIMIT_MAX = 3;
 const RATE_LIMIT_WINDOW_MIN = 30;
-
-async function checkRateLimitWithoutIncrement(email: string): Promise<boolean> {
-  try {
-    const supabase = getSupabaseAdmin();
-    const key = `priceiq:${email}`;
-    const now = new Date();
-    const windowStart = new Date(now.getTime() - RATE_LIMIT_WINDOW_MIN * 60 * 1000);
-
-    const { data: entry } = await supabase
-      .from('gd_login_attempts')
-      .select('attempt_count, window_start')
-      .eq('ip', key)
-      .single();
-
-    if (!entry || new Date(entry.window_start) < windowStart) return false;
-    return entry.attempt_count >= RATE_LIMIT_MAX;
-  } catch {
-    // fail-closed : previent spam email si DB inaccessible
-    return true;
-  }
-}
-
-async function incrementRateLimit(email: string): Promise<void> {
-  try {
-    const supabase = getSupabaseAdmin();
-    const key = `priceiq:${email}`;
-    const now = new Date();
-    const windowStart = new Date(now.getTime() - RATE_LIMIT_WINDOW_MIN * 60 * 1000);
-
-    const { data: entry } = await supabase
-      .from('gd_login_attempts')
-      .select('attempt_count, window_start')
-      .eq('ip', key)
-      .single();
-
-    if (!entry || new Date(entry.window_start) < windowStart) {
-      await supabase
-        .from('gd_login_attempts')
-        .upsert(
-          { ip: key, attempt_count: 1, window_start: now.toISOString() },
-          { onConflict: 'ip' }
-        );
-    } else {
-      await supabase
-        .from('gd_login_attempts')
-        .update({ attempt_count: entry.attempt_count + 1 })
-        .eq('ip', key);
-    }
-  } catch {
-    // fail-silently — l'email a été envoyé, le rate-limit est secondaire
-  }
-}
 
 export async function POST(request: NextRequest) {
   let body: unknown;
@@ -80,10 +29,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Format email invalide' }, { status: 400 });
   }
 
-  // Rate limiting — vérifier AVANT, incrémenter APRÈS succès email
-  const rateLimitEmail = (email as string).toLowerCase().trim();
-  const isLimited = await checkRateLimitWithoutIncrement(rateLimitEmail);
-  if (isLimited) {
+  // Rate limiting atomique via RPC check_rate_limit (résout la race condition H4)
+  const ip = getClientIpFromHeaders(request.headers);
+  const rateLimitKey = `priceiq:${(email as string).toLowerCase().trim()}:${ip}`;
+  if (await isRateLimited('priceiq', rateLimitKey, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MIN)) {
     return NextResponse.json(
       { error: 'Trop de demandes. Réessayez dans 30 minutes.' },
       { status: 429 }
@@ -134,8 +83,7 @@ export async function POST(request: NextRequest) {
     console.error('[price-inquiry] Email GED échoué:', gedResult.reason);
   }
 
-  // Incrémenter rate-limit seulement après succès email (au moins un envoyé)
-  await incrementRateLimit(rateLimitEmail);
+  // Rate-limit atomique : incrément déjà fait dans isRateLimited() via RPC
 
   // Sauvegarder le lead dans smart_form_submissions (fail-silently)
   try {

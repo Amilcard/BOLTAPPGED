@@ -110,7 +110,7 @@ export function WishlistForm({ stayTitle, staySlug }: WishlistFormProps) {
         throw new Error(data?.error || 'Erreur serveur');
       }
 
-      updateWishlistMotivation(staySlug, motivation.trim() || null, prenom.trim(), finalEmail);
+      updateWishlistMotivation(staySlug, motivation.trim() || null);
       setSaved(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue');

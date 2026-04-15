@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
 
 export default function Error({
-  error,
+  error: _error,
   reset,
 }: {
   error: Error & { digest?: string };
@@ -20,7 +20,7 @@ export default function Error({
           Une erreur est survenue
         </h1>
         <p className="text-muted-foreground mb-8 leading-relaxed" role="alert">
-          {error.message || "Nous n'avons pas pu charger cette page. Veuillez r\u00e9essayer."}
+          {"Nous n'avons pas pu charger cette page. Veuillez réessayer."}
         </p>
         <Button onClick={reset} size="lg" className="w-full sm:w-auto">
           R\u00e9essayer

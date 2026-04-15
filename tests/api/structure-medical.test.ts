@@ -18,14 +18,21 @@ process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.fake';
 
 const mockInsert = jest.fn();
+let mockFromCallCount = 0;
+let mockFromOverrides: Record<number, unknown> = {};
 const mockFromChain = {
   select: jest.fn().mockReturnThis(),
   eq: jest.fn().mockReturnThis(),
+  in: jest.fn().mockReturnThis(),
   order: jest.fn().mockReturnThis(),
   single: jest.fn(),
   insert: mockInsert,
 };
-const mockFrom = jest.fn(() => mockFromChain);
+const mockFrom = jest.fn(() => {
+  const idx = mockFromCallCount++;
+  if (mockFromOverrides[idx]) return mockFromOverrides[idx];
+  return mockFromChain;
+});
 
 jest.mock('@/lib/supabase-server', () => ({
   getSupabase: () => ({ from: mockFrom }),
@@ -55,16 +62,25 @@ const STRUCTURE = { id: 'struct-1', name: 'MECS Test' };
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockFromCallCount = 0;
+  mockFromOverrides = {};
   mockFromChain.select.mockReturnThis();
   mockFromChain.eq.mockReturnThis();
+  mockFromChain.in.mockReturnThis();
   mockFromChain.order.mockReturnThis();
 });
 
 describe('GET /api/structure/[code]/medical', () => {
   it('1 — éducateur voit compteur uniquement', async () => {
     mockResolve.mockResolvedValue({ structure: STRUCTURE, role: 'educateur', email: 'educ@test.fr' });
-    // count query: .select('id', { count: 'exact', head: true }).eq(...)
-    mockFromChain.select.mockReturnValueOnce({ eq: () => Promise.resolve({ count: 3, error: null }) });
+    // Call 1: from('gd_inscriptions').select('id').eq('structure_id').eq('referent_email')
+    mockFromOverrides[0] = {
+      select: () => ({ eq: () => ({ eq: () => Promise.resolve({ data: [{ id: 'insc-1' }], error: null }) }) }),
+    };
+    // Call 2: from('gd_medical_events').select('id', {count, head}).eq('structure_id').in('inscription_id', ids)
+    mockFromOverrides[1] = {
+      select: () => ({ eq: () => ({ in: () => Promise.resolve({ count: 3, error: null }) }) }),
+    };
     const res = await GET(makeReq('GET'), { params });
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -91,8 +107,14 @@ describe('GET /api/structure/[code]/medical', () => {
 describe('POST /api/structure/[code]/medical', () => {
   it('4 — éducateur peut créer (spec validée)', async () => {
     mockResolve.mockResolvedValue({ structure: STRUCTURE, role: 'educateur', email: 'educ@test.fr' });
-    mockFromChain.single.mockResolvedValueOnce({ data: { id: 'insc-1' }, error: null });
-    mockInsert.mockReturnValue({ select: () => ({ single: () => Promise.resolve({ data: { id: 'med-1' }, error: null }) }) });
+    // Call 1: from('gd_inscriptions').select('id').eq('id').eq('structure_id').is('deleted_at', null).single()
+    mockFromOverrides[0] = {
+      select: () => ({ eq: () => ({ eq: () => ({ is: () => ({ single: () => Promise.resolve({ data: { id: 'insc-1' }, error: null }) }) }) }) }),
+    };
+    // Call 2: from('gd_medical_events').insert().select().single()
+    mockFromOverrides[1] = {
+      insert: () => ({ select: () => ({ single: () => Promise.resolve({ data: { id: 'med-1' }, error: null }) }) }),
+    };
     const res = await POST(makeReq('POST', { inscription_id: 'insc-1', event_type: 'consultation', description: 'Visite médecin camp' }), { params });
     expect(res.status).toBe(201);
   });

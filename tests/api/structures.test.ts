@@ -29,6 +29,11 @@ jest.mock('@/lib/supabase-server', () => ({
   getSupabaseAdmin: () => ({ from: mockFrom }),
 }));
 
+const mockResolveCode = jest.fn();
+jest.mock('@/lib/structure', () => ({
+  resolveCodeToStructure: (...args: unknown[]) => mockResolveCode(...args),
+}));
+
 import { GET as searchGET } from '@/app/api/structures/search/route';
 import { GET as verifyGET } from '@/app/api/structures/verify/[code]/route';
 import { NextRequest } from 'next/server';
@@ -104,7 +109,7 @@ describe('GET /api/structures/search', () => {
     const json = await res.json();
     expect(json.structures).toHaveLength(2);
     expect(json.structures[0].name).toBe('Croix-Rouge Le Havre');
-    expect(json.structures[0].contactHint).toBe('m****@croix-rouge.fr');
+    expect(json.structures[0].contactHint).toBe('m****@***.fr');
     // Pas de code ni d'id exposé
     expect(json.structures[0].code).toBeUndefined();
     expect(json.structures[0].id).toBeUndefined();
@@ -128,26 +133,24 @@ describe('GET /api/structures/verify/[code]', () => {
   });
 
   it('renvoie valid:true + infos si code valide', async () => {
-    mockFrom.mockReturnValue(
-      buildChain({
-        data: {
-          id: 'struct-uuid-1',
-          name: 'Croix-Rouge Le Havre',
-          city: 'Le Havre',
-          postal_code: '76600',
-          type: 'association',
-          address: '12 rue Gambetta',
-        },
-        error: null,
-      })
-    );
+    mockResolveCode.mockResolvedValue({
+      structure: {
+        id: 'struct-uuid-1',
+        name: 'Croix-Rouge Le Havre',
+        city: 'Le Havre',
+        postal_code: '76600',
+        type: 'association',
+        address: '12 rue Gambetta',
+      },
+      role: 'cds',
+      email: 'cds@test.fr',
+    });
 
     const res = await verifyGET(makeVerifyRequest('ABC123'), {
       params: Promise.resolve({ code: 'ABC123' }),
     });
     const json = await res.json();
     expect(json.valid).toBe(true);
-    expect(json.structureId).toBe('struct-uuid-1');
     expect(json.name).toBe('Croix-Rouge Le Havre');
     expect(json.city).toBe('Le Havre');
     expect(json.postalCode).toBe('76600');
@@ -156,9 +159,7 @@ describe('GET /api/structures/verify/[code]', () => {
   });
 
   it('renvoie valid:false si code inexistant', async () => {
-    mockFrom.mockReturnValue(
-      buildChain({ data: null, error: { message: 'not found' } })
-    );
+    mockResolveCode.mockResolvedValue(null);
 
     const res = await verifyGET(makeVerifyRequest('ZZZ999'), {
       params: Promise.resolve({ code: 'ZZZ999' }),

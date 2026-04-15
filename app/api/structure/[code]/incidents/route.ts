@@ -91,6 +91,7 @@ export async function POST(
     .select('id')
     .eq('id', inscription_id)
     .eq('structure_id', structureId)
+    .is('deleted_at', null)
     .single();
 
   if (!insc) {

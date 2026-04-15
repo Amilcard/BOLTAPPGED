@@ -38,7 +38,8 @@ interface SupabaseMock {
   select: (..._args: unknown[]) => { eq: (..._eqArgs: unknown[]) => { single: () => SelectSingleResult } };
   update: (data: SupabaseRow) => { eq: () => { error: null } };
   insert: (data: SupabaseRow) => { single: () => { data: null; error: null } };
-  upsert?: (data: SupabaseRow, _opts?: unknown) => { error: null };
+  upsert?: (data: SupabaseRow, _opts?: unknown) => { error: null; select: () => { maybeSingle: () => Promise<{ data: unknown; error: null }> } };
+  delete?: () => { eq: (..._args: unknown[]) => { error: null } };
 }
 
 // Mock Supabase
@@ -131,15 +132,28 @@ function makeFullMock(
     }),
     update: (data: SupabaseRow) => {
       mockSupabaseUpdate(table, data);
-      return { eq: () => ({ error: null }) };
+      return { eq: () => ({ in: () => ({ error: null, count: 1 }), error: null }) };
     },
+    delete: () => ({
+      eq: () => ({ error: null }),
+    }),
     insert: (data: SupabaseRow) => {
       mockSupabaseInsert(table, data);
       return { single: () => ({ data: null, error: null }) };
     },
     upsert: (data: SupabaseRow, _opts?: unknown) => {
       mockSupabaseInsert(table, data);
-      return { error: null };
+      const result = resolveTable(table);
+      return {
+        error: null,
+        select: () => ({
+          maybeSingle: () => Promise.resolve(
+            // Si data=null (pas encore traité), on simule un nouvel insert → data: { id: 'new' }
+            // Si data existe (déjà traité), on simule ignoreDuplicates → data: null
+            result.data ? { data: null, error: null } : { data: { id: `new_${Date.now()}` }, error: null }
+          ),
+        }),
+      };
     },
   });
 }

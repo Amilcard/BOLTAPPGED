@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
 
 export default function Error({
-  error,
+  error: _error,
   reset,
 }: {
   error: Error & { digest?: string };
@@ -20,7 +20,7 @@ export default function Error({
           Erreur de réservation
         </h1>
         <p className="text-gray-500 mb-8 leading-relaxed">
-          {error.message || "Impossible de charger la page de réservation. Veuillez réessayer."}
+          {"Impossible de charger la page de réservation. Veuillez réessayer."}
         </p>
         <Button onClick={reset} size="lg" className="w-full sm:w-auto">
           Réessayer

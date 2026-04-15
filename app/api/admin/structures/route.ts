@@ -36,7 +36,11 @@ export async function GET(request: NextRequest) {
       query = query.eq('type', type);
     }
     if (search) {
-      query = query.or(`name.ilike.%${search}%,city.ilike.%${search}%,code.ilike.%${search}%`);
+      // Sanitize search input to prevent PostgREST filter injection via or() interpolation
+      const safeSearch = search.replace(/[^a-zA-ZÀ-ÿ0-9\s\-']/g, '').slice(0, 100);
+      if (safeSearch) {
+        query = query.or(`name.ilike.%${safeSearch}%,city.ilike.%${safeSearch}%,code.ilike.%${safeSearch}%`);
+      }
     }
 
     const { data: structures, error: structErr } = await query.order('created_at', { ascending: false });

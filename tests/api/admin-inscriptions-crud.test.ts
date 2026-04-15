@@ -89,13 +89,17 @@ import { GET as getInscription, PUT as putInscription, DELETE as deleteInscripti
 
 describe('GET /api/admin/inscriptions', () => {
   beforeEach(() => {
-    // Chaîne : .select().is().order().limit() [.eq() si filtre]
+    // Chaîne : .select().eq('gd_structures.is_test', false).is().order().limit()
     mockFrom.mockReturnValue({
-      select: jest.fn().mockReturnThis(),
-      is: jest.fn().mockReturnThis(),
-      order: jest.fn().mockReturnThis(),
-      limit: jest.fn().mockResolvedValue({ data: [SAMPLE_INSCRIPTION], error: null }),
-      eq: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          is: jest.fn().mockReturnValue({
+            order: jest.fn().mockReturnValue({
+              limit: jest.fn().mockResolvedValue({ data: [SAMPLE_INSCRIPTION], error: null }),
+            }),
+          }),
+        }),
+      }),
     });
   });
 
@@ -117,21 +121,23 @@ describe('GET /api/admin/inscriptions', () => {
   });
 
   it('filtre ?status appliqué (ADMIN)', async () => {
-    // Chaîne : select().is().order().limit().eq()
-    const eqMock = jest.fn().mockResolvedValue({ data: [], error: null });
+    // Chaîne réelle : select().eq('gd_structures.is_test', false).is().order().limit().eq('status', 'validee')
+    const statusEqMock = jest.fn().mockResolvedValue({ data: [], error: null });
     mockFrom.mockReturnValue({
       select: jest.fn().mockReturnValue({
-        is: jest.fn().mockReturnValue({
-          order: jest.fn().mockReturnValue({
-            limit: jest.fn().mockReturnValue({
-              eq: eqMock,
+        eq: jest.fn().mockReturnValue({
+          is: jest.fn().mockReturnValue({
+            order: jest.fn().mockReturnValue({
+              limit: jest.fn().mockReturnValue({
+                eq: statusEqMock,
+              }),
             }),
           }),
         }),
       }),
     });
     await listInscriptions(req('/api/admin/inscriptions?status=validee', { token: ADMIN_TOKEN }));
-    expect(eqMock).toHaveBeenCalledWith('status', 'validee');
+    expect(statusEqMock).toHaveBeenCalledWith('status', 'validee');
   });
 });
 

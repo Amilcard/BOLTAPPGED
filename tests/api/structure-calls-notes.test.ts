@@ -25,6 +25,7 @@ const mockInsert = jest.fn();
 const mockFromChain = {
   select: jest.fn().mockReturnThis(),
   eq: jest.fn().mockReturnThis(),
+  is: jest.fn().mockReturnThis(),
   order: jest.fn().mockReturnThis(),
   single: jest.fn(),
   insert: mockInsert,

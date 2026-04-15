@@ -91,7 +91,9 @@ describe('POST /api/auth/login', () => {
   });
 
   it('retourne 429 si rate limit dépassé', async () => {
-    mockRateLimit(true);
+    // Override le mock global de @/lib/rate-limit pour ce test
+    const rateLimit = jest.requireMock<{ isRateLimited: jest.Mock }>('@/lib/rate-limit');
+    rateLimit.isRateLimited.mockResolvedValueOnce(true);
     const res = await POST(makeLoginRequest({ email: 'user@ged.fr', password: 'pass' }));
     expect(res.status).toBe(429);
   });

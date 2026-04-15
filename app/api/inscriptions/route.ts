@@ -85,17 +85,23 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      const tvRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ secret: turnstileSecret, response: body.turnstileToken }),
-      });
-      const tvData = await tvRes.json();
-      if (!tvData.success) {
-        return NextResponse.json(
-          { error: { code: 'CAPTCHA_FAILED', message: 'Vérification anti-robot échouée. Rechargez la page.' } },
-          { status: 400 }
-        );
+      try {
+        const tvRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ secret: turnstileSecret, response: body.turnstileToken }),
+          signal: AbortSignal.timeout(3000), // H3 fix : timeout 3s, pas de blocage si Cloudflare down
+        });
+        const tvData = await tvRes.json();
+        if (!tvData.success) {
+          return NextResponse.json(
+            { error: { code: 'CAPTCHA_FAILED', message: 'Vérification anti-robot échouée. Rechargez la page.' } },
+            { status: 400 }
+          );
+        }
+      } catch (tvErr) {
+        // Turnstile timeout ou erreur réseau — log + allow (graceful fallback)
+        console.error('[inscriptions] Turnstile verification timeout/error, allowing:', tvErr instanceof Error ? tvErr.message : tvErr);
       }
     }
 

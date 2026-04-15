@@ -7,54 +7,14 @@ import { SignJWT } from 'jose';
 const MAX_ATTEMPTS = 10;
 const WINDOW_MINUTES = 5;
 
-// getClientIp consolidé — import depuis lib/rate-limit
-import { getClientIpFromHeaders } from '@/lib/rate-limit';
+// M6 fix : centraliser sur isRateLimited() RPC atomique (lib/rate-limit.ts)
+import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 function getClientIp(req: NextRequest): string {
   return getClientIpFromHeaders(req.headers);
 }
 
-/**
- * Rate limiting persistant via Supabase (même pattern que /api/auth/login).
- * Préfixe 'pro:' pour séparer les compteurs du login admin.
- */
-async function isRateLimited(ip: string): Promise<boolean> {
-  try {
-    const supabase = getSupabaseAdmin();
-    const now = new Date();
-    const windowStart = new Date(now.getTime() - WINDOW_MINUTES * 60 * 1000);
-    const key = `pro:${ip}`;
-
-    const { data: entry } = await supabase
-      .from('gd_login_attempts')
-      .select('attempt_count, window_start')
-      .eq('ip', key)
-      .single();
-
-    if (!entry || new Date(entry.window_start) < windowStart) {
-      await supabase
-        .from('gd_login_attempts')
-        .upsert(
-          { ip: key, attempt_count: 1, window_start: now.toISOString() },
-          { onConflict: 'ip' }
-        );
-      return false;
-    }
-
-    if (entry.attempt_count >= MAX_ATTEMPTS) {
-      return true;
-    }
-
-    await supabase
-      .from('gd_login_attempts')
-      .update({ attempt_count: entry.attempt_count + 1 })
-      .eq('ip', key);
-
-    return false;
-  } catch (err) {
-    // Fail-closed : données enfants ASE — bloquer en cas d'erreur
-    console.error('[pro-session rate-limit] Erreur DB, fail-closed:', err);
-    return true;
-  }
+async function isProRateLimited(ip: string): Promise<boolean> {
+  return isRateLimited('pro', ip, MAX_ATTEMPTS, WINDOW_MINUTES);
 }
 
 /**
@@ -69,7 +29,7 @@ async function isRateLimited(ip: string): Promise<boolean> {
  */
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
-  if (await isRateLimited(ip)) {
+  if (await isProRateLimited(ip)) {
     return NextResponse.json(
       { error: { code: 'RATE_LIMITED', message: 'Trop de tentatives. Réessayez dans 5 minutes.' } },
       { status: 429, headers: { 'Retry-After': '300' } }

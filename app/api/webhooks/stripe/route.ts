@@ -182,6 +182,14 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ received: true, skipped: true });
         }
 
+        // Récupérer session_id AVANT update pour rollback capacité
+        const { data: failedInsc } = await supabase
+          .from('gd_inscriptions')
+          .select('session_id')
+          .eq('id', inscriptionId)
+          .in('payment_status', ['pending_payment'])
+          .single();
+
         const { error } = await supabase
           .from('gd_inscriptions')
           .update({
@@ -196,6 +204,27 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: 'DB update failed' }, { status: 500 });
         } else {
           console.log('[webhook/stripe] payment_intent.payment_failed processed');
+          // H1 fix : rollback capacité — restituer le siège consommé lors de l'inscription
+          // seats_left = -1 ou NULL = illimité → pas de rollback nécessaire
+          if (failedInsc?.session_id) {
+            const { data: sess } = await supabase
+              .from('gd_stay_sessions')
+              .select('seats_left')
+              .eq('id', failedInsc.session_id)
+              .single();
+            if (sess && sess.seats_left !== null && sess.seats_left >= 0) {
+              const { error: seatErr } = await supabase
+                .from('gd_stay_sessions')
+                .update({ seats_left: sess.seats_left + 1 })
+                .eq('id', failedInsc.session_id)
+                .eq('seats_left', sess.seats_left); // guard optimiste contre race
+              if (seatErr) {
+                console.error('[webhook/stripe] seat rollback failed:', seatErr.message);
+              } else {
+                console.log('[webhook/stripe] seat rolled back for session', failedInsc.session_id);
+              }
+            }
+          }
         }
         break;
       }

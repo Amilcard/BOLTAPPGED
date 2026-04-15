@@ -128,6 +128,9 @@ function makeFullMock(
     select: (..._args: unknown[]) => ({
       eq: (..._eqArgs: unknown[]) => ({
         single: () => resolveTable(table),
+        in: () => ({
+          single: () => resolveTable(table),
+        }),
       }),
     }),
     update: (data: SupabaseRow) => {

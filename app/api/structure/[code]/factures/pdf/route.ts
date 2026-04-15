@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { resolveCodeToStructure } from '@/lib/structure';
 import { generateFacturePdf } from '@/lib/facture-pdf';
+import { structureRateLimitGuard } from '@/lib/rate-limit-structure';
 
 /**
  * GET /api/structure/[code]/factures/pdf?id=UUID
@@ -13,6 +14,9 @@ export async function GET(
   { params }: { params: Promise<{ code: string }> }
 ) {
   try {
+    const rateLimited = await structureRateLimitGuard(req);
+    if (rateLimited) return rateLimited;
+
     const { code } = await params;
     const resolved = await resolveCodeToStructure(code);
     if (!resolved || resolved.role === 'educateur' || resolved.role === 'secretariat') {

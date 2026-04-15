@@ -78,7 +78,12 @@ export default function AdminSejours() {
           <tbody className="divide-y divide-gray-100">
             {stays.map((stay) => (
               <tr key={stay.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 font-medium">{stay.title}</td>
+                <td className="px-6 py-4">
+                  <span className="font-medium">{stay.title}</span>
+                  {stay.rawTitle && stay.rawTitle !== stay.title && (
+                    <span className="block text-xs text-gray-400 mt-0.5">{stay.rawTitle}</span>
+                  )}
+                </td>
                 <td className="px-6 py-4 text-gray-600">{stay.ageMin}-{stay.ageMax} ans</td>
                 <td className="px-6 py-4 text-gray-600">{formatPrice(stay.priceFrom ?? 0)}</td>
                 <td className="px-6 py-4">

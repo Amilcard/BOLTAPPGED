@@ -44,9 +44,10 @@ export function mapDbStayToViewModel(
     id: slug,
     slug,
     title: (stay.marketing_title as string) || 'Séjour',
+    rawTitle: (stay.title as string) || null,
     descriptionShort: (stay.punchline as string) || (stay.expert_pitch as string) || '',
-    titlePro: undefined,
-    titleKids: undefined,
+    titlePro: (stay.title_pro as string) || undefined,
+    titleKids: (stay.title_kids as string) || undefined,
     descriptionPro: undefined,
     descriptionKids: undefined,
     programme: Array.isArray(stay.programme)

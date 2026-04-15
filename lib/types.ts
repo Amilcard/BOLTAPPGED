@@ -32,6 +32,7 @@ export interface Stay {
 
   // === CHAMPS PREMIUM MARKETING (Univers + Wording vendeur) ===
   // Fallback: si null, le front utilise les champs legacy (title, geography, etc.)
+  rawTitle?: string | null;              // Nom UFOVAL brut (admin uniquement)
   marketingTitle?: string | null;       // Home H3 + Détail H1 (court, marque)
   punchline?: string | null;            // Home sous-titre + Détail H2 (accroche courte, 1-2 phrases)
   expertPitch?: string | null;          // Détail corps de texte (storytelling long, style CityCrunch)

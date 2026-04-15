@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
       id: s.slug, // slug comme identifiant unique
       slug: s.slug,
       title: (s.marketing_title as string) || (s.title as string),
+      rawTitle: s.title as string, // Nom UFOVAL brut (pour l'admin)
       descriptionShort: s.description_short || '',
       programme: s.programme || [],
       geography: s.location_region || '',

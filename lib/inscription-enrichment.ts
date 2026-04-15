@@ -16,6 +16,8 @@ interface DossierRaw {
 interface StayRaw {
   marketing_title?: string;
   title?: string;
+  title_pro?: string;
+  title_kids?: string;
 }
 
 export interface InscriptionRaw {

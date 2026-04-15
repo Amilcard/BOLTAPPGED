@@ -128,6 +128,8 @@ export function Header({ variant: _variant = 'minimal' }: HeaderProps) {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400/50"
               aria-label={mobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -136,7 +138,7 @@ export function Header({ variant: _variant = 'minimal' }: HeaderProps) {
 
         {/* Mobile Menu - Vitrine links only */}
         {mobileMenuOpen && (
-          <nav className="lg:hidden py-4 border-t border-gray-200 animate-in slide-in-from-top">
+          <nav id="mobile-menu" className="lg:hidden py-4 border-t border-gray-200 animate-in slide-in-from-top">
             <div className="flex flex-col gap-1">
               {vitrineLinks
                 .filter((item) => mode === 'pro' || item.showInKids)

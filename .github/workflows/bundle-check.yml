@@ -24,16 +24,17 @@ jobs:
       - name: Build
         run: next build
         env:
-          # Valeurs factices qui passent la validation Zod (lib/env.ts)
+          # Valeurs factices pour le build CI — passent la validation Zod (lib/env.ts)
+          # Format minimal requis par Zod, PAS de vrais secrets
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder-anon-key-long-enough
-          SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder-service-role-long
-          STRIPE_SECRET_KEY: sk_test_placeholderkey123456789
-          STRIPE_WEBHOOK_SECRET: whsec_placeholder123456789
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: PLACEHOLDER_ANON_KEY_FOR_CI_BUILD_ONLY
+          SUPABASE_SERVICE_ROLE_KEY: PLACEHOLDER_SERVICE_ROLE_KEY_CI
+          STRIPE_SECRET_KEY: sk_test_PLACEHOLDER_NOT_A_REAL_KEY
+          STRIPE_WEBHOOK_SECRET: whsec_PLACEHOLDER_NOT_REAL
           NEXTAUTH_SECRET: placeholder-secret-32-chars-minimum!
           EMAIL_SERVICE_API_KEY: placeholder-email-key
-          CRON_SECRET: placeholder-cron-secret
-          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_placeholder
+          CRON_SECRET: placeholder-cron-secret-32chars!
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_PLACEHOLDER
           NEXT_PUBLIC_SITE_URL: https://app.groupeetdecouverte.fr
           SENTRY_AUTH_TOKEN: ''
 

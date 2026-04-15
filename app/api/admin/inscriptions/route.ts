@@ -5,8 +5,8 @@ import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { enrichInscriptions, type InscriptionRaw } from '@/lib/inscription-enrichment';
 /**
  * GET /api/admin/inscriptions
- * Liste les inscriptions depuis Supabase gd_inscriptions (source de vérité).
- * Remplace l'ancien GET /api/admin/bookings qui lisait Prisma.
+ * Liste les inscriptions de production (structures is_test=false, non supprimées).
+ * Filtre via gd_structures!inner pour exclure les données test.
  */
 export async function GET(req: NextRequest) {
   try {
@@ -28,7 +28,8 @@ export async function GET(req: NextRequest) {
 
     let query = supabase
       .from('gd_inscriptions')
-      .select('*, gd_dossier_enfant(bulletin_completed, sanitaire_completed, liaison_completed, renseignements_completed, ged_sent_at), gd_stays!fk_inscriptions_stay(marketing_title, title)')
+      .select('*, gd_dossier_enfant(bulletin_completed, sanitaire_completed, liaison_completed, renseignements_completed, ged_sent_at), gd_stays!fk_inscriptions_stay(marketing_title, title), gd_structures!inner(is_test)')
+      .eq('gd_structures.is_test', false)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(limit);

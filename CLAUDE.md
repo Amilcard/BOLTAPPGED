@@ -67,6 +67,71 @@ npm run lint
 - Données ASE = enfants protégés — toute modification en masse interdite
 - Supabase project ID actif : voir .env.local — jamais committer l'ID en clair
 
+## Règles de gouvernance données — OBLIGATOIRES
+
+### RÈGLE 1 — Jamais de création directe de séjour
+Un séjour dans `gd_stays` ne se crée JAMAIS par INSERT direct. Pipeline obligatoire :
+1. Le séjour existe sur UFOVAL avec une URL
+2. Le workflow n8n le scrape et crée la fiche
+3. On ajoute `marketing_title`, `title_pro`, `title_kids`, `location_region`
+4. `published = true` SEULEMENT quand tout est rempli
+
+Le trigger `trg_check_stay_publish` bloque toute publication si `source_url`, `marketing_title` ou `location_region` est manquant.
+Un index unique sur `source_url` (séjours publiés) empêche les doublons.
+
+### RÈGLE 2 — Noms GED ≠ Slugs UFOVAL
+- **Slug UFOVAL** = identifiant technique, FK partout → NE JAMAIS MODIFIER
+- **Nom GED** = `marketing_title` → affiché aux éducateurs et dans les emails
+
+Si un agent a besoin de créer un "nouveau séjour" GED, vérifier d'abord :
+```sql
+SELECT slug, marketing_title, source_url FROM gd_stays WHERE published = true ORDER BY slug;
+```
+
+### RÈGLE 3 — Données test vs production
+`gd_structures.is_test` distingue les structures test des réelles.
+- Toute structure créée pour des tests doit avoir `is_test = true`
+- `v_inscriptions_production` filtre automatiquement les inscriptions test (`is_test = false AND deleted_at IS NULL`)
+- Stats, exports et dashboards → utiliser cette vue, pas `gd_inscriptions` directement
+- Les routes admin utilisent `gd_structures!inner(is_test)` + `.eq('gd_structures.is_test', false)` pour exclure les tests
+
+### RÈGLE 4 — Suppression de sessions interdite sans trace
+Le trigger `trg_log_session_delete` enregistre toute suppression dans `gd_session_deletion_log`.
+Aucun DELETE sur `gd_stay_sessions` ne passe silencieusement.
+```sql
+SELECT * FROM gd_session_deletion_log ORDER BY deleted_at DESC LIMIT 20;
+```
+
+### RÈGLE 5 — Cohérence des 3 couches obligatoire
+Un séjour publiable doit avoir ses 3 couches complètes :
+- `gd_stays` — fiche avec `source_url`, `marketing_title`, `location_region`
+- `gd_stay_sessions` — au moins 1 session avec dates
+- `gd_session_prices` — prix par ville pour chaque session
+
+Un séjour publié avec 0 session → invisible pour les éducateurs (alerte à traiter).
+```sql
+SELECT s.slug, s.marketing_title,
+  (SELECT COUNT(*) FROM gd_stay_sessions ss WHERE ss.stay_slug = s.slug) as sessions,
+  (SELECT COUNT(*) FROM gd_session_prices sp WHERE sp.stay_slug = s.slug) as prix
+FROM gd_stays s WHERE s.published = true ORDER BY sessions ASC;
+```
+
+### RÈGLE 6 — Workflows n8n : rôles séparés, pas de substitution IA
+
+| Workflow | Rôle | Fréquence |
+|---|---|---|
+| PHASE3 Sessions & Prix Sync | Crée les sessions depuis UFOVAL | Manuel |
+| 01 UFOVAL is_full SESSIONS v4 | Met à jour is_full | Toutes les 6h |
+| VERIFICATION COMPLETUDE | Audit complet + export | Manuel |
+
+Un agent IA ne doit JAMAIS remplacer ce que fait un workflow n8n. Si des sessions manquent → relancer le workflow, pas créer à la main (sauf urgence documentée).
+
+### RÈGLE 7 — Propositions tarifaires : structure réelle obligatoire
+Avant d'insérer dans `gd_propositions_tarifaires` :
+- Vérifier que la structure a `is_test = false`
+- Vérifier que `sejour_slug` pointe vers un séjour publié avec sessions
+- Renseigner `session_start` et `session_end` correspondant à une session existante
+
 ## Database & Models
 
 ### Tables principales (Supabase)

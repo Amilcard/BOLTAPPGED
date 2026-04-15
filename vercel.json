@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/expire-codes",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/health-checks",
+      "schedule": "0 6 * * *"
     }
   ]
 }

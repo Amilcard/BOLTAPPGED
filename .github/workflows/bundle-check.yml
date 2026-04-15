@@ -22,7 +22,7 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Build
-        run: next build
+        run: npx next build
         env:
           # Valeurs factices pour le build CI — passent la validation Zod (lib/env.ts)
           # Format minimal requis par Zod, PAS de vrais secrets

@@ -11,7 +11,7 @@ fi
 
 # 2. ESLint sur fichiers staged uniquement
 echo "[2/3] ESLint..."
-STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$')
+STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$' || true)
 if [ -n "$STAGED" ]; then
   echo "$STAGED" | xargs npx eslint --max-warnings 0 2>&1
   if [ $? -ne 0 ]; then

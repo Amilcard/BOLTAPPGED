@@ -14,9 +14,12 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:integration": "RUN_INTEGRATION=true jest --testPathPattern='parcours-complet|dossier-enfant|inscriptions' --no-coverage",
-    "prepare": "husky"
+    "prepare": "husky",
+    "build:analyze": "ANALYZE=true next build",
+    "bundle:check": "node scripts/check-bundle-size.mjs"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.2.3",
     "@playwright/test": "^1.58.2",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
@@ -24,6 +27,7 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/cheerio": "^0.22.35",
     "@types/jest": "^30.0.0",
+    "@types/jest-axe": "^3.5.9",
     "@types/node": "20.6.2",
     "@types/react": "18.2.22",
     "@types/react-dom": "18.2.7",
@@ -36,6 +40,7 @@
     "eslint-plugin-react-hooks": "4.6.0",
     "husky": "^9.1.7",
     "jest": "^30.3.0",
+    "jest-axe": "^10.0.0",
     "jest-environment-jsdom": "^30.3.0",
     "jsonwebtoken": "^9.0.3",
     "postcss": "^8.5.9",

@@ -1,5 +1,9 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const { withSentryConfig } = require('@sentry/nextjs');
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+  openAnalyzer: process.env.ANALYZE === 'true',
+});
 
 const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
@@ -57,10 +61,10 @@ const nextConfig = {
   },
 };
 
-module.exports = withSentryConfig(nextConfig, {
+module.exports = withBundleAnalyzer(withSentryConfig(nextConfig, {
   // Source maps uploadés silencieusement au build (nécessite SENTRY_AUTH_TOKEN)
   silent: true,
   // Désactiver si SENTRY_AUTH_TOKEN absent (ex: dev local)
   disableServerWebpackPlugin: !process.env.SENTRY_AUTH_TOKEN,
   disableClientWebpackPlugin: !process.env.SENTRY_AUTH_TOKEN,
-});
+}));

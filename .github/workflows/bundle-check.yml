@@ -1,0 +1,51 @@
+name: Bundle Size Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  bundle:
+    name: Bundle Size
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build
+        run: next build
+        env:
+          # Valeurs factices qui passent la validation Zod (lib/env.ts)
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder-anon-key-long-enough
+          SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder-service-role-long
+          STRIPE_SECRET_KEY: sk_test_placeholderkey123456789
+          STRIPE_WEBHOOK_SECRET: whsec_placeholder123456789
+          NEXTAUTH_SECRET: placeholder-secret-32-chars-minimum!
+          EMAIL_SERVICE_API_KEY: placeholder-email-key
+          CRON_SECRET: placeholder-cron-secret
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_placeholder
+          NEXT_PUBLIC_SITE_URL: https://app.groupeetdecouverte.fr
+          SENTRY_AUTH_TOKEN: ''
+
+      - name: Check bundle thresholds
+        run: node scripts/check-bundle-size.mjs --verbose
+
+      - name: Upload build stats
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-stats
+          path: |
+            .next/build-manifest.json
+            .next/app-build-manifest.json
+          retention-days: 14

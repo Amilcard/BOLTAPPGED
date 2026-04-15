@@ -28,6 +28,7 @@ const VALID_ENV: Record<string, string> = {
   STRIPE_WEBHOOK_SECRET: 'whsec_testfakewebhooksecret',
   NEXTAUTH_SECRET: 'test-secret-at-least-16-chars!',
   EMAIL_SERVICE_API_KEY: 'email-api-key-ok',
+  CRON_SECRET: 'cron-secret-test-value-ok',
 };
 
 // Clés à gérer (y compris optionnelles pouvant être invalides dans l'env de test)

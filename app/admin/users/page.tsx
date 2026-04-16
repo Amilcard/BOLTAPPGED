@@ -7,6 +7,7 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useAdminUI } from '@/components/admin/admin-ui';
 import { Button } from '@/components/ui/button';
 import { getStoredUser } from '@/lib/utils';
+import { AdminPagination } from '@/components/ui/AdminPagination';
 
 interface User {
   id: string;
@@ -24,14 +25,19 @@ export default function AdminUsers() {
   const [users, setUsers] = useState<User[]>([]);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-
   const [loadError, setLoadError] = useState(false);
+  const [page, setPage] = useState(1);
+  const LIMIT = 50;
+  const [total, setTotal] = useState(0);
+  const totalPages = Math.ceil(total / LIMIT);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (p: number = page) => {
     try {
-      const res = await fetch('/api/admin/users');
+      const res = await fetch(`/api/admin/users?page=${p}&limit=${LIMIT}`);
       if (res.ok) {
-        setUsers(await res.json());
+        const json = await res.json();
+        setUsers(json.data ?? json);
+        setTotal(json.total ?? (json.data ?? json).length);
         setLoadError(false);
       } else {
         setLoadError(true);
@@ -53,8 +59,9 @@ export default function AdminUsers() {
       router.push('/admin');
       return;
     }
-    fetchUsers();
-  }, [isAdmin, router]);
+    void fetchUsers(page);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, router, page]);
 
   if (!isAdmin) return null;
 
@@ -63,7 +70,7 @@ export default function AdminUsers() {
       await fetch(`/api/admin/users/${id}`, {
         method: 'DELETE',
       });
-      fetchUsers();
+      void fetchUsers(page);
     });
   };
 
@@ -122,6 +129,7 @@ export default function AdminUsers() {
             ))}
           </tbody>
         </table>
+        <AdminPagination page={page} totalPages={totalPages} total={total} limit={LIMIT} onPage={(p) => setPage(p)} />
       </div>
     </div>
   );

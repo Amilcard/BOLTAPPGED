@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { AdminPagination } from '@/components/ui/AdminPagination';
 
 interface Structure {
   id: string;
@@ -64,6 +65,10 @@ export default function AdminStructures() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const [page, setPage] = useState(1);
+  const LIMIT = 50;
+  const [total, setTotal] = useState(0);
+  const totalPages = Math.ceil(total / LIMIT);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [tab, setTab] = useState<'structures' | 'orphelines'>('structures');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -85,11 +90,14 @@ export default function AdminStructures() {
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
+      params.set('page', String(page));
+      params.set('limit', String(LIMIT));
       const res = await fetch(`/api/admin/structures?${params.toString()}`, { headers });
       if (res.ok) {
         const data = await res.json();
         setStructures(data.structures || []);
         setOrphans(data.orphans || []);
+        setTotal(data.total ?? (data.structures || []).length);
       }
     } catch (err) {
       console.error('Fetch structures error:', err);
@@ -97,7 +105,7 @@ export default function AdminStructures() {
       setLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
+  }, [search, page]);
 
   useEffect(() => {
     fetchData();
@@ -243,7 +251,7 @@ export default function AdminStructures() {
             onChange={e => {
               setSearchInput(e.target.value);
               if (debounceRef.current) clearTimeout(debounceRef.current);
-              debounceRef.current = setTimeout(() => setSearch(e.target.value), 300);
+              debounceRef.current = setTimeout(() => { setPage(1); setSearch(e.target.value); }, 300);
             }}
             className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent"
           />
@@ -351,6 +359,7 @@ export default function AdminStructures() {
               Aucune inscription rattachée à cette structure.
             </div>
           )}
+          <AdminPagination page={page} totalPages={totalPages} total={total} limit={LIMIT} onPage={(p) => setPage(p)} />
         </div>
       )}
 

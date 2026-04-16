@@ -7,6 +7,7 @@ import { Eye, Trash2, Building2 } from 'lucide-react';
 import { InscriptionSupabase, InscriptionEnriched } from '@/lib/types';
 import { useAdminUI } from '@/components/admin/admin-ui';
 import { DossierBadge } from '@/components/admin/DossierBadge';
+import { AdminPagination } from '@/components/ui/AdminPagination';
 
 interface StructureOption {
   id: string;
@@ -41,14 +42,22 @@ export default function AdminDemandes() {
   const [search, setSearch] = useState('');
   const [structures, setStructures] = useState<StructureOption[]>([]);
   const [selectedStructure, setSelectedStructure] = useState('');
+  const [page, setPage] = useState(1);
+  const LIMIT = 50;
+  const [total, setTotal] = useState(0);
+  const totalPages = Math.ceil(total / LIMIT);
 
   const fetchInscriptions = useCallback(async () => {
     try {
       const params = new URLSearchParams();
       if (selectedStructure) params.set('structure_id', selectedStructure);
+      params.set('page', String(page));
+      params.set('limit', String(LIMIT));
       const res = await fetch(`/api/admin/inscriptions?${params.toString()}`);
       if (res.ok) {
-        setInscriptions(await res.json());
+        const json = await res.json();
+        setInscriptions(json.data ?? json);
+        setTotal(json.total ?? (json.data ?? json).length);
       } else {
         toast('Erreur de chargement des demandes. Rechargez la page.');
       }
@@ -58,7 +67,7 @@ export default function AdminDemandes() {
     } finally {
       setLoading(false);
     }
-  }, [selectedStructure, toast]);
+  }, [selectedStructure, page, toast]);
 
   useEffect(() => { void fetchInscriptions(); }, [fetchInscriptions]);
 
@@ -178,7 +187,7 @@ export default function AdminDemandes() {
               <select
                 aria-label="Filtrer par structure"
                 value={selectedStructure}
-                onChange={e => setSelectedStructure(e.target.value)}
+                onChange={e => { setPage(1); setSelectedStructure(e.target.value); }}
                 className="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 min-w-[200px]"
               >
                 <option value="">Toutes les structures</option>
@@ -206,7 +215,7 @@ export default function AdminDemandes() {
       ) : (
         <div className="bg-white rounded-brand shadow-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full" aria-label="Liste des demandes">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">Date</th>
@@ -301,6 +310,7 @@ export default function AdminDemandes() {
               </tbody>
             </table>
           </div>
+          <AdminPagination page={page} totalPages={totalPages} total={total} limit={LIMIT} onPage={(p) => setPage(p)} />
         </div>
       )}
     </div>

@@ -5,6 +5,7 @@ import { Plus, FileDown, Check, X, Clock, Send, Loader2, Receipt, Eye, Download,
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useAdminUI } from '@/components/admin/admin-ui';
 import { ENCADREMENT_EUR_PAR_SEMAINE } from '@/lib/constants';
+import { AdminPagination } from '@/components/ui/AdminPagination';
 
 interface Sejour {
   slug: string;
@@ -58,6 +59,10 @@ export default function PropositionsPage() {
   const [sejours, setSejours] = useState<Sejour[]>([]);
   const [sessions, setSessions] = useState<SessionPrice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const LIMIT = 50;
+  const [total, setTotal] = useState(0);
+  const totalPages = Math.ceil(total / LIMIT);
   const [showForm, setShowForm] = useState(false);
   const [showPreviewForm, setShowPreviewForm] = useState(false); // Aperçu avant envoi
   const [preview, setPreview] = useState<Proposition | null>(null); // Aperçu proposition existante
@@ -86,15 +91,17 @@ export default function PropositionsPage() {
 
   const loadPropositions = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/propositions', { headers: authHeaders() });
+      const res = await fetch(`/api/admin/propositions?page=${page}&limit=${LIMIT}`, { headers: authHeaders() });
       const data = await res.json();
       setPropositions(data.propositions || []);
+      setTotal(data.total ?? (data.propositions || []).length);
     } catch (err) {
       console.error('Error loading propositions:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   const loadSejours = useCallback(async () => {
     try {
@@ -526,7 +533,7 @@ export default function PropositionsPage() {
         </div>
       ) : (
         <div className="bg-white rounded-brand shadow-card overflow-hidden">
-          <table className="w-full">
+          <table className="w-full" aria-label="Liste des propositions">
             <thead className="bg-gray-50 border-b">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Enfant</th>
@@ -605,6 +612,7 @@ export default function PropositionsPage() {
               })}
             </tbody>
           </table>
+          <AdminPagination page={page} totalPages={totalPages} total={total} limit={LIMIT} onPage={(p) => setPage(p)} />
         </div>
       )}
 

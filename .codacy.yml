@@ -27,6 +27,7 @@ exclude_paths:
   # Fichiers SQL — RAISE NOTICE est du PL/pgSQL valide, faux positifs parseur Codacy
   - "sql/**"
   - "supabase/**"
-  # CI workflow — placeholders env vars déclenchent des faux positifs GitLeaks/secret detection
-  # Les valeurs sk_test_PLACEHOLDER et pk_test_PLACEHOLDER ne sont PAS des vrais secrets
+  # CI workflow — les variables STRIPE_SECRET_KEY et STRIPE_PUBLISHABLE_KEY doivent être
+  # définies dans les variables d'environnement Vercel uniquement.
+  # Ne jamais committer de vraies clés dans ce fichier.
   - ".github/workflows/**"

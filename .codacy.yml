@@ -31,3 +31,5 @@ exclude_paths:
   # définies dans les variables d'environnement Vercel uniquement.
   # Ne jamais committer de vraies clés dans ce fichier.
   - ".github/workflows/**"
+  # Fichier auto-généré par Next.js — triple slash references = faux positifs
+  - "next-env.d.ts"

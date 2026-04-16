@@ -72,6 +72,17 @@ export async function verifyProSession(request: NextRequest): Promise<ProSession
 
     if ((payload as Record<string, unknown>).type !== 'pro_session') return null;
 
+    // Vérification révocation jti
+    const jti = payload.jti;
+    if (jti) {
+      const { data: revoked } = await getSupabaseAdmin()
+        .from('gd_revoked_tokens')
+        .select('jti')
+        .eq('jti', jti)
+        .maybeSingle();
+      if (revoked) return null;
+    }
+
     return payload as unknown as ProSessionPayload;
   } catch {
     return null;

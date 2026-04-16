@@ -78,7 +78,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [authState, router]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
     clearStoredAuth();
     router.replace('/login');
   };

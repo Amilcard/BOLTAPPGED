@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 import { getClientIpFromHeaders } from '@/lib/rate-limit';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 // ---------------------------------------------------------------------------
 // Rate limiter in-memory (Edge-compatible, per warm instance)
@@ -49,7 +50,18 @@ async function verifyAdminAuth(request: NextRequest): Promise<boolean> {
     const { payload } = await jwtVerify(token, secret);
     const role = (payload as Record<string, unknown>).role;
     // Seuls ADMIN et EDITOR accèdent à /admin/*
-    return role === 'ADMIN' || role === 'EDITOR';
+    if (role !== 'ADMIN' && role !== 'EDITOR') return false;
+    // Vérification révocation jti
+    const jti = payload.jti;
+    if (jti) {
+      const { data } = await getSupabaseAdmin()
+        .from('gd_revoked_tokens')
+        .select('jti')
+        .eq('jti', jti)
+        .maybeSingle();
+      if (data) return false;
+    }
+    return true;
   } catch {
     return false;
   }
@@ -63,7 +75,18 @@ async function verifyProAuth(request: NextRequest): Promise<boolean> {
   try {
     const secret = new TextEncoder().encode(rawSecret);
     const { payload } = await jwtVerify(token, secret);
-    return (payload as Record<string, unknown>).type === 'pro_session';
+    if ((payload as Record<string, unknown>).type !== 'pro_session') return false;
+    // Vérification révocation jti
+    const jti = payload.jti;
+    if (jti) {
+      const { data } = await getSupabaseAdmin()
+        .from('gd_revoked_tokens')
+        .select('jti')
+        .eq('jti', jti)
+        .maybeSingle();
+      if (data) return false;
+    }
+    return true;
   } catch {
     return false;
   }

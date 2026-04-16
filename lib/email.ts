@@ -941,6 +941,60 @@ export async function sendProAccessAlertGED(data: ProAccessRequestData): Promise
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// Invitation urgence éducateur — email perso
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * Email d'invitation urgence — lien d'inscription valable 24h
+ * Envoyé à l'éducateur qui n'a pas de compte GED (parcours email perso)
+ */
+export async function sendEducatorInviteEmail(email: string, inviteUrl: string): Promise<void> {
+  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
+    console.warn('[EMAIL] Clé API manquante — sendEducatorInviteEmail non envoyé');
+    return;
+  }
+
+  try {
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: 'Inscription urgence — Groupe & Découverte',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 24px;">Groupe &amp; Découverte</h1>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+            <h2 style="color: #2a383f; margin-top: 0;">Lien d'inscription urgence</h2>
+            <p>Vous avez reçu un lien pour inscrire un enfant en urgence sur un séjour Groupe &amp; Découverte.</p>
+            <p>Ce lien est valable <strong>24 heures</strong>. Passé ce délai, il ne fonctionnera plus.</p>
+            <div style="text-align: center; margin: 28px 0;">
+              <a href="${inviteUrl}"
+                 style="display: inline-block; background: #de7356; color: white; padding: 14px 28px; border-radius: 9999px; text-decoration: none; font-weight: bold; font-size: 15px;">
+                Accéder au formulaire d'inscription
+              </a>
+            </div>
+            <p style="color: #6b7280; font-size: 13px;">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br/>
+              <span style="color: #374151;">${inviteUrl}</span>
+            </p>
+            <p style="color: #6b7280; font-size: 12px; margin-top: 12px;">Ce lien est personnel et à usage unique. Ne le partagez pas.</p>
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
+            <p style="color: #9ca3af; font-size: 12px;">Groupe &amp; Découverte — Séjours éducatifs pour enfants et adolescents</p>
+            <p style="font-size:11px;color:#6b7280;margin-top:24px;border-top:1px solid #e5e7eb;padding-top:12px;">
+              Les données collectées sont traitées conformément au RGPD et hébergées en Union européenne.
+              Pour exercer vos droits : <a href="mailto:dpo@groupeetdecouverte.fr" style="color: #6b7280;">dpo@groupeetdecouverte.fr</a>
+            </p>
+          </div>
+        </div>
+      `,
+    });
+    console.log('[EMAIL] sendEducatorInviteEmail ok');
+  } catch (error) {
+    console.error('[EMAIL] Erreur sendEducatorInviteEmail:', error);
+  }
+}
+
 /**
  * Notification incident séjour → éducateurs de la structure
  * Envoyé uniquement si gravité >= "attention"

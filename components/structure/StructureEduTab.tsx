@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Users, AlertTriangle, Phone, PhoneCall, FileText, Heart, ClipboardList, Shield, Lock, ChevronRight } from 'lucide-react';
+import { Users, AlertTriangle, Phone, PhoneCall, FileText, Heart, ClipboardList, Shield, Lock, ChevronRight, CalendarClock, TrendingUp } from 'lucide-react';
 import IncidentsPanel from '@/components/structure/IncidentsPanel';
 import MedicalSummary from '@/components/structure/MedicalSummary';
 import CallsPanel from '@/components/structure/CallsPanel';
@@ -25,6 +25,8 @@ interface Inscription {
   sejour_titre: string;
   sejour_slug: string;
   status: string;
+  session_date?: string | null;
+  session_end_date?: string | null;
   besoins_specifiques?: string | null;
   dossier_completude: { bulletin: boolean; sanitaire: boolean; liaison: boolean; renseignements: boolean } | null;
 }
@@ -76,6 +78,20 @@ export default function StructureEduTab({
   const totalIncidents = Object.values(incidentCounts).reduce((a, b) => a + b, 0);
   const enfantsAvecBesoins = inscriptions.filter(i => i.besoins_specifiques);
   const inscriptionsList = inscriptions.map(i => ({ id: i.id, jeune_prenom: i.jeune_prenom, jeune_nom: i.jeune_nom }));
+
+  const departsProchains = (() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const in7 = new Date(today); in7.setDate(today.getDate() + 7);
+    return inscriptions.filter(i => {
+      if (!i.session_date) return false;
+      const d = new Date(i.session_date); d.setHours(0, 0, 0, 0);
+      return d >= today && d <= in7;
+    }).length;
+  })();
+
+  const tauxPresence = inscriptions.length === 0
+    ? '—'
+    : `${Math.round(inscriptions.filter(i => i.status === 'validee').length / inscriptions.length * 100)}%`;
 
   // Lazy load timeline data when enfants section opens
   const loadTimelineData = useCallback(async () => {
@@ -164,6 +180,21 @@ export default function StructureEduTab({
       key: 'bilan', label: 'Bilan sejours',
       value: enfantsEnSejour.length, sub: 'Synthese par enfant',
       icon: ClipboardList, color: 'bg-gray-600', accent: 'text-gray-700', ring: 'ring-gray-300',
+    },
+    {
+      key: null, label: 'Departs prochains',
+      value: departsProchains,
+      sub: 'Departs dans les 7 prochains jours',
+      icon: CalendarClock,
+      color: departsProchains > 0 ? 'bg-orange-500' : 'bg-gray-400',
+      accent: departsProchains > 0 ? 'text-orange-700' : 'text-gray-500',
+      ring: 'ring-orange-300',
+    },
+    {
+      key: null, label: 'Taux de presence',
+      value: tauxPresence,
+      sub: `${enfantsEnSejour.length} valide(s) / ${inscriptions.length} inscrit(s)`,
+      icon: TrendingUp, color: 'bg-teal-500', accent: 'text-teal-700', ring: 'ring-teal-300',
     },
   ];
 
@@ -264,15 +295,23 @@ export default function StructureEduTab({
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               {/* Colonne gauche : liste enfants */}
               <div className="lg:col-span-4 space-y-3">
-                {inscriptions.map(ins => (
-                  <ChildCard
-                    key={ins.id}
-                    inscription={ins as ChildCardInscription}
-                    selected={selectedEnfant === ins.id}
-                    onSelect={setSelectedEnfant}
-                    canWrite={canWrite}
-                  />
-                ))}
+                {inscriptions.map(ins => {
+                  const insIncidents = incidents.filter(e => e.inscription_id === ins.id && e.status === 'ouvert');
+                  const ragStatus: 'rouge' | 'amber' | 'vert' =
+                    insIncidents.some(e => e.severity === 'urgent') ? 'rouge'
+                    : insIncidents.some(e => e.severity === 'attention') ? 'amber'
+                    : 'vert';
+                  return (
+                    <ChildCard
+                      key={ins.id}
+                      inscription={ins as ChildCardInscription}
+                      selected={selectedEnfant === ins.id}
+                      onSelect={setSelectedEnfant}
+                      canWrite={canWrite}
+                      ragStatus={ragStatus}
+                    />
+                  );
+                })}
               </div>
 
               {/* Colonne droite : panel detail */}

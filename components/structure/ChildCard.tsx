@@ -36,6 +36,7 @@ interface Props {
   onAddEvenement?: (inscriptionId: string) => void;
   hasUrgentEvent?: boolean;
   medicalCount?: number;
+  ragStatus?: 'rouge' | 'amber' | 'vert';
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
@@ -50,6 +51,12 @@ function fichesScore(d: DossierCompletude | null): number {
   return [d.bulletin, d.sanitaire, d.liaison, d.renseignements].filter(Boolean).length;
 }
 
+const RAG_DOT: Record<'rouge' | 'amber' | 'vert', string> = {
+  rouge: 'bg-red-500',
+  amber: 'bg-amber-400',
+  vert:  'bg-green-500',
+};
+
 const ChildCard = React.memo(function ChildCard({
   inscription: ins,
   selected,
@@ -60,6 +67,7 @@ const ChildCard = React.memo(function ChildCard({
   onAddEvenement,
   hasUrgentEvent,
   medicalCount,
+  ragStatus,
 }: Props) {
   const score = fichesScore(ins.dossier_completude);
   const status = STATUS_MAP[ins.status] || STATUS_MAP.en_attente;
@@ -86,12 +94,18 @@ const ChildCard = React.memo(function ChildCard({
   return (
     <button
       onClick={() => onSelect(ins.id)}
-      className={`w-full text-left p-4 rounded-xl border-2 transition-all hover:shadow-md ${
+      className={`relative w-full text-left p-4 rounded-xl border-2 transition-all hover:shadow-md ${
         selected
           ? 'border-primary bg-blue-50/50 shadow-card'
           : 'border-gray-100 bg-white hover:border-gray-200'
       }`}
     >
+      {ragStatus && (
+        <span
+          className={`absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full ${RAG_DOT[ragStatus]}`}
+          title={ragStatus === 'rouge' ? 'Incident urgent ouvert' : ragStatus === 'amber' ? 'Incident en attention' : 'Aucun incident ouvert'}
+        />
+      )}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">

@@ -44,6 +44,8 @@ interface Inscription {
   sejour_titre: string;
   sejour_slug: string;
   status: string;
+  session_date?: string | null;
+  session_end_date?: string | null;
   payment_status?: string;
   price_total: number;
   created_at: string;
@@ -129,32 +131,39 @@ export default function StructureDashboard() {
       .finally(() => setLoading(false));
   }, [code]);
 
-  // Fetch incidents pour KPI + bilan
+  // Fetch KPI counts (incidents, calls, notes, medical) — polling 60s
   useEffect(() => {
     if (!code || !data) return;
-    void fetch(`/api/structure/${code}/incidents`, { credentials: 'include' })
-      .then(res => res.ok ? res.json() : null)
-      .then(d => {
-        if (!d?.incidents) return;
-        const counts: Record<string, number> = {};
-        for (const inc of d.incidents as Array<{ inscription_id: string; status: string }>) {
-          if (inc.status !== 'resolu') {
-            counts[inc.inscription_id] = (counts[inc.inscription_id] || 0) + 1;
-          }
-        }
-        setIncidentCounts(counts);
-      })
-      .catch(() => {});
 
-    Promise.all([
-      fetch(`/api/structure/${code}/calls`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
-      fetch(`/api/structure/${code}/notes`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
-      fetch(`/api/structure/${code}/medical`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
-    ]).then(([callsData, notesData, medData]) => {
-      setCallsCount(callsData?.calls?.length ?? 0);
-      setNotesCount(notesData?.notes?.length ?? 0);
-      setMedicalCount(medData?.count ?? 0);
-    }).catch(() => {});
+    const loadKpiData = () => {
+      void fetch(`/api/structure/${code}/incidents`, { credentials: 'include' })
+        .then(res => res.ok ? res.json() : null)
+        .then(d => {
+          if (!d?.incidents) return;
+          const counts: Record<string, number> = {};
+          for (const inc of d.incidents as Array<{ inscription_id: string; status: string }>) {
+            if (inc.status !== 'resolu') {
+              counts[inc.inscription_id] = (counts[inc.inscription_id] || 0) + 1;
+            }
+          }
+          setIncidentCounts(counts);
+        })
+        .catch(() => {});
+
+      void Promise.all([
+        fetch(`/api/structure/${code}/calls`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
+        fetch(`/api/structure/${code}/notes`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
+        fetch(`/api/structure/${code}/medical`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
+      ]).then(([callsData, notesData, medData]) => {
+        setCallsCount(callsData?.calls?.length ?? 0);
+        setNotesCount(notesData?.notes?.length ?? 0);
+        setMedicalCount(medData?.count ?? 0);
+      }).catch(() => {});
+    };
+
+    loadKpiData();
+    const timer = setInterval(loadKpiData, 60_000);
+    return () => clearInterval(timer);
   }, [code, data]);
 
   // ── États de chargement / erreur ──

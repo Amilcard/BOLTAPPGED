@@ -97,7 +97,7 @@ export default function AdminDemandes() {
     const doChange = async () => {
       setStatusChanging(id);
       try {
-        const res = await fetch(url, {
+        const res = await fetch(new URL(url, window.location.origin), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status }),

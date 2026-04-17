@@ -15,6 +15,11 @@ export async function POST(
 
     const { code, memberId } = await params;
 
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!UUID_RE.test(memberId)) {
+      return NextResponse.json({ error: { code: 'INVALID_ID' } }, { status: 400 });
+    }
+
     const resolved = await resolveCodeToStructure(code);
     if (!resolved || resolved.role !== 'direction') {
       return NextResponse.json({ error: { code: 'FORBIDDEN' } }, { status: 403 });

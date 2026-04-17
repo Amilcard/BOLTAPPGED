@@ -23,7 +23,7 @@ describe('POST team/[memberId]/revoke', () => {
       structure: { id: 's1' }, role: 'cds', roles: ['cds'], email: null,
     });
     const res = await POST(mkReq(),
-      { params: Promise.resolve({ code: 'ABCDEFGHIJ', memberId: 'm1' }) });
+      { params: Promise.resolve({ code: 'ABCDEFGHIJ', memberId: '00000000-0000-4000-8000-000000000001' }) });
     expect(res.status).toBe(403);
   });
 
@@ -37,7 +37,7 @@ describe('POST team/[memberId]/revoke', () => {
       }),
     });
     const res = await POST(mkReq(),
-      { params: Promise.resolve({ code: 'ABCDEFGHIJ', memberId: 'm-missing' }) });
+      { params: Promise.resolve({ code: 'ABCDEFGHIJ', memberId: '00000000-0000-4000-8000-000000000002' }) });
     expect(res.status).toBe(404);
   });
 
@@ -51,7 +51,7 @@ describe('POST team/[memberId]/revoke', () => {
       .mockReturnValueOnce({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { id: 'm1', email: 'sec@x.fr', role: 'secretariat' } }) }) }) }) })
       .mockReturnValueOnce({ update: () => ({ eq: () => Promise.resolve({ error: null }) }) });
     const res = await POST(mkReq(),
-      { params: Promise.resolve({ code: 'ABCDEFGHIJ', memberId: 'm1' }) });
+      { params: Promise.resolve({ code: 'ABCDEFGHIJ', memberId: '00000000-0000-4000-8000-000000000001' }) });
     expect(res.status).toBe(200);
   });
 });

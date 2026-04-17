@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireEditor } from '@/lib/auth-middleware';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { enrichInscriptions, type InscriptionRaw } from '@/lib/inscription-enrichment';
+import { performInscriptionUpdate } from '@/lib/admin-inscriptions-update';
+import { UUID_RE } from '@/lib/validators';
 /**
  * GET /api/admin/inscriptions
  * Liste les inscriptions de production (structures is_test=false, non supprimées).
@@ -59,4 +61,37 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * PUT /api/admin/inscriptions
+ * Met à jour une inscription (id dans le body — URL littérale côté client, anti-SSRF).
+ * Délègue à lib/admin-inscriptions-update.ts (logique partagée avec la route legacy [id]).
+ */
+export async function PUT(req: NextRequest) {
+  const auth = await requireEditor(req);
+  if (!auth) {
+    return NextResponse.json(
+      { error: { code: 'unauthorized', message: 'Accès réservé aux éditeurs et administrateurs.' } },
+      { status: 403 }
+    );
+  }
+
+  const body = await req.json().catch(() => ({}));
+  const bodyRecord = (body ?? {}) as Record<string, unknown>;
+  const id = typeof bodyRecord.id === 'string' ? bodyRecord.id : '';
+
+  if (!UUID_RE.test(id)) {
+    return NextResponse.json(
+      { error: { code: 'invalid_id', message: 'id body requis et UUID valide' } },
+      { status: 400 }
+    );
+  }
+
+  const fields = Object.fromEntries(
+    Object.entries(bodyRecord).filter(([k]) => k !== 'id')
+  );
+
+  const supabase = getSupabaseAdmin();
+  return performInscriptionUpdate(supabase, id, fields, auth.email);
 }

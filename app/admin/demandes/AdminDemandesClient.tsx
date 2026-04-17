@@ -9,7 +9,6 @@ import { useAdminUI } from '@/components/admin/admin-ui';
 import { DossierBadge } from '@/components/admin/DossierBadge';
 import { AdminPagination } from '@/components/ui/AdminPagination';
 import { UrgenceInviteModal } from '@/components/admin/UrgenceInviteModal';
-import { buildAdminInscriptionUrl } from '@/lib/admin-urls';
 
 interface StructureOption {
   id: string;
@@ -90,17 +89,15 @@ export default function AdminDemandes() {
   }, []);
 
   const handleStatusChange = async (id: string, status: string) => {
-    const url = buildAdminInscriptionUrl(id);
-    if (!url) return;
     const DESTRUCTIVE = ['refusee', 'annulee'];
     const LABELS: Record<string, string> = { refusee: 'Refusée', annulee: 'Annulée' };
     const doChange = async () => {
       setStatusChanging(id);
       try {
-        const res = await fetch(new URL(url, window.location.origin), {
+        const res = await fetch('/api/admin/inscriptions', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status }),
+          body: JSON.stringify({ id, status }),
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));

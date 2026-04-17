@@ -71,6 +71,19 @@ Deux routes émettent ce cookie :
 
 **Révocation** : `gd_revoked_tokens` lu par `verifyProSession`. Route `/api/structure/[code]/team/[memberId]/revoke` désactive la ligne ; révocation immédiate du JWT actif = dette post-MVP (item #3 plan architecte 2026-04-17).
 
+## Rôles structure — matrice d'accès routes
+
+| Route | direction | cds | cds_delegated | secretariat | educateur |
+|---|---|---|---|---|---|
+| `GET /team` | ✓ | ✗ | ✓ | ✗ | ✗ |
+| `POST /invite` | ✓ | ✗ | ✗ | ✗ | ✗ |
+| `POST /team/[id]/revoke` | ✓ | ✗ | ✗ | ✗ | ✗ |
+| `POST /team/[id]/reinvite` | ✓ | ✗ | ✗ | ✗ | ✗ |
+| `PATCH /delegation` | ✓ | ✗ | ✗ | ✗ | ✗ |
+| `PATCH /settings` | ✓ | ✗ | ✗ | ✗ | ✗ |
+
+**`cds_delegated` exclu de write ops** : risque récursion délégation + verrou regex 10-chars en amont (un CDS délégué a un code personnel, pas un code 10-chars). Analyse 2026-04-17.
+
 ## Règle OBLIGATOIRE — Consultation multi-agents avant intervention
 
 **Cette règle DOIT être appliquée avant tout fix / refacto / feature touchant plus qu'un commentaire ou une ligne cosmétique.** Elle existe pour éviter les erreurs d'analyse en surface et les effets cascade non détectés (caller non identifié, enum rate un call-site, rate-limit dual rend un parcours unusable, etc.).

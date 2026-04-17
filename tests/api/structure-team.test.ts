@@ -55,4 +55,25 @@ describe('GET /api/structure/[code]/team', () => {
     expect(body.members[0].status).toBe('active');
     expect(body.members[1].status).toBe('pending');
   });
+
+  test('200 cds_delegated peut lister l\'équipe (subrogation direction)', async () => {
+    (resolveCodeToStructure as jest.Mock).mockResolvedValue({
+      structure: { id: 's1' }, role: 'cds_delegated', roles: ['cds_delegated'], email: 'cds@x.fr',
+    });
+    (getSupabaseAdmin as jest.Mock).mockReturnValue({
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            order: () => Promise.resolve({
+              data: [],
+              error: null,
+            }),
+          }),
+        }),
+      }),
+    });
+    const res = await GET(new NextRequest('http://localhost/api/structure/ABCDEFGHIJ/team'),
+      { params: Promise.resolve({ code: 'ABCDEFGHIJ' }) });
+    expect(res.status).toBe(200);
+  });
 });

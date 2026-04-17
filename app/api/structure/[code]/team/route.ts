@@ -15,7 +15,7 @@ export async function GET(
     if (rateLimited) return rateLimited;
 
     const { code } = await params;
-    const guard = await requireStructureRole(req, code, { allowRoles: ['direction'] });
+    const guard = await requireStructureRole(req, code, { allowRoles: ['direction', 'cds_delegated'] });
     if (!guard.ok) return guard.response;
     const resolved = guard.resolved;
 

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { headers } from 'next/headers';
 import { sendPaymentConfirmedAdminNotification } from '@/lib/email';
+import { errorResponse } from '@/lib/auth-middleware';
 
 // ── Helpers idempotency ──
 
@@ -41,10 +42,7 @@ export async function POST(req: NextRequest) {
     const sig = headersList.get('stripe-signature');
 
     if (!sig) {
-      return NextResponse.json(
-        { error: 'Missing stripe-signature header' },
-        { status: 400 }
-      );
+      return errorResponse('MISSING_SIGNATURE', 'Header stripe-signature manquant.', 400);
     }
 
     // Vérifier la signature Stripe
@@ -60,10 +58,7 @@ export async function POST(req: NextRequest) {
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'Signature invalide';
       console.error('Webhook signature verification failed:', errMsg);
-      return NextResponse.json(
-        { error: `Webhook Error: ${errMsg}` },
-        { status: 400 }
-      );
+      return errorResponse('INVALID_SIGNATURE', `Webhook Error: ${errMsg}`, 400);
     }
 
     // IDEMPOTENCY ATOMIQUE : claim l'event AVANT la business logic
@@ -101,7 +96,7 @@ export async function POST(req: NextRequest) {
           console.error('webhook: inscription not found for payment intent — rollback claim, Stripe réessaiera', { inscriptionId, eventId: event.id });
           // Rollback claim pour permettre le retry Stripe
           await rollbackClaim(supabase, event.id);
-          return NextResponse.json({ error: 'inscription not found' }, { status: 500 });
+          return errorResponse('INSCRIPTION_NOT_FOUND', 'Inscription introuvable.', 500);
         }
 
         const stripeAmountEur = paymentIntent.amount / 100;
@@ -149,7 +144,7 @@ export async function POST(req: NextRequest) {
         if (error) {
           console.error('Error updating payment status — rollback claim:', error);
           await rollbackClaim(supabase, event.id);
-          return NextResponse.json({ error: 'DB update failed' }, { status: 500 });
+          return errorResponse('DB_UPDATE_FAILED', 'Échec mise à jour paiement.', 500);
         } else {
           console.log('[webhook/stripe] payment_intent.succeeded processed');
           // Notification admin non-bloquante
@@ -194,7 +189,7 @@ export async function POST(req: NextRequest) {
         if (error) {
           console.error('Error updating failed payment status — rollback claim:', error);
           await rollbackClaim(supabase, event.id);
-          return NextResponse.json({ error: 'DB update failed' }, { status: 500 });
+          return errorResponse('DB_UPDATE_FAILED', 'Échec mise à jour statut paiement.', 500);
         } else {
           console.log('[webhook/stripe] payment_intent.payment_failed processed');
           // Rollback capacité — restituer le siège consommé lors de l'inscription
@@ -231,9 +226,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   } catch (error: unknown) {
     console.error('Webhook error:', error);
-    return NextResponse.json(
-      { error: 'Erreur lors du traitement du webhook.' },
-      { status: 500 }
-    );
+    return errorResponse('INTERNAL_ERROR', 'Erreur lors du traitement du webhook.', 500);
   }
 }

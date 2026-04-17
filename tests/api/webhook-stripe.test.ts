@@ -184,7 +184,8 @@ describe('Webhook Stripe — /api/webhooks/stripe', () => {
     const json = await res.json();
 
     expect(res.status).toBe(400);
-    expect(json.error).toContain('Missing stripe-signature');
+    expect(json.error.code).toBe('MISSING_SIGNATURE');
+    expect(json.error.message).toContain('stripe-signature');
   });
 
   it('retourne 400 si la signature est invalide', async () => {
@@ -197,7 +198,8 @@ describe('Webhook Stripe — /api/webhooks/stripe', () => {
     const json = await res.json();
 
     expect(res.status).toBe(400);
-    expect(json.error).toContain('Invalid signature');
+    expect(json.error.code).toBe('INVALID_SIGNATURE');
+    expect(json.error.message).toContain('Invalid signature');
   });
 
   it('payment_intent.succeeded → met à jour inscription en paid', async () => {

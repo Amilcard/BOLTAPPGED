@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendPriceInquiryToEducateur, sendPriceInquiryAlertGED } from '@/lib/email';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
+import { errorResponse } from '@/lib/auth-middleware';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,20 +14,21 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: 'Corps de requête invalide' }, { status: 400 });
+    return errorResponse('INVALID_BODY', 'Corps de requête invalide.', 400);
   }
 
   const { prenom, structureName, email, sejourSlug } = body as Record<string, unknown>;
 
   // Validation
   if (!prenom || !structureName || !email || !sejourSlug) {
-    return NextResponse.json(
-      { error: 'Champs requis manquants : prenom, structureName, email, sejourSlug' },
-      { status: 400 }
+    return errorResponse(
+      'VALIDATION_ERROR',
+      'Champs requis manquants : prenom, structureName, email, sejourSlug.',
+      400
     );
   }
   if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return NextResponse.json({ error: 'Format email invalide' }, { status: 400 });
+    return errorResponse('INVALID_EMAIL', 'Format email invalide.', 400);
   }
 
   // Rate limiting atomique via RPC check_rate_limit (résout la race condition H4)
@@ -34,7 +36,7 @@ export async function POST(request: NextRequest) {
   const rateLimitKey = `priceiq:${(email as string).toLowerCase().trim()}:${ip}`;
   if (await isRateLimited('priceiq', rateLimitKey, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MIN)) {
     return NextResponse.json(
-      { error: 'Trop de demandes. Réessayez dans 30 minutes.' },
+      { error: { code: 'RATE_LIMITED', message: 'Trop de demandes. Réessayez dans 30 minutes.' } },
       { status: 429, headers: { 'Retry-After': String(RATE_LIMIT_WINDOW_MIN * 60) } }
     );
   }
@@ -49,7 +51,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (sejourError || !sejour) {
-    return NextResponse.json({ error: 'Séjour introuvable' }, { status: 404 });
+    return errorResponse('NOT_FOUND', 'Séjour introuvable.', 404);
   }
 
   const sejourTitle = (sejour as { title: string; marketing_title?: string | null; price_from?: number | null }).marketing_title
@@ -73,7 +75,7 @@ export async function POST(request: NextRequest) {
 
   if (educateurResult.status === 'rejected' && gedResult.status === 'rejected') {
     console.error('[price-inquiry] Échec total emails:', educateurResult.reason, gedResult.reason);
-    return NextResponse.json({ error: 'Erreur envoi email' }, { status: 500 });
+    return errorResponse('EMAIL_SEND_FAILED', 'Erreur envoi email.', 500);
   }
 
   if (educateurResult.status === 'rejected') {

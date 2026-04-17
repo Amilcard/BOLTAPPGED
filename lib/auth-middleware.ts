@@ -105,8 +105,21 @@ export async function verifyProSession(request: NextRequest): Promise<ProSession
   }
 }
 
-export function unauthorizedResponse() {
-  return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+// ─────────────────────────────────────────────────────────────
+// Helpers erreur uniformes — format {error: {code, message}} (#8)
+// À utiliser dans les routes API pour cohérence côté client.
+// ─────────────────────────────────────────────────────────────
+
+export function unauthorizedResponse(message = 'Authentification requise.') {
+  return NextResponse.json({ error: { code: 'UNAUTHORIZED', message } }, { status: 401 });
+}
+
+export function forbiddenResponse(message = 'Accès refusé.') {
+  return NextResponse.json({ error: { code: 'FORBIDDEN', message } }, { status: 403 });
+}
+
+export function errorResponse(code: string, message: string, status: number) {
+  return NextResponse.json({ error: { code, message } }, { status });
 }
 
 // ─────────────────────────────────────────────────────────────

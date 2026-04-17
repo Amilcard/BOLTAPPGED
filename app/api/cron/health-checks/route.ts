@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { errorResponse, unauthorizedResponse } from '@/lib/auth-middleware';
 
 /**
  * GET /api/cron/health-checks
@@ -18,11 +19,11 @@ export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (!secret) {
     console.error('[health-checks] CRON_SECRET non configuré');
-    return NextResponse.json({ error: 'Misconfigured' }, { status: 500 });
+    return errorResponse('CONFIG_ERROR', 'CRON_SECRET manquant.', 500);
   }
   const authHeader = req.headers.get('authorization');
   if (authHeader !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return unauthorizedResponse();
   }
 
   const supabase = getSupabaseAdmin();

@@ -64,9 +64,11 @@ export async function POST(
     const invitationToken = generateInvitationToken();
     const invitationExpiresAt = computeInvitationExpiry();
 
-    // Génération d'un code personnel 8 chars (distinct du code structure)
+    // Génération d'un code personnel 8 chars (distinct du code structure) — crypto-secure
+    const { randomInt } = await import('crypto');
+    const CHARSET = 'ABCDEFGHIJKLMNPQRSTUVWXYZ23456789';
     const personalCode = Array.from({ length: 8 }, () =>
-      'ABCDEFGHIJKLMNPQRSTUVWXYZ23456789'.charAt(Math.floor(Math.random() * 33))
+      CHARSET.charAt(randomInt(0, CHARSET.length))
     ).join('');
 
     const { data: inserted, error: insertErr } = await supabase

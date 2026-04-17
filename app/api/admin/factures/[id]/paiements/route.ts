@@ -61,7 +61,7 @@ export async function GET(
 
   await auditLog(supabase, {
     action: 'read',
-    resourceType: 'facture',
+    resourceType: 'paiement',
     resourceId: id,
     actorType: 'admin',
     actorId: auth.email,
@@ -133,7 +133,7 @@ export async function POST(
 
   await auditLog(supabase, {
     action: 'create',
-    resourceType: 'facture',
+    resourceType: 'paiement',
     resourceId: id,
     actorType: 'admin',
     actorId: auth.email,

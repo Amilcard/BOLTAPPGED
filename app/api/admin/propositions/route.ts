@@ -14,16 +14,23 @@ export async function GET(request: NextRequest) {
     }
 
     const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase
+    const url = new URL(request.url);
+    const page = Math.max(1, parseInt(url.searchParams.get('page') ?? '1'));
+    const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') ?? '50')));
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    const { data, count, error } = await supabase
       .from('gd_propositions_tarifaires')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(from, to);
 
     if (error) {
       console.error('Supabase error (GET propositions):', error);
       throw error;
     }
-    return NextResponse.json({ propositions: data || [] });
+    return NextResponse.json({ propositions: data || [], total: count ?? 0, page, limit });
   } catch (err: unknown) {
     console.error('Error in GET /api/admin/propositions:', err);
     const message = err instanceof Error ? err.message : 'Unknown error';
@@ -138,7 +145,7 @@ export async function POST(req: NextRequest) {
 
     await auditLog(supabase, {
       action: 'create',
-      resourceType: 'inscription',
+      resourceType: 'proposition',
       resourceId: proposition.id,
       actorType: 'admin',
       actorId: auth.email,
@@ -198,7 +205,7 @@ export async function PATCH(req: NextRequest) {
 
     await auditLog(supabase, {
       action: 'update',
-      resourceType: 'inscription',
+      resourceType: 'proposition',
       resourceId: id,
       actorType: 'admin',
       actorId: auth.email,
@@ -239,7 +246,7 @@ export async function DELETE(req: NextRequest) {
 
     await auditLog(supabase, {
       action: 'delete',
-      resourceType: 'inscription',
+      resourceType: 'proposition',
       resourceId: id,
       actorType: 'admin',
       actorId: auth.email,

@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
 
     await auditLog(supabase, {
       action: 'update',
-      resourceType: 'structure',
+      resourceType: 'team_member',
       resourceId: member.structure_id as string,
       actorType: 'referent',
       actorId: member.email as string,

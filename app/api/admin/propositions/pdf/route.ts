@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 
     await auditLog(supabase, {
       action: 'read',
-      resourceType: 'inscription',
+      resourceType: 'proposition',
       resourceId: id,
       actorType: 'admin',
       actorId: auth.email,

@@ -16,7 +16,7 @@ import { createHash } from 'crypto';
 
 interface AuditLogEntry {
   action: 'read' | 'create' | 'update' | 'delete' | 'upload' | 'download' | 'submit';
-  resourceType: 'dossier_enfant' | 'inscription' | 'document' | 'structure' | 'facture';
+  resourceType: 'dossier_enfant' | 'inscription' | 'document' | 'structure' | 'facture' | 'team_member' | 'proposition' | 'paiement' | 'delegation' | 'session';
   resourceId: string;
   inscriptionId?: string;
   actorType: 'referent' | 'admin' | 'system';

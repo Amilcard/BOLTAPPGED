@@ -117,7 +117,7 @@ export async function POST(
 
     await auditLog(supabase, {
       action: 'create',
-      resourceType: 'structure',
+      resourceType: 'team_member',
       resourceId: structureId,
       actorType: 'referent',
       actorId: resolved.email || `direction-code:${code.slice(0, 4)}…`,

@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       const emailHash = createHash('sha256').update(emailNorm).digest('hex').slice(0, 16);
       await auditLog(supabase, {
         action: 'update',
-        resourceType: 'structure',
+        resourceType: 'session',
         resourceId: memberWithStructure.structure_id,
         actorType: 'system',
         ipAddress: ip,
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
 
     await auditLog(supabase, {
       action: 'update',
-      resourceType: 'structure',
+      resourceType: 'session',
       resourceId: memberWithStructure.structure_id,
       actorType: 'referent',
       actorId: memberWithStructure.email,

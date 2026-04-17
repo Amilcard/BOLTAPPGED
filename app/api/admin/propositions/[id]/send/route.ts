@@ -59,7 +59,7 @@ export async function POST(
 
   await auditLog(supabase, {
     action: 'submit',
-    resourceType: 'inscription',
+    resourceType: 'proposition',
     resourceId: id,
     actorType: 'admin',
     actorId: auth.email,

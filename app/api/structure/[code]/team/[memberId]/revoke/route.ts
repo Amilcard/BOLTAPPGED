@@ -62,7 +62,7 @@ export async function POST(
 
     await auditLog(supabase, {
       action: 'update',
-      resourceType: 'structure',
+      resourceType: 'team_member',
       resourceId: structureId,
       actorType: 'referent',
       actorId: resolved.email || undefined,

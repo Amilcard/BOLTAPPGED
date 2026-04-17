@@ -64,7 +64,7 @@ export async function PATCH(
 
     await auditLog(supabase, {
       action: 'update',
-      resourceType: 'inscription',
+      resourceType: 'delegation',
       resourceId: resolved.structure.id as string,
       actorType: 'referent',
       metadata: { type: 'delegation_removed', role: 'directeur' },
@@ -133,7 +133,7 @@ export async function PATCH(
 
   await auditLog(supabase, {
     action: 'update',
-    resourceType: 'structure',
+    resourceType: 'delegation',
     resourceId: resolved.structure.id as string,
     actorType: 'referent',
     metadata: {

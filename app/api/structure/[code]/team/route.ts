@@ -51,7 +51,7 @@ export async function GET(
 
     await auditLog(supabase, {
       action: 'read',
-      resourceType: 'structure',
+      resourceType: 'team_member',
       resourceId: resolved.structure.id as string,
       actorType: 'referent',
       actorId: resolved.email || undefined,

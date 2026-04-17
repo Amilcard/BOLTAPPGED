@@ -8,14 +8,6 @@ import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
-    const ip = getClientIpFromHeaders(req.headers);
-    if (await isRateLimited('activate', ip, 10, 10)) {
-      return NextResponse.json(
-        { error: { code: 'RATE_LIMITED', message: 'Trop de tentatives.' } },
-        { status: 429, headers: { 'Retry-After': '600' } }
-      );
-    }
-
     const body = await req.json().catch(() => null);
     if (!body) return NextResponse.json({ error: { code: 'INVALID_BODY' } }, { status: 400 });
 
@@ -26,6 +18,19 @@ export async function POST(req: NextRequest) {
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!token || typeof token !== 'string' || !UUID_RE.test(token)) {
       return NextResponse.json({ error: { code: 'INVALID_TOKEN' } }, { status: 400 });
+    }
+
+    const ip = getClientIpFromHeaders(req.headers);
+    // Dual-key rate limit : IP tolérante + token strict (1 token = 1 activation)
+    const [ipBlocked, tokenBlocked] = await Promise.all([
+      isRateLimited('activate-ip', ip, 20, 10),
+      isRateLimited('activate-token', token, 5, 10),
+    ]);
+    if (ipBlocked || tokenBlocked) {
+      return NextResponse.json(
+        { error: { code: 'RATE_LIMITED', message: 'Trop de tentatives.' } },
+        { status: 429, headers: { 'Retry-After': '600' } }
+      );
     }
     if (!password || typeof password !== 'string') {
       return NextResponse.json({ error: { code: 'PASSWORD_REQUIRED' } }, { status: 400 });

@@ -51,6 +51,18 @@ describe('POST /api/auth/structure-login', () => {
     expect(res.status).toBe(401);
   });
 
+  test('429 si email bloqué par rate-limit même avec IP OK', async () => {
+    const mockRate = require('@/lib/rate-limit').isRateLimited as jest.Mock;
+    mockRate.mockImplementation((key: string) => {
+      if (key === 'struct-login-email') return Promise.resolve(true);
+      return Promise.resolve(false);
+    });
+    const res = await POST(mkReq({ email: 'x@y.fr', password: 'abc123' }));
+    expect(res.status).toBe(429);
+    mockRate.mockReset();
+    mockRate.mockResolvedValue(false);
+  });
+
   test('200 + cookie si login OK', async () => {
     const fromMock = jest.fn()
       .mockReturnValueOnce({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({

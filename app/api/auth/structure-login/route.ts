@@ -8,14 +8,6 @@ import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
-    const ip = getClientIpFromHeaders(req.headers);
-    if (await isRateLimited('struct-login', ip, 5, 15)) {
-      return NextResponse.json(
-        { error: { code: 'RATE_LIMITED', message: 'Trop de tentatives. Réessayez dans 15 minutes.' } },
-        { status: 429, headers: { 'Retry-After': '900' } }
-      );
-    }
-
     const body = await req.json().catch(() => null);
     if (!body) return NextResponse.json({ error: { code: 'INVALID_BODY' } }, { status: 400 });
 
@@ -29,6 +21,20 @@ export async function POST(req: NextRequest) {
     }
 
     const emailNorm = email.trim().toLowerCase();
+    const ip = getClientIpFromHeaders(req.headers);
+
+    // Dual-key rate limit : IP tolérante (NAT partagé) + email strict (credential stuffing cible)
+    const [ipBlocked, emailBlocked] = await Promise.all([
+      isRateLimited('struct-login-ip', ip, 10, 15),
+      isRateLimited('struct-login-email', emailNorm, 5, 15),
+    ]);
+    if (ipBlocked || emailBlocked) {
+      return NextResponse.json(
+        { error: { code: 'RATE_LIMITED', message: 'Trop de tentatives. Réessayez dans 15 minutes.' } },
+        { status: 429, headers: { 'Retry-After': '900' } }
+      );
+    }
+
     const supabase = getSupabaseAdmin();
 
     const { data: member } = await supabase

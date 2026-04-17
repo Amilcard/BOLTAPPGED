@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
-import { resolveCodeToStructure } from '@/lib/structure';
+import { requireStructureRole } from '@/lib/structure-guard';
 import { generateFacturePdf } from '@/lib/facture-pdf';
 import { structureRateLimitGuard } from '@/lib/rate-limit-structure';
 
@@ -18,10 +18,11 @@ export async function GET(
     if (rateLimited) return rateLimited;
 
     const { code } = await params;
-    const resolved = await resolveCodeToStructure(code);
-    if (!resolved || resolved.role === 'educateur' || resolved.role === 'secretariat') {
-      return NextResponse.json({ error: 'Accès refusé.' }, { status: 403 });
-    }
+    const guard = await requireStructureRole(req, code, {
+      excludeRoles: ['educateur', 'secretariat'],
+    });
+    if (!guard.ok) return guard.response;
+    const resolved = guard.resolved;
 
     const id = req.nextUrl.searchParams.get('id');
     if (!id) {

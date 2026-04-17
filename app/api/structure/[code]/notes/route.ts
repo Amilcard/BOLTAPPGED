@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
-import { resolveCodeToStructure } from '@/lib/structure';
+import { requireStructureRole } from '@/lib/structure-guard';
 import { auditLog } from '@/lib/audit-log';
 import { structureRateLimitGuard } from '@/lib/rate-limit-structure';
 
@@ -19,10 +19,9 @@ export async function GET(
   if (rateLimited) return rateLimited;
 
   const { code } = await params;
-  const resolved = await resolveCodeToStructure(code);
-  if (!resolved || resolved.role === 'secretariat') {
-    return NextResponse.json({ error: 'Accès refusé.' }, { status: 403 });
-  }
+  const guard = await requireStructureRole(_req, code, { excludeRoles: ['secretariat'] });
+  if (!guard.ok) return guard.response;
+  const resolved = guard.resolved;
 
   const supabase = getSupabaseAdmin();
   const structureId = resolved.structure.id as string;
@@ -85,10 +84,12 @@ export async function POST(
   if (rateLimited) return rateLimited;
 
   const { code } = await params;
-  const resolved = await resolveCodeToStructure(code);
-  if (!resolved || !['direction', 'cds', 'cds_delegated'].includes(resolved.role)) {
-    return NextResponse.json({ error: 'Accès réservé à la direction et au CDS.' }, { status: 403 });
-  }
+  const guard = await requireStructureRole(req, code, {
+    allowRoles: ['direction', 'cds', 'cds_delegated'],
+    forbiddenMessage: 'Accès réservé à la direction et au CDS.',
+  });
+  if (!guard.ok) return guard.response;
+  const resolved = guard.resolved;
 
   let body: Record<string, unknown>;
   try {

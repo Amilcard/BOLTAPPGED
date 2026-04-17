@@ -2,7 +2,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
-import { resolveCodeToStructure } from '@/lib/structure';
+import { requireStructureRole } from '@/lib/structure-guard';
 import { auditLog } from '@/lib/audit-log';
 import { structureRateLimitGuard, getStructureClientIp } from '@/lib/rate-limit-structure';
 
@@ -15,10 +15,9 @@ export async function GET(
     if (rateLimited) return rateLimited;
 
     const { code } = await params;
-    const resolved = await resolveCodeToStructure(code);
-    if (!resolved || resolved.role !== 'direction') {
-      return NextResponse.json({ error: { code: 'FORBIDDEN' } }, { status: 403 });
-    }
+    const guard = await requireStructureRole(req, code, { allowRoles: ['direction'] });
+    if (!guard.ok) return guard.response;
+    const resolved = guard.resolved;
 
     const supabase = getSupabaseAdmin();
     const { data, error } = await supabase

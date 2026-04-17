@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
-import { resolveCodeToStructure } from '@/lib/structure';
+import { requireStructureRole } from '@/lib/structure-guard';
 import { auditLog } from '@/lib/audit-log';
 import { structureRateLimitGuard } from '@/lib/rate-limit-structure';
 
@@ -29,13 +29,12 @@ export async function PATCH(
     );
   }
 
-  const resolved = await resolveCodeToStructure(code);
-  if (!resolved || resolved.role !== 'direction') {
-    return NextResponse.json(
-      { error: { code: 'FORBIDDEN', message: 'Accès réservé au directeur.' } },
-      { status: 403 }
-    );
-  }
+  const guard = await requireStructureRole(req, code, {
+    allowRoles: ['direction'],
+    forbiddenMessage: 'Accès réservé au directeur.',
+  });
+  if (!guard.ok) return guard.response;
+  const resolved = guard.resolved;
 
   const { structure } = resolved;
 

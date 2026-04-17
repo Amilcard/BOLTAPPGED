@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { UUID_RE } from '@/lib/validators';
 
 export default function ActivateClient() {
   const params = useSearchParams();
@@ -22,7 +23,6 @@ export default function ActivateClient() {
       setError('Lien invalide : token manquant.');
       return;
     }
-    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!UUID_RE.test(token)) {
       setError('Lien invalide : format token incorrect.');
     }

@@ -5,6 +5,7 @@ import { hashPassword, isPasswordStrong } from '@/lib/password';
 import { isInvitationExpired } from '@/lib/invitation-token';
 import { auditLog } from '@/lib/audit-log';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
+import { UUID_RE } from '@/lib/validators';
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,7 +16,6 @@ export async function POST(req: NextRequest) {
       token?: string; password?: string; prenom?: string; nom?: string;
     };
 
-    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!token || typeof token !== 'string' || !UUID_RE.test(token)) {
       return NextResponse.json({ error: { code: 'INVALID_TOKEN' } }, { status: 400 });
     }

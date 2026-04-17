@@ -9,6 +9,7 @@ import { useAdminUI } from '@/components/admin/admin-ui';
 import { DossierBadge } from '@/components/admin/DossierBadge';
 import { AdminPagination } from '@/components/ui/AdminPagination';
 import { UrgenceInviteModal } from '@/components/admin/UrgenceInviteModal';
+import { UUID_RE } from '@/lib/validators';
 
 interface StructureOption {
   id: string;
@@ -89,7 +90,6 @@ export default function AdminDemandes() {
   }, []);
 
   const handleStatusChange = async (id: string, status: string) => {
-    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!UUID_RE.test(id)) return;
     const DESTRUCTIVE = ['refusee', 'annulee'];
     const LABELS: Record<string, string> = { refusee: 'Refusée', annulee: 'Annulée' };

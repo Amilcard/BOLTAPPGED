@@ -5,6 +5,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendPropositionEmail } from '@/lib/email';
 import { generatePropositionPdf } from '@/lib/pdf-proposition';
 import { auditLog, getClientIp } from '@/lib/audit-log';
+import { UUID_RE, EMAIL_REGEX } from '@/lib/validators';
 
 export async function POST(
   req: NextRequest,
@@ -14,15 +15,13 @@ export async function POST(
   if (!auth) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
 
   const { id } = await params;
-  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!UUID_RE.test(id)) return NextResponse.json({ error: 'ID invalide' }, { status: 400 });
 
   const body = await req.json().catch(() => ({})) as { demandeurEmail?: string };
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const overrideEmail = typeof body.demandeurEmail === 'string' && body.demandeurEmail.trim()
     ? body.demandeurEmail.trim()
     : null;
-  if (overrideEmail && !emailRegex.test(overrideEmail)) {
+  if (overrideEmail && !EMAIL_REGEX.test(overrideEmail)) {
     return NextResponse.json({ error: 'Email destinataire invalide.' }, { status: 400 });
   }
 

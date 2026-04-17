@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendSouhaitNotificationEducateur } from '@/lib/email';
 import { generateEducateurAggregateToken } from '@/lib/educateur-token';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
+import { EMAIL_REGEX } from '@/lib/validators';
 /**
  * POST /api/souhaits
  * Crée un souhait côté serveur et envoie un email à l'éducateur.
@@ -49,8 +50,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Token invalide.' }, { status: 400 });
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(educateurEmail as string)) {
+    if (!EMAIL_REGEX.test(educateurEmail as string)) {
       return NextResponse.json({ error: 'Email éducateur invalide.' }, { status: 400 });
     }
 

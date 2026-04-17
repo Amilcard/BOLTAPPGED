@@ -6,6 +6,7 @@ import { auditLog } from '@/lib/audit-log';
 import { structureRateLimitGuard, getStructureClientIp } from '@/lib/rate-limit-structure';
 import { generateInvitationToken, computeInvitationExpiry } from '@/lib/invitation-token';
 import { sendTeamMemberInvite } from '@/lib/email';
+import { UUID_RE } from '@/lib/validators';
 
 export async function POST(
   req: NextRequest,
@@ -16,7 +17,6 @@ export async function POST(
     if (rateLimited) return rateLimited;
 
     const { code, memberId } = await params;
-    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!UUID_RE.test(memberId)) {
       return NextResponse.json({ error: { code: 'INVALID_ID' } }, { status: 400 });
     }

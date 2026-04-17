@@ -4,13 +4,13 @@ import { requireEditor } from '@/lib/auth-middleware';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { generateFacturePdf } from '@/lib/pdf-facture';
 import { auditLog, getClientIp } from '@/lib/audit-log';
+import { UUID_RE } from '@/lib/validators';
 
 export async function GET(req: NextRequest) {
   const auth = await requireEditor(req);
   if (!auth) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
 
   const id = req.nextUrl.searchParams.get('id');
-  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!id || !UUID_RE.test(id)) return NextResponse.json({ error: 'ID manquant ou invalide' }, { status: 400 });
 
   const supabase = getSupabaseAdmin();

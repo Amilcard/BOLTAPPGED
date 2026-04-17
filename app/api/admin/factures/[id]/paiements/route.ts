@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireEditor } from '@/lib/auth-middleware';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { auditLog, getClientIp } from '@/lib/audit-log';
+import { UUID_RE } from '@/lib/validators';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const VALID_METHODES = ['virement', 'cb_stripe', 'cheque'] as const;
 
 type SupabaseAdmin = ReturnType<typeof import('@/lib/supabase-server').getSupabaseAdmin>;

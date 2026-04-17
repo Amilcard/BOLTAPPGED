@@ -7,6 +7,7 @@ import { auditLog } from '@/lib/audit-log';
 import { structureRateLimitGuard, getStructureClientIp } from '@/lib/rate-limit-structure';
 import { generateInvitationToken, computeInvitationExpiry } from '@/lib/invitation-token';
 import { sendTeamMemberInvite } from '@/lib/email';
+import { EMAIL_REGEX } from '@/lib/validators';
 
 const VALID_ROLES = ['secretariat', 'educateur'] as const;
 type InviteRole = typeof VALID_ROLES[number];
@@ -36,8 +37,7 @@ export async function POST(
 
     const { email, role, prenom, nom } = body as { email?: string; role?: string; prenom?: string; nom?: string };
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email || typeof email !== 'string' || !emailRegex.test(email.trim())) {
+    if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
       return NextResponse.json({ error: { code: 'INVALID_EMAIL', message: 'Email valide requis.' } }, { status: 400 });
     }
     if (!role || !VALID_ROLES.includes(role as InviteRole)) {

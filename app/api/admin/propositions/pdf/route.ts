@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { requireEditor } from '@/lib/auth-middleware';
 import { generatePropositionPdf } from '@/lib/pdf-proposition';
 import { auditLog, getClientIp } from '@/lib/audit-log';
+import { UUID_RE } from '@/lib/validators';
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,7 +14,6 @@ export async function GET(req: NextRequest) {
     const id = req.nextUrl.searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID manquant' }, { status: 400 });
 
-    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!UUID_RE.test(id)) return NextResponse.json({ error: 'ID invalide' }, { status: 400 });
 
     const supabase = getSupabaseAdmin();

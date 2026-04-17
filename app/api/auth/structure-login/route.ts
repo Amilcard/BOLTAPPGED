@@ -5,6 +5,7 @@ import { verifyPassword } from '@/lib/password';
 import { auditLog } from '@/lib/audit-log';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 import { buildProSessionToken, type ProStructureRole } from '@/lib/auth-middleware';
+import { EMAIL_REGEX } from '@/lib/validators';
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,8 +13,7 @@ export async function POST(req: NextRequest) {
     if (!body) return NextResponse.json({ error: { code: 'INVALID_BODY' } }, { status: 400 });
 
     const { email, password } = body as { email?: string; password?: string };
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email || typeof email !== 'string' || !emailRegex.test(email.trim())) {
+    if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
       return NextResponse.json({ error: { code: 'INVALID_EMAIL' } }, { status: 400 });
     }
     if (!password || typeof password !== 'string') {

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireEditor } from '@/lib/auth-middleware';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { auditLog } from '@/lib/audit-log';
+import { UUID_RE } from '@/lib/validators';
 
 const VALID_STATUTS = ['brouillon','envoyee','payee_partiel','payee','annulee'] as const;
 type FactureStatut = typeof VALID_STATUTS[number];
@@ -124,7 +125,6 @@ export async function PATCH(req: NextRequest) {
 
   const { id, statut } = body;
 
-  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!id || typeof id !== 'string' || !UUID_RE.test(id)) {
     return NextResponse.json({ error: 'ID invalide' }, { status: 400 });
   }

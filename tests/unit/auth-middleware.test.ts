@@ -303,6 +303,7 @@ describe('buildProSessionToken', () => {
       expiresIn: '30m',
     });
     expect(result).not.toBeNull();
+    if (!result) throw new Error('buildProSessionToken returned null');
     expect(result?.token).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/);
     expect(result?.jti).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
     expect(result?.expiresAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
@@ -310,7 +311,7 @@ describe('buildProSessionToken', () => {
     // Décoder le JWT et vérifier les claims
     const { jwtVerify } = await import('jose');
     const encoded = new TextEncoder().encode(SECRET);
-    const { payload } = await jwtVerify(result!.token, encoded);
+    const { payload } = await jwtVerify(result.token, encoded);
     expect(payload.role).toBe('pro');
     expect(payload.type).toBe('pro_session');
     expect(payload.email).toBe('x@y.fr');
@@ -318,7 +319,7 @@ describe('buildProSessionToken', () => {
     expect(payload.structureName).toBe('MECS Test');
     expect(payload.structureRole).toBe('secretariat');
     expect(payload.structureId).toBe('s-123');
-    expect(payload.jti).toBe(result!.jti);
+    expect(payload.jti).toBe(result.jti);
   });
 
   test('retourne null si NEXTAUTH_SECRET manquant', async () => {
@@ -339,7 +340,9 @@ describe('buildProSessionToken', () => {
       email: 'x@y.fr', structureCode: 'ABCDEF', structureName: 'S',
       structureRole: 'direction', structureId: 's-1', expiresIn: '8h',
     });
-    const delta = new Date(result!.expiresAt).getTime() - Date.now();
+    expect(result).not.toBeNull();
+    if (!result) throw new Error('buildProSessionToken returned null');
+    const delta = new Date(result.expiresAt).getTime() - Date.now();
     expect(delta).toBeGreaterThan(7.9 * 3600 * 1000);
     expect(delta).toBeLessThan(8.1 * 3600 * 1000);
   });

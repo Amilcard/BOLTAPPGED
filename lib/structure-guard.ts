@@ -66,7 +66,7 @@ export async function requireStructureRole(
   const role = resolved.role;
   const authorized = allowRoles
     ? allowRoles.includes(role)
-    : !excludeRoles!.includes(role);
+    : !(excludeRoles ?? []).includes(role);
 
   if (!authorized) {
     return {

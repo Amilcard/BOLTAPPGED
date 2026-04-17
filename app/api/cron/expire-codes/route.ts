@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
   console.log(`[expire-codes] codes CDS révoqués: ${countCds}, codes Directeur révoqués: ${countDir}, access_codes désactivés: ${countAccess}`);
 
   // Audit log — tracer les révocations réussies même en cas d'erreur partielle
-  if (countCds + countDir > 0) {
+  if (countCds + countDir + countAccess > 0) {
     await auditLog(supabase, {
       action: 'update',
       resourceType: 'structure',
@@ -79,15 +79,23 @@ export async function GET(req: NextRequest) {
         type: 'code_expiration_cron',
         revoked_cds: countCds,
         revoked_directeur: countDir,
+        revoked_access: countAccess,
         run_at: now,
       },
     });
   }
 
   // Si erreur DB sur l'un ou l'autre → 500 pour retry Vercel Cron (après audit log)
-  if (errCds || errDir) {
+  if (errCds || errDir || errAccess) {
     return NextResponse.json(
-      { ok: false, errors: { cds: errCds?.message ?? null, directeur: errDir?.message ?? null } },
+      {
+        ok: false,
+        errors: {
+          cds: errCds?.message ?? null,
+          directeur: errDir?.message ?? null,
+          access: errAccess?.message ?? null,
+        },
+      },
       { status: 500 }
     );
   }
@@ -97,6 +105,7 @@ export async function GET(req: NextRequest) {
     revoked: {
       cds: countCds,
       directeur: countDir,
+      access: countAccess,
     },
   });
 }

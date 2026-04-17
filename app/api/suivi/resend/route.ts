@@ -2,35 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendInscriptionConfirmation } from '@/lib/email';
-
-const RESEND_MAX = 3;
-const RESEND_WINDOW_MIN = 10;
-
-async function isResendRateLimited(ip: string): Promise<boolean> {
-  try {
-    const supabase = getSupabaseAdmin();
-    const windowStart = new Date(Date.now() - RESEND_WINDOW_MIN * 60 * 1000);
-    const { data } = await supabase
-      .from('gd_login_attempts')
-      .select('attempt_count, window_start')
-      .eq('ip', `resend:${ip}`)
-      .single();
-    if (!data || new Date(data.window_start) < windowStart) {
-      await supabase.from('gd_login_attempts').upsert(
-        { ip: `resend:${ip}`, attempt_count: 1, window_start: new Date().toISOString() },
-        { onConflict: 'ip' }
-      );
-      return false;
-    }
-    if (data.attempt_count >= RESEND_MAX) return true;
-    await supabase.from('gd_login_attempts')
-      .update({ attempt_count: data.attempt_count + 1 })
-      .eq('ip', `resend:${ip}`);
-    return false;
-  } catch {
-    return true; // fail-closed — en cas d'erreur DB, bloquer par précaution
-  }
-}
+import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 
 /**
  * POST /api/suivi/resend
@@ -39,8 +11,8 @@ async function isResendRateLimited(ip: string): Promise<boolean> {
  */
 export async function POST(req: NextRequest) {
   try {
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown';
-    if (await isResendRateLimited(ip)) {
+    const ip = getClientIpFromHeaders(req.headers);
+    if (await isRateLimited('resend', ip, 3, 10)) {
       return NextResponse.json({ ok: true }); // réponse générique — pas de fuite d'info
     }
 
@@ -68,21 +40,26 @@ export async function POST(req: NextRequest) {
 
     // Renvoyer uniquement le lien de la plus récente inscription
     const latest = inscriptions[0] as Record<string, unknown>;
-    await sendInscriptionConfirmation({
-      referentNom:    (latest.referent_nom as string) || '',
-      referentEmail:  latest.referent_email as string,
-      jeunePrenom:    latest.jeune_prenom as string,
-      jeuneNom:       latest.jeune_nom as string,
-      sejourSlug:     latest.sejour_slug as string,
-      sessionDate:    latest.session_date as string,
-      cityDeparture:  latest.city_departure as string,
-      priceTotal:     (latest.price_total as number) || 0,
-      paymentMethod:  (latest.payment_method as string) || 'bank_transfer',
-      dossierRef:     latest.dossier_ref as string,
-      suiviUrl:       `${appUrl}/suivi/${latest.suivi_token as string}`,
-    }).catch((err) => console.error('[suivi/resend] email failed:', err?.message));
+    try {
+      await sendInscriptionConfirmation({
+        referentNom:    (latest.referent_nom as string) || '',
+        referentEmail:  latest.referent_email as string,
+        jeunePrenom:    latest.jeune_prenom as string,
+        jeuneNom:       latest.jeune_nom as string,
+        sejourSlug:     latest.sejour_slug as string,
+        sessionDate:    latest.session_date as string,
+        cityDeparture:  latest.city_departure as string,
+        priceTotal:     (latest.price_total as number) || 0,
+        paymentMethod:  (latest.payment_method as string) || 'bank_transfer',
+        dossierRef:     latest.dossier_ref as string,
+        suiviUrl:       `${appUrl}/suivi/${latest.suivi_token as string}`,
+      });
+    } catch (emailErr) {
+      console.error('[suivi/resend] email failed:', (emailErr as Error)?.message);
+      return NextResponse.json({ ok: true, emailSent: false });
+    }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, emailSent: true });
   } catch (err) {
     console.error('[suivi/resend] Erreur:', err);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });

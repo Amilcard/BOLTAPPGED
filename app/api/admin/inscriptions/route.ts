@@ -23,16 +23,18 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
     const structureId = searchParams.get('structure_id');
-    const parsedLimit = parseInt(searchParams.get('limit') || '100', 10);
-    const limit = Number.isFinite(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 500) : 100;
+    const page = Math.max(1, parseInt(searchParams.get('page') ?? '1'));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '50')));
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
 
     let query = supabase
       .from('gd_inscriptions')
-      .select('*, gd_dossier_enfant(bulletin_completed, sanitaire_completed, liaison_completed, renseignements_completed, ged_sent_at), gd_stays!fk_inscriptions_stay(marketing_title, title), gd_structures!inner(is_test)')
+      .select('*, gd_dossier_enfant(bulletin_completed, sanitaire_completed, liaison_completed, renseignements_completed, ged_sent_at), gd_stays!fk_inscriptions_stay(marketing_title, title), gd_structures!inner(is_test)', { count: 'exact' })
       .eq('gd_structures.is_test', false)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
-      .limit(limit);
+      .range(from, to);
 
     if (status) {
       query = query.eq('status', status);
@@ -42,14 +44,14 @@ export async function GET(req: NextRequest) {
       query = query.eq('structure_id', structureId);
     }
 
-    const { data, error } = await query;
+    const { data, count, error } = await query;
 
     if (error) {
       console.error('GET /api/admin/inscriptions Supabase error:', error);
       throw error;
     }
 
-    return NextResponse.json(enrichInscriptions((data || []) as InscriptionRaw[]));
+    return NextResponse.json({ data: enrichInscriptions((data || []) as InscriptionRaw[]), total: count ?? 0, page, limit });
   } catch (error) {
     console.error('GET /api/admin/inscriptions error:', error);
     return NextResponse.json(

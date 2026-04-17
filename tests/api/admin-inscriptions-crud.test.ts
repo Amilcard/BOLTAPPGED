@@ -89,13 +89,13 @@ import { GET as getInscription, PUT as putInscription, DELETE as deleteInscripti
 
 describe('GET /api/admin/inscriptions', () => {
   beforeEach(() => {
-    // Chaîne : .select().eq('gd_structures.is_test', false).is().order().limit()
+    // Chaîne : .select().eq('gd_structures.is_test', false).is().order().range()
     mockFrom.mockReturnValue({
       select: jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
           is: jest.fn().mockReturnValue({
             order: jest.fn().mockReturnValue({
-              limit: jest.fn().mockResolvedValue({ data: [SAMPLE_INSCRIPTION], error: null }),
+              range: jest.fn().mockResolvedValue({ data: [SAMPLE_INSCRIPTION], count: 1, error: null }),
             }),
           }),
         }),
@@ -117,18 +117,19 @@ describe('GET /api/admin/inscriptions', () => {
     const res = await listInscriptions(req('/api/admin/inscriptions', { token: EDITOR_TOKEN }));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(Array.isArray(body)).toBe(true);
+    expect(Array.isArray(body.data)).toBe(true);
+    expect(typeof body.total).toBe('number');
   });
 
   it('filtre ?status appliqué (ADMIN)', async () => {
-    // Chaîne réelle : select().eq('gd_structures.is_test', false).is().order().limit().eq('status', 'validee')
-    const statusEqMock = jest.fn().mockResolvedValue({ data: [], error: null });
+    // Chaîne réelle : select().eq('gd_structures.is_test', false).is().order().range().eq('status', 'validee')
+    const statusEqMock = jest.fn().mockResolvedValue({ data: [], count: 0, error: null });
     mockFrom.mockReturnValue({
       select: jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
           is: jest.fn().mockReturnValue({
             order: jest.fn().mockReturnValue({
-              limit: jest.fn().mockReturnValue({
+              range: jest.fn().mockReturnValue({
                 eq: statusEqMock,
               }),
             }),

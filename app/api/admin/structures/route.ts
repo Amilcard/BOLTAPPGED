@@ -24,10 +24,15 @@ export async function GET(request: NextRequest) {
     const type = url.searchParams.get('type')?.trim() || '';
     const status = url.searchParams.get('status')?.trim() || 'active';
 
+    const page = Math.max(1, parseInt(url.searchParams.get('page') ?? '1'));
+    const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') ?? '50')));
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
     // 1. Récupérer les structures
     let query = supabase
       .from('gd_structures')
-      .select('id, name, code, city, postal_code, type, email, status, address, created_at');
+      .select('id, name, code, city, postal_code, type, email, status, address, created_at', { count: 'exact' });
 
     if (status) {
       query = query.eq('status', status);
@@ -43,7 +48,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const { data: structures, error: structErr } = await query.order('created_at', { ascending: false });
+    const { data: structures, count: structuresCount, error: structErr } = await query.order('created_at', { ascending: false }).range(from, to);
 
     if (structErr) {
       console.error('[admin/structures] query error:', structErr);
@@ -112,8 +117,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       structures: result,
       orphans,
-      total: result.length,
+      total: structuresCount ?? result.length,
       orphanCount: orphans.length,
+      page,
+      limit,
     });
   } catch (err) {
     console.error('[admin/structures] GET error:', err);

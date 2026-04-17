@@ -11,7 +11,11 @@ export async function GET(request: NextRequest) {
 
   try {
     const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase.auth.admin.listUsers();
+    const url = new URL(request.url);
+    const page = Math.max(1, parseInt(url.searchParams.get('page') ?? '1'));
+    const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') ?? '50')));
+
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: limit });
     if (error) throw error;
 
     const users = data.users.map((u) => ({
@@ -21,7 +25,7 @@ export async function GET(request: NextRequest) {
       createdAt: u.created_at,
     }));
 
-    return NextResponse.json(users);
+    return NextResponse.json({ data: users, total: data.total ?? users.length, page, limit });
   } catch (err) {
     console.error('[admin/users] GET error:', err);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });

@@ -63,7 +63,8 @@ export default function InscriptionDetailPage() {
         if (data.referent_email) {
           const allRes = await fetch('/api/admin/inscriptions', { headers: authHeaders() });
           if (allRes.ok) {
-            const all: InscriptionSupabase[] = await allRes.json();
+            const payload = await allRes.json();
+            const all: InscriptionSupabase[] = Array.isArray(payload) ? payload : (payload.data ?? []);
             setAutresInscriptions(all.filter(i => i.referent_email === data.referent_email && i.id !== inscriptionId));
           }
         }

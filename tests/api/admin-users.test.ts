@@ -79,15 +79,18 @@ describe('GET /api/admin/users', () => {
   });
 
   it('retourne 200 avec liste utilisateurs si ADMIN', async () => {
-    mockListUsers.mockResolvedValue({ data: { users: [MOCK_USER] }, error: null });
+    mockListUsers.mockResolvedValue({ data: { users: [MOCK_USER], total: 1 }, error: null });
     const res = await GET(req('GET', ADMIN_TOKEN));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(Array.isArray(body)).toBe(true);
-    expect(body[0].email).toBe('editor@ged.fr');
-    expect(body[0].role).toBe('EDITOR');
+    expect(Array.isArray(body.data)).toBe(true);
+    expect(body.data[0].email).toBe('editor@ged.fr');
+    expect(body.data[0].role).toBe('EDITOR');
     // Ne jamais exposer app_metadata raw
-    expect(body[0].app_metadata).toBeUndefined();
+    expect(body.data[0].app_metadata).toBeUndefined();
+    // Pagination metadata présente
+    expect(typeof body.total).toBe('number');
+    expect(typeof body.page).toBe('number');
   });
 });
 

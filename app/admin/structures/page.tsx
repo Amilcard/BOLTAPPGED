@@ -123,7 +123,8 @@ export default function AdminStructures() {
       const res = await fetch(`/api/admin/inscriptions?structure_id=${structureId}`, { headers });
       if (res.ok) {
         const data = await res.json();
-        setExpandedInscriptions(data.inscriptions || data || []);
+        const list = Array.isArray(data) ? data : (data.data ?? data.inscriptions ?? []);
+        setExpandedInscriptions(list);
       }
     } catch {
       setExpandedInscriptions([]);

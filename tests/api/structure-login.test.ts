@@ -52,16 +52,17 @@ describe('POST /api/auth/structure-login', () => {
   });
 
   test('200 + cookie si login OK', async () => {
-    (getSupabaseAdmin as jest.Mock).mockReturnValue({
-      from: () => ({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({
+    const fromMock = jest.fn()
+      .mockReturnValueOnce({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({
         data: {
           id: 'm1', email: 'x@y.fr', role: 'secretariat', password_hash: '$2a$12$xxx',
           activated_at: '2026-04-01T00:00:00Z', active: true,
           structure_id: 's1',
           gd_structures: { id: 's1', name: 'MECS', status: 'active', code: 'ABCDEF' },
         },
-      }) }) }) }) }),
-    });
+      }) }) }) }) })
+      .mockReturnValueOnce({ update: () => ({ eq: () => Promise.resolve({ error: null }) }) });
+    (getSupabaseAdmin as jest.Mock).mockReturnValue({ from: fromMock });
     (verifyPassword as jest.Mock).mockResolvedValue(true);
     const res = await POST(mkReq({ email: 'x@y.fr', password: 'good' }));
     expect(res.status).toBe(200);

@@ -75,6 +75,7 @@ export async function POST(req: NextRequest) {
     const structureCode = memberWithStructure.gd_structures.code;
 
     const encodedSecret = new TextEncoder().encode(secret);
+    const jti = crypto.randomUUID();
     const token = await new SignJWT({
       role: 'pro',
       type: 'pro_session',
@@ -83,11 +84,18 @@ export async function POST(req: NextRequest) {
       structureRole: memberWithStructure.role,
       structureId: memberWithStructure.structure_id,
       structureName: memberWithStructure.gd_structures.name,
-      jti: crypto.randomUUID(),
+      jti,
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('8h')
       .sign(encodedSecret);
+
+    // Stocker jti + exp pour révocation immédiate via /revoke
+    const jtiExp = new Date(Date.now() + 8 * 3600 * 1000).toISOString();
+    await supabase
+      .from('gd_structure_access_codes')
+      .update({ last_jti: jti, last_jti_exp: jtiExp })
+      .eq('id', memberWithStructure.id);
 
     const response = NextResponse.json({
       ok: true,

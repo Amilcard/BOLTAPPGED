@@ -48,7 +48,22 @@ describe('POST team/[memberId]/revoke', () => {
     const fromMock = jest.fn();
     (getSupabaseAdmin as jest.Mock).mockReturnValue({ from: fromMock });
     fromMock
-      .mockReturnValueOnce({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { id: 'm1', email: 'sec@x.fr', role: 'secretariat' } }) }) }) }) })
+      .mockReturnValueOnce({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { id: 'm1', email: 'sec@x.fr', role: 'secretariat', last_jti: 'jti-123', last_jti_exp: '2026-05-01T00:00:00Z' } }) }) }) }) })
+      .mockReturnValueOnce({ update: () => ({ eq: () => Promise.resolve({ error: null }) }) })
+      .mockReturnValueOnce({ upsert: () => Promise.resolve({ error: null }) });
+    const res = await POST(mkReq(),
+      { params: Promise.resolve({ code: 'ABCDEFGHIJ', memberId: '00000000-0000-4000-8000-000000000001' }) });
+    expect(res.status).toBe(200);
+  });
+
+  test('200 révoque membre sans JWT actif (pas de upsert gd_revoked_tokens)', async () => {
+    (resolveCodeToStructure as jest.Mock).mockResolvedValue({
+      structure: { id: 's1' }, role: 'direction', roles: ['direction'], email: 'd@x.fr',
+    });
+    const fromMock = jest.fn();
+    (getSupabaseAdmin as jest.Mock).mockReturnValue({ from: fromMock });
+    fromMock
+      .mockReturnValueOnce({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { id: 'm1', email: 'sec@x.fr', role: 'secretariat', last_jti: null, last_jti_exp: null } }) }) }) }) })
       .mockReturnValueOnce({ update: () => ({ eq: () => Promise.resolve({ error: null }) }) });
     const res = await POST(mkReq(),
       { params: Promise.resolve({ code: 'ABCDEFGHIJ', memberId: '00000000-0000-4000-8000-000000000001' }) });

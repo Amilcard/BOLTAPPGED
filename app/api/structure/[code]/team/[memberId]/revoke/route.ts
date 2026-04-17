@@ -29,7 +29,7 @@ export async function POST(
 
     const { data: member } = await supabase
       .from('gd_structure_access_codes')
-      .select('id, email, role')
+      .select('id, email, role, last_jti, last_jti_exp')
       .eq('id', memberId)
       .eq('structure_id', structureId)
       .maybeSingle();
@@ -38,12 +38,26 @@ export async function POST(
 
     const { error: updateErr } = await supabase
       .from('gd_structure_access_codes')
-      .update({ active: false, invitation_token: null, invitation_expires_at: null })
+      .update({ active: false, invitation_token: null, invitation_expires_at: null, last_jti: null })
       .eq('id', memberId);
 
     if (updateErr) {
       console.error('[team revoke] error:', updateErr.message);
       return NextResponse.json({ error: { code: 'INTERNAL_ERROR' } }, { status: 500 });
+    }
+
+    // Révocation immédiate du JWT actif : insert dans gd_revoked_tokens
+    if (member.last_jti && member.last_jti_exp) {
+      const { error: revokeErr } = await supabase
+        .from('gd_revoked_tokens')
+        .upsert(
+          { jti: member.last_jti, expires_at: member.last_jti_exp, revoked_at: new Date().toISOString() },
+          { onConflict: 'jti' }
+        );
+      if (revokeErr) {
+        console.error('[team revoke] gd_revoked_tokens insert failed:', revokeErr.message);
+        // Pas bloquant : la ligne reste désactivée (active=false), même si le JWT actif reste valide 8h max
+      }
     }
 
     await auditLog(supabase, {
@@ -53,7 +67,13 @@ export async function POST(
       actorType: 'referent',
       actorId: resolved.email || undefined,
       ipAddress: getStructureClientIp(req),
-      metadata: { type: 'team_revoke', actor_role: resolved.role, member_email: member.email, member_role: member.role },
+      metadata: {
+        type: 'team_revoke',
+        actor_role: resolved.role,
+        member_email: member.email,
+        member_role: member.role,
+        jwt_revoked: !!member.last_jti,
+      },
     });
 
     return NextResponse.json({ ok: true });

@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { sejour_slug, session_date, city_departure } = body;
+  const { sejour_slug, session_date, session_end_date, city_departure } = body;
 
   if (
     typeof sejour_slug !== 'string' || !sejour_slug.trim() ||
@@ -46,13 +46,23 @@ export async function POST(req: NextRequest) {
 
   const supabase = getSupabaseAdmin();
 
-  const { data: pricing } = await supabase
+  // session_end_date optionnel (backward compat). Si fourni, query précise.
+  // Sinon : prend la formule la plus courte (end_date min) — prix le plus bas par défaut.
+  let pricingQuery = supabase
     .from('gd_session_prices')
     .select('base_price_eur, transport_surcharge_ged, price_ged_total, start_date, end_date')
     .eq('stay_slug', sejour_slug)
     .eq('start_date', session_date)
-    .eq('city_departure', city_departure)
-    .single();
+    .eq('city_departure', city_departure);
+
+  if (typeof session_end_date === 'string' && session_end_date.trim()) {
+    pricingQuery = pricingQuery.eq('end_date', session_end_date);
+  }
+
+  const { data: pricing } = await pricingQuery
+    .order('end_date', { ascending: true })
+    .limit(1)
+    .maybeSingle();
 
   if (!pricing) {
     return NextResponse.json(

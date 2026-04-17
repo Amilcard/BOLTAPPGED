@@ -1,6 +1,7 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
-const { withSentryConfig } = require('@sentry/nextjs');
-const withBundleAnalyzer = require('@next/bundle-analyzer')({
+import { withSentryConfig } from '@sentry/nextjs';
+import createBundleAnalyzer from '@next/bundle-analyzer';
+
+const withBundleAnalyzer = createBundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
   openAnalyzer: process.env.ANALYZE === 'true',
 });
@@ -36,7 +37,6 @@ const nextConfig = {
     ignoreDuringBuilds: false,
   },
   typescript: {
-    // TS strict activé — requis pour build Vercel zero-error
     ignoreBuildErrors: false,
   },
   images: {
@@ -50,7 +50,6 @@ const nextConfig = {
     ],
   },
   skipTrailingSlashRedirect: true,
-  // generateBuildId retiré — spécifique Docker, inutile sur Vercel
   async headers() {
     return [
       {
@@ -61,10 +60,8 @@ const nextConfig = {
   },
 };
 
-module.exports = withBundleAnalyzer(withSentryConfig(nextConfig, {
-  // Source maps uploadés silencieusement au build (nécessite SENTRY_AUTH_TOKEN)
+export default withBundleAnalyzer(withSentryConfig(nextConfig, {
   silent: true,
-  // Désactiver si SENTRY_AUTH_TOKEN absent (ex: dev local)
   disableServerWebpackPlugin: !process.env.SENTRY_AUTH_TOKEN,
   disableClientWebpackPlugin: !process.env.SENTRY_AUTH_TOKEN,
 }));

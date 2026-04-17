@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   if (await isRateLimited('priceiq', rateLimitKey, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MIN)) {
     return NextResponse.json(
       { error: 'Trop de demandes. Réessayez dans 30 minutes.' },
-      { status: 429 }
+      { status: 429, headers: { 'Retry-After': String(RATE_LIMIT_WINDOW_MIN * 60) } }
     );
   }
 

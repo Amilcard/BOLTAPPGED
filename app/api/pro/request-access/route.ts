@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
   if (limited) {
     return NextResponse.json(
       { error: { code: 'RATE_LIMITED', message: 'Trop de demandes. Veuillez réessayer dans une heure ou nous contacter directement.' } },
-      { status: 429 }
+      { status: 429, headers: { 'Retry-After': String(WINDOW_MINUTES * 60) } }
     );
   }
 

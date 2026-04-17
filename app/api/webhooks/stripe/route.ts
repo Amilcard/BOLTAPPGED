@@ -182,21 +182,14 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ received: true, skipped: true });
         }
 
-        // Récupérer session_id AVANT update pour rollback capacité
-        const { data: failedInsc } = await supabase
+        // UPDATE atomique avec RETURNING session_id — évite le TOCTOU SELECT+UPDATE séparé
+        const { data: failedInsc, error } = await supabase
           .from('gd_inscriptions')
-          .select('session_id')
+          .update({ payment_status: 'failed' })
           .eq('id', inscriptionId)
           .in('payment_status', ['pending_payment'])
+          .select('session_id')
           .single();
-
-        const { error } = await supabase
-          .from('gd_inscriptions')
-          .update({
-            payment_status: 'failed',
-          })
-          .eq('id', inscriptionId)
-          .in('payment_status', ['pending_payment']);
 
         if (error) {
           console.error('Error updating failed payment status — rollback claim:', error);
@@ -204,8 +197,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: 'DB update failed' }, { status: 500 });
         } else {
           console.log('[webhook/stripe] payment_intent.payment_failed processed');
-          // H1 fix : rollback capacité — restituer le siège consommé lors de l'inscription
-          // seats_left = -1 ou NULL = illimité → pas de rollback nécessaire
+          // Rollback capacité — restituer le siège consommé lors de l'inscription
           if (failedInsc?.session_id) {
             const { data: sess } = await supabase
               .from('gd_stay_sessions')

@@ -71,6 +71,58 @@ Deux routes émettent ce cookie :
 
 **Révocation** : `gd_revoked_tokens` lu par `verifyProSession`. Route `/api/structure/[code]/team/[memberId]/revoke` désactive la ligne ; révocation immédiate du JWT actif = dette post-MVP (item #3 plan architecte 2026-04-17).
 
+## Règle OBLIGATOIRE — Consultation multi-agents avant intervention
+
+**Cette règle DOIT être appliquée avant tout fix / refacto / feature touchant plus qu'un commentaire ou une ligne cosmétique.** Elle existe pour éviter les erreurs d'analyse en surface et les effets cascade non détectés (caller non identifié, enum rate un call-site, rate-limit dual rend un parcours unusable, etc.).
+
+### Déclencheurs — protocole obligatoire
+
+- Signalement externe : Codacy, Sentry, Vercel logs, CI rouge, PR review
+- Demande fix sécurité / régression / RGPD
+- Modification touchant >1 fichier OU zone critique : `auth`, DB, `factures`, `inscriptions`, `dossier_enfant`, `souhaits`, `gd_structure_access_codes`
+- Toute dette architecte / migration SQL / refacto transversal
+- Toute nouvelle route API ou endpoint sensible
+
+### Protocole obligatoire (ordre)
+
+| Étape | Agent/Skill | Déclenche si |
+|---|---|---|
+| 1. **Analyse impact** | `arch-impact-reviewer` | TOUJOURS pour les déclencheurs ci-dessus |
+| 2. **Vérif DB** | `supabase-integrity-auditor` + MCP Supabase | migration, RLS, schéma, advisors |
+| 3. **Sécurité / RGPD** | skill `security-review` + agent `functional-bug-hunter` | auth, credentials, PII, données mineurs |
+| 4. **UI** | agent `ux-ui-reviewer` | nouvel écran, modal, parcours |
+| 5. **Workflow / intégration** | `workflow-integration-reviewer` | webhook, email, n8n, multi-system |
+| 6. **Exécution** | worker `general-purpose` + skill `test-driven-development` | TDD strict, commits atomiques |
+| 7. **Cross-review final** | `arch-impact-reviewer` + `deploy-safety-reviewer` | avant chaque push prod |
+
+### Parallélisation
+
+Utiliser la skill `dispatching-parallel-agents` dès que 2+ analyses ou workers sont indépendants. Les agents doivent être briefés de façon auto-suffisante (ils n'héritent pas du contexte de la session).
+
+### Interdictions
+
+- JAMAIS de fix inline directement sans passer par `arch-impact-reviewer` si le déclencheur est coché, **sauf** :
+  - 1 seule ligne cosmétique (typo, commentaire) documentée dans le commit
+  - Réversion de régression déjà identifiée par un agent précédent
+- JAMAIS accepter un plan d'agent sans double-verification : l'architecte liste les risques ET un second agent valide (supabase-integrity-auditor, functional-bug-hunter, etc. selon domaine)
+- JAMAIS push sans `npx tsc --noEmit` + suite Jest verte (hors pré-existants documentés)
+- JAMAIS réutiliser un résumé de session précédente comme vérité — toujours vérifier par git log / MCP / grep direct
+
+### Objectif
+
+Mobiliser des angles d'analyse différents (architecture, DB, runtime, UX, sécurité) avant d'écrire du code. Les workers exécutent, les reviewers valident. Personne n'est son propre juge.
+
+### Application concrète — check rapide avant toute action
+
+```
+[ ] Déclencheur coché ? → protocole obligatoire
+[ ] arch-impact-reviewer lancé pour l'analyse ?
+[ ] Workers briefés self-contained avec diffs AVANT/APRÈS exacts ?
+[ ] tsc + jest verts avant commit ?
+[ ] Cross-review final lancé avant push prod ?
+[ ] Rollback SHA noté avant multi-fichier ?
+```
+
 ## Danger zones — INTERDICTIONS ABSOLUES
 - JAMAIS de DELETE FROM sans WHERE explicite validé
 - JAMAIS de TRUNCATE sur aucune table

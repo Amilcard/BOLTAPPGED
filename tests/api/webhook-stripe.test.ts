@@ -135,7 +135,18 @@ function makeFullMock(
     }),
     update: (data: SupabaseRow) => {
       mockSupabaseUpdate(table, data);
-      return { eq: () => ({ in: () => ({ error: null, count: 1 }), error: null }) };
+      return {
+        eq: () => ({
+          error: null,
+          in: () => ({
+            error: null,
+            count: 1,
+            select: (_cols?: string) => ({
+              single: () => resolveTable(table),
+            }),
+          }),
+        }),
+      };
     },
     delete: () => ({
       eq: () => ({ error: null }),

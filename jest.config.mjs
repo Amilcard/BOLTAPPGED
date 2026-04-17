@@ -32,7 +32,7 @@ const customJestConfig = {
   ],
 };
 
-export default async () => {
+const jestConfig = async () => {
   const baseConfig = await createJestConfig(customJestConfig)();
 
   return {
@@ -59,3 +59,5 @@ export default async () => {
     ],
   };
 };
+
+export default jestConfig;

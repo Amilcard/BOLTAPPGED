@@ -23,14 +23,7 @@ interface WishlistFormProps {
   staySlug: string;
 }
 
-type TravelPreference = 'alone' | 'with_friend' | 'with_sibling' | null;
 type DiscoveryOrigin = 'app' | 'educator_or_structure' | 'friend' | 'alone' | null;
-
-const TRAVEL_OPTIONS: { value: TravelPreference; label: string }[] = [
-  { value: 'alone',        label: 'Seul' },
-  { value: 'with_friend',  label: 'Avec un(e) ami(e)' },
-  { value: 'with_sibling', label: 'Avec mon frère / ma sœur' },
-];
 
 const ORIGIN_OPTIONS: { value: DiscoveryOrigin; label: string }[] = [
   { value: 'app',                   label: 'Sur l\'application' },
@@ -54,7 +47,6 @@ export function WishlistForm({ stayTitle, staySlug }: WishlistFormProps) {
   const router = useRouter();
   const [motivation, setMotivation]             = useState('');
   const [educateurEmail, setEducateurEmail]     = useState('');
-  const [travelPreference, setTravelPreference] = useState<TravelPreference>(null);
   const [discoveryOrigin, setDiscoveryOrigin]   = useState<DiscoveryOrigin>(null);
   const [saved, setSaved]                       = useState(false);
   const [error, setError]                       = useState('');
@@ -107,7 +99,6 @@ export function WishlistForm({ stayTitle, staySlug }: WishlistFormProps) {
           motivation: motivation.trim(),
           educateurEmail: educateurEmail.trim(),
           choixMode: toChoixMode(discoveryOrigin),
-          travelPreference: travelPreference ?? undefined,
         }),
       });
 
@@ -255,30 +246,6 @@ export function WishlistForm({ stayTitle, staySlug }: WishlistFormProps) {
               <span className={`text-xs ${motivation.length >= maxChars ? 'text-red-500 font-medium' : motivation.length >= maxChars * 0.85 ? 'text-orange-500' : 'text-primary-400'}`}>
                 {motivation.length}/{maxChars}
               </span>
-            </div>
-          </div>
-
-          {/* Préférence de voyage */}
-          <div className="mb-4">
-            <Label className="block text-sm font-medium text-primary mb-2">
-              Tu aimerais partir :
-            </Label>
-            <div className="flex flex-wrap gap-2">
-              {TRAVEL_OPTIONS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setTravelPreference(travelPreference === value ? null : value)}
-                  className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all border min-h-[44px] ${
-                    travelPreference === value
-                      ? 'bg-primary text-white border-primary shadow-sm'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
-                  }`}
-                  aria-pressed={travelPreference === value}
-                >
-                  {label}
-                </button>
-              ))}
             </div>
           </div>
 

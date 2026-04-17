@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireEditor } from '@/lib/auth-middleware';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { auditLog, getClientIp } from '@/lib/audit-log';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const VALID_METHODES = ['virement', 'cb_stripe', 'cheque'] as const;
@@ -57,6 +58,17 @@ export async function GET(
     .order('date_paiement', { ascending: true });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await auditLog(supabase, {
+    action: 'read',
+    resourceType: 'facture',
+    resourceId: id,
+    actorType: 'admin',
+    actorId: auth.email,
+    ipAddress: getClientIp(req),
+    metadata: { context: 'paiements_list' },
+  });
+
   return NextResponse.json({ paiements: data ?? [] });
 }
 
@@ -118,6 +130,16 @@ export async function POST(
   }
 
   await syncStatutFacture(supabase, id);
+
+  await auditLog(supabase, {
+    action: 'create',
+    resourceType: 'facture',
+    resourceId: id,
+    actorType: 'admin',
+    actorId: auth.email,
+    ipAddress: getClientIp(req),
+    metadata: { paiement_id: paiement.id, montant: Number(montant), methode: String(methode) },
+  });
 
   return NextResponse.json({ paiement }, { status: 201 });
 }

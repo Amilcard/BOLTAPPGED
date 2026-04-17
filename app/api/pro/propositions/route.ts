@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyProSession } from '@/lib/auth-middleware';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendPropositionAlertGED } from '@/lib/email';
+import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   const auth = await verifyProSession(req);
@@ -10,6 +11,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { error: { code: 'UNAUTHORIZED', message: 'Authentification requise.' } },
       { status: 401 }
+    );
+  }
+
+  const ip = getClientIpFromHeaders(req.headers);
+  if (await isRateLimited('prop', ip, 10, 5)) {
+    return NextResponse.json(
+      { error: { code: 'RATE_LIMITED', message: 'Trop de demandes. Réessayez dans 5 minutes.' } },
+      { status: 429, headers: { 'Retry-After': '300' } }
     );
   }
 

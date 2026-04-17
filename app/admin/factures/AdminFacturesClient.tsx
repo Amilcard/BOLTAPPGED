@@ -82,7 +82,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string; icon: ty
 const lineTotalOf = (l: EnfantLine) =>
   (Number(l.prix_sejour) || 0) + (Number(l.prix_transport) || 0) + (Number(l.prix_encadrement) || 0);
 
-const formatPrice = (n: number) => new Intl.NumberFormat('fr-FR').format(n) + ' \u20AC';
+const formatPrice = (n: number) => new Intl.NumberFormat('fr-FR').format(n) + ' €';
 const formatDate = (d: string) => new Date(d).toLocaleDateString('fr-FR');
 
 const authHeaders = () => ({ 'Content-Type': 'application/json' });
@@ -604,8 +604,8 @@ export default function FacturesPage() {
                     <td className="px-3 py-2 text-primary">{l.sejour_titre}</td>
                     <td className="px-3 py-2 text-muted-foreground">
                       {l.session_start && l.session_end
-                        ? `${formatDate(l.session_start)} \u2192 ${formatDate(l.session_end)}`
-                        : '\u2014'}
+                        ? `${formatDate(l.session_start)} → ${formatDate(l.session_end)}`
+                        : '—'}
                     </td>
                     <td className="px-3 py-2 text-right">{formatPrice(l.prix_sejour)}</td>
                     <td className="px-3 py-2 text-right">{formatPrice(l.prix_transport)}</td>

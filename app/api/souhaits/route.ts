@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     const validChoixModes = ['seul', 'ami', 'educateur', 'app'];
     const safeChoixMode = choixMode && validChoixModes.includes(choixMode as string) ? choixMode : null;
 
-    if (!kidSessionToken || !sejourSlug || !motivation) {
+    if (!kidSessionToken || !sejourSlug || !motivation || !educateurEmail) {
       return NextResponse.json({ error: 'Champs obligatoires manquants.' }, { status: 400 });
     }
 
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (educateurEmail && !emailRegex.test(educateurEmail as string)) {
+    if (!emailRegex.test(educateurEmail as string)) {
       return NextResponse.json({ error: 'Email éducateur invalide.' }, { status: 400 });
     }
 

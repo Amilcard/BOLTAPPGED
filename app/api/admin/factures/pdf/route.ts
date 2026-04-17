@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireEditor } from '@/lib/auth-middleware';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { generateFacturePdf } from '@/lib/pdf-facture';
+import { auditLog, getClientIp } from '@/lib/audit-log';
 
 export async function GET(req: NextRequest) {
   const auth = await requireEditor(req);
@@ -20,6 +21,16 @@ export async function GET(req: NextRequest) {
     .single();
 
   if (!facture) return NextResponse.json({ error: 'Facture introuvable' }, { status: 404 });
+
+  await auditLog(supabase, {
+    action: 'read',
+    resourceType: 'facture',
+    resourceId: id,
+    actorType: 'admin',
+    actorId: auth.email,
+    ipAddress: getClientIp(req),
+    metadata: { context: 'facture_pdf_download', numero: facture.numero },
+  });
 
   const lignes = ((facture as Record<string, unknown>).gd_facture_lignes ?? []) as Parameters<typeof generateFacturePdf>[0]['lignes'];
   const pdfBytes = await generateFacturePdf({ ...facture, lignes });

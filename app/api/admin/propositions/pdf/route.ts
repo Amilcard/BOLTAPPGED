@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { requireEditor } from '@/lib/auth-middleware';
 import { generatePropositionPdf } from '@/lib/pdf-proposition';
+import { auditLog, getClientIp } from '@/lib/audit-log';
 
 export async function GET(req: NextRequest) {
   try {
@@ -23,6 +24,16 @@ export async function GET(req: NextRequest) {
       .single();
 
     if (!prop) return NextResponse.json({ error: 'Proposition introuvable' }, { status: 404 });
+
+    await auditLog(supabase, {
+      action: 'read',
+      resourceType: 'inscription',
+      resourceId: id,
+      actorType: 'admin',
+      actorId: auth.email,
+      ipAddress: getClientIp(req),
+      metadata: { context: 'proposition_pdf_download' },
+    });
 
     const p = prop as Record<string, unknown>;
     const pdfBytes = await generatePropositionPdf(p);

@@ -85,6 +85,8 @@ export async function POST(req: NextRequest) {
       role: 'pro',
       structureCode: codeNorm,
       structureName: structure.name,
+      structureRole: resolved.role,
+      structureId: resolved.structure.id as string,
       email: email.toLowerCase().trim(),
       type: 'pro_session',
       jti,

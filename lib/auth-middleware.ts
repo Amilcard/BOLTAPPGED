@@ -52,15 +52,17 @@ export async function requireEditor(request: NextRequest): Promise<AuthPayload |
   return auth;
 }
 
+export type ProStructureRole = 'direction' | 'cds' | 'cds_delegated' | 'secretariat' | 'educateur';
+
 export interface ProSessionPayload {
   role: 'pro';
   email: string;
   structureCode: string;
   structureName: string;
+  structureRole: ProStructureRole;
+  structureId: string;
   type: 'pro_session';
-  // Nouveau — team-invite login (optionnel pour préserver compat)
-  structureRole?: 'secretariat' | 'educateur' | 'direction' | 'cds';
-  structureId?: string;
+  jti?: string;
 }
 
 export async function verifyProSession(request: NextRequest): Promise<ProSessionPayload | null> {
@@ -86,7 +88,18 @@ export async function verifyProSession(request: NextRequest): Promise<ProSession
       if (revoked) return null;
     }
 
-    return payload as unknown as ProSessionPayload;
+    // Fallback legacy : tokens émis avant 2026-04 peuvent manquer structureRole/structureId
+    const raw = payload as Record<string, unknown>;
+    if (!raw.structureRole || !raw.structureId) {
+      const code = typeof raw.structureCode === 'string' ? raw.structureCode : null;
+      if (!code) return null;
+      const { resolveCodeToStructure } = await import('@/lib/structure');
+      const resolved = await resolveCodeToStructure(code);
+      if (!resolved) return null;
+      raw.structureRole = resolved.role;
+      raw.structureId = resolved.structure.id as string;
+    }
+    return raw as unknown as ProSessionPayload;
   } catch {
     return null;
   }

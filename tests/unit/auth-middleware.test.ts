@@ -164,3 +164,122 @@ describe('requireEditor', () => {
     expect(result?.role).toBe('ADMIN');
   });
 });
+
+// ─────────────────────────────────────────────────────────────
+// verifyProSession — fallback legacy (#6 architect-fixes 2026-04-17)
+// ─────────────────────────────────────────────────────────────
+
+jest.mock('@/lib/structure');
+jest.mock('@/lib/supabase-server');
+
+describe('verifyProSession - legacy fallback', () => {
+  const PRO_SECRET = 'test-secret-min-32-chars-long-xxxxxxxxx';
+
+  beforeAll(() => {
+    process.env.NEXTAUTH_SECRET = PRO_SECRET;
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.resetModules();
+    process.env.NEXTAUTH_SECRET = PRO_SECRET;
+  });
+
+  const makeProRequest = async (payload: Record<string, unknown>) => {
+    const { SignJWT } = await import('jose');
+    const encodedSecret = new TextEncoder().encode(PRO_SECRET);
+    const token = await new SignJWT(payload)
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('30m')
+      .sign(encodedSecret);
+    return new NextRequest('http://localhost/', {
+      headers: { cookie: `gd_pro_session=${token}` },
+    });
+  };
+
+  test('token legacy sans structureRole → résolu via resolveCodeToStructure', async () => {
+    const { resolveCodeToStructure } = await import('@/lib/structure');
+    const { getSupabaseAdmin } = await import('@/lib/supabase-server');
+    (resolveCodeToStructure as jest.Mock).mockResolvedValue({
+      structure: { id: 's-123', name: 'MECS' },
+      role: 'cds',
+      roles: ['cds'],
+      email: null,
+      prenom: null,
+      nom: null,
+    });
+    (getSupabaseAdmin as jest.Mock).mockReturnValue({
+      from: () => ({
+        select: () => ({
+          eq: () => ({ maybeSingle: () => Promise.resolve({ data: null }) }),
+        }),
+      }),
+    });
+
+    const { verifyProSession } = await import('@/lib/auth-middleware');
+    const req = await makeProRequest({
+      role: 'pro',
+      type: 'pro_session',
+      email: 'x@y.fr',
+      structureCode: 'ABC123',
+      structureName: 'MECS',
+      // pas de structureRole ni structureId
+    });
+    const result = await verifyProSession(req);
+    expect(result).not.toBeNull();
+    expect(result?.structureRole).toBe('cds');
+    expect(result?.structureId).toBe('s-123');
+  });
+
+  test('token legacy avec structureCode invalide → null', async () => {
+    const { resolveCodeToStructure } = await import('@/lib/structure');
+    const { getSupabaseAdmin } = await import('@/lib/supabase-server');
+    (resolveCodeToStructure as jest.Mock).mockResolvedValue(null);
+    (getSupabaseAdmin as jest.Mock).mockReturnValue({
+      from: () => ({
+        select: () => ({
+          eq: () => ({ maybeSingle: () => Promise.resolve({ data: null }) }),
+        }),
+      }),
+    });
+
+    const { verifyProSession } = await import('@/lib/auth-middleware');
+    const req = await makeProRequest({
+      role: 'pro',
+      type: 'pro_session',
+      email: 'x@y.fr',
+      structureCode: 'INVALID',
+      structureName: 'X',
+    });
+    const result = await verifyProSession(req);
+    expect(result).toBeNull();
+  });
+
+  test('token new format avec structureRole présent → pas de fallback', async () => {
+    const { resolveCodeToStructure } = await import('@/lib/structure');
+    const { getSupabaseAdmin } = await import('@/lib/supabase-server');
+    (getSupabaseAdmin as jest.Mock).mockReturnValue({
+      from: () => ({
+        select: () => ({
+          eq: () => ({ maybeSingle: () => Promise.resolve({ data: null }) }),
+        }),
+      }),
+    });
+
+    const { verifyProSession } = await import('@/lib/auth-middleware');
+    const req = await makeProRequest({
+      role: 'pro',
+      type: 'pro_session',
+      email: 'x@y.fr',
+      structureCode: 'ABC123',
+      structureName: 'MECS',
+      structureRole: 'secretariat',
+      structureId: 's-456',
+      jti: 'jti-new',
+    });
+    const result = await verifyProSession(req);
+    expect(result?.structureRole).toBe('secretariat');
+    expect(result?.structureId).toBe('s-456');
+    expect(resolveCodeToStructure).not.toHaveBeenCalled();
+  });
+});

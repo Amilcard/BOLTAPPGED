@@ -4,12 +4,16 @@ Source : audit `arch-impact-reviewer` post-livraison team-invitation-flow.
 
 ## État d'avancement
 
-| Phase | Correctifs | Appliqué |
-|---|---|---|
-| Phase 1 safe (1h) | #9 CHECK role, #13 doc CLAUDE.md, #10 actor_role audit | ✅ 2026-04-17 |
-| Phase 1 restante (~5h) | #6 ProSessionPayload obligatoire, #7 requireStructureRole | ⏳ prévu |
-| Phase 2 sécurité (~5h) | #3 revocation immédiate, #5 rate-limit dual | ⏳ prévu |
-| Phase 3 dette (~2j) | #2 vue members, #4 enum resourceType, #8/#12 error shape, #11 buildProSessionToken | ⏳ prévu |
+| Phase | Correctifs | Appliqué | Commits |
+|---|---|---|---|
+| Phase 1 safe | #9 CHECK role, #13 doc CLAUDE.md, #10 actor_role audit | ✅ 2026-04-17 | `655cb13` |
+| Phase 1 restante | #6 ProSessionPayload obligatoire, #7 requireStructureRole | ✅ 2026-04-17 | `7ba5eea` + `34d24a7` |
+| Phase 2 sécurité | #3 revocation immédiate, #5 rate-limit dual | ✅ 2026-04-17 | `2d9d827` + `324fb17` |
+| Phase 3 dette (~2j) | #2 vue members, #4 enum resourceType, #8/#12 error shape, #11 buildProSessionToken | ⏳ prévu | — |
+
+### Tests après Phase 1+2
+
+85/85 tests team/auth PASS. `tsc --noEmit` 0 erreur.
 
 ## Phase 1 restante — À faire demain/lundi
 

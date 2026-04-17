@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { updateWishlistMotivation } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
@@ -52,6 +53,7 @@ function toChoixMode(origin: DiscoveryOrigin): string | null {
 export function WishlistForm({ stayTitle, staySlug }: WishlistFormProps) {
   const router = useRouter();
   const [motivation, setMotivation]             = useState('');
+  const [educateurEmail, setEducateurEmail]     = useState('');
   const [travelPreference, setTravelPreference] = useState<TravelPreference>(null);
   const [discoveryOrigin, setDiscoveryOrigin]   = useState<DiscoveryOrigin>(null);
   const [saved, setSaved]                       = useState(false);
@@ -59,6 +61,8 @@ export function WishlistForm({ stayTitle, staySlug }: WishlistFormProps) {
   const [errors, setErrors]                     = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting]         = useState(false);
   const [showMailtoWarning, setShowMailtoWarning] = useState(false);
+
+  const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const maxChars = 280;
   const minMessageChars = 20;
@@ -78,7 +82,8 @@ export function WishlistForm({ stayTitle, staySlug }: WishlistFormProps) {
     }
   }, [errors]);
 
-  const isFormValid = () => motivation.trim().length >= minMessageChars;
+  const isFormValid = () =>
+    motivation.trim().length >= minMessageChars && validateEmail(educateurEmail);
 
   const handleSaveMotivation = async () => {
     if (isSubmitting) return;
@@ -100,6 +105,7 @@ export function WishlistForm({ stayTitle, staySlug }: WishlistFormProps) {
           sejourSlug: staySlug,
           sejourTitre: stayTitle,
           motivation: motivation.trim(),
+          educateurEmail: educateurEmail.trim(),
           choixMode: toChoixMode(discoveryOrigin),
           travelPreference: travelPreference ?? undefined,
         }),
@@ -184,6 +190,38 @@ export function WishlistForm({ stayTitle, staySlug }: WishlistFormProps) {
 
       {!saved && (
         <>
+          {/* Email éducateur */}
+          <div className="mb-4">
+            <Label htmlFor="educateur-email" className="block text-sm font-medium text-primary mb-2">
+              Email de ton éducateur <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="educateur-email"
+              type="email"
+              value={educateurEmail}
+              onChange={(e) => setEducateurEmail(e.target.value)}
+              onBlur={() => {
+                if (!educateurEmail.trim()) {
+                  setErrors(prev => ({ ...prev, email: 'L\'email de ton éducateur est requis.' }));
+                } else if (!validateEmail(educateurEmail)) {
+                  setErrors(prev => ({ ...prev, email: 'Il manque le @ ou le domaine.' }));
+                } else {
+                  setErrors(prev => { const { email: _e, ...rest } = prev; return rest; });
+                }
+              }}
+              placeholder="Ex: marie.dupont@structure.fr"
+              className="focus-visible:ring-secondary"
+              required
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? 'error-email' : undefined}
+            />
+            {errors.email && (
+              <p id="error-email" className="mt-1 text-xs text-red-600" role="alert">
+                {errors.email}
+              </p>
+            )}
+          </div>
+
           {/* Motivation field */}
           <div className="mb-4">
             <Label htmlFor="motivation" className="block text-sm font-medium text-primary mb-2">

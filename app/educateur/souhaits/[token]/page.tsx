@@ -7,7 +7,7 @@ import { Heart, Clock, Check, X, MessageCircle, ChevronRight, Loader2, Link2 } f
 
 interface Souhait {
   id: string;
-  kid_prenom: string;
+  kid_prenom: string | null;
   kid_prenom_referent: string | null;
   sejour_slug: string;
   sejour_titre: string | null;
@@ -218,7 +218,7 @@ function SouhaitCard({ souhait: initialSouhait }: { souhait: Souhait }) {
               <Heart className="w-4.5 h-4.5 text-red-400 fill-current" />
             </div>
             <div>
-              <p className="font-semibold text-gray-900 text-sm">{souhait.kid_prenom}</p>
+              <p className="font-semibold text-gray-900 text-sm">{souhait.kid_prenom || 'Anonyme'}</p>
               {souhait.kid_prenom_referent && (
                 <p className="text-xs text-gray-400">accompagné par {souhait.kid_prenom_referent}</p>
               )}

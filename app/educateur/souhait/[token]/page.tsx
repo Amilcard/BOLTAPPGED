@@ -7,7 +7,7 @@ import { Heart, Check, MessageCircle, X, Clock, ExternalLink, LockKeyhole } from
 
 interface Souhait {
   id: string;
-  kid_prenom: string;
+  kid_prenom: string | null;
   sejour_slug: string;
   sejour_titre: string;
   motivation: string;
@@ -123,7 +123,7 @@ export default function EducateurSouhaitPage() {
             </div>
             <div>
               <p className="text-xs text-gray-400">Souhait de</p>
-              <h2 className="text-lg font-bold text-primary">{souhait.kid_prenom}</h2>
+              <h2 className="text-lg font-bold text-primary">{souhait.kid_prenom || 'Anonyme'}</h2>
             </div>
           </div>
 
@@ -209,9 +209,9 @@ export default function EducateurSouhaitPage() {
         {souhait.status === 'valide' && (
           <div className="bg-primary-50 border border-primary-100 rounded-2xl p-6 text-center animate-in fade-in slide-in-from-bottom-2 duration-300">
             <p className="text-primary font-semibold mb-2">Souhait validé</p>
-            <p className="text-primary text-sm mb-4">Vous pouvez démarrer l&apos;inscription de {souhait.kid_prenom}.</p>
+            <p className="text-primary text-sm mb-4">Vous pouvez démarrer l&apos;inscription de {souhait.kid_prenom || 'ce jeune'}.</p>
             <a
-              href={redirectUrl || `/sejour/${souhait.sejour_slug}/reserver?prenom=${encodeURIComponent(souhait.kid_prenom)}&souhait_id=${souhait.id}`}
+              href={redirectUrl || `/sejour/${souhait.sejour_slug}/reserver?prenom=${encodeURIComponent(souhait.kid_prenom || '')}&souhait_id=${souhait.id}`}
               className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary-600 transition text-sm"
             >
               Démarrer l&apos;inscription →
@@ -220,7 +220,7 @@ export default function EducateurSouhaitPage() {
         )}
 
         <p className="text-xs text-gray-400 text-center pb-4">
-          Groupe &amp; Découverte — Ce lien vous a été envoyé suite au souhait de {souhait.kid_prenom}.
+          Groupe &amp; Découverte — Ce lien vous a été envoyé suite au souhait de {souhait.kid_prenom || 'un jeune'}.
         </p>
       </main>
     </div>

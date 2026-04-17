@@ -24,7 +24,8 @@ interface Souhait {
 const CHOIX_MODE_LABELS: Record<string, string> = {
   seul: 'A choisi seul·e',
   ami: 'A choisi avec un·e ami·e',
-  educateur: 'Choix initié par l\u2019équipe',
+  educateur: "Choix initié par l'équipe",
+  app: 'Découvert sur l\'application',
 };
 
 const STATUT_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {

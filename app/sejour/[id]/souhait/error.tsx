@@ -23,7 +23,7 @@ export default function Error({
           {"Nous n'avons pas pu charger cette page. Veuillez réessayer."}
         </p>
         <Button onClick={reset} size="lg" className="w-full sm:w-auto">
-          R\u00e9essayer
+          Réessayer
         </Button>
       </div>
     </div>

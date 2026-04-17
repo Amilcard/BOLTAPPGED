@@ -33,31 +33,32 @@ export async function POST(req: NextRequest) {
       motivation,
       educateurEmail,
       educateurPrenom,
-      choixMode,         // 'seul' | 'ami' | 'educateur' (optionnel)
+      choixMode,         // 'seul' | 'ami' | 'educateur' | 'app' (optionnel)
     } = body;
 
     // Valider choixMode si fourni
-    const validChoixModes = ['seul', 'ami', 'educateur'];
-    const safeChoixMode = choixMode && validChoixModes.includes(choixMode) ? choixMode : null;
+    const validChoixModes = ['seul', 'ami', 'educateur', 'app'];
+    const safeChoixMode = choixMode && validChoixModes.includes(choixMode as string) ? choixMode : null;
 
-    if (!kidSessionToken || !kidPrenom || !sejourSlug || !motivation || !educateurEmail) {
+    if (!kidSessionToken || !sejourSlug || !motivation) {
       return NextResponse.json({ error: 'Champs obligatoires manquants.' }, { status: 400 });
     }
 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(kidSessionToken)) {
+    if (!uuidRegex.test(kidSessionToken as string)) {
       return NextResponse.json({ error: 'Token invalide.' }, { status: 400 });
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(educateurEmail)) {
+    if (educateurEmail && !emailRegex.test(educateurEmail as string)) {
       return NextResponse.json({ error: 'Email éducateur invalide.' }, { status: 400 });
     }
 
     const supabase = getSupabaseAdmin();
 
-    // Extraire le domaine pour gd_structures
-    const domain = educateurEmail.split('@')[1]?.toLowerCase();
+    // Extraire le domaine pour gd_structures (si email fourni)
+    const safeEmail = typeof educateurEmail === 'string' && educateurEmail.trim() ? educateurEmail.trim() : null;
+    const domain = safeEmail ? safeEmail.split('@')[1]?.toLowerCase() : null;
     const genericDomains = ['gmail.com','outlook.fr','outlook.com','hotmail.com','hotmail.fr','yahoo.fr','yahoo.com','live.fr','live.com','orange.fr','free.fr','sfr.fr','laposte.net','icloud.com','protonmail.com'];
     const structureDomain = domain && !genericDomains.includes(domain) ? domain : null;
 
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
       // Mettre à jour le souhait existant
       await supabase.from('gd_souhaits').update({
         motivation,
-        educateur_email: educateurEmail,
+        educateur_email: safeEmail,
         educateur_prenom: educateurPrenom || null,
         kid_prenom_referent: kidPrenomReferent || null,
         choix_mode: safeChoixMode,
@@ -93,17 +94,19 @@ export async function POST(req: NextRequest) {
         reponse_date: null,
       }).eq('id', existing.id);
 
-      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.groupeetdecouverte.fr';
-      const aggregateToken = await generateEducateurAggregateToken(educateurEmail);
-      await sendSouhaitNotificationEducateur({
-        educateurEmail,
-        educateurPrenom: educateurPrenom || undefined,
-        kidPrenom,
-        sejourTitre: sejourTitre || sejourSlug,
-        motivation,
-        lienReponse: `${baseUrl}/educateur/souhait/${existing.educateur_token}`,
-        lienTousSouhaits: aggregateToken ? `${baseUrl}/educateur/souhaits/${aggregateToken}` : undefined,
-      }).catch((e) => console.error('[EMAIL] Souhait update non envoyé:', e?.message));
+      if (safeEmail) {
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.groupeetdecouverte.fr';
+        const aggregateToken = await generateEducateurAggregateToken(safeEmail);
+        await sendSouhaitNotificationEducateur({
+          educateurEmail: safeEmail,
+          educateurPrenom: educateurPrenom || undefined,
+          kidPrenom: typeof kidPrenom === 'string' ? kidPrenom : '',
+          sejourTitre: sejourTitre || sejourSlug,
+          motivation,
+          lienReponse: `${baseUrl}/educateur/souhait/${existing.educateur_token}`,
+          lienTousSouhaits: aggregateToken ? `${baseUrl}/educateur/souhaits/${aggregateToken}` : undefined,
+        }).catch((e) => console.error('[EMAIL] Souhait update non envoyé:', e?.message));
+      }
 
       return NextResponse.json({ id: existing.id, updated: true });
     }
@@ -119,12 +122,12 @@ export async function POST(req: NextRequest) {
       .from('gd_souhaits')
       .insert({
         kid_session_token: kidSessionToken,
-        kid_prenom: kidPrenom,
+        kid_prenom: typeof kidPrenom === 'string' && kidPrenom.trim() ? kidPrenom.trim() : null,
         kid_prenom_referent: kidPrenomReferent || null,
         sejour_slug: sejourSlug,
         sejour_titre: sejourTitre || null,
         motivation,
-        educateur_email: educateurEmail,
+        educateur_email: safeEmail,
         educateur_prenom: educateurPrenom || null,
         structure_domain: structureDomain,
         structure_id: structureId,
@@ -140,22 +143,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Erreur création souhait.' }, { status: 500 });
     }
 
-    if (!souhait.educateur_token) {
-      console.error('POST /api/souhaits: educateur_token null après INSERT', souhait.id);
-      return NextResponse.json({ error: 'Erreur configuration souhait.' }, { status: 500 });
+    if (safeEmail) {
+      if (!souhait.educateur_token) {
+        console.error('POST /api/souhaits: educateur_token null après INSERT', souhait.id);
+        return NextResponse.json({ error: 'Erreur configuration souhait.' }, { status: 500 });
+      }
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.groupeetdecouverte.fr';
+      const aggregateToken = await generateEducateurAggregateToken(safeEmail);
+      await sendSouhaitNotificationEducateur({
+        educateurEmail: safeEmail,
+        educateurPrenom: typeof educateurPrenom === 'string' ? educateurPrenom : undefined,
+        kidPrenom: typeof kidPrenom === 'string' ? kidPrenom : '',
+        sejourTitre: String(sejourTitre || sejourSlug),
+        motivation: String(motivation),
+        lienReponse: `${baseUrl}/educateur/souhait/${souhait.educateur_token as string}`,
+        lienTousSouhaits: aggregateToken ? `${baseUrl}/educateur/souhaits/${aggregateToken}` : undefined,
+      }).catch((e) => console.error('[EMAIL] Souhait non envoyé:', e?.message));
     }
-
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.groupeetdecouverte.fr';
-    const aggregateToken = await generateEducateurAggregateToken(educateurEmail);
-    await sendSouhaitNotificationEducateur({
-      educateurEmail,
-      educateurPrenom: educateurPrenom || undefined,
-      kidPrenom,
-      sejourTitre: sejourTitre || sejourSlug,
-      motivation,
-      lienReponse: `${baseUrl}/educateur/souhait/${souhait.educateur_token}`,
-      lienTousSouhaits: aggregateToken ? `${baseUrl}/educateur/souhaits/${aggregateToken}` : undefined,
-    }).catch((e) => console.error('[EMAIL] Souhait non envoyé:', e?.message));
 
     return NextResponse.json({
       id: souhait.id,

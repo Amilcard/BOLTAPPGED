@@ -1208,3 +1208,55 @@ export async function sendPropositionEmail(data: {
     }],
   });
 }
+
+interface TeamInviteData {
+  to: string;
+  prenom: string;
+  structureName: string;
+  role: 'secretariat' | 'educateur';
+  activationUrl: string;
+  invitedBy: string;
+}
+
+export async function sendTeamMemberInvite(data: TeamInviteData) {
+  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
+    console.warn('[EMAIL] Clé API manquante — invitation équipe non envoyée');
+    return null;
+  }
+
+  const roleLabel = data.role === 'secretariat' ? 'Secrétariat' : 'Éducateur';
+
+  try {
+    const result = await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: data.to,
+      subject: `Invitation ${data.structureName} — activation de votre accès`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 24px;">Groupe &amp; Découverte</h1>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+            <h2 style="color: #2a383f; margin-top: 0;">Bonjour ${htmlEscape(data.prenom)},</h2>
+            <p>La direction de <strong>${htmlEscape(data.structureName)}</strong> vous invite à créer votre accès personnel pour le rôle <strong>${roleLabel}</strong>.</p>
+            <p>Cliquez sur le bouton ci-dessous pour définir votre mot de passe :</p>
+            <p style="text-align: center; margin: 24px 0;">
+              <a href="${data.activationUrl}" style="background: #de7356; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Activer mon accès</a>
+            </p>
+            <p style="color: #6b7280; font-size: 13px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
+              <strong>Ce lien est strictement personnel.</strong> Ne le transmettez à personne, même en cas d'absence.
+              En cas d'empêchement, contactez la direction pour qu'une délégation ou réinvitation soit mise en place.
+            </p>
+            <p style="color: #9ca3af; font-size: 12px;">
+              Lien envoyé par ${htmlEscape(data.invitedBy)} · valable 48h · usage unique
+            </p>
+          </div>
+        </div>
+      `,
+    });
+    return result;
+  } catch (err) {
+    console.error('[EMAIL] sendTeamMemberInvite error:', err);
+    return null;
+  }
+}

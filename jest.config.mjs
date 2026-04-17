@@ -21,6 +21,7 @@ const customJestConfig = {
     `${PROJECT_ROOT}/tests/unit/**/*.test.ts`,
     `${PROJECT_ROOT}/tests/unit/**/*.test.tsx`,
     `${PROJECT_ROOT}/tests/api/**/*.test.ts`,
+    `${PROJECT_ROOT}/tests/lib/**/*.test.ts`,
   ],
   collectCoverageFrom: [
     'app/**/*.{js,jsx,ts,tsx}',

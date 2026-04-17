@@ -138,63 +138,64 @@ export default function StructureEduTab({
   // ── KPI cards ──
   const kpiCards: Array<{
     key: Section; label: string; value: number | string; sub: string;
-    icon: typeof Users; color: string; accent: string; ring: string;
+    icon: typeof Users; color: string; accent: string; ring: string; caret: string;
     alert?: boolean; locked?: boolean;
   }> = [
     {
-      key: 'enfants', label: 'Enfants en sejour',
+      key: 'enfants', label: 'Enfants en séjour',
       value: enfantsEnSejour.length, sub: `${inscriptions.length} inscrit${inscriptions.length > 1 ? 's' : ''} au total`,
-      icon: Users, color: 'bg-primary', accent: 'text-primary', ring: 'ring-primary/30',
+      icon: Users, color: 'bg-primary', accent: 'text-primary', ring: 'ring-primary/30', caret: 'border-primary',
     },
     {
       key: 'incidents', label: 'Faits marquants',
       value: totalIncidents > 0 ? totalIncidents : 0,
-      sub: totalIncidents > 0 ? 'Fait(s) signal\u00e9(s)' : 'Aucun fait signal\u00e9',
+      sub: totalIncidents > 0 ? 'Fait(s) signalé(s)' : 'Aucun fait signalé',
       icon: AlertTriangle,
       color: totalIncidents > 0 ? 'bg-red-600' : 'bg-green-600',
       accent: totalIncidents > 0 ? 'text-red-700' : 'text-green-700',
       ring: totalIncidents > 0 ? 'ring-red-300' : 'ring-green-300',
+      caret: totalIncidents > 0 ? 'border-red-300' : 'border-green-300',
       alert: totalIncidents > 0,
     },
     {
-      key: 'medical', label: 'Medical',
+      key: 'medical', label: 'Médical',
       value: medicalCount > 0 ? medicalCount : 0,
-      sub: medicalCount > 0 ? 'Evenement(s) trace(s)' : 'Aucun signalement',
-      icon: Heart, color: 'bg-rose-500', accent: 'text-rose-700', ring: 'ring-rose-300',
+      sub: medicalCount > 0 ? 'Événement(s) tracé(s)' : 'Aucun signalement',
+      icon: Heart, color: 'bg-rose-500', accent: 'text-rose-700', ring: 'ring-rose-300', caret: 'border-rose-300',
       locked: true,
     },
     {
       key: 'appels', label: 'Appels & Rappels',
       value: callsCount > 0 ? callsCount : '0',
-      sub: callsCount > 0 ? 'Appel(s) trace(s)' : 'Aucun appel',
-      icon: PhoneCall, color: 'bg-blue-500', accent: 'text-blue-700', ring: 'ring-blue-300',
+      sub: callsCount > 0 ? 'Appel(s) tracé(s)' : 'Aucun appel',
+      icon: PhoneCall, color: 'bg-blue-500', accent: 'text-blue-700', ring: 'ring-blue-300', caret: 'border-blue-300',
     },
     {
       key: 'notes', label: 'Notes',
       value: notesCount > 0 ? notesCount : '0',
-      sub: notesCount > 0 ? 'Note(s) ajoutee(s)' : 'Aucune note',
-      icon: FileText, color: 'bg-violet-500', accent: 'text-violet-700', ring: 'ring-violet-300',
+      sub: notesCount > 0 ? 'Note(s) ajoutée(s)' : 'Aucune note',
+      icon: FileText, color: 'bg-violet-500', accent: 'text-violet-700', ring: 'ring-violet-300', caret: 'border-violet-300',
       locked: true,
     },
     {
-      key: 'bilan', label: 'Bilan sejours',
-      value: enfantsEnSejour.length, sub: 'Synthese par enfant',
-      icon: ClipboardList, color: 'bg-gray-600', accent: 'text-gray-700', ring: 'ring-gray-300',
+      key: 'bilan', label: 'Bilan séjours',
+      value: enfantsEnSejour.length, sub: 'Synthèse par enfant',
+      icon: ClipboardList, color: 'bg-gray-600', accent: 'text-gray-700', ring: 'ring-gray-300', caret: 'border-gray-300',
     },
     {
-      key: null, label: 'Departs prochains',
+      key: null, label: 'Départs prochains',
       value: departsProchains,
-      sub: 'Departs dans les 7 prochains jours',
+      sub: 'Départs dans les 7 prochains jours',
       icon: CalendarClock,
       color: departsProchains > 0 ? 'bg-orange-500' : 'bg-gray-400',
       accent: departsProchains > 0 ? 'text-orange-700' : 'text-gray-500',
-      ring: 'ring-orange-300',
+      ring: 'ring-orange-300', caret: 'border-orange-300',
     },
     {
-      key: null, label: 'Taux de presence',
+      key: null, label: 'Taux de présence',
       value: tauxPresence,
-      sub: `${enfantsEnSejour.length} valide(s) / ${inscriptions.length} inscrit(s)`,
-      icon: TrendingUp, color: 'bg-teal-500', accent: 'text-teal-700', ring: 'ring-teal-300',
+      sub: `${enfantsEnSejour.length} validé(s) / ${inscriptions.length} inscrit(s)`,
+      icon: TrendingUp, color: 'bg-teal-500', accent: 'text-teal-700', ring: 'ring-teal-300', caret: 'border-teal-300',
     },
   ];
 
@@ -211,7 +212,7 @@ export default function StructureEduTab({
             <Phone className="w-5 h-5 text-red-700 flex-shrink-0" />
             <div>
               <p className="font-bold text-red-800 text-sm">GED Astreinte H24 — si connectée</p>
-              <p className="text-xl font-bold text-red-900">06 28 05 76 67</p>
+              <a href="tel:0628057667" className="text-xl font-bold text-red-900 hover:underline">06 28 05 76 67</a>
             </div>
           </div>
           <div className="text-right hidden sm:block">
@@ -267,9 +268,7 @@ export default function StructureEduTab({
                 </div>
               </div>
               {isOpen && (
-                <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-3 h-3 rotate-45 bg-white border-b-2 border-r-2 ${
-                  kpi.ring.replace('ring-', 'border-').replace('/30', '')
-                }`} />
+                <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-3 h-3 rotate-45 bg-white border-b-2 border-r-2 ${kpi.caret}`} />
               )}
             </button>
           );
@@ -353,7 +352,7 @@ export default function StructureEduTab({
                       />
                     ) : (
                       <div className="flex items-center justify-center py-8">
-                        <div className="animate-spin h-6 w-6 border-3 border-primary border-t-transparent rounded-full" />
+                        <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
                       </div>
                     )}
                   </div>

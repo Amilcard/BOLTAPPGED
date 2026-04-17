@@ -426,7 +426,7 @@ export default function StructureDashboard() {
             </div>
             <div>
               <p className="text-gray-500 text-xs mb-1">Téléphone bureau</p>
-              <p className="font-medium">04 23 16 16 71</p>
+              <a href="tel:0423161671" className="font-medium hover:text-primary">04 23 16 16 71</a>
               <p className="text-xs text-gray-400">lun.–ven. 9h–18h</p>
             </div>
             <div>

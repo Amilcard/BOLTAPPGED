@@ -46,6 +46,7 @@ const TYPE_LABELS: Record<string, string> = {
 export default function CallsPanel({ code, role, inscriptions }: Props) {
   const [calls, setCalls] = useState<Call[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(false);
@@ -60,7 +61,7 @@ export default function CallsPanel({ code, role, inscriptions }: Props) {
         const data = await res.json();
         setCalls(data.calls ?? []);
       }
-    } catch { /* silent */ }
+    } catch { setLoadError(true); }
     setLoading(false);
   }, [code]);
 
@@ -104,6 +105,7 @@ export default function CallsPanel({ code, role, inscriptions }: Props) {
   };
 
   if (loading) return <div className="p-6 text-center text-gray-400">Chargement...</div>;
+  if (loadError) return <div role="alert" className="p-6 text-center text-red-600 text-sm">Impossible de charger les appels. Rechargez la page.</div>;
 
   return (
     <div className="space-y-4">
@@ -161,7 +163,7 @@ export default function CallsPanel({ code, role, inscriptions }: Props) {
               Accord de la structure obtenu
             </label>
           )}
-          {submitError && <p className="text-sm text-red-600">Erreur lors de l&apos;enregistrement. Veuillez réessayer.</p>}
+          {submitError && <p role="alert" className="text-sm text-red-600">Erreur lors de l&apos;enregistrement. Veuillez réessayer.</p>}
           <button type="submit" disabled={submitting} className="px-4 py-2 bg-secondary text-white rounded-lg text-sm font-medium hover:bg-secondary-600 transition disabled:opacity-50">
             {submitting ? 'Envoi...' : 'Enregistrer'}
           </button>

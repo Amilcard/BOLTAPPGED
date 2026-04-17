@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
   // Générer la référence dossier
   const today = new Date();
   const datePrefix = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-  const dossierRef = `DOS-${datePrefix}-URG-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+  const dossierRef = `DOS-${datePrefix}-URG-${crypto.randomUUID().replace(/-/g, '').slice(0, 6).toUpperCase()}`;
 
   // Créer l'inscription complète
   const { data: inscription, error } = await supabase

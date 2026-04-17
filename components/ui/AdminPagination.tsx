@@ -12,8 +12,8 @@ export function AdminPagination({ page, totalPages, onPage, total, limit }: Admi
   if (totalPages <= 1) return null;
 
   const showCounter = total !== undefined && limit !== undefined;
-  const from = showCounter ? (page - 1) * limit! + 1 : null;
-  const to = showCounter ? Math.min(page * limit!, total!) : null;
+  const from = showCounter ? (page - 1) * (limit ?? 0) + 1 : null;
+  const to = showCounter ? Math.min(page * (limit ?? 0), total ?? 0) : null;
 
   return (
     <div className="flex items-center justify-between gap-4 pt-4 border-t border-gray-100 mt-4 px-4 pb-4">

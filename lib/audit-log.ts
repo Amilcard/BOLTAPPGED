@@ -13,6 +13,7 @@
 
 import type { NextRequest } from 'next/server';
 import { createHash } from 'crypto';
+import { getClientIpFromHeaders } from '@/lib/rate-limit';
 
 interface AuditLogEntry {
   action: 'read' | 'create' | 'update' | 'delete' | 'upload' | 'download' | 'submit';
@@ -50,13 +51,13 @@ function computeIntegrityHash(entry: {
 
 /**
  * Extraire l'IP du client depuis les headers Next.js / Vercel.
+ * Délègue à `getClientIpFromHeaders` (lib/rate-limit) pour une source unique.
+ * Préserve la sémantique audit-log : retour `undefined` si IP absente
+ * (ne pas stocker 'unknown' dans gd_audit_log.ip_address).
  */
 export function getClientIp(req: NextRequest): string | undefined {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    req.headers.get('x-real-ip') ||
-    undefined
-  );
+  const ip = getClientIpFromHeaders(req.headers);
+  return ip === 'unknown' ? undefined : ip;
 }
 
 /**

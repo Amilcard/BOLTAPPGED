@@ -296,6 +296,26 @@ export async function POST(request: NextRequest) {
       data.priceTotal = serverCityPrice;
     }
 
+    // Validation âge session-spécifique AVANT la décrémentation de capacité
+    // (le RPC décrémente atomiquement — une validation post-RPC perdrait la place si l'âge est invalide)
+    const { data: sessionAgeBounds } = await supabasePublic
+      .from('gd_stay_sessions')
+      .select('age_min, age_max')
+      .eq('stay_slug', data.staySlug)
+      .eq('start_date', normalizedDate)
+      .single();
+
+    if (sessionAgeBounds) {
+      const ageMin = sessionAgeBounds.age_min ?? 3;
+      const ageMax = sessionAgeBounds.age_max ?? 17;
+      if (age < ageMin || age > ageMax) {
+        return NextResponse.json(
+          { error: { code: 'AGE_INCOMPATIBLE', message: `Âge incompatible (${age} ans). Ce séjour requiert ${ageMin}-${ageMax} ans.` } },
+          { status: 400 }
+        );
+      }
+    }
+
     // ── CAPACITY CHECK + DECREMENT atomique via RPC (SELECT FOR UPDATE + UPDATE) ──
     const { data: capacityCheck, error: rpcError } = await supabase
       .rpc('gd_check_and_decrement_capacity', {

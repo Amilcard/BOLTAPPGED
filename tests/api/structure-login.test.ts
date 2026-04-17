@@ -12,6 +12,7 @@ jest.mock('@/lib/audit-log', () => ({ auditLog: jest.fn().mockResolvedValue(unde
 
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { verifyPassword } from '@/lib/password';
+import { isRateLimited } from '@/lib/rate-limit';
 
 const mkReq = (body: unknown) =>
   new NextRequest('http://localhost/api/auth/structure-login', {
@@ -52,7 +53,7 @@ describe('POST /api/auth/structure-login', () => {
   });
 
   test('429 si email bloqué par rate-limit même avec IP OK', async () => {
-    const mockRate = require('@/lib/rate-limit').isRateLimited as jest.Mock;
+    const mockRate = isRateLimited as jest.Mock;
     mockRate.mockImplementation((key: string) => {
       if (key === 'struct-login-email') return Promise.resolve(true);
       return Promise.resolve(false);

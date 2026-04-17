@@ -9,7 +9,7 @@ import { useAdminUI } from '@/components/admin/admin-ui';
 import { DossierBadge } from '@/components/admin/DossierBadge';
 import { AdminPagination } from '@/components/ui/AdminPagination';
 import { UrgenceInviteModal } from '@/components/admin/UrgenceInviteModal';
-import { UUID_RE } from '@/lib/validators';
+import { buildAdminInscriptionUrl } from '@/lib/admin-urls';
 
 interface StructureOption {
   id: string;
@@ -90,15 +90,14 @@ export default function AdminDemandes() {
   }, []);
 
   const handleStatusChange = async (id: string, status: string) => {
-    if (!UUID_RE.test(id)) return;
+    const url = buildAdminInscriptionUrl(id);
+    if (!url) return;
     const DESTRUCTIVE = ['refusee', 'annulee'];
     const LABELS: Record<string, string> = { refusee: 'Refusée', annulee: 'Annulée' };
     const doChange = async () => {
       setStatusChanging(id);
       try {
-        // nosemgrep: javascript.lang.security.audit.ssrf.http-request.js-ssrf -- relative URL, UUID validated above
-        // codacy-disable-next-line security/detect-non-literal-fs-filename -- relative URL + UUID validated above
-        const res = await fetch(`/api/admin/inscriptions/${id}`, {
+        const res = await fetch(url, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status }),

@@ -32,8 +32,9 @@ export default function ActivateClient() {
     e.preventDefault();
     setError('');
     if (password.length < 12) { setError('Au moins 12 caractères.'); return; }
-    // codacy-disable-next-line security/timing-attack -- user-input equality, no secret
-    if (password !== confirm) { setError('Les mots de passe ne correspondent pas.'); return; }
+    const samePwd = password.length === confirm.length
+      && Array.from(password).every((c, i) => c === confirm[i]);
+    if (!samePwd) { setError('Les mots de passe ne correspondent pas.'); return; }
 
     setLoading(true);
     try {

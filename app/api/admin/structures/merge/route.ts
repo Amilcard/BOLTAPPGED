@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { requireAdmin } from '@/lib/auth-middleware';
 import { auditLog } from '@/lib/audit-log';
+import { UUID_RE } from '@/lib/validators';
 
 /**
  * POST /api/admin/structures/merge
@@ -41,8 +42,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(sourceId) || !uuidRegex.test(targetId)) {
+    if (!UUID_RE.test(sourceId) || !UUID_RE.test(targetId)) {
       return NextResponse.json(
         { error: { code: 'INVALID_ID', message: 'Format UUID invalide.' } },
         { status: 400 }

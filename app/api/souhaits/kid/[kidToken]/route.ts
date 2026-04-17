@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { UUID_RE } from '@/lib/validators';
 /**
  * GET /api/souhaits/kid/[kidToken]
  * Retourne les souhaits d'un kid via son kid_session_token (localStorage).
@@ -13,8 +14,7 @@ export async function GET(
   try {
     const { kidToken } = await params;
 
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(kidToken)) {
+    if (!UUID_RE.test(kidToken)) {
       return NextResponse.json({ error: 'Token invalide.' }, { status: 400 });
     }
 

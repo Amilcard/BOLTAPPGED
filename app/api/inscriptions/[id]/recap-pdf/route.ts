@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
+import { UUID_RE } from '@/lib/validators';
 
 const PRIMARY = rgb(0.165, 0.220, 0.247);   // #2a383f
 const SECONDARY = rgb(0.871, 0.451, 0.337);  // #de7356
@@ -61,8 +62,7 @@ export async function GET(
       );
     }
 
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(id) || !uuidRegex.test(token)) {
+    if (!UUID_RE.test(id) || !UUID_RE.test(token)) {
       return NextResponse.json(
         { error: { code: 'INVALID_PARAMS', message: 'Format invalide.' } },
         { status: 400 }

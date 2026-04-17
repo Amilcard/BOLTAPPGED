@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { verifyToken, verifyOwnership } from '@/lib/verify-ownership';
 import { auditLog, getClientIp } from '@/lib/audit-log';
+import { UUID_RE } from '@/lib/validators';
 /**
  * GET /api/suivi/[token]
  * Vue lecture seule : retourne tous les dossiers liés au même référent
@@ -158,8 +159,7 @@ export async function PATCH(
     const body = await req.json();
     const { inscriptionId, field, value } = body;
 
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!inscriptionId || !uuidRegex.test(inscriptionId)) {
+    if (!inscriptionId || !UUID_RE.test(inscriptionId)) {
       return NextResponse.json(
         { error: { code: 'INVALID_PARAMS', message: 'Paramètres invalides.' } },
         { status: 400 }

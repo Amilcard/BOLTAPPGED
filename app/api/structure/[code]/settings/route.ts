@@ -4,8 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { requireStructureRole } from '@/lib/structure-guard';
 import { auditLog } from '@/lib/audit-log';
 import { structureRateLimitGuard } from '@/lib/rate-limit-structure';
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import { EMAIL_REGEX } from '@/lib/validators';
 
 /**
  * PATCH /api/structure/[code]/settings

@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { UUID_RE } from '@/lib/validators';
 /**
  * GET /api/educateur/souhait/[token]
  * Retourne le souhait via educateur_token (magic link).
@@ -13,8 +14,7 @@ export async function GET(
   try {
     const { token } = await params;
 
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(token)) {
+    if (!UUID_RE.test(token)) {
       return NextResponse.json({ error: 'Lien invalide.' }, { status: 400 });
     }
 
@@ -61,8 +61,7 @@ export async function PATCH(
   try {
     const { token } = await params;
 
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(token)) {
+    if (!UUID_RE.test(token)) {
       return NextResponse.json({ error: 'Lien invalide.' }, { status: 400 });
     }
 

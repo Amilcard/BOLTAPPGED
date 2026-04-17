@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { verifyOwnership } from '@/lib/verify-ownership';
 import { auditLog } from '@/lib/audit-log';
+import { UUID_RE } from '@/lib/validators';
 
 const DOC_LABELS: Record<string, string> = {
   bulletin: "Bulletin d'inscription",
@@ -29,8 +30,7 @@ export async function POST(
       return NextResponse.json({ error: 'Paramètres manquants.' }, { status: 400 });
     }
 
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(token) || !uuidRegex.test(inscriptionId)) {
+    if (!UUID_RE.test(token) || !UUID_RE.test(inscriptionId)) {
       return NextResponse.json({ error: 'Paramètres invalides.' }, { status: 400 });
     }
 

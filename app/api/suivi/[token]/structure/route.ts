@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { UUID_RE } from '@/lib/validators';
 
 /**
  * PATCH /api/suivi/[token]/structure
@@ -26,8 +27,7 @@ export async function PATCH(
     const { token } = await params;
 
     // ── Validation token ──
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!token || !uuidRegex.test(token)) {
+    if (!token || !UUID_RE.test(token)) {
       return NextResponse.json(
         { error: { code: 'INVALID_TOKEN', message: 'Lien de suivi invalide.' } },
         { status: 400 }
@@ -46,7 +46,7 @@ export async function PATCH(
       );
     }
 
-    if (!uuidRegex.test(inscriptionId)) {
+    if (!UUID_RE.test(inscriptionId)) {
       return NextResponse.json(
         { error: { code: 'INVALID_ID', message: 'inscriptionId invalide.' } },
         { status: 400 }

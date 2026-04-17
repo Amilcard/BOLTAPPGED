@@ -4,7 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendSouhaitNotificationEducateur } from '@/lib/email';
 import { generateEducateurAggregateToken } from '@/lib/educateur-token';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
-import { EMAIL_REGEX } from '@/lib/validators';
+import { EMAIL_REGEX, UUID_RE } from '@/lib/validators';
 /**
  * POST /api/souhaits
  * Crée un souhait côté serveur et envoie un email à l'éducateur.
@@ -45,8 +45,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Champs obligatoires manquants.' }, { status: 400 });
     }
 
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(kidSessionToken as string)) {
+    if (!UUID_RE.test(kidSessionToken as string)) {
       return NextResponse.json({ error: 'Token invalide.' }, { status: 400 });
     }
 

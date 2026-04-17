@@ -1132,3 +1132,79 @@ export async function sendIncidentNotification(
     console.error('[EMAIL] Erreur notification incident:', error);
   }
 }
+
+// ── Proposition tarifaire : alerte admin (nouvelle demande) ──
+export async function sendPropositionAlertGED(data: {
+  demandeurNom: string;
+  demandeurEmail: string;
+  sejourTitre: string;
+  sessionDate: string;
+  villeDepart: string;
+  propositionId: string;
+}): Promise<void> {
+  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
+    console.warn('[email] sendPropositionAlertGED: clé manquante');
+    return;
+  }
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.groupeetdecouverte.fr';
+
+  await getResend().emails.send({
+    from: FROM_EMAIL,
+    to: ADMIN_EMAIL,
+    subject: `[GED] Nouvelle demande de proposition — ${htmlEscape(data.sejourTitre)}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">
+        <div style="background:#2a383f;color:white;padding:20px;border-radius:8px 8px 0 0">
+          <h1 style="margin:0;font-size:18px">Nouvelle demande de proposition tarifaire</h1>
+        </div>
+        <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+          <p><strong>Demandeur :</strong> ${htmlEscape(data.demandeurNom)} (${htmlEscape(data.demandeurEmail)})</p>
+          <p><strong>Séjour :</strong> ${htmlEscape(data.sejourTitre)}</p>
+          <p><strong>Session :</strong> ${htmlEscape(data.sessionDate)} — ${htmlEscape(data.villeDepart)}</p>
+          <div style="text-align:center;margin:24px 0">
+            <a href="${appUrl}/admin/propositions"
+               style="background:#de7356;color:white;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold">
+              Traiter la demande
+            </a>
+          </div>
+        </div>
+      </div>`,
+  });
+}
+
+// ── Proposition tarifaire : envoi PDF au travailleur social ──
+export async function sendPropositionEmail(data: {
+  to: string;
+  destinataireNom: string;
+  sejourTitre: string;
+  dossierRef: string;
+  pdfBuffer: Uint8Array;
+}): Promise<void> {
+  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
+    console.warn('[email] sendPropositionEmail: clé manquante');
+    return;
+  }
+
+  await getResend().emails.send({
+    from: FROM_EMAIL,
+    to: data.to,
+    subject: `Votre proposition tarifaire — ${htmlEscape(data.sejourTitre)}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">
+        <div style="background:#2a383f;color:white;padding:20px;border-radius:8px 8px 0 0">
+          <h1 style="margin:0;font-size:18px">Groupe &amp; Découverte</h1>
+        </div>
+        <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+          <p>Bonjour ${htmlEscape(data.destinataireNom)},</p>
+          <p>Veuillez trouver ci-joint votre proposition tarifaire pour le séjour
+             <strong>${htmlEscape(data.sejourTitre)}</strong>.</p>
+          <p>Référence : <strong>${htmlEscape(data.dossierRef)}</strong></p>
+          <p>Pour toute question : 04 23 16 16 71 · contact@groupeetdecouverte.fr</p>
+        </div>
+      </div>`,
+    attachments: [{
+      filename: `proposition-${data.dossierRef}.pdf`,
+      content: Buffer.from(data.pdfBuffer).toString('base64'),
+    }],
+  });
+}

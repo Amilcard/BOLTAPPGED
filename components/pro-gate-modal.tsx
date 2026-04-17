@@ -16,9 +16,11 @@ interface ProGateModalProps {
   sejourSlug?: string;
   /** Paramètres de session/ville pré-sélectionnés */
   reserverParams?: string;
+  /** Callback appelé après auth réussie — remplace le redirect si fourni */
+  onAuthSuccess?: () => void;
 }
 
-export function ProGateModal({ open, onClose, variant, sejourSlug, reserverParams }: ProGateModalProps) {
+export function ProGateModal({ open, onClose, variant, sejourSlug, reserverParams, onAuthSuccess }: ProGateModalProps) {
   const router = useRouter();
   const { setMode, setProEmailVerified } = useApp();
   const [email, setEmail] = useState('');
@@ -80,8 +82,9 @@ export function ProGateModal({ open, onClose, variant, sejourSlug, reserverParam
       setMode('pro');
       onClose();
 
-      // Redirect vers /reserver si sejourSlug fourni
-      if (sejourSlug) {
+      if (onAuthSuccess) {
+        onAuthSuccess();
+      } else if (sejourSlug) {
         const params = reserverParams ? `?${reserverParams}` : '';
         router.push(`/sejour/${sejourSlug}/reserver${params}`);
       }

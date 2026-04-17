@@ -149,6 +149,9 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
   const [shareSuccess, setShareSuccess] = useState(false);
   const [showDepartures, setShowDepartures] = useState(false);
   const [showFullProgramme, setShowFullProgramme] = useState(false);
+  const [propositionRequested, setPropositionRequested] = useState(false);
+  const [propositionLoading, setPropositionLoading] = useState(false);
+  const [showPropositionModal, setShowPropositionModal] = useState(false);
 
   const [preSelectedSessionId, setPreSelectedSessionId] = useState<string>('');
   const [preSelectedCity, setPreSelectedCity] = useState<string>('');
@@ -272,6 +275,28 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
   };
 
 
+
+  const handleRequestProposition = async () => {
+    const sessionDate = selectedSession?.startDate;
+    if (!sessionDate || !preSelectedCity) return;
+    setPropositionLoading(true);
+    try {
+      const res = await fetch('/api/pro/propositions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sejour_slug: slug,
+          session_date: sessionDate,
+          city_departure: preSelectedCity,
+        }),
+      });
+      if (res.ok) {
+        setPropositionRequested(true);
+        setShowPropositionModal(false);
+      }
+    } catch { /* silent */ }
+    setPropositionLoading(false);
+  };
 
   // Lot 10B: Extraire les tranches d'âges depuis ageRangesDisplay (calculé côté serveur)
   // Fallback: utiliser rawSessions si ageRangesDisplay pas disponible (rétrocompatibilité)
@@ -858,14 +883,32 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   {isAlreadyInWishlist ? 'Modifier mon souhait' : 'Ajouter à mes souhaits'}
                 </Button>
               ) : (
-                <Button
-                  onClick={() => setShowProAuthModal(true)}
-                  disabled={!preSelectedSessionId || !preSelectedCity || (!IS_TEST_MODE && sessions.filter(s => s?.seatsLeft === -1 || (s?.seatsLeft ?? 0) > 0).length === 0)}
-                  className="w-full"
-                  size="lg"
-                >
-                  Inscrire un enfant
-                </Button>
+                <div className="space-y-2">
+                  <Button
+                    onClick={() => setShowProAuthModal(true)}
+                    disabled={!preSelectedSessionId || !preSelectedCity || (!IS_TEST_MODE && sessions.filter(s => s?.seatsLeft === -1 || (s?.seatsLeft ?? 0) > 0).length === 0)}
+                    className="w-full"
+                    size="lg"
+                  >
+                    Inscrire un enfant
+                  </Button>
+
+                  {propositionRequested ? (
+                    <p className="text-center text-xs text-primary font-medium py-2">
+                      Demande envoyée — notre équipe vous contacte sous 24h.
+                    </p>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      size="default"
+                      disabled={!preSelectedSessionId || !preSelectedCity || propositionLoading}
+                      onClick={() => setShowPropositionModal(true)}
+                    >
+                      {propositionLoading ? 'Envoi…' : 'Demander une proposition tarifaire'}
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -884,6 +927,14 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
           if (preSelectedCity) p.set('ville', preSelectedCity);
           return p.toString();
         })()}
+      />
+
+      {/* Modal auth pro — proposition tarifaire */}
+      <ProGateModal
+        open={showPropositionModal}
+        onClose={() => setShowPropositionModal(false)}
+        variant="pro-auth"
+        onAuthSuccess={() => { void handleRequestProposition(); }}
       />
 
       {/* Modal villes */}

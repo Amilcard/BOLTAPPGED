@@ -949,17 +949,27 @@ export async function sendProAccessAlertGED(data: ProAccessRequestData): Promise
  * Email d'invitation urgence — lien d'inscription valable 24h
  * Envoyé à l'éducateur qui n'a pas de compte GED (parcours email perso)
  */
-export async function sendEducatorInviteEmail(email: string, inviteUrl: string): Promise<void> {
+export async function sendEducatorInviteEmail(
+  email: string,
+  inviteUrl: string,
+  sejourTitle: string,
+  sessionDate: string,
+  cityDeparture: string
+): Promise<void> {
   if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
     console.warn('[EMAIL] Clé API manquante — sendEducatorInviteEmail non envoyé');
     return;
   }
 
+  const dateFormatted = sessionDate
+    ? new Date(sessionDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+    : '';
+
   try {
     await getResend().emails.send({
       from: FROM_EMAIL,
       to: email,
-      subject: 'Inscription urgence — Groupe & Découverte',
+      subject: `Inscription urgence — ${htmlEscape(sejourTitle)} — Groupe & Découverte`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
@@ -967,7 +977,11 @@ export async function sendEducatorInviteEmail(email: string, inviteUrl: string):
           </div>
           <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
             <h2 style="color: #2a383f; margin-top: 0;">Lien d'inscription urgence</h2>
-            <p>Vous avez reçu un lien pour inscrire un enfant en urgence sur un séjour Groupe &amp; Découverte.</p>
+            <p>Vous avez reçu un lien pour inscrire un enfant en urgence sur le séjour suivant :</p>
+            <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 16px 0;">
+              <p style="margin: 0; font-weight: bold; color: #2a383f; font-size: 16px;">${htmlEscape(sejourTitle)}</p>
+              <p style="margin: 6px 0 0; color: #6b7280; font-size: 14px;">Départ : ${htmlEscape(dateFormatted)} depuis ${htmlEscape(cityDeparture)}</p>
+            </div>
             <p>Ce lien est valable <strong>24 heures</strong>. Passé ce délai, il ne fonctionnera plus.</p>
             <div style="text-align: center; margin: 28px 0;">
               <a href="${inviteUrl}"
@@ -992,6 +1006,61 @@ export async function sendEducatorInviteEmail(email: string, inviteUrl: string):
     console.log('[EMAIL] sendEducatorInviteEmail ok');
   } catch (error) {
     console.error('[EMAIL] Erreur sendEducatorInviteEmail:', error);
+  }
+}
+
+/**
+ * Notification admin — inscription urgence reçue, en attente de validation GED
+ */
+export async function sendAdminUrgenceNotification(data: {
+  jeunePrenom: string;
+  jeuneNom: string;
+  referentEmail: string;
+  sejourTitle: string;
+  sessionDate: string;
+  cityDeparture: string;
+  dossierRef: string;
+  priceTotal: number;
+}): Promise<void> {
+  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
+    return;
+  }
+
+  const dateFormatted = data.sessionDate
+    ? new Date(data.sessionDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+    : data.sessionDate;
+
+  try {
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: ADMIN_EMAIL,
+      subject: `⚡ URGENCE — ${htmlEscape(data.jeunePrenom)} ${htmlEscape(data.jeuneNom)} — À valider`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #dc2626; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 20px;">⚡ Inscription urgence reçue — À valider</h1>
+          </div>
+          <div style="border: 1px solid #fca5a5; border-top: none; padding: 24px; border-radius: 0 0 8px 8px; background: #fff7f7;">
+            <ul style="line-height: 2;">
+              <li><strong>Enfant :</strong> ${htmlEscape(data.jeunePrenom)} ${htmlEscape(data.jeuneNom)}</li>
+              <li><strong>Référent :</strong> ${htmlEscape(data.referentEmail)}</li>
+              <li><strong>Séjour :</strong> ${htmlEscape(data.sejourTitle)}</li>
+              <li><strong>Départ :</strong> ${htmlEscape(dateFormatted)} depuis ${htmlEscape(data.cityDeparture)}</li>
+              <li><strong>Montant :</strong> ${data.priceTotal.toFixed(2)} €</li>
+              <li><strong>Dossier :</strong> <code>${htmlEscape(data.dossierRef)}</code></li>
+            </ul>
+            <div style="text-align: center; margin: 24px 0;">
+              <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://app.groupeetdecouverte.fr'}/admin/demandes"
+                 style="display: inline-block; background: #2a383f; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">
+                Voir dans l'admin
+              </a>
+            </div>
+          </div>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error('[EMAIL] Erreur sendAdminUrgenceNotification:', error);
   }
 }
 

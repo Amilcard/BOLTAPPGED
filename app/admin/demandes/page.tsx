@@ -3,11 +3,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatDate } from '@/lib/utils';
-import { Eye, Trash2, Building2 } from 'lucide-react';
+import { Eye, Trash2, Building2, Zap } from 'lucide-react';
 import { InscriptionSupabase, InscriptionEnriched } from '@/lib/types';
 import { useAdminUI } from '@/components/admin/admin-ui';
 import { DossierBadge } from '@/components/admin/DossierBadge';
 import { AdminPagination } from '@/components/ui/AdminPagination';
+import { UrgenceInviteModal } from '@/components/admin/UrgenceInviteModal';
 
 interface StructureOption {
   id: string;
@@ -46,6 +47,7 @@ export default function AdminDemandes() {
   const LIMIT = 50;
   const [total, setTotal] = useState(0);
   const totalPages = Math.ceil(total / LIMIT);
+  const [urgenceModalOpen, setUrgenceModalOpen] = useState(false);
 
   const fetchInscriptions = useCallback(async () => {
     try {
@@ -176,11 +178,29 @@ export default function AdminDemandes() {
 
   return (
     <div>
+      {urgenceModalOpen && (
+        <UrgenceInviteModal
+          onClose={() => setUrgenceModalOpen(false)}
+          onSuccess={() => {
+            setUrgenceModalOpen(false);
+            toast('Lien d\'inscription urgence envoyé.');
+            void fetchInscriptions();
+          }}
+        />
+      )}
+
       <div className="flex items-center justify-between mb-8 gap-4">
         <h1 className="text-3xl font-bold text-primary">
           Demandes ({filtered.length}{search ? ` / ${inscriptions.length}` : ''})
         </h1>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setUrgenceModalOpen(true)}
+            className="flex items-center gap-2 rounded-brand bg-red-600 text-white px-4 py-2 text-sm font-semibold hover:bg-red-700 transition-colors"
+          >
+            <Zap size={15} aria-hidden="true" />
+            Inscription urgence
+          </button>
           {structures.length > 0 && (
             <div className="relative">
               <Building2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />

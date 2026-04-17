@@ -3,16 +3,27 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SignJWT } from 'jose';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 import { sendEducatorInviteEmail } from '@/lib/email';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { requireEditor } from '@/lib/auth-middleware';
 
 /**
  * POST /api/auth/educator-invite
  *
  * Génère un lien JWT 24h pour inscription urgence sans compte GED.
- * Body : { email: string }
- * Réponse : { success: true } — le JWT n'est jamais exposé dans la réponse.
+ * L'admin sélectionne l'email éducateur + séjour + session.
+ * Le JWT encode ces infos — l'éducateur n'a plus qu'à remplir les infos enfant.
+ *
+ * Body : { email, sejour_slug, session_date, city_departure }
  */
 export async function POST(req: NextRequest) {
-  // Fail-closed si secret absent
+  const auth = requireEditor(req);
+  if (!auth) {
+    return NextResponse.json(
+      { error: { code: 'UNAUTHORIZED', message: 'Accès réservé aux éditeurs.' } },
+      { status: 401 }
+    );
+  }
+
   const secret = process.env.NEXTAUTH_SECRET;
   if (!secret) {
     console.error('[educator-invite] NEXTAUTH_SECRET manquant');
@@ -23,9 +34,7 @@ export async function POST(req: NextRequest) {
   }
 
   const ip = getClientIpFromHeaders(req.headers);
-
-  // Rate-limit : 2 req / 10 min par IP
-  if (await isRateLimited('invite', ip, 2, 10)) {
+  if (await isRateLimited('invite', ip, 10, 10)) {
     return NextResponse.json(
       { error: { code: 'RATE_LIMITED', message: 'Trop de requêtes. Réessayez dans quelques minutes.' } },
       { status: 429, headers: { 'Retry-After': '600' } }
@@ -42,27 +51,72 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { email } = body as Record<string, unknown>;
+  const { email, sejour_slug, session_date, city_departure } = body as Record<string, unknown>;
 
-  // Validation email
-  if (
-    !email ||
-    typeof email !== 'string' ||
-    email.trim().length === 0 ||
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
-  ) {
+  if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
     return NextResponse.json(
       { error: { code: 'VALIDATION_ERROR', message: 'Email valide requis.' } },
       { status: 400 }
     );
   }
+  if (!sejour_slug || typeof sejour_slug !== 'string') {
+    return NextResponse.json(
+      { error: { code: 'VALIDATION_ERROR', message: 'Séjour requis.' } },
+      { status: 400 }
+    );
+  }
+  if (!session_date || typeof session_date !== 'string') {
+    return NextResponse.json(
+      { error: { code: 'VALIDATION_ERROR', message: 'Session requise.' } },
+      { status: 400 }
+    );
+  }
+  if (!city_departure || typeof city_departure !== 'string') {
+    return NextResponse.json(
+      { error: { code: 'VALIDATION_ERROR', message: 'Ville de départ requise.' } },
+      { status: 400 }
+    );
+  }
 
   const normalizedEmail = email.trim().toLowerCase();
+  const normalizedDate = session_date.split('T')[0];
+
+  // Vérifier que la session + le prix existent bien en base
+  const supabase = getSupabaseAdmin();
+  const { data: priceRow } = await supabase
+    .from('gd_session_prices')
+    .select('price_ged_total, stay_slug, start_date, city_departure')
+    .eq('stay_slug', sejour_slug)
+    .eq('start_date', normalizedDate)
+    .eq('city_departure', city_departure)
+    .single();
+
+  if (!priceRow) {
+    return NextResponse.json(
+      { error: { code: 'SESSION_NOT_FOUND', message: 'Session ou prix introuvable pour ce séjour.' } },
+      { status: 400 }
+    );
+  }
+
+  // Récupérer le nom marketing du séjour pour l'email
+  const { data: stay } = await supabase
+    .from('gd_stays')
+    .select('marketing_title')
+    .eq('slug', sejour_slug)
+    .single();
+
+  const sejourTitle = stay?.marketing_title ?? sejour_slug;
 
   try {
     const encodedSecret = new TextEncoder().encode(secret);
 
-    const token = await new SignJWT({ type: 'educator_invite', email: normalizedEmail })
+    const token = await new SignJWT({
+      type: 'educator_invite',
+      email: normalizedEmail,
+      sejour_slug,
+      session_date: normalizedDate,
+      city_departure,
+    })
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('24h')
       .setIssuedAt()
@@ -71,7 +125,7 @@ export async function POST(req: NextRequest) {
     const baseUrl = process.env.NEXTAUTH_URL || 'https://app.groupeetdecouverte.fr';
     const inviteUrl = `${baseUrl}/inscription-urgence?token=${token}`;
 
-    await sendEducatorInviteEmail(normalizedEmail, inviteUrl);
+    await sendEducatorInviteEmail(normalizedEmail, inviteUrl, sejourTitle, normalizedDate, city_departure);
 
     return NextResponse.json({ success: true });
   } catch (error) {

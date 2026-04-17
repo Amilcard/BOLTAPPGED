@@ -283,3 +283,64 @@ describe('verifyProSession - legacy fallback', () => {
     expect(resolveCodeToStructure).not.toHaveBeenCalled();
   });
 });
+
+// ─────────────────────────────────────────────────────────────
+// buildProSessionToken — factorisation JWT pro_session (#11)
+// ─────────────────────────────────────────────────────────────
+
+describe('buildProSessionToken', () => {
+  const SECRET = 'test-secret-min-32-chars-long-xxxxxxxxx';
+  beforeAll(() => { process.env.NEXTAUTH_SECRET = SECRET; });
+
+  test('retourne un JWT contenant tous les champs ProSessionPayload + jti', async () => {
+    const { buildProSessionToken } = await import('@/lib/auth-middleware');
+    const result = await buildProSessionToken({
+      email: 'x@y.fr',
+      structureCode: 'ABCDEF',
+      structureName: 'MECS Test',
+      structureRole: 'secretariat',
+      structureId: 's-123',
+      expiresIn: '30m',
+    });
+    expect(result).not.toBeNull();
+    expect(result?.token).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/);
+    expect(result?.jti).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+    expect(result?.expiresAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+
+    // Décoder le JWT et vérifier les claims
+    const { jwtVerify } = await import('jose');
+    const encoded = new TextEncoder().encode(SECRET);
+    const { payload } = await jwtVerify(result!.token, encoded);
+    expect(payload.role).toBe('pro');
+    expect(payload.type).toBe('pro_session');
+    expect(payload.email).toBe('x@y.fr');
+    expect(payload.structureCode).toBe('ABCDEF');
+    expect(payload.structureName).toBe('MECS Test');
+    expect(payload.structureRole).toBe('secretariat');
+    expect(payload.structureId).toBe('s-123');
+    expect(payload.jti).toBe(result!.jti);
+  });
+
+  test('retourne null si NEXTAUTH_SECRET manquant', async () => {
+    const { buildProSessionToken } = await import('@/lib/auth-middleware');
+    const oldSecret = process.env.NEXTAUTH_SECRET;
+    delete process.env.NEXTAUTH_SECRET;
+    const result = await buildProSessionToken({
+      email: 'x@y.fr', structureCode: 'ABCDEF', structureName: 'S',
+      structureRole: 'cds', structureId: 's-1', expiresIn: '8h',
+    });
+    expect(result).toBeNull();
+    process.env.NEXTAUTH_SECRET = oldSecret;
+  });
+
+  test('TTL 8h calcule expiresAt à ~8h dans le futur', async () => {
+    const { buildProSessionToken } = await import('@/lib/auth-middleware');
+    const result = await buildProSessionToken({
+      email: 'x@y.fr', structureCode: 'ABCDEF', structureName: 'S',
+      structureRole: 'direction', structureId: 's-1', expiresIn: '8h',
+    });
+    const delta = new Date(result!.expiresAt).getTime() - Date.now();
+    expect(delta).toBeGreaterThan(7.9 * 3600 * 1000);
+    expect(delta).toBeLessThan(8.1 * 3600 * 1000);
+  });
+});

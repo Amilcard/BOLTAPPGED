@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { resolveCodeToStructure } from '@/lib/structure';
-import { SignJWT } from 'jose';
+import { buildProSessionToken, type ProStructureRole } from '@/lib/auth-middleware';
 
 const MAX_ATTEMPTS = 10;
 const WINDOW_MINUTES = 5;
@@ -69,31 +69,22 @@ export async function POST(req: NextRequest) {
 
     const structure = resolved.structure as { id: string; name: string };
 
-    // 4. Générer JWT pro (30 min)
-    const secret = process.env.NEXTAUTH_SECRET;
-    if (!secret) {
-      console.error('[pro-session] NEXTAUTH_SECRET manquant');
+    // 4. Générer JWT pro (30 min) via helper factorisé
+    const jwtResult = await buildProSessionToken({
+      email: email.toLowerCase().trim(),
+      structureCode: codeNorm,
+      structureName: structure.name,
+      structureRole: resolved.role as ProStructureRole,
+      structureId: resolved.structure.id as string,
+      expiresIn: '30m',
+    });
+    if (!jwtResult) {
       return NextResponse.json(
         { error: { code: 'CONFIG_ERROR', message: 'Erreur de configuration serveur.' } },
         { status: 500 }
       );
     }
-
-    const encodedSecret = new TextEncoder().encode(secret);
-    const jti = crypto.randomUUID();
-    const token = await new SignJWT({
-      role: 'pro',
-      structureCode: codeNorm,
-      structureName: structure.name,
-      structureRole: resolved.role,
-      structureId: resolved.structure.id as string,
-      email: email.toLowerCase().trim(),
-      type: 'pro_session',
-      jti,
-    })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('30m')
-      .sign(encodedSecret);
+    const { token } = jwtResult;
 
     // 5. Poser cookie httpOnly gd_pro_session
     const response = NextResponse.json({

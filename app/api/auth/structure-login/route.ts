@@ -1,10 +1,10 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { SignJWT } from 'jose';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { verifyPassword } from '@/lib/password';
 import { auditLog } from '@/lib/audit-log';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
+import { buildProSessionToken, type ProStructureRole } from '@/lib/auth-middleware';
 
 export async function POST(req: NextRequest) {
   try {
@@ -70,34 +70,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: { code: 'INVALID_CREDENTIALS' } }, { status: 401 });
     }
 
-    const secret = process.env.NEXTAUTH_SECRET;
-    if (!secret) {
-      console.error('[structure-login] NEXTAUTH_SECRET manquant');
-      return NextResponse.json({ error: { code: 'CONFIG_ERROR' } }, { status: 500 });
-    }
-
     // structureCode : code structure (pas code personnel) pour compat ProSessionPayload
     // utilisé par /api/inscriptions et /api/pro/propositions (callers existants).
     const structureCode = memberWithStructure.gd_structures.code;
 
-    const encodedSecret = new TextEncoder().encode(secret);
-    const jti = crypto.randomUUID();
-    const token = await new SignJWT({
-      role: 'pro',
-      type: 'pro_session',
+    const jwtResult = await buildProSessionToken({
       email: memberWithStructure.email,
       structureCode,
-      structureRole: memberWithStructure.role,
-      structureId: memberWithStructure.structure_id,
       structureName: memberWithStructure.gd_structures.name,
-      jti,
-    })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('8h')
-      .sign(encodedSecret);
+      structureRole: memberWithStructure.role as ProStructureRole,
+      structureId: memberWithStructure.structure_id,
+      expiresIn: '8h',
+    });
+    if (!jwtResult) {
+      return NextResponse.json({ error: { code: 'CONFIG_ERROR' } }, { status: 500 });
+    }
+    const { token, jti, expiresAt: jtiExp } = jwtResult;
 
     // Stocker jti + exp pour révocation immédiate via /revoke
-    const jtiExp = new Date(Date.now() + 8 * 3600 * 1000).toISOString();
     await supabase
       .from('gd_structure_access_codes')
       .update({ last_jti: jti, last_jti_exp: jtiExp })

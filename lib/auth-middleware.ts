@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { jwtVerify } from 'jose';
+import { jwtVerify, SignJWT } from 'jose';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export interface AuthPayload {
@@ -107,4 +107,55 @@ export async function verifyProSession(request: NextRequest): Promise<ProSession
 
 export function unauthorizedResponse() {
   return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+}
+
+// ─────────────────────────────────────────────────────────────
+// buildProSessionToken — factorisation JWT pro_session (#11)
+// ─────────────────────────────────────────────────────────────
+
+export interface BuildProSessionTokenInput {
+  email: string;
+  structureCode: string;
+  structureName: string;
+  structureRole: ProStructureRole;
+  structureId: string;
+  expiresIn: '30m' | '8h';
+}
+
+export interface BuildProSessionTokenOutput {
+  token: string;
+  jti: string;
+  expiresAt: string; // ISO
+}
+
+/**
+ * Factorise la création du JWT `pro_session` entre structure-login et pro-session.
+ * Retourne null si NEXTAUTH_SECRET manquant.
+ */
+export async function buildProSessionToken(
+  input: BuildProSessionTokenInput
+): Promise<BuildProSessionTokenOutput | null> {
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    console.error('[buildProSessionToken] NEXTAUTH_SECRET manquant');
+    return null;
+  }
+  const encodedSecret = new TextEncoder().encode(secret);
+  const jti = crypto.randomUUID();
+  const ttlMs = input.expiresIn === '8h' ? 8 * 3600 * 1000 : 30 * 60 * 1000;
+  const expiresAt = new Date(Date.now() + ttlMs).toISOString();
+  const token = await new SignJWT({
+    role: 'pro',
+    type: 'pro_session',
+    email: input.email,
+    structureCode: input.structureCode,
+    structureName: input.structureName,
+    structureRole: input.structureRole,
+    structureId: input.structureId,
+    jti,
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setExpirationTime(input.expiresIn)
+    .sign(encodedSecret);
+  return { token, jti, expiresAt };
 }

@@ -57,7 +57,7 @@ export async function GET(
       actorType: 'referent',
       actorId: resolved.email || undefined,
       ipAddress: getStructureClientIp(req),
-      metadata: { type: 'team_list' },
+      metadata: { type: 'team_list', actor_role: resolved.role },
     });
 
     return NextResponse.json({ members });

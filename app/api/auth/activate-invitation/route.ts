@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       actorType: 'referent',
       actorId: member.email as string,
       ipAddress: ip,
-      metadata: { type: 'team_activate', role: member.role },
+      metadata: { type: 'team_activate', actor_role: member.role },
     });
 
     return NextResponse.json({ ok: true, email: member.email });

@@ -77,7 +77,7 @@ export async function POST(
       actorType: 'referent',
       actorId: resolved.email || undefined,
       ipAddress: getStructureClientIp(req),
-      metadata: { type: 'team_reinvite', member_email: member.email, member_role: member.role },
+      metadata: { type: 'team_reinvite', actor_role: resolved.role, member_email: member.email, member_role: member.role },
     });
 
     return NextResponse.json({ ok: true });

@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
         resourceId: memberWithStructure.structure_id,
         actorType: 'system',
         ipAddress: ip,
-        metadata: { type: 'structure_login_failed', email_hash: emailHash },
+        metadata: { type: 'structure_login_failed', actor_role: memberWithStructure.role, email_hash: emailHash },
       });
       return NextResponse.json({ error: { code: 'INVALID_CREDENTIALS' } }, { status: 401 });
     }
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
       actorType: 'referent',
       actorId: memberWithStructure.email,
       ipAddress: ip,
-      metadata: { type: 'structure_login_success', role: memberWithStructure.role },
+      metadata: { type: 'structure_login_success', actor_role: memberWithStructure.role },
     });
 
     return response;

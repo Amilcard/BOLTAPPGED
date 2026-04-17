@@ -120,7 +120,7 @@ export async function POST(
       actorType: 'referent',
       actorId: resolved.email || `direction-code:${code.slice(0, 4)}…`,
       ipAddress: getStructureClientIp(req),
-      metadata: { type: 'team_invite', invited_email: emailNorm, role, email_sent: emailSent },
+      metadata: { type: 'team_invite', actor_role: resolved.role, invited_email: emailNorm, role, email_sent: emailSent },
     });
 
     return NextResponse.json({ ok: true, memberId: inserted.id, emailSent }, { status: 201 });

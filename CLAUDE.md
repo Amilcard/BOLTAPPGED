@@ -60,6 +60,17 @@ npm run lint
 - gd_notes — notes par enfant (non éditables, traçabilité RGPD)
 - Vues : v_activity_with_sessions, v_orphaned_records
 
+## Cookie `gd_pro_session` — 2 formes coexistantes
+
+Deux routes émettent ce cookie :
+
+1. **`POST /api/auth/structure-login`** (email + password, TTL 8h) — payload complet : `{role, type, email, structureCode, structureRole, structureId, structureName, jti}`
+2. **`POST /api/auth/pro-session`** (email + code structure, TTL 30min) — idem post-2026-04. Tokens émis avant peuvent ne pas inclure `structureRole`/`structureId` ; le fallback de `verifyProSession` les résout depuis `structureCode` via `resolveCodeToStructure()`.
+
+**Règle** : toute modification de `ProSessionPayload` doit rester compatible avec les 2 flux + fallback legacy. Ne jamais ajouter un champ obligatoire sans backfill simultané dans les 2 routes.
+
+**Révocation** : `gd_revoked_tokens` lu par `verifyProSession`. Route `/api/structure/[code]/team/[memberId]/revoke` désactive la ligne ; révocation immédiate du JWT actif = dette post-MVP (item #3 plan architecte 2026-04-17).
+
 ## Danger zones — INTERDICTIONS ABSOLUES
 - JAMAIS de DELETE FROM sans WHERE explicite validé
 - JAMAIS de TRUNCATE sur aucune table

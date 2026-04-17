@@ -58,6 +58,9 @@ export interface ProSessionPayload {
   structureCode: string;
   structureName: string;
   type: 'pro_session';
+  // Nouveau — team-invite login (optionnel pour préserver compat)
+  structureRole?: 'secretariat' | 'educateur' | 'direction' | 'cds';
+  structureId?: string;
 }
 
 export async function verifyProSession(request: NextRequest): Promise<ProSessionPayload | null> {

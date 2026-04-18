@@ -4,6 +4,7 @@ import { requireEditor, requireAdmin } from '@/lib/auth-middleware';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { auditLog } from '@/lib/audit-log';
 import { performInscriptionUpdate } from '@/lib/admin-inscriptions-update';
+import { performInscriptionDelete } from '@/lib/admin-inscriptions-delete';
 /**
  * GET /api/admin/inscriptions/[id]
  * Détail d'une inscription depuis Supabase gd_inscriptions.
@@ -84,47 +85,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id: inscriptionId } = await params;
-    if (!UUID_REGEX.test(inscriptionId)) {
-      return NextResponse.json({ error: { code: 'INVALID_ID', message: 'ID invalide.' } }, { status: 400 });
-    }
-    const supabase = getSupabaseAdmin();
-    const auth = await requireAdmin(req);
-    if (!auth) {
-      return NextResponse.json(
-        { error: { code: 'unauthorized', message: 'Seul un administrateur peut supprimer.' } },
-        { status: 403 }
-      );
-    }
-
-    // RGPD — tracer suppression inscription par admin (avant l'opération)
-    await auditLog(supabase, {
-      action: 'delete',
-      resourceType: 'inscription',
-      resourceId: inscriptionId,
-      actorType: 'admin',
-      actorId: auth.email,
-    });
-
-    // Soft delete : marquer deleted_at plutôt que supprimer physiquement
-    const { error } = await supabase
-      .from('gd_inscriptions')
-      .update({ deleted_at: new Date().toISOString() })
-      .eq('id', inscriptionId)
-      .is('deleted_at', null);
-
-    if (error) {
-      console.error('DELETE /api/admin/inscriptions/[id] error:', error);
-      throw error;
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('DELETE /api/admin/inscriptions/[id] error:', error);
+  const { id: inscriptionId } = await params;
+  const auth = await requireAdmin(req);
+  if (!auth) {
     return NextResponse.json(
-      { error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur' } },
-      { status: 500 }
+      { error: { code: 'unauthorized', message: 'Seul un administrateur peut supprimer.' } },
+      { status: 403 }
     );
   }
+  return performInscriptionDelete(getSupabaseAdmin(), inscriptionId, auth.email);
 }

@@ -123,9 +123,10 @@ export default function AdminDemandes() {
     if (!UUID_DEL.test(id)) return;
     confirm(`Supprimer définitivement l'inscription de ${jeune} ? Cette action est irréversible.`, async () => {
       try {
-        // nosemgrep: javascript.lang.security.audit.ssrf.http-request.js-ssrf -- relative URL, UUID validated above
-        const res = await fetch(`/api/admin/inscriptions/${id}`, {
+        const res = await fetch('/api/admin/inscriptions', {
           method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id }),
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));

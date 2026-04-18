@@ -148,9 +148,10 @@ export default function InscriptionDetailPage() {
     if (!insc) return;
     confirm(`Supprimer définitivement l'inscription de ${insc.jeune_prenom} ${insc.jeune_nom} ? Cette action est irréversible.`, async () => {
       try {
-        const res = await fetch(`/api/admin/inscriptions/${inscriptionId}`, {
+        const res = await fetch('/api/admin/inscriptions', {
           method: 'DELETE',
-          headers: authHeaders(),
+          headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: inscriptionId }),
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));

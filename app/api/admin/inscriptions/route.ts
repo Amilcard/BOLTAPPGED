@@ -1,9 +1,10 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { requireEditor } from '@/lib/auth-middleware';
+import { requireEditor, requireAdmin } from '@/lib/auth-middleware';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { enrichInscriptions, type InscriptionRaw } from '@/lib/inscription-enrichment';
 import { performInscriptionUpdate } from '@/lib/admin-inscriptions-update';
+import { performInscriptionDelete } from '@/lib/admin-inscriptions-delete';
 import { UUID_RE } from '@/lib/validators';
 /**
  * GET /api/admin/inscriptions
@@ -94,4 +95,25 @@ export async function PUT(req: NextRequest) {
 
   const supabase = getSupabaseAdmin();
   return performInscriptionUpdate(supabase, id, fields, auth.email);
+}
+
+/**
+ * DELETE /api/admin/inscriptions
+ * Soft-delete une inscription (id dans le body — URL littérale côté client, anti-SSRF).
+ * Délègue à lib/admin-inscriptions-delete.ts (logique partagée avec la route legacy [id]).
+ */
+export async function DELETE(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (!auth) {
+    return NextResponse.json(
+      { error: { code: 'unauthorized', message: 'Seul un administrateur peut supprimer.' } },
+      { status: 403 }
+    );
+  }
+
+  const body = await req.json().catch(() => ({}));
+  const bodyRecord = (body ?? {}) as Record<string, unknown>;
+  const id = typeof bodyRecord.id === 'string' ? bodyRecord.id : '';
+
+  return performInscriptionDelete(getSupabaseAdmin(), id, auth.email);
 }

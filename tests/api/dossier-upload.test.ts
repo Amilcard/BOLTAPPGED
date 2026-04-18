@@ -161,7 +161,7 @@ describe('POST /api/dossier-enfant/[id]/upload', () => {
     expect(res.status).toBe(400);
   });
 
-  it('retourne 400 si fichier > 5 Mo', async () => {
+  it('retourne 413 (Payload Too Large) si fichier > 5 Mo', async () => {
     setupOwnershipOk();
     const req = makeFormDataRequest({
       token: VALID_TOKEN,
@@ -169,7 +169,9 @@ describe('POST /api/dossier-enfant/[id]/upload', () => {
       file: makeFile('big.pdf', 'application/pdf', 6 * 1024 * 1024),
     });
     const res = await POST(req, makeParams());
-    expect(res.status).toBe(400);
+    // 413 Payload Too Large (RFC 9110) — remplace l'ancien 400 après refacto
+    // vers validateUploadSize centralisé qui distingue missing/too_large.
+    expect(res.status).toBe(413);
     const json = await res.json();
     expect(json.error).toMatch(/volumineux/i);
   });

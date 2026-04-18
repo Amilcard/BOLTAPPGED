@@ -1,4 +1,4 @@
-import { validateBase64Image, isUuid, isEmail } from '@/lib/validators';
+import { validateBase64Image, validateUploadSize, isUuid, isEmail } from '@/lib/validators';
 
 describe('validateBase64Image', () => {
   const small = 'data:image/png;base64,' + 'A'.repeat(400);
@@ -43,6 +43,39 @@ describe('validateBase64Image', () => {
     const jpg = 'data:image/jpeg;base64,' + 'A'.repeat(200);
     const r = validateBase64Image(jpg, { mimes: ['image/png', 'image/jpeg'] });
     expect(r.ok).toBe(true);
+  });
+});
+
+describe('validateUploadSize', () => {
+  test('rejette valeur vide ou non-fichier', () => {
+    expect(validateUploadSize(null)).toEqual({ ok: false, reason: 'missing' });
+    expect(validateUploadSize(undefined)).toEqual({ ok: false, reason: 'missing' });
+    expect(validateUploadSize('string')).toEqual({ ok: false, reason: 'missing' });
+    expect(validateUploadSize({})).toEqual({ ok: false, reason: 'missing' });
+    expect(validateUploadSize({ size: 'not-a-number' })).toEqual({ ok: false, reason: 'missing' });
+    expect(validateUploadSize({ size: -1 })).toEqual({ ok: false, reason: 'missing' });
+  });
+
+  test('accepte fichier dans la limite', () => {
+    const r = validateUploadSize({ size: 3_000_000 }, { max: 5_000_000 });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.bytes).toBe(3_000_000);
+  });
+
+  test('rejette fichier > max', () => {
+    const r = validateUploadSize({ size: 10_000_000 }, { max: 5_000_000 });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.reason).toBe('too_large');
+      expect(r.actual).toBe(10_000_000);
+    }
+  });
+
+  test('défaut 5 MB', () => {
+    const r1 = validateUploadSize({ size: 5_000_000 });
+    expect(r1.ok).toBe(true);
+    const r2 = validateUploadSize({ size: 5_000_001 });
+    expect(r2.ok).toBe(false);
   });
 });
 

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { verifyOwnership } from '@/lib/verify-ownership';
 import { auditLog, getClientIp } from '@/lib/audit-log';
+import { validateUploadSize } from '@/lib/validators';
 const ALLOWED_TYPES = [
   'vaccins', 'ordonnance', 'pass_nautique', 'certificat_plongee',
   'certificat_medical', 'attestation_assurance', 'signature_parentale',
@@ -50,8 +51,14 @@ export async function POST(
       return NextResponse.json({ error: 'Fichier manquant.' }, { status: 400 });
     }
 
-    if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: 'Fichier trop volumineux (max 5 Mo).' }, { status: 400 });
+    // Validator centralisé — cap taille + type numérique (remplace check inline).
+    const sizeCheck = validateUploadSize(file, { max: MAX_SIZE });
+    if (!sizeCheck.ok) {
+      const msg = sizeCheck.reason === 'too_large'
+        ? `Fichier trop volumineux (max ${Math.round(MAX_SIZE / 1024 / 1024)} Mo).`
+        : 'Fichier invalide.';
+      const status = sizeCheck.reason === 'too_large' ? 413 : 400;
+      return NextResponse.json({ error: msg }, { status });
     }
 
     const ALLOWED_MIME = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp']);

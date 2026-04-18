@@ -16,6 +16,37 @@ export function isEmail(value: unknown): boolean {
 }
 
 /**
+ * Validator de taille pour upload multipart (File/Blob).
+ * Complémentaire de `validateBase64Image` — utilisé pour formData uploads
+ * (PDF, JPEG, PNG, WebP) côté routes upload dossier-enfant par exemple.
+ *
+ * @param file - File ou Blob provenant de `formData.get(...)`
+ * @param opts.max - taille max en octets (défaut : 5 MB = 5_000_000)
+ * @returns { ok: true } ou { ok: false, reason, actual }
+ *
+ * Exemple :
+ *   const check = validateUploadSize(file, { max: 5_000_000 });
+ *   if (!check.ok) return NextResponse.json({ error: '...' }, { status: 413 });
+ */
+export function validateUploadSize(
+  file: unknown,
+  opts: { max?: number } = {},
+): { ok: true; bytes: number } | { ok: false; reason: 'missing' | 'too_large'; actual?: number } {
+  const max = opts.max ?? 5_000_000;
+
+  if (!file || typeof file !== 'object') return { ok: false, reason: 'missing' };
+
+  const size = (file as { size?: unknown }).size;
+  if (typeof size !== 'number' || !Number.isFinite(size) || size < 0) {
+    return { ok: false, reason: 'missing' };
+  }
+
+  if (size > max) return { ok: false, reason: 'too_large', actual: size };
+
+  return { ok: true, bytes: size };
+}
+
+/**
  * Validator de data URL image (PNG/JPEG) avec cap de taille.
  * Prévient les DoS par payload volumineux sur les inputs canvas/signature.
  *

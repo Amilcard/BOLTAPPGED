@@ -12,7 +12,21 @@
     "@typescript-eslint/no-require-imports": "warn",
     "@typescript-eslint/no-var-requires": "warn",
     "react/no-unescaped-entities": "off",
-    "no-console": "off"
+    "no-console": "off",
+    "no-restricted-syntax": ["error",
+      {
+        "selector": "VariableDeclarator > CallExpression[callee.name=/^(requireEditor|requireAdmin|requireAuth|requireProSession|verifyAuth|verifyProSession|requireStructureRole|requireInscriptionOwnership)$/]",
+        "message": "Auth/ownership helper returns a Promise — doit être awaited. Écrire: const x = await requireEditor(req). Cette règle protège contre le bypass auth (audit 2026-04-18: educator-invite)."
+      },
+      {
+        "selector": "UnaryExpression[operator='!'] > CallExpression[callee.name=/^(requireEditor|requireAdmin|requireAuth|requireProSession|verifyAuth|verifyProSession|requireStructureRole|requireInscriptionOwnership)$/]",
+        "message": "Auth/ownership helper sans await dans !expr. Écrire: if (!(await requireEditor(req)))."
+      },
+      {
+        "selector": "IfStatement > CallExpression[callee.name=/^(requireEditor|requireAdmin|requireAuth|requireProSession|verifyAuth|verifyProSession|requireStructureRole|requireInscriptionOwnership)$/]",
+        "message": "Auth/ownership helper sans await dans IfStatement. Écrire: if (await requireEditor(req))."
+      }
+    ]
   },
   "ignorePatterns": [
     "node_modules/",

@@ -132,9 +132,10 @@ export default function InscriptionDetailPage() {
     setRelanceLoading(true);
     setRelanceError(null);
     try {
-      const res = await fetch(`/api/admin/inscriptions/${inscriptionId}/relance`, {
+      const res = await fetch('/api/admin/inscriptions/relance', {
         method: 'POST',
-        headers: authHeaders(),
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: inscriptionId }),
       });
       if (res.ok) {
         const body = await res.json().catch(() => ({}));

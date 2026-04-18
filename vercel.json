@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/health-checks",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-invitations",
+      "schedule": "30 3 * * *"
     }
   ]
 }

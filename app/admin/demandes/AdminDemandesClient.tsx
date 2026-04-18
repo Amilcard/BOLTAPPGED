@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatDate } from '@/lib/utils';
+import { UUID_RE } from '@/lib/validators';
 import { Eye, Trash2, Building2, Zap } from 'lucide-react';
 import { InscriptionSupabase, InscriptionEnriched } from '@/lib/types';
 import { useAdminUI } from '@/components/admin/admin-ui';
@@ -119,8 +120,7 @@ export default function AdminDemandes() {
   const handleDelete = (e: React.MouseEvent, id: string, jeune: string) => {
     e.preventDefault();
     e.stopPropagation();
-    const UUID_DEL = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!UUID_DEL.test(id)) return;
+    if (!UUID_RE.test(id)) return;
     confirm(`Supprimer définitivement l'inscription de ${jeune} ? Cette action est irréversible.`, async () => {
       try {
         const res = await fetch('/api/admin/inscriptions', {

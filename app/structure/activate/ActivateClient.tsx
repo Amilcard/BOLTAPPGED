@@ -60,7 +60,7 @@ export default function ActivateClient() {
   if (success) {
     return (
       <div className="min-h-screen bg-muted flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl shadow-card p-8 max-w-md text-center">
+        <div className="bg-white rounded-brand shadow-card p-8 max-w-md text-center">
           <CheckCircle2 className="w-14 h-14 text-green-500 mx-auto mb-4" />
           <h1 className="text-xl font-bold text-primary mb-2">Compte activé</h1>
           <p className="text-gray-600 mb-4">Vous allez être redirigé vers la connexion…</p>
@@ -71,7 +71,7 @@ export default function ActivateClient() {
 
   return (
     <div className="min-h-screen bg-muted flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-card p-8 max-w-md w-full">
+      <div className="bg-white rounded-brand shadow-card p-8 max-w-md w-full">
         <h1 className="text-xl font-bold text-primary mb-2">Activer votre accès</h1>
         <p className="text-sm text-gray-600 mb-6">Définissez un mot de passe personnel. Ne le partagez avec personne.</p>
 
@@ -101,7 +101,7 @@ export default function ActivateClient() {
           </div>
 
           {error && (
-            <div className="flex items-start gap-2 p-3 bg-red-50 text-red-700 rounded-lg text-sm" role="alert">
+            <div className="flex items-start gap-2 p-3 bg-red-50 text-red-700 rounded-brand text-sm" role="alert">
               <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" /> {error}
             </div>
           )}

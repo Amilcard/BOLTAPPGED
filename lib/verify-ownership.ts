@@ -5,7 +5,7 @@
  * Utilisé par : suivi/[token], dossier-enfant/[id], dossier-enfant/[id]/upload, dossier-enfant/[id]/submit
  */
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { UUID_RE } from '@/lib/validators';
 
 type OwnershipOk = { ok: true; referentEmail: string };
 type OwnershipFail = { ok: false; code: string; message: string; status: number };
@@ -24,10 +24,10 @@ export async function verifyOwnership(
   inscriptionId: string,
   options?: { renew?: boolean }
 ): Promise<OwnershipResult> {
-  if (!UUID_REGEX.test(token)) {
+  if (!UUID_RE.test(token)) {
     return { ok: false, code: 'INVALID_TOKEN', message: 'Token invalide.', status: 400 };
   }
-  if (!UUID_REGEX.test(inscriptionId)) {
+  if (!UUID_RE.test(inscriptionId)) {
     return { ok: false, code: 'INVALID_ID', message: 'ID inscription invalide.', status: 400 };
   }
 
@@ -99,7 +99,7 @@ export async function verifyToken(
   { ok: true; referentEmail: string; organisation?: string }
   | { ok: false; code: string; message: string; status: number }
 > {
-  if (!UUID_REGEX.test(token)) {
+  if (!UUID_RE.test(token)) {
     return { ok: false, code: 'INVALID_TOKEN', message: 'Lien de suivi invalide.', status: 400 };
   }
 

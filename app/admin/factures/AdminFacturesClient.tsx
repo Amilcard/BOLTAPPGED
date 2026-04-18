@@ -307,10 +307,10 @@ export default function FacturesPage() {
     if (!paymentFacture) return;
     setPaySubmitting(true);
     try {
-      const res = await fetch(`/api/admin/factures/${paymentFacture.id}/paiements`, {
+      const res = await fetch('/api/admin/factures/paiements', {
         method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify(payForm),
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ factureId: paymentFacture.id, ...payForm }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));

@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { errorResponse, unauthorizedResponse } from '@/lib/auth-middleware';
+import { auditLog } from '@/lib/audit-log';
 
 /**
  * GET /api/cron/rgpd-purge
@@ -95,6 +96,28 @@ export async function GET(req: NextRequest) {
   // Purge gd_calls > 24 mois (migration 069 — décision rétention 2026-04-15)
   const { data: callsResult, error: errCalls } = await supabase.rpc('gd_purge_expired_calls');
   if (errCalls) errors.push(`calls_24m: ${errCalls.message}`);
+
+  // Trace d'exécution CNIL — preuve de passage mensuel
+  try {
+    await auditLog(supabase, {
+      action: 'delete',
+      resourceType: 'structure', // fallback — pas de 'cron' dans enum
+      resourceId: 'rgpd-purge',
+      actorType: 'system',
+      metadata: {
+        type: 'rgpd_purge_executed',
+        audit_logs_12m: auditResult ?? 0,
+        medical_data: medicalResult ?? 0,
+        medical_events_3m: medEventsDeleted ?? 0,
+        notes_12m: notesResult ?? 0,
+        calls_24m: callsResult ?? 0,
+        errors_count: errors?.length ?? 0,
+        executed_at: new Date().toISOString(),
+      },
+    });
+  } catch (e) {
+    console.error('[rgpd-purge] audit log insert failed (non-blocking):', e);
+  }
 
   if (errors.length > 0) {
     console.error(`[rgpd-purge] ${errors.length} erreur(s):`, errors.join('; '));

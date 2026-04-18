@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { requireEditor } from '@/lib/auth-middleware';
+import { auditLog } from '@/lib/audit-log';
 
 /**
  * POST /api/souhaits/link-inscription
@@ -49,6 +50,17 @@ export async function POST(req: NextRequest) {
       console.error('POST /api/souhaits/link-inscription error:', error);
       return NextResponse.json({ error: 'Erreur mise à jour.' }, { status: 500 });
     }
+
+    // RGPD — tracer liaison souhait ↔ inscription (mutation admin/editor)
+    await auditLog(supabase, {
+      action: 'update',
+      resourceType: 'inscription',
+      resourceId: souhaitId,
+      inscriptionId,
+      actorType: 'admin',
+      actorId: auth.email,
+      metadata: { route: '/api/souhaits/link-inscription', kind: 'souhait_link' },
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {

@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { UUID_RE } from '@/lib/validators';
+import { auditLog } from '@/lib/audit-log';
 
 /**
  * PATCH /api/suivi/[token]/structure
@@ -133,6 +134,17 @@ export async function PATCH(
         { status: 500 }
       );
     }
+
+    // RGPD Art. 9 — tracer rattachement structure (mutation inscription)
+    await auditLog(supabase, {
+      action: 'update',
+      resourceType: 'inscription',
+      resourceId: inscriptionId,
+      inscriptionId,
+      actorType: 'referent',
+      actorId: token,
+      metadata: { route: '/api/suivi/[token]/structure', structureId: structure.id },
+    });
 
     return NextResponse.json({
       ok: true,

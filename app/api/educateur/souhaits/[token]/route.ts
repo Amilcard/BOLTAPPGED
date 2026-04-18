@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { verifyEducateurAggregateToken } from '@/lib/educateur-token';
+import { auditLog } from '@/lib/audit-log';
 
 /**
  * GET /api/educateur/souhaits/[token]
@@ -30,6 +31,16 @@ export async function GET(
       console.error('GET /api/educateur/souhaits error:', error);
       return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
     }
+
+    // RGPD — tracer lecture agrégée souhaits par éducateur
+    await auditLog(supabase, {
+      action: 'read',
+      resourceType: 'inscription',
+      resourceId: email,
+      actorType: 'referent',
+      actorId: email,
+      metadata: { route: '/api/educateur/souhaits/[token]', kind: 'souhait_aggregate', count: data?.length ?? 0 },
+    });
 
     return NextResponse.json({
       email,

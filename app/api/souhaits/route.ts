@@ -5,6 +5,7 @@ import { sendSouhaitNotificationEducateur } from '@/lib/email';
 import { generateEducateurAggregateToken } from '@/lib/educateur-token';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 import { EMAIL_REGEX, UUID_RE } from '@/lib/validators';
+import { auditLog } from '@/lib/audit-log';
 /**
  * POST /api/souhaits
  * Crée un souhait côté serveur et envoie un email à l'éducateur.
@@ -93,6 +94,17 @@ export async function POST(req: NextRequest) {
         reponse_date: null,
       }).eq('id', existing.id);
 
+      // RGPD — tracer mise à jour souhait (PII mineur, acteur kid anonyme)
+      await auditLog(supabase, {
+        action: 'update',
+        resourceType: 'inscription',
+        resourceId: existing.id,
+        actorType: 'system',
+        actorId: kidSessionToken,
+        ipAddress: ip === 'unknown' ? undefined : ip,
+        metadata: { route: '/api/souhaits', kind: 'souhait', sejourSlug },
+      });
+
       if (safeEmail) {
         const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.groupeetdecouverte.fr';
         const aggregateToken = await generateEducateurAggregateToken(safeEmail);
@@ -141,6 +153,17 @@ export async function POST(req: NextRequest) {
       console.error('POST /api/souhaits error:', error);
       return NextResponse.json({ error: 'Erreur création souhait.' }, { status: 500 });
     }
+
+    // RGPD — tracer création souhait (PII mineur, acteur kid anonyme)
+    await auditLog(supabase, {
+      action: 'create',
+      resourceType: 'inscription',
+      resourceId: souhait.id,
+      actorType: 'system',
+      actorId: kidSessionToken,
+      ipAddress: ip === 'unknown' ? undefined : ip,
+      metadata: { route: '/api/souhaits', kind: 'souhait', sejourSlug },
+    });
 
     if (safeEmail) {
       if (!souhait.educateur_token) {

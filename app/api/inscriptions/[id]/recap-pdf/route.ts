@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 import { UUID_RE } from '@/lib/validators';
+import { auditLog } from '@/lib/audit-log';
 
 const PRIMARY = rgb(0.165, 0.220, 0.247);   // #2a383f
 const SECONDARY = rgb(0.871, 0.451, 0.337);  // #de7356
@@ -86,6 +87,18 @@ export async function GET(
         { status: 404 }
       );
     }
+
+    // RGPD Art. 9 — tracer génération PDF récap (lecture données enfant)
+    await auditLog(supabase, {
+      action: 'download',
+      resourceType: 'inscription',
+      resourceId: id,
+      inscriptionId: id,
+      actorType: 'referent',
+      actorId: token,
+      ipAddress: ip === 'unknown' ? undefined : ip,
+      metadata: { route: '/api/inscriptions/[id]/recap-pdf' },
+    });
 
     const ins = inscription as Record<string, unknown>;
     const stay = (ins.gd_stays as Record<string, unknown>) || {};

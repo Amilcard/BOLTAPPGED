@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { UUID_RE } from '@/lib/validators';
+import { auditLog } from '@/lib/audit-log';
 /**
  * GET /api/educateur/souhait/[token]
  * Retourne le souhait via educateur_token (magic link).
@@ -41,6 +42,16 @@ export async function GET(
         .eq('educateur_token', token);
       data.status = 'vu';
     }
+
+    // RGPD — tracer lecture souhait par éducateur (magic link)
+    await auditLog(supabase, {
+      action: 'read',
+      resourceType: 'inscription',
+      resourceId: data.id,
+      actorType: 'referent',
+      actorId: token,
+      metadata: { route: '/api/educateur/souhait/[token]', kind: 'souhait' },
+    });
 
     return NextResponse.json(data);
   } catch (err) {
@@ -103,6 +114,16 @@ export async function PATCH(
       .eq('educateur_token', token);
 
     if (error) throw error;
+
+    // RGPD — tracer réponse éducateur au souhait (mutation statut)
+    await auditLog(supabase, {
+      action: 'update',
+      resourceType: 'inscription',
+      resourceId: current.id,
+      actorType: 'referent',
+      actorId: token,
+      metadata: { route: '/api/educateur/souhait/[token]', kind: 'souhait', newStatus: status },
+    });
 
     // Si validé → construire l'URL de redirection vers le booking pré-rempli
     if (status === 'valide' && current.sejour_slug) {

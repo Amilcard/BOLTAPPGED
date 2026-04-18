@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { UUID_RE } from '@/lib/validators';
+import { auditLog } from '@/lib/audit-log';
 /**
  * GET /api/souhaits/kid/[kidToken]
  * Retourne les souhaits d'un kid via son kid_session_token (localStorage).
@@ -26,6 +27,16 @@ export async function GET(
       .order('created_at', { ascending: false });
 
     if (error) throw error;
+
+    // RGPD — tracer lecture souhaits kid (self via kid_session_token)
+    await auditLog(supabase, {
+      action: 'read',
+      resourceType: 'inscription',
+      resourceId: kidToken,
+      actorType: 'system',
+      actorId: kidToken,
+      metadata: { route: '/api/souhaits/kid/[kidToken]', kind: 'souhait', count: data?.length ?? 0 },
+    });
 
     return NextResponse.json(data || []);
   } catch (err) {

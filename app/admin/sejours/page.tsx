@@ -24,8 +24,10 @@ export default function AdminSejours() {
 
   const handleDelete = (id: string) => {
     confirm('Supprimer ce séjour ? Cette action est irréversible.', async () => {
-      await fetch(`/api/admin/stays/${id}`, {
-        method: 'DELETE',
+      await fetch('/api/admin/stays/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: id }),
       });
       fetchStays();
     });
@@ -48,10 +50,10 @@ export default function AdminSejours() {
   };
 
   const handleTogglePublish = async (stay: StayWithWaitlist) => {
-    await fetch(`/api/admin/stays/${stay.id}`, {
-      method: 'PUT',
+    await fetch('/api/admin/stays/update', {
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ published: !stay.published }),
+      body: JSON.stringify({ slug: stay.id, published: !stay.published }),
     });
     fetchStays();
   };

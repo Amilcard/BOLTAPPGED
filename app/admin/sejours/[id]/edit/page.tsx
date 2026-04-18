@@ -91,10 +91,10 @@ export default function EditSejourPage() {
         programme: form.programme.split('\n').filter(Boolean),
         themes: form.themes.split(',').map((t) => t.trim()).filter(Boolean),
       };
-      const res = await fetch(`/api/admin/stays/${params.id}`, {
-        method: 'PUT',
+      const res = await fetch('/api/admin/stays/update', {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ slug: params.id, ...body }),
       });
       if (!res.ok) throw new Error('Erreur sauvegarde');
       router.push('/admin/sejours');

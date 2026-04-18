@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAdminUI } from '@/components/admin/admin-ui';
+import { UUID_RE } from '@/lib/validators';
 
 /* ───────────────────── Types ───────────────────── */
 
@@ -156,9 +157,13 @@ export default function FacturesPage() {
   useEffect(() => { void loadFactures(); }, [loadFactures]);
 
   const loadPaiements = useCallback(async (factureId: string) => {
+    if (!UUID_RE.test(factureId)) {
+      setPaiements([]);
+      return;
+    }
     setPaiementsLoading(true);
     try {
-      const res = await fetch(`/api/admin/factures/${factureId}/paiements`, { headers: authHeaders() });
+      const res = await fetch(`/api/admin/factures/${encodeURIComponent(factureId)}/paiements`, { headers: authHeaders() });
       const data = await res.json();
       setPaiements(data.paiements || []);
     } catch {

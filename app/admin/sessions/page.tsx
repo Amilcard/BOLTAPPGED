@@ -28,7 +28,9 @@ export default function AdminSessions() {
 
   const fetchSessions = useCallback(async () => {
     if (!selectedStay) return;
-    const res = await fetch(`/api/admin/stays/${selectedStay}/sessions`);
+    // selectedStay est un slug (voir /api/admin/stays qui renvoie id = slug)
+    if (!/^[a-z0-9][a-z0-9-]{0,99}$/i.test(selectedStay)) return;
+    const res = await fetch(`/api/admin/stays/${encodeURIComponent(selectedStay)}/sessions`);
     if (res.ok) setSessions(await res.json());
   }, [selectedStay]);
 

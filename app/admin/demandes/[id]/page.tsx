@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { InscriptionSupabase, InscriptionEnriched, DossierEnfant } from '@/lib/types';
 import { useAdminUI } from '@/components/admin/admin-ui';
+import { UUID_RE } from '@/lib/validators';
 
 const STATUS_OPTIONS = [
   { value: 'en_attente', label: 'En attente', color: 'bg-blue-100 text-blue-700' },
@@ -53,8 +54,12 @@ export default function InscriptionDetailPage() {
   };
 
   const loadInscription = useCallback(async () => {
+    if (!UUID_RE.test(inscriptionId)) {
+      void router.replace('/admin/demandes');
+      return;
+    }
     try {
-      const res = await fetch(`/api/admin/inscriptions/${inscriptionId}`, {
+      const res = await fetch(`/api/admin/inscriptions/${encodeURIComponent(inscriptionId)}`, {
         headers: authHeaders(),
       });
       if (res.ok) {
@@ -79,9 +84,13 @@ export default function InscriptionDetailPage() {
   }, [inscriptionId, router]);
 
   const loadDossier = useCallback(async () => {
+    if (!UUID_RE.test(inscriptionId)) {
+      setDossierLoading(false);
+      return;
+    }
     setDossierLoading(true);
     try {
-      const res = await fetch(`/api/admin/dossier-enfant/${inscriptionId}`, {
+      const res = await fetch(`/api/admin/dossier-enfant/${encodeURIComponent(inscriptionId)}`, {
         headers: authHeaders(),
       });
       if (res.ok) setDossier(await res.json());

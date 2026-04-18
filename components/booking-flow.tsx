@@ -72,6 +72,10 @@ const STANDARD_CITIES = [
 ];
 
 // Style du CardElement Stripe
+// Stripe Elements config — hex hardcodé exigé par Stripe SDK (CSSPropertyHash).
+// Aligné sur la charte via valeurs miroir : color=primary, iconColor=secondary.
+// Impossible d'utiliser var(--*) ici — Stripe n'accepte pas les custom properties.
+// Toute modif charte DOIT mettre à jour ces 2 hex manuellement.
 const CARD_ELEMENT_OPTIONS = {
   style: {
     base: {
@@ -79,7 +83,7 @@ const CARD_ELEMENT_OPTIONS = {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       color: '#1a1a2e',
       '::placeholder': { color: '#9ca3af' },
-      iconColor: '#de7356',
+      iconColor: '#de7356', // charte.secondary
     },
     invalid: {
       color: '#dc2626',

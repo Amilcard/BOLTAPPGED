@@ -39,13 +39,25 @@
 
 **Architect cross-review P2 GO** : 488/488 tests verts · tsc clean · DB CHECK constraint protège backward compat · `gd_audit_log` = service_role only (aucun caller `authenticated`).
 
-## Items structurels à livrer
+## Items structurels
 
-- [ ] `lib/resource-guard.ts` — `requireResourceOwnership({resolved, resource, ownerField})`
-- [ ] ESLint rule custom `require-await-auth`
-- [ ] `scripts/security-sweep.sh` — pre-commit (grep await, auditLog, validators)
-- [ ] Tests charge Playwright : PDF > 2MB, signature 10MB, upload 50MB
-- [ ] Validator `validateBase64Image({max: 500_000})` + `validateUploadSize`
+- [x] `lib/resource-guard.ts` — `requireInscriptionOwnership` (livré 2026-04-18)
+- [x] ESLint rule `no-restricted-syntax` sur auth helpers (livré 2026-04-18)
+- [x] `scripts/security-sweep.sh` — 3 scans (auth/auditLog/size cap) (livré 2026-04-18)
+- [x] `validateBase64Image` + `validateUploadSize` dans `lib/validators.ts` (livrés 2026-04-18)
+- [ ] Tests charge Playwright : PDF > 2MB, signature 10MB, upload 50MB (scope E2E)
+
+## Anomalies DB — décision produit requise
+
+| Anomalie | Impact UI | Décision |
+|---|---|---|
+| 22 séjours avec `location_city='annecy'` (lowercase) dont ~15 hors Annecy | **Invisible** — `geoLabel` non consommé dans `StayDetail`. Le filtre search utilise `geography` qui préfère `location_region` | Corriger via `/admin/sejours/[id]/edit` OU NULLifier en masse OU laisser |
+| `ged_theme` casse incohérente (`MONTAGNE` vs `Lac & Montagne`) | **Invisible** — champ legacy, UI consomme `gd_stay_themes` (multi) | Déprécier le champ ou normaliser casse |
+| Séjour Berlin Street Art sans `marketing_title` | Invisible (published=false) | Compléter OU delete |
+| `/sejours` redirect vers `/` | 3 callers actifs (booking-flow, reserver page) | Garder redirect OU migrer callers vers `/` |
+| `/infos` redirect vers vitrine | 1 test E2E `parcours-kids.spec.ts:61` K7 + 1 doc `Topo_Parcours_Utilisateurs_GED.md` | Garder redirect (stubs légitimes) OU delete + update test + doc en PR dédiée |
+
+Non corrigés automatiquement dans la vague 2026-04-18 — requièrent validation produit.
 
 ## Carryover audits précédents
 

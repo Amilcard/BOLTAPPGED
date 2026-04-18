@@ -25,7 +25,7 @@ export async function runRelanceInscription(id: string): Promise<RelanceResult> 
     // Charger les infos référent depuis gd_inscriptions
     const { data: insc, error: inscErr } = await supabase
       .from('gd_inscriptions')
-      .select('id, referent_email, referent_nom, dossier_ref, suivi_token, organisation')
+      .select('id, referent_email, referent_nom, dossier_ref, suivi_token, organisation, last_relance_at')
       .eq('id', id)
       .single();
 
@@ -52,6 +52,15 @@ export async function runRelanceInscription(id: string): Promise<RelanceResult> 
       return { ok: false, status: 409, error: 'Dossier déjà envoyé, relance inutile.' };
     }
 
+    // Idempotence : refuser si une relance a déjà été envoyée il y a moins de 30 min
+    const THIRTY_MIN_MS = 30 * 60 * 1000;
+    if (insc.last_relance_at) {
+      const elapsed = Date.now() - new Date(insc.last_relance_at).getTime();
+      if (elapsed < THIRTY_MIN_MS) {
+        return { ok: false, status: 409, error: 'Relance déjà envoyée, patientez 30 minutes.' };
+      }
+    }
+
     // Fire-and-forget — on ne bloque pas la réponse sur l'envoi email
     sendRappelDossierIncomplet({
       referentEmail: insc.referent_email,
@@ -73,7 +82,12 @@ export async function runRelanceInscription(id: string): Promise<RelanceResult> 
       // Erreur loguée dans sendRelanceAdminNotification, pas de crash ici
     });
 
-    return { ok: true, relance_at: new Date().toISOString() };
+    // Marquer le timestamp de relance avant le return — évite le double-envoi
+    // sur retry réseau (idempotence côté serveur, pas uniquement UI).
+    const relanceAt = new Date().toISOString();
+    await supabase.from('gd_inscriptions').update({ last_relance_at: relanceAt }).eq('id', id);
+
+    return { ok: true, relance_at: relanceAt };
   } catch (err) {
     console.error('runRelanceInscription error:', err);
     return { ok: false, status: 500, error: 'Erreur serveur' };

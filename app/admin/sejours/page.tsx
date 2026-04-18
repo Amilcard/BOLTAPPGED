@@ -34,8 +34,10 @@ export default function AdminSejours() {
   const handleNotifyWaitlist = (stay: StayWithWaitlist) => {
     const count = stay.waitlistCount;
     confirm(`Envoyer un email à ${count} personne(s) en attente pour ce séjour ?`, async () => {
-      const res = await fetch(`/api/admin/stays/${stay.id}/notify-waitlist`, {
+      const res = await fetch('/api/admin/stays/notify-waitlist', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ staySlug: stay.id }),
       });
       if (res.ok) {
         const { sent } = await res.json();

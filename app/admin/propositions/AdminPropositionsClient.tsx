@@ -264,7 +264,11 @@ export default function AdminPropositionsClient() {
 
   const handleSendProposition = async (id: string) => {
     try {
-      const res = await fetch(`/api/admin/propositions/${id}/send`, { method: 'POST' });
+      const res = await fetch('/api/admin/propositions/send', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ id }),
+      });
       if (!res.ok) {
         const err = await res.json().catch(() => ({})) as { error?: string };
         alert(`Erreur : ${err?.error ?? res.status}`);

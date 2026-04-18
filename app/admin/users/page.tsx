@@ -67,8 +67,10 @@ export default function AdminUsers() {
 
   const handleDelete = (id: string) => {
     confirm('Supprimer cet utilisateur ? Cette action est irréversible.', async () => {
-      await fetch(`/api/admin/users/${id}`, {
-        method: 'DELETE',
+      await fetch('/api/admin/users/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
       });
       void fetchUsers(page);
     });
@@ -148,9 +150,11 @@ function UserForm({ user, onClose, onSave }: { user: User | null; onClose: () =>
     e.preventDefault();
     setSubmitting(true);
     setSubmitError(null);
-    const url = user ? `/api/admin/users/${user.id}` : '/api/admin/users';
-    const method = user ? 'PUT' : 'POST';
-    const body = user ? { email: form.email, role: form.role, ...(form.password && { password: form.password }) } : form;
+    const url = user ? '/api/admin/users/update' : '/api/admin/users';
+    const method = 'POST';
+    const body = user
+      ? { id: user.id, email: form.email, role: form.role, ...(form.password && { password: form.password }) }
+      : form;
     try {
       const res = await fetch(url, {
         method,

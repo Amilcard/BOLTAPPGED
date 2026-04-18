@@ -1,11 +1,13 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { requireAdmin } from '@/lib/auth-middleware';
+import { runUpdateUser, runDeleteUser } from '@/lib/admin-users-mutate';
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-// PUT /api/admin/users/[id] — modifier email, rôle ou mot de passe
+/**
+ * PUT /api/admin/users/[id] — modifier email, rôle ou mot de passe (legacy).
+ * Délègue au helper partagé runUpdateUser.
+ * Nouvelle route body-based : POST /api/admin/users/update.
+ */
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -15,39 +17,25 @@ export async function PUT(
   }
 
   const { id } = await params;
-  if (!UUID_REGEX.test(id)) {
-    return NextResponse.json({ error: 'ID invalide' }, { status: 400 });
-  }
 
   try {
-    const { email, role, password } = await request.json();
-
-    if (role && !['ADMIN', 'EDITOR', 'VIEWER'].includes(role)) {
-      return NextResponse.json({ error: 'Rôle invalide' }, { status: 400 });
+    const body = await request.json().catch(() => ({}));
+    const result = await runUpdateUser(id, body as never);
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: result.status ?? 500 });
     }
-
-    const supabase = getSupabaseAdmin();
-    const updates: Record<string, unknown> = {};
-    if (email) updates.email = email;
-    if (password) updates.password = password;
-    if (role) updates.app_metadata = { role };
-
-    const { data, error } = await supabase.auth.admin.updateUserById(id, updates);
-    if (error) throw error;
-
-    return NextResponse.json({
-      id: data.user.id,
-      email: data.user.email,
-      role: (data.user.app_metadata?.role as string) || 'VIEWER',
-      createdAt: data.user.created_at,
-    });
+    return NextResponse.json(result.data);
   } catch (err) {
     console.error('[admin/users/[id]] PUT error:', err);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
 
-// DELETE /api/admin/users/[id] — supprimer un utilisateur
+/**
+ * DELETE /api/admin/users/[id] — supprimer un utilisateur (legacy).
+ * Délègue au helper partagé runDeleteUser (anti self-delete conservé).
+ * Nouvelle route body-based : POST /api/admin/users/delete.
+ */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -58,23 +46,12 @@ export async function DELETE(
   }
 
   const { id } = await params;
-  if (!UUID_REGEX.test(id)) {
-    return NextResponse.json({ error: 'ID invalide' }, { status: 400 });
-  }
-
-  // Anti self-delete : un admin ne peut pas supprimer son propre compte
-  if (id === auth.userId) {
-    return NextResponse.json(
-      { error: 'Impossible de supprimer votre propre compte.' },
-      { status: 400 }
-    );
-  }
 
   try {
-    const supabase = getSupabaseAdmin();
-    const { error } = await supabase.auth.admin.deleteUser(id);
-    if (error) throw error;
-
+    const result = await runDeleteUser(id, auth.userId);
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: result.status ?? 500 });
+    }
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[admin/users/[id]] DELETE error:', err);

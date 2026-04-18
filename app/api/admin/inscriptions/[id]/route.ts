@@ -82,8 +82,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
  * DELETE /api/admin/inscriptions/[id]
  * Supprime une inscription et ses donnees liees (dossier enfant, propositions).
  */
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: inscriptionId } = await params;
   const auth = await requireAdmin(req);

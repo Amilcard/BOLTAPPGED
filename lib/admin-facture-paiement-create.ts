@@ -72,7 +72,10 @@ export async function runCreatePaiement(params: {
   if (!montant || Number(montant) <= 0) {
     return { error: 'montant doit être > 0', status: 400 };
   }
-  if (!VALID_METHODES.includes(methode as typeof VALID_METHODES[number])) {
+  // Normalisation pré-whitelist : tolère casse + espaces en entrée ("  CB_Stripe ").
+  // Garantit cohérence DB : toutes les methodes stockées en snake_case lowercase.
+  const methodeNorm = typeof methode === 'string' ? methode.trim().toLowerCase() : '';
+  if (!VALID_METHODES.includes(methodeNorm as typeof VALID_METHODES[number])) {
     return { error: `methode invalide. Valeurs : ${VALID_METHODES.join(', ')}`, status: 400 };
   }
 
@@ -95,7 +98,7 @@ export async function runCreatePaiement(params: {
       facture_id:    factureId,
       date_paiement: String(date_paiement),
       montant:       Number(montant),
-      methode:       String(methode),
+      methode:       methodeNorm,
       reference:     String(reference ?? ''),
       note:          String(note ?? ''),
     })
@@ -116,7 +119,7 @@ export async function runCreatePaiement(params: {
     actorType: 'admin',
     actorId: actorEmail,
     ipAddress: ip,
-    metadata: { paiement_id: (paiement as { id: string }).id, montant: Number(montant), methode: String(methode) },
+    metadata: { paiement_id: (paiement as { id: string }).id, montant: Number(montant), methode: methodeNorm },
   });
 
   return { paiement };

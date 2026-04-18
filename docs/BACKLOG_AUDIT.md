@@ -25,15 +25,19 @@
 
 - **Race condition relance** (fenêtre ms entre JS pre-check `Date.now()` et `.update()`) : tolérable car email Resend idempotent côté ESP (Message-ID), pas d'effet visible. Mitigation idéale : `UPDATE ... WHERE last_relance_at < (now - 30min)` atomique côté Postgres. **Backlog post-MVP.**
 
-## P2 MAJEURS
+## P2 MAJEURS — vague 2026-04-18
 
-- `runSendProposition` auditLog trompeur (order fix)
-- `sendPropositionAlertGED` await sans try/catch
-- `last_relance_at` update APRÈS emails (race)
-- `rgpd_accepted_at` sans auditLog
-- `gd_audit_log` policy `authenticated_read` résiduelle → DROP
-- 4 routes (`incidents`/`medical`/`calls`/`notes`) ownership sans `.is('deleted_at', null)`
-- `methode` paiement sans normalisation
+| # | Item | Statut |
+|---|---|---|
+| 1 | `runSendProposition` auditLog order | ✅ Déjà fixé vague P1 |
+| 2 | `sendPropositionAlertGED` await sans try/catch | ❌ Faux positif — `.catch()` présent L121 |
+| 3 | `last_relance_at` race | ✅ Déjà fixé vague P1 |
+| 4 | `rgpd_accepted_at` auditLog sous-qualifié | ✅ FIXED — resourceType `structure`, actorId, metadata enrichi |
+| 5 | `gd_audit_log` policy `authenticated_read` | ✅ FIXED — migration 078 appliquée (DROP) |
+| 6 | 4 routes ownership sans `.is('deleted_at', null)` | ❌ Faux positif — tables incidents/medical/calls/notes n'ont pas `deleted_at` (confirmé via `information_schema`) |
+| 7 | `methode` paiement normalisation | ✅ FIXED — `.trim().toLowerCase()` pré-whitelist |
+
+**Architect cross-review P2 GO** : 488/488 tests verts · tsc clean · DB CHECK constraint protège backward compat · `gd_audit_log` = service_role only (aucun caller `authenticated`).
 
 ## Items structurels à livrer
 

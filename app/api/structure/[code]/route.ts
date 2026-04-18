@@ -210,10 +210,16 @@ export async function POST(
 
   await auditLog(supabase, {
     action: 'create',
-    resourceType: 'inscription',
+    resourceType: 'structure',
     resourceId: structure.id,
     actorType: 'referent',
-    metadata: { type: 'rgpd_consent', code_used: codeNorm },
+    actorId: resolved.email || codeNorm,
+    metadata: {
+      type: 'rgpd_consent',
+      code_used: codeNorm,
+      role: resolved.role,
+      structure_name: resolved.structure.name,
+    },
   });
 
   return NextResponse.json({ accepted: true, acceptedAt: new Date().toISOString() });

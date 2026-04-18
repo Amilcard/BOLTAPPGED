@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ChevronRight, CalendarX } from 'lucide-react';
 import type { Stay } from '@/lib/types';
 import { getSejourBySlug, getStaySessions, getDepartureCitiesFormatted, getSessionPricesFormatted, getSessionPrices, supabaseGed } from '@/lib/supabaseGed';
@@ -221,8 +222,14 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
                           className="group rounded-xl border border-gray-100 overflow-hidden hover:border-primary/30 hover:shadow-md transition-all"
                         >
                           {img && (
-                            <div className="h-28 overflow-hidden bg-gray-50">
-                              <img src={img} alt={alt.marketing_title || ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            <div className="relative h-28 overflow-hidden bg-gray-50">
+                              <Image
+                                src={img}
+                                alt={alt.marketing_title || ''}
+                                fill
+                                sizes="(max-width: 640px) 100vw, 33vw"
+                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
                             </div>
                           )}
                           <div className="p-3">

@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 interface LogoProps {
   variant?: 'default' | 'white' | 'compact';
   className?: string;
@@ -20,9 +22,12 @@ export function Logo({ variant = 'default', className = '' }: LogoProps) {
   // Logo horizontal desktop nettoyé
   return (
     <div className={`flex items-center ${className}`}>
-      <img
+      <Image
         src="/logo-clean.svg"
         alt="Groupe et Découverte"
+        width={230}
+        height={60}
+        priority
         className={`w-[180px] sm:w-[230px] h-auto object-contain flex-shrink-0`}
         style={variant === 'white' ? { filter: 'brightness(0) invert(1)' } : {}}
       />

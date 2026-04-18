@@ -164,6 +164,87 @@ export async function POST(req: NextRequest) {
         break;
       }
 
+      case 'charge.refunded': {
+        const charge = event.data.object as Stripe.Charge;
+        const paymentIntentId = typeof charge.payment_intent === 'string'
+          ? charge.payment_intent
+          : charge.payment_intent?.id;
+
+        if (!paymentIntentId) {
+          console.error('[webhook/stripe] charge.refunded sans payment_intent — skip');
+          break;
+        }
+
+        // Claim atomique
+        if (!(await claimEvent(supabase, event.id, event.type))) {
+          return NextResponse.json({ received: true, skipped: true });
+        }
+
+        // Retrouver l'inscription par stripe_payment_intent_id
+        const { data: refundedInsc } = await supabase
+          .from('gd_inscriptions')
+          .select('id, session_id, sejour_slug, session_date, payment_status')
+          .eq('stripe_payment_intent_id', paymentIntentId)
+          .single();
+
+        if (!refundedInsc) {
+          console.error('[webhook/stripe] charge.refunded : inscription non trouvée — rollback claim', { paymentIntentId, eventId: event.id });
+          await rollbackClaim(supabase, event.id);
+          return errorResponse('INSCRIPTION_NOT_FOUND', 'Inscription introuvable pour le refund.', 500);
+        }
+
+        // Distinguer refund partiel vs total
+        const fullRefund = charge.refunded === true
+          || (typeof charge.amount_refunded === 'number' && charge.amount_refunded >= charge.amount);
+        const newStatus = fullRefund ? 'refunded' : 'partially_refunded';
+
+        // UPDATE avec guard transition : seulement depuis paid / amount_mismatch
+        const { error: updErr, count } = await supabase
+          .from('gd_inscriptions')
+          .update({ payment_status: newStatus })
+          .eq('id', refundedInsc.id)
+          .in('payment_status', ['paid', 'amount_mismatch', 'partially_refunded']);
+
+        if (updErr) {
+          console.error('[webhook/stripe] charge.refunded update failed — rollback claim:', updErr);
+          await rollbackClaim(supabase, event.id);
+          return errorResponse('DB_UPDATE_FAILED', 'Échec mise à jour refund.', 500);
+        }
+        if (count === 0) {
+          console.warn('[webhook/stripe] charge.refunded : inscription pas dans état attendu', { id: refundedInsc.id });
+        }
+
+        // Rollback seat UNIQUEMENT si refund total et session pas encore passée
+        if (fullRefund && refundedInsc.session_id) {
+          const sessionDate = refundedInsc.session_date ? new Date(refundedInsc.session_date as string) : null;
+          const today = new Date(); today.setHours(0, 0, 0, 0);
+          const beforeSession = !sessionDate || sessionDate >= today;
+
+          if (beforeSession) {
+            const { data: sess } = await supabase
+              .from('gd_stay_sessions')
+              .select('seats_left')
+              .eq('id', refundedInsc.session_id)
+              .single();
+            if (sess && sess.seats_left !== null && sess.seats_left >= 0) {
+              const { error: seatErr } = await supabase
+                .from('gd_stay_sessions')
+                .update({ seats_left: sess.seats_left + 1 })
+                .eq('id', refundedInsc.session_id)
+                .eq('seats_left', sess.seats_left); // guard optimiste race
+              if (seatErr) {
+                console.error('[webhook/stripe] refund seat rollback failed:', seatErr.message);
+              } else {
+                console.log('[webhook/stripe] refund seat rolled back for session', refundedInsc.session_id);
+              }
+            }
+          }
+        }
+
+        console.log('[webhook/stripe] charge.refunded processed', { id: refundedInsc.id, newStatus });
+        break;
+      }
+
       case 'payment_intent.payment_failed': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         const inscriptionId = paymentIntent.metadata.inscriptionId;

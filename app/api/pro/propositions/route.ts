@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  sendPropositionAlertGED({
+  await sendPropositionAlertGED({
     demandeurNom:   auth.structureName || auth.email,
     demandeurEmail: auth.email,
     sejourTitre,

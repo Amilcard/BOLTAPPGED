@@ -46,6 +46,10 @@ const PAYMENT_METHOD_MAP: Record<string, string> = {
 };
 
 export async function POST(request: NextRequest) {
+  // Hoisted — permet au catch global de restaurer la capacité si l'inscription
+  // échoue après la décrémentation atomique via gd_check_and_decrement_capacity.
+  let capacityDecremented = false;
+  let rollbackCtx: { slug: string; date: string } | null = null;
   try {
     // Rate limiting DB-backed — persiste entre cold starts (complément middleware in-memory)
     const ip = getClientIp(request) ?? 'unknown';
@@ -337,11 +341,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Flag : seat effectivement décrémenté (RPC retourne seats_left uniquement dans ce cas).
+    // Si l'INSERT inscription échoue plus bas, on devra restituer le seat via gd_increment_capacity.
+    capacityDecremented = capacityCheck?.seats_left !== undefined;
+    rollbackCtx = { slug: data.staySlug, date: normalizedDate };
+    const restoreCapacityIfNeeded = async (): Promise<void> => {
+      if (!capacityDecremented) return;
+      const { error: restoreErr } = await supabase.rpc('gd_increment_capacity', {
+        p_slug: data.staySlug,
+        p_start_date: normalizedDate,
+      });
+      if (restoreErr) {
+        console.error('[inscriptions] capacity rollback failed:', restoreErr.message);
+      } else {
+        capacityDecremented = false; // évite double-rollback via catch global
+      }
+    };
+
     // Validation âge depuis le résultat RPC ou fallback DB
     const ageMin = capacityCheck?.age_min ?? null;
     const ageMax = capacityCheck?.age_max ?? null;
     if (ageMin !== null && ageMax !== null) {
       if (age < ageMin || age > ageMax) {
+        await restoreCapacityIfNeeded();
         return NextResponse.json(
           { error: { code: 'AGE_INCOMPATIBLE', message: `Âge incompatible (${age} ans). Ce séjour requiert ${ageMin}-${ageMax} ans.` } },
           { status: 400 }
@@ -387,6 +409,7 @@ export async function POST(request: NextRequest) {
     const isFullRow = isFullRows?.[0] ?? null;
 
     if (isFullRow?.is_full === true) {
+      await restoreCapacityIfNeeded();
       return NextResponse.json(
         { error: { code: 'SESSION_FULL', message: 'Cette session est complète.' } },
         { status: 400 }
@@ -415,6 +438,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (existing) {
+      await restoreCapacityIfNeeded();
       return NextResponse.json(
         { error: { code: 'DUPLICATE', message: 'Une inscription identique existe déjà.', dossierRef: existing.dossier_ref } },
         { status: 409 }
@@ -540,11 +564,17 @@ export async function POST(request: NextRequest) {
 
     if (error || !inscription) {
       console.error('Supabase insert error:', error);
+      await restoreCapacityIfNeeded();
       return NextResponse.json(
         { error: { code: 'INSERT_ERROR', message: 'Impossible de créer l\'inscription.' } },
         { status: 500 }
       );
     }
+
+    // INSERT inscription réussi — le seat est définitivement attribué.
+    // Neutraliser le flag pour éviter un rollback accidentel depuis le catch global
+    // sur une exception ultérieure (email, audit, etc.).
+    capacityDecremented = false;
 
     // M9 — Audit RGPD : enregistrer le consentement parental si applicable (Art. 9 données mineurs)
     if (data.parentalConsent && inscription.id) {
@@ -613,6 +643,23 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error: unknown) {
     console.error('POST /api/inscriptions error:', error);
+
+    // Exception non-catchée entre la décrémentation RPC et la finalisation INSERT →
+    // restaurer le seat pour éviter l'overbooking silencieux.
+    if (capacityDecremented && rollbackCtx) {
+      try {
+        const supabase = getSupabaseAdmin();
+        const { error: restoreErr } = await supabase.rpc('gd_increment_capacity', {
+          p_slug: rollbackCtx.slug,
+          p_start_date: rollbackCtx.date,
+        });
+        if (restoreErr) {
+          console.error('[inscriptions] catch-global capacity rollback failed:', restoreErr.message);
+        }
+      } catch (rollbackErr) {
+        console.error('[inscriptions] catch-global capacity rollback exception:', rollbackErr);
+      }
+    }
 
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur.' } },

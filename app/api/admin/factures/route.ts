@@ -133,6 +133,17 @@ export async function PATCH(req: NextRequest) {
   }
 
   const supabase = getSupabaseAdmin();
+
+  // SELECT avant pour tracer l'ancien statut dans l'audit (traçabilité RGPD
+  // transitions statut facture — règle CLAUDE.md #15).
+  const { data: before } = await supabase
+    .from('gd_factures')
+    .select('id, numero, statut, structure_id')
+    .eq('id', id)
+    .single();
+
+  if (!before) return NextResponse.json({ error: 'Facture introuvable' }, { status: 404 });
+
   const { data, error } = await supabase
     .from('gd_factures')
     .update({ statut })
@@ -141,6 +152,21 @@ export async function PATCH(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await auditLog(supabase, {
+    action: 'update',
+    resourceType: 'facture',
+    resourceId: id,
+    actorType: 'admin',
+    actorId: auth.email,
+    metadata: {
+      context: 'facture_status_change',
+      numero: before.numero,
+      status_from: before.statut,
+      status_to: statut,
+      structure_id: before.structure_id,
+    },
+  });
 
   return NextResponse.json({ facture: { ...data, status: data.statut } });
 }

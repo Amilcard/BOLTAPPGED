@@ -29,6 +29,7 @@ const mockFromChain = {
   eq: jest.fn().mockReturnThis(),
   order: jest.fn().mockReturnThis(),
   single: jest.fn(),
+  maybeSingle: jest.fn(),
   is: jest.fn().mockReturnThis(),
   insert: mockInsert,
   update: mockUpdate,
@@ -107,9 +108,10 @@ describe('POST /api/structure/[code]/incidents', () => {
 
   it('5 — direction peut créer', async () => {
     mockResolve.mockResolvedValue({ structure: STRUCTURE, role: 'direction', email: 'dir@test.fr' });
-    mockFromChain.single.mockResolvedValueOnce({ data: { id: 'insc-1' }, error: null }); // ownership check
+    // ownership check (requireInscriptionOwnership) utilise .maybeSingle()
+    mockFromChain.maybeSingle.mockResolvedValueOnce({ data: { id: 'insc-1' }, error: null });
     mockInsert.mockReturnValue({ select: () => ({ single: () => Promise.resolve({ data: { id: 'inc-1' }, error: null }) }) });
-    // Mock for email notification query
+    // Mock for email notification query (legacy .single())
     mockFromChain.single.mockResolvedValueOnce({ data: { jeune_prenom: 'Mehdi' }, error: null });
     const res = await POST(makeReq('POST', { inscription_id: 'insc-1', category: 'accident', severity: 'info', description: 'Chute dans la cour' }), { params });
     expect(res.status).toBe(201);

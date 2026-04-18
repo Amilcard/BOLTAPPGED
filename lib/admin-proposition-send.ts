@@ -67,15 +67,66 @@ export async function runSendProposition(params: {
     };
   }
 
+  // Pattern anti-doublon : UPDATE conditionnel AVANT envoi email.
+  // - `.in('status', ['brouillon','demandee'])` bloque un second envoi concurrent
+  // - Si 0 row modifiée = course gagnée par un autre worker → abort sans envoi
+  // - L'email n'est déclenché QUE si le status a bien transitionné — garantit
+  //   une unique livraison même en cas de retry réseau.
+  const updatePayload: Record<string, unknown> = { status: 'envoyee' };
+  if (!prop.demandeur_email && overrideEmailRaw) {
+    updatePayload.demandeur_email = overrideEmailRaw;
+  }
+
+  const { data: updatedRows, error: updateErr } = await supabase
+    .from('gd_propositions_tarifaires')
+    .update(updatePayload)
+    .eq('id', id)
+    .in('status', ['brouillon', 'demandee'])
+    .select('id');
+
+  if (updateErr) {
+    console.error('[propositions/send] update status failed:', updateErr.message);
+    return { ok: false, error: 'Statut proposition non mis à jour.', status: 500 };
+  }
+
+  if (!updatedRows || updatedRows.length === 0) {
+    // Course concurrente — un autre envoi a déjà fait transiter le status.
+    return { ok: false, error: 'Proposition déjà envoyée.', status: 409 };
+  }
+
+  // Génération PDF + envoi email APRÈS lock du statut.
   const pdfBytes = await generatePropositionPdf(prop as Record<string, unknown>);
 
-  await sendPropositionEmail({
-    to:              destEmail,
-    destinataireNom: prop.demandeur_nom || destEmail,
-    sejourTitre:     prop.sejour_titre || prop.sejour_slug,
-    dossierRef:      prop.id.slice(0, 8).toUpperCase(),
-    pdfBuffer:       pdfBytes,
-  });
+  try {
+    await sendPropositionEmail({
+      to:              destEmail,
+      destinataireNom: prop.demandeur_nom || destEmail,
+      sejourTitre:     prop.sejour_titre || prop.sejour_slug,
+      dossierRef:      prop.id.slice(0, 8).toUpperCase(),
+      pdfBuffer:       pdfBytes,
+    });
+  } catch (emailErr) {
+    // Status déjà à 'envoyee' : on ne revert pas (évite le risque de doublon
+    // si retry sur instance suivante). L'audit reflète l'échec email pour
+    // qu'un opérateur puisse renvoyer manuellement.
+    console.error('[propositions/send] email failed:', emailErr);
+    await auditLog(supabase, {
+      action: 'submit',
+      resourceType: 'proposition',
+      resourceId: id,
+      actorType: 'admin',
+      actorId: actorEmail,
+      ipAddress: ip,
+      metadata: {
+        context: 'proposition_send',
+        demandeur_email: destEmail,
+        sejour_titre: prop.sejour_titre,
+        email_status: 'failed',
+        error: emailErr instanceof Error ? emailErr.message : 'unknown',
+      },
+    });
+    return { ok: false, error: 'Statut mis à jour mais envoi email échoué.', status: 502 };
+  }
 
   await auditLog(supabase, {
     action: 'submit',
@@ -84,24 +135,8 @@ export async function runSendProposition(params: {
     actorType: 'admin',
     actorId: actorEmail,
     ipAddress: ip,
-    metadata: { context: 'proposition_send', demandeur_email: destEmail, sejour_titre: prop.sejour_titre },
+    metadata: { context: 'proposition_send', demandeur_email: destEmail, sejour_titre: prop.sejour_titre, email_status: 'sent' },
   });
-
-  const updatePayload: Record<string, unknown> = { status: 'envoyee' };
-  if (!prop.demandeur_email && overrideEmailRaw) {
-    updatePayload.demandeur_email = overrideEmailRaw;
-  }
-
-  const { error: updateErr } = await supabase
-    .from('gd_propositions_tarifaires')
-    .update(updatePayload)
-    .eq('id', id)
-    .in('status', ['brouillon', 'demandee']);
-
-  if (updateErr) {
-    console.error('[propositions/send] update status failed:', updateErr.message);
-    return { ok: false, error: 'Email envoyé mais statut non mis à jour.', status: 500 };
-  }
 
   return { ok: true };
 }

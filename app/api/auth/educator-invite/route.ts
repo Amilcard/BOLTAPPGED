@@ -16,7 +16,7 @@ import { requireEditor } from '@/lib/auth-middleware';
  * Body : { email, sejour_slug, session_date, city_departure }
  */
 export async function POST(req: NextRequest) {
-  const auth = requireEditor(req);
+  const auth = await requireEditor(req);
   if (!auth) {
     return NextResponse.json(
       { error: { code: 'UNAUTHORIZED', message: 'Accès réservé aux éditeurs.' } },

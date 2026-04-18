@@ -28,6 +28,7 @@ const mockFromChain = {
   is: jest.fn().mockReturnThis(),
   order: jest.fn().mockReturnThis(),
   single: jest.fn(),
+  maybeSingle: jest.fn(),
   insert: mockInsert,
 };
 const mockFrom = jest.fn(() => mockFromChain);
@@ -137,7 +138,8 @@ describe('POST /api/structure/[code]/notes', () => {
 
   it('8 — direction peut créer', async () => {
     mockResolve.mockResolvedValue({ structure: STRUCTURE, role: 'direction', email: 'dir@test.fr' });
-    mockFromChain.single.mockResolvedValueOnce({ data: { id: 'insc-1' }, error: null });
+    // requireInscriptionOwnership utilise .maybeSingle() (direction = pas de filtre referent_email)
+    mockFromChain.maybeSingle.mockResolvedValueOnce({ data: { id: 'insc-1' }, error: null });
     mockInsert.mockReturnValue({ select: () => ({ single: () => Promise.resolve({ data: { id: 'note-1' }, error: null }) }) });
     const res = await postNotes(makeReq('http://localhost:3000/api/structure/TESTCODE/notes', 'POST', {
       inscription_id: 'insc-1', content: 'Mehdi bien intégré depuis mardi',

@@ -59,12 +59,32 @@ export async function POST(
     const pdfUrl = new URL(`/api/dossier-enfant/${encodeURIComponent(inscriptionId)}/pdf`, INTERNAL_BASE);
     pdfUrl.searchParams.set('token', token);
     pdfUrl.searchParams.set('type', type);
-    const pdfRes = await fetch(pdfUrl.toString(), {
-      signal: AbortSignal.timeout(8000),
-    });
+
+    // Timeout 60s — une génération PDF avec template + signature prend
+    // typiquement 2-5s, mais un cold-start Fluid Compute + gros template
+    // peut dépasser 8s. Passer à 60s supprime les failures silencieuses
+    // observées en prod sur les PDFs lourds, tout en cappant runaway.
+    let pdfRes: Response;
+    try {
+      pdfRes = await fetch(pdfUrl.toString(), {
+        signal: AbortSignal.timeout(60000),
+      });
+    } catch (fetchErr) {
+      const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+      console.error('[pdf-email] PDF fetch failed:', msg, 'url:', pdfUrl.toString());
+      return NextResponse.json(
+        { error: 'Service PDF indisponible — réessayez dans quelques minutes.' },
+        { status: 504 }
+      );
+    }
 
     if (!pdfRes.ok) {
-      return NextResponse.json({ error: 'Génération PDF échouée.' }, { status: 500 });
+      const bodyText = await pdfRes.text().catch(() => '');
+      console.error('[pdf-email] PDF generation error:', pdfRes.status, bodyText.slice(0, 500));
+      return NextResponse.json(
+        { error: 'Génération PDF échouée.' },
+        { status: 502 }
+      );
     }
 
     const pdfBuffer = Buffer.from(await pdfRes.arrayBuffer());

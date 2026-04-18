@@ -107,11 +107,12 @@ describe('GET /api/structure/[code]/medical', () => {
 describe('POST /api/structure/[code]/medical', () => {
   it('4 — éducateur peut créer (spec validée)', async () => {
     mockResolve.mockResolvedValue({ structure: STRUCTURE, role: 'educateur', email: 'educ@test.fr' });
-    // Call 1: from('gd_inscriptions').select('id').eq('id').eq('structure_id').is('deleted_at', null).single()
+    // Call 1 (requireInscriptionOwnership) :
+    //   from('gd_inscriptions').select('id').eq('id').eq('structure_id').is('deleted_at', null).eq('referent_email', …).maybeSingle()
+    //   Le .eq('referent_email', …) est ajouté pour role=educateur|secretariat.
     mockFromOverrides[0] = {
-      select: () => ({ eq: () => ({ eq: () => ({ is: () => ({ single: () => Promise.resolve({ data: { id: 'insc-1' }, error: null }) }) }) }) }),
+      select: () => ({ eq: () => ({ eq: () => ({ is: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { id: 'insc-1' }, error: null }) }) }) }) }) }),
     };
-    // Call 2: from('gd_medical_events').insert().select().single()
     mockFromOverrides[1] = {
       insert: () => ({ select: () => ({ single: () => Promise.resolve({ data: { id: 'med-1' }, error: null }) }) }),
     };

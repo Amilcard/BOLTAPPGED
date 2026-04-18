@@ -136,6 +136,79 @@ Mobiliser des angles d'analyse différents (architecture, DB, runtime, UX, sécu
 [ ] Rollback SHA noté avant multi-fichier ?
 ```
 
+## Règle ABSOLUE — Prelude anti-pièges OBLIGATOIRE sur chaque tâche
+
+**Chaque tâche, chaque agent, chaque intervention DOIT commencer par ce prelude.** Zéro exception. Cette règle existe car des audits scopés ont laissé passer 6 P1 en prod (audit 2026-04-18 : educator-invite auth bypass, medical Art.9 sans scope educateur, proposition email avant update, factures sans auditLog, pdf-email timeout silencieux, signature DoS).
+
+### Prelude obligatoire — 7 checks AVANT toute écriture de code
+
+```
+[1] CONSULTATION DOC : lire CLAUDE.md § concerné + docs/*.md référencés + route voisine existante
+[2] GREP TRANSVERSAL : chercher le pattern sur TOUTE l'app, pas le scope feature
+    → `grep -rn "require(Editor|Admin|Auth)" app/api | grep -v "await require"`
+    → `grep -rn "supabase.*\.(update|insert|delete)" | vérifier auditLog dans ±10 lignes`
+    → `grep -rn "req.json()" | vérifier validator sizé dans ±5 lignes`
+[3] RESOURCE OWNERSHIP : si la route mute une ressource scopée (educateur, CDS), vérifier filtre `referent_email` / owner_id — pas juste role-auth
+[4] ORDRE SIDE-EFFECTS : UPDATE-avant-email ? auditLog avant return ? try/catch sur await ?
+[5] SIZE CAPS : tout req.json() > 100KB potentiel → validator explicite (base64 img, upload, signature)
+[6] COUVERTURE auditLog : table PII mutée → grep auditLog dans la route. Table hors liste connue (factures, stay_sessions, etc.) = suspect.
+[7] RUNTIME FAILURES : timeout fetch interne ? DoS payload ? race retry ? → tests d'intégration requis si oui
+```
+
+### Briefing obligatoire des agents
+
+**Tout dispatch d'agent (Task/Agent tool) DOIT contenir dans le prompt :**
+
+```
+AVANT TOUTE MODIFICATION, exécute le prelude CLAUDE.md § "Prelude anti-pièges" :
+1. Lis CLAUDE.md sections concernées
+2. Grep transversal sur l'app entière (pas le scope feature)
+3. Vérifie resource-ownership si mutation scopée
+4. Vérifie ordre UPDATE/side-effect
+5. Vérifie size caps sur req.json()
+6. Vérifie auditLog couverture
+7. Identifie runtime failures (timeout, DoS, race)
+
+Rapporte findings AVANT d'écrire du code.
+```
+
+### Patterns à imposer dans le code (réponse structurelle aux pièges)
+
+| Piège | Pattern obligatoire | Fichier |
+|---|---|---|
+| Role-auth ≠ resource-ownership | `requireResourceOwnership({resolved, resource, ownerField})` | `lib/resource-guard.ts` (à créer) |
+| await manquant sur requireEditor/Admin | ESLint rule `require-await-auth` + grep pre-commit | `.eslintrc` + `scripts/security-sweep.sh` |
+| Mutation sans auditLog | Matrice couverture versionnée + grep CI | `docs/audit-coverage.md` |
+| req.json() sans cap | `validateBase64Image({max})` / `validateUploadSize({max})` | `lib/validators.ts` |
+| Email avant UPDATE | Règle : UPDATE DB → side-effect (email/PDF/webhook) → auditLog | Review workflow-integration-reviewer systématique |
+| Fetch interne timeout | Merger route interne + route externe OU job async | Architecture decision record |
+
+### Tables PII — liste à jour OBLIGATOIRE (2026-04-18)
+
+Toute mutation sur ces tables DOIT appeler `auditLog()` :
+`gd_inscriptions`, `gd_dossier_enfant`, `gd_propositions_tarifaires`, `gd_factures`, `gd_suivi_incidents`, `gd_suivi_medical`, `gd_suivi_calls`, `gd_suivi_notes`, `gd_structure_access_codes`, `gd_educateur_emails`, `gd_stay_sessions` (si affecte dossier), `gd_souhaits`.
+
+**Ajout d'une nouvelle table PII** = ligne ajoutée ici dans la même PR, sinon merge bloqué.
+
+### Couverture workflow — reviewer systématique
+
+`workflow-integration-reviewer` obligatoire sur :
+- Tout flow email + update DB (proposition, facture, invitation, relance)
+- Tout cron + side-effect externe (purge, relance)
+- Tout upload + génération dérivée (signature, PDF, exports)
+
+### Specs métier tardives — règle
+
+Si l'utilisateur articule un intent nouveau en cours de session (ex. "secrétariat remplit dossier") :
+- OU la route correspondante est créée dans la même session
+- OU documentée dans `docs/BACKLOG_ROUTES_MANQUANTES.md` avec owner + deadline + scope auth
+
+**Jamais** laisser un intent métier formulé mourir sans trace.
+
+### Post-mortem vague — obligatoire
+
+Après chaque vague terminée : 10 min pour lister ce que la vague n'a PAS couvert → `docs/BACKLOG_AUDIT.md` avec priorité. Règle : jamais 2 vagues consécutives sans traiter 1 item du backlog.
+
 ## Danger zones — INTERDICTIONS ABSOLUES
 - JAMAIS de DELETE FROM sans WHERE explicite validé
 - JAMAIS de TRUNCATE sur aucune table

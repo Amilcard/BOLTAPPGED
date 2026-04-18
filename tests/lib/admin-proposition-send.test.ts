@@ -45,10 +45,19 @@ function sampleProp(overrides: Record<string, unknown> = {}) {
 function setupSupabase(opts: {
   prop: ReturnType<typeof sampleProp> | null;
   updateError?: { message: string } | null;
+  /** Nombre de rows retournées par UPDATE .select() — 0 = course gagnée par autre worker (409) */
+  updateRows?: number;
 }) {
-  const updateIn = jest
-    .fn()
-    .mockResolvedValue({ error: opts.updateError ?? null });
+  const rows = Array.from(
+    { length: opts.updateRows ?? 1 },
+    () => ({ id: PROP_ID }),
+  );
+  // UPDATE chain : update(payload).eq('id', id).in('status', [...]).select('id')
+  const updateSelect = jest.fn().mockResolvedValue({
+    data: opts.updateError ? null : rows,
+    error: opts.updateError ?? null,
+  });
+  const updateIn = jest.fn().mockReturnValue({ select: updateSelect });
   const updateEq = jest.fn().mockReturnValue({ in: updateIn });
   const updateFn = jest.fn().mockReturnValue({ eq: updateEq });
 
@@ -63,7 +72,7 @@ function setupSupabase(opts: {
     throw new Error(`Unexpected table: ${table}`);
   });
 
-  return { updateFn, updateEq, updateIn, selectFn };
+  return { updateFn, updateEq, updateIn, updateSelect, selectFn };
 }
 
 describe('runSendProposition', () => {
@@ -180,7 +189,7 @@ describe('runSendProposition', () => {
     });
   });
 
-  test('UPDATE statut échoue après email envoyé → 500 mais audit/email OK', async () => {
+  test('UPDATE statut échoue → 500 ET email PAS envoyé (update-first pattern)', async () => {
     setupSupabase({
       prop: sampleProp(),
       updateError: { message: 'race condition' },
@@ -193,10 +202,56 @@ describe('runSendProposition', () => {
 
     expect(res).toEqual({
       ok: false,
-      error: 'Email envoyé mais statut non mis à jour.',
+      error: 'Statut proposition non mis à jour.',
       status: 500,
     });
-    expect(mockSendProposition).toHaveBeenCalledTimes(1);
-    expect(auditLog).toHaveBeenCalledTimes(1);
+    // Pattern anti-doublon : l'email N'EST PAS déclenché si le UPDATE rate.
+    expect(mockSendProposition).not.toHaveBeenCalled();
+    expect(auditLog).not.toHaveBeenCalled();
+  });
+
+  test('UPDATE 0 rows (course concurrente) → 409 ET email PAS envoyé', async () => {
+    setupSupabase({
+      prop: sampleProp(),
+      updateRows: 0,
+    });
+
+    const res = await runSendProposition({
+      id: PROP_ID,
+      actorEmail: 'admin@gd.fr',
+    });
+
+    expect(res).toEqual({
+      ok: false,
+      error: 'Proposition déjà envoyée.',
+      status: 409,
+    });
+    expect(mockSendProposition).not.toHaveBeenCalled();
+    expect(auditLog).not.toHaveBeenCalled();
+  });
+
+  test('Email échoue après UPDATE → 502 + auditLog avec email_status=failed', async () => {
+    setupSupabase({ prop: sampleProp() });
+    mockSendProposition.mockRejectedValueOnce(new Error('SMTP timeout'));
+
+    const res = await runSendProposition({
+      id: PROP_ID,
+      actorEmail: 'admin@gd.fr',
+    });
+
+    expect(res).toEqual({
+      ok: false,
+      error: 'Statut mis à jour mais envoi email échoué.',
+      status: 502,
+    });
+    expect(auditLog).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: 'submit',
+        metadata: expect.objectContaining({ email_status: 'failed' }),
+      }),
+    );
+    // Reset pour tests suivants
+    mockSendProposition.mockResolvedValue(undefined);
   });
 });

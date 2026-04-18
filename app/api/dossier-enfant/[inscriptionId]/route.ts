@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { REQUIS_TO_JOINT } from '@/lib/dossier-shared';
 import { verifyOwnership } from '@/lib/verify-ownership';
 import { auditLog, getClientIp } from '@/lib/audit-log';
+import { validateBase64Image } from '@/lib/validators';
 // Blocs JSONB éditables (whitelist)
 const EDITABLE_BLOCS = [
   'bulletin_complement',
@@ -176,6 +177,26 @@ export async function PATCH(
         { error: { code: 'INVALID_DATA', message: 'Les données doivent être un objet.' } },
         { status: 400 }
       );
+    }
+
+    // Size cap signature_image_url — data URL PNG généré par canvas front.
+    // Cap 500 KB décodé = ~40× la taille typique (10-20 KB), prévient DoS
+    // par payload volumineux avant persist Supabase + embedPng côté PDF.
+    const rawSig = (data as Record<string, unknown>).signature_image_url;
+    if (rawSig !== undefined && rawSig !== null && rawSig !== '') {
+      const sigCheck = validateBase64Image(rawSig, { max: 500_000 });
+      if (!sigCheck.ok) {
+        const msg =
+          sigCheck.reason === 'too_large'
+            ? 'Signature trop volumineuse (max 500 KB).'
+            : sigCheck.reason === 'mime'
+              ? 'Format signature non autorisé (PNG uniquement).'
+              : 'Signature invalide.';
+        return NextResponse.json(
+          { error: { code: 'INVALID_SIGNATURE', message: msg } },
+          { status: 413 }
+        );
+      }
     }
 
     const supabase = getSupabaseAdmin();

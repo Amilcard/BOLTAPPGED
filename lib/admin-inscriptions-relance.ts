@@ -52,7 +52,12 @@ export async function runRelanceInscription(id: string): Promise<RelanceResult> 
       return { ok: false, status: 409, error: 'Dossier déjà envoyé, relance inutile.' };
     }
 
-    // Idempotence : refuser si une relance a déjà été envoyée il y a moins de 30 min
+    // Idempotence double-rempart :
+    //  1. Pré-check JS (fast-path) — 30 min depuis dernière relance
+    //  2. UPDATE last_relance_at AVANT envoi email — persiste le timestamp
+    //     avant tout side-effect. Un retry réseau ou une seconde instance
+    //     trouvera la condition JS bloquante. Pattern identique à
+    //     admin-proposition-send (update-first / side-effect-after).
     const THIRTY_MIN_MS = 30 * 60 * 1000;
     if (insc.last_relance_at) {
       const elapsed = Date.now() - new Date(insc.last_relance_at).getTime();
@@ -61,31 +66,37 @@ export async function runRelanceInscription(id: string): Promise<RelanceResult> 
       }
     }
 
-    // Fire-and-forget — on ne bloque pas la réponse sur l'envoi email
+    const relanceAt = new Date().toISOString();
+    const { error: updateErr } = await supabase
+      .from('gd_inscriptions')
+      .update({ last_relance_at: relanceAt })
+      .eq('id', id);
+
+    if (updateErr) {
+      console.error('[relance] update last_relance_at failed:', updateErr.message);
+      return { ok: false, status: 500, error: 'Erreur mise à jour timestamp.' };
+    }
+
+    // Emails APRÈS persistance du timestamp — fire-and-forget car non critique
+    // pour la réponse, et retry ne produira pas de doublon (guard JS ci-dessus).
     sendRappelDossierIncomplet({
       referentEmail: insc.referent_email,
       referentNom: insc.referent_nom || 'Référent',
       dossierRef: insc.dossier_ref ?? undefined,
       suiviToken: insc.suivi_token,
-    }).catch(() => {
-      // Erreur loguée dans sendRappelDossierIncomplet, pas de crash ici
+    }).catch((err) => {
+      console.error('[relance] sendRappelDossierIncomplet failed:', err);
     });
 
-    // Notification admin GED — fire-and-forget
     sendRelanceAdminNotification({
       referentNom: insc.referent_nom || 'Référent',
       referentEmail: insc.referent_email,
       structureNom: insc.organisation ?? undefined,
       dossierRef: insc.dossier_ref ?? undefined,
       inscriptionId: id,
-    }).catch(() => {
-      // Erreur loguée dans sendRelanceAdminNotification, pas de crash ici
+    }).catch((err) => {
+      console.error('[relance] sendRelanceAdminNotification failed:', err);
     });
-
-    // Marquer le timestamp de relance avant le return — évite le double-envoi
-    // sur retry réseau (idempotence côté serveur, pas uniquement UI).
-    const relanceAt = new Date().toISOString();
-    await supabase.from('gd_inscriptions').update({ last_relance_at: relanceAt }).eq('id', id);
 
     return { ok: true, relance_at: relanceAt };
   } catch (err) {

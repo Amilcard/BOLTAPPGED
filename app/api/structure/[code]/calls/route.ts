@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { requireStructureRole } from '@/lib/structure-guard';
+import { requireInscriptionOwnership } from '@/lib/resource-guard';
 import { auditLog } from '@/lib/audit-log';
 import { structureRateLimitGuard } from '@/lib/rate-limit-structure';
 
@@ -114,19 +115,16 @@ export async function POST(
   const supabase = getSupabaseAdmin();
   const structureId = resolved.structure.id as string;
 
-  // Si inscription_id fourni, vérifier qu'elle appartient à la structure
+  // Si inscription_id fourni, vérifier ownership scope rôle courant
+  // (éducateur/secrétariat limité à ses propres inscriptions).
   if (inscription_id && typeof inscription_id === 'string') {
-    const { data: insc } = await supabase
-      .from('gd_inscriptions')
-      .select('id')
-      .eq('id', inscription_id)
-      .eq('structure_id', structureId)
-      .is('deleted_at', null)
-      .single();
-
-    if (!insc) {
-      return NextResponse.json({ error: 'Inscription introuvable dans cette structure.' }, { status: 404 });
-    }
+    const ownership = await requireInscriptionOwnership({
+      supabase,
+      resolved,
+      inscriptionId: inscription_id,
+      structureId,
+    });
+    if (!ownership.ok) return ownership.response;
   }
 
   const { data: call, error: insertError } = await supabase

@@ -39,8 +39,10 @@ export default function AdminSessions() {
 
   const handleDelete = (sessionId: string) => {
     confirm('Supprimer cette session ? Cette action est irréversible.', async () => {
-      await fetch(`/api/admin/stays/${selectedStay}/sessions/${sessionId}`, {
-        method: 'DELETE',
+      await fetch('/api/admin/stays/sessions/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ staySlug: selectedStay, sessionId }),
       });
       fetchSessions();
     });

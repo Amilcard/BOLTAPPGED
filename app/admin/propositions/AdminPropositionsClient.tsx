@@ -326,25 +326,25 @@ export default function AdminPropositionsClient() {
                 aria-label="Nom de la structure"
                 type="text" placeholder="Nom de la structure *" required
                 value={form.structure_nom} onChange={e => setForm({ ...form, structure_nom: e.target.value })}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
+                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-secondary focus:border-primary outline-none"
               />
               <input
                 aria-label="Adresse"
                 type="text" placeholder="Adresse"
                 value={form.structure_adresse} onChange={e => setForm({ ...form, structure_adresse: e.target.value })}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
+                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-secondary focus:border-primary outline-none"
               />
               <input
                 aria-label="Code postal"
                 type="text" placeholder="Code postal"
                 value={form.structure_cp} onChange={e => setForm({ ...form, structure_cp: e.target.value })}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
+                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-secondary focus:border-primary outline-none"
               />
               <input
                 aria-label="Ville"
                 type="text" placeholder="Ville"
                 value={form.structure_ville} onChange={e => setForm({ ...form, structure_ville: e.target.value })}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
+                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-secondary focus:border-primary outline-none"
               />
             </div>
           </div>
@@ -357,13 +357,13 @@ export default function AdminPropositionsClient() {
                 aria-label="Nom de l'enfant"
                 type="text" placeholder="Nom de l'enfant *" required
                 value={form.enfant_nom} onChange={e => setForm({ ...form, enfant_nom: e.target.value })}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
+                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-secondary focus:border-primary outline-none"
               />
               <input
                 aria-label="Prénom de l'enfant"
                 type="text" placeholder="Prénom de l'enfant *" required
                 value={form.enfant_prenom} onChange={e => setForm({ ...form, enfant_prenom: e.target.value })}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
+                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-secondary focus:border-primary outline-none"
               />
             </div>
           </div>
@@ -376,7 +376,7 @@ export default function AdminPropositionsClient() {
                 aria-label="Séjour"
                 required value={form.sejour_slug}
                 onChange={e => setForm({ ...form, sejour_slug: e.target.value, session_start: '', session_end: '', ville_depart: '' })}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
+                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-secondary focus:border-primary outline-none"
               >
                 <option value="">Sélectionner un séjour *</option>
                 {sejours.map(s => (
@@ -391,7 +391,7 @@ export default function AdminPropositionsClient() {
                   const [start, end] = e.target.value.split('|');
                   setForm({ ...form, session_start: start, session_end: end });
                 }}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
+                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-secondary focus:border-primary outline-none"
                 disabled={!form.sejour_slug}
               >
                 <option value="|">Sélectionner une session *</option>
@@ -406,7 +406,7 @@ export default function AdminPropositionsClient() {
                 aria-label="Ville de départ"
                 required value={form.ville_depart}
                 onChange={e => setForm({ ...form, ville_depart: e.target.value })}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary outline-none"
+                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-secondary focus:border-primary outline-none"
                 disabled={!form.session_start}
               >
                 <option value="">Ville de départ *</option>
@@ -420,7 +420,7 @@ export default function AdminPropositionsClient() {
                   type="checkbox"
                   checked={form.encadrement}
                   onChange={e => setForm({ ...form, encadrement: e.target.checked })}
-                  className="w-5 h-5 rounded text-primary focus:ring-primary-300"
+                  className="w-5 h-5 rounded text-primary focus:ring-secondary"
                 />
                 <span className="text-sm">
                   Encadrement renforcé (animateur dédié — {ENCADREMENT_EUR_PAR_SEMAINE} €/semaine)
@@ -448,7 +448,7 @@ export default function AdminPropositionsClient() {
 
         {/* APERÇU AVANT CONFIRMATION */}
         {showPreviewForm && (
-          <div className="bg-white rounded-brand shadow-brand-lg border-2 border-orange-200 p-6 space-y-6">
+          <div className="bg-white rounded-brand shadow-brand-lg border-2 border-secondary/30 p-6 space-y-6">
             <div className="bg-secondary text-white px-6 py-4 rounded-lg -mx-6 -mt-6">
               <p className="text-sm opacity-80">Association Groupe et Découverte</p>
               <h2 className="text-xl font-bold mt-1">Proposition Tarifaire — Aperçu</h2>
@@ -470,7 +470,7 @@ export default function AdminPropositionsClient() {
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <p className="text-xs text-gray-500 uppercase font-medium mb-1">Séjour</p>
-                <p className="font-semibold text-orange-600">{getSejourTitle()}</p>
+                <p className="font-semibold text-secondary">{getSejourTitle()}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500 uppercase font-medium mb-1">Période</p>
@@ -483,7 +483,7 @@ export default function AdminPropositionsClient() {
               {form.encadrement && (
                 <div>
                   <p className="text-xs text-gray-500 uppercase font-medium mb-1">Encadrement</p>
-                  <p className="font-medium text-orange-600">Animateur dédié ({ENCADREMENT_EUR_PAR_SEMAINE} €/semaine)</p>
+                  <p className="font-medium text-secondary">Animateur dédié ({ENCADREMENT_EUR_PAR_SEMAINE} €/semaine)</p>
                 </div>
               )}
             </div>
@@ -493,16 +493,16 @@ export default function AdminPropositionsClient() {
               const prices = getEstimatedPrice();
               if (!prices) return <p className="text-sm text-gray-500 italic">Prix calculé après enregistrement</p>;
               return (
-                <div className="border-t-2 border-orange-500 pt-4">
+                <div className="border-t-2 border-secondary pt-4">
                   <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">Estimation tarifaire</h3>
                   <div className="space-y-2">
                     <div className="flex justify-between"><span className="text-gray-600">Séjour</span><span className="font-medium">{formatPrice(prices.base)}</span></div>
                     <div className="flex justify-between"><span className="text-gray-600">Transport</span><span className="font-medium">{formatPrice(prices.transport)}</span></div>
                     {form.encadrement && <div className="flex justify-between"><span className="text-gray-600">Encadrement</span><span className="font-medium">{formatPrice(prices.encadrement)}</span></div>}
                     <div className="flex justify-between"><span className="text-gray-600">Adhésion</span><span className="font-medium">Comprise</span></div>
-                    <div className="flex justify-between pt-3 mt-2 border-t-2 border-orange-500">
+                    <div className="flex justify-between pt-3 mt-2 border-t-2 border-secondary">
                       <span className="text-lg font-bold">Total estimé</span>
-                      <span className="text-lg font-bold text-orange-600">{formatPrice(prices.total)}</span>
+                      <span className="text-lg font-bold text-secondary">{formatPrice(prices.total)}</span>
                     </div>
                   </div>
                 </div>
@@ -511,7 +511,7 @@ export default function AdminPropositionsClient() {
 
             {/* BON POUR ACCORD */}
             <div className="bg-gray-50 rounded-lg p-5 border-2 border-dashed border-gray-300 text-center">
-              <p className="font-bold text-orange-600 text-lg mb-2">BON POUR ACCORD</p>
+              <p className="font-bold text-secondary text-lg mb-2">BON POUR ACCORD</p>
               <p className="text-sm text-gray-500">Nom et qualité du signataire : _______________________</p>
               <p className="text-sm text-gray-500 mt-1">Date : ____/____/________&nbsp;&nbsp;&nbsp;&nbsp;Signature et cachet :</p>
             </div>
@@ -590,7 +590,7 @@ export default function AdminPropositionsClient() {
                           onClick={() => setPreview(p)}
                           className="p-1.5 hover:bg-orange-50 rounded-lg transition" title="Aperçu"
                         >
-                          <Eye size={18} className="text-orange-600" />
+                          <Eye size={18} className="text-secondary" />
                         </button>
                         <button
                           onClick={() => { void downloadPdf(p.id); }}
@@ -680,7 +680,7 @@ export default function AdminPropositionsClient() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 uppercase font-medium mb-1">Séjour</p>
-                  <p className="font-semibold text-orange-600">{preview.sejour_titre}</p>
+                  <p className="font-semibold text-secondary">{preview.sejour_titre}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 uppercase font-medium mb-1">Période</p>
@@ -714,16 +714,16 @@ export default function AdminPropositionsClient() {
                     <span className="text-gray-600">Adhésion</span>
                     <span className="font-medium">Comprise</span>
                   </div>
-                  <div className="flex justify-between pt-3 mt-2 border-t-2 border-orange-500">
+                  <div className="flex justify-between pt-3 mt-2 border-t-2 border-secondary">
                     <span className="text-lg font-bold">Total</span>
-                    <span className="text-lg font-bold text-orange-600">{formatPrice(preview.prix_total)}</span>
+                    <span className="text-lg font-bold text-secondary">{formatPrice(preview.prix_total)}</span>
                   </div>
                 </div>
               </div>
 
               {/* BON POUR ACCORD */}
               <div className="bg-gray-50 rounded-lg p-5 border-2 border-dashed border-gray-300 text-center">
-                <p className="font-bold text-orange-600 text-lg mb-2">BON POUR ACCORD</p>
+                <p className="font-bold text-secondary text-lg mb-2">BON POUR ACCORD</p>
                 <p className="text-sm text-gray-500">Nom et qualité du signataire : _______________________</p>
                 <p className="text-sm text-gray-500 mt-1">Date : ____/____/________&nbsp;&nbsp;&nbsp;&nbsp;Signature et cachet :</p>
               </div>

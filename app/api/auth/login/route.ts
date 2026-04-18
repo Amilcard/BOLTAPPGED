@@ -3,33 +3,46 @@ import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { setSessionCookie } from '@/lib/auth-cookies';
 import { SignJWT } from 'jose';
-import { isRateLimited as isRateLimitedAtomic, getClientIpFromHeaders } from '@/lib/rate-limit';
-
-const MAX_ATTEMPTS = 5;
-const WINDOW_MINUTES = 15;
-
-function getClientIp(req: NextRequest): string {
-  return getClientIpFromHeaders(req.headers);
-}
+import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
+import { EMAIL_REGEX } from '@/lib/validators';
 
 export async function POST(req: NextRequest) {
-  const ip = getClientIp(req);
-  if (await isRateLimitedAtomic('login', ip, MAX_ATTEMPTS, WINDOW_MINUTES)) {
-    return NextResponse.json(
-      { error: 'Trop de tentatives. Réessayez dans 15 minutes.' },
-      { status: 429, headers: { 'Retry-After': '900' } }
-    );
-  }
-
   try {
-    const body = await req.json();
-    const { email, password } = body;
-
-    // Validation basique des entrées
-    if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
+    // 1. Parser le body et valider les entrées AVANT rate-limit pour extraire l'email
+    const body = await req.json().catch(() => null);
+    if (!body) {
       return NextResponse.json(
         { error: 'Email et mot de passe requis.' },
         { status: 400 }
+      );
+    }
+
+    const { email, password } = body as { email?: string; password?: string };
+    if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
+      return NextResponse.json(
+        { error: 'Email et mot de passe requis.' },
+        { status: 400 }
+      );
+    }
+    if (!password || typeof password !== 'string') {
+      return NextResponse.json(
+        { error: 'Email et mot de passe requis.' },
+        { status: 400 }
+      );
+    }
+
+    const emailNorm = email.trim().toLowerCase();
+    const ip = getClientIpFromHeaders(req.headers);
+
+    // 2. Dual-key rate limit : IP tolérante (NAT partagé) + email strict (credential stuffing cible)
+    const [ipBlocked, emailBlocked] = await Promise.all([
+      isRateLimited('login-ip', ip, 10, 15),
+      isRateLimited('login-email', emailNorm, 5, 15),
+    ]);
+    if (ipBlocked || emailBlocked) {
+      return NextResponse.json(
+        { error: 'Trop de tentatives. Réessayez dans 15 minutes.' },
+        { status: 429, headers: { 'Retry-After': '900' } }
       );
     }
 
@@ -49,7 +62,7 @@ export async function POST(req: NextRequest) {
     // Authentification via Supabase Auth
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.toLowerCase().trim(),
+      email: emailNorm,
       password,
     });
 
@@ -62,8 +75,11 @@ export async function POST(req: NextRequest) {
     // Rôle depuis app_metadata (défini via SQL : raw_app_meta_data)
     const role = data.user.app_metadata?.role || 'VIEWER';
 
-    // Reset rate limit après connexion réussie
-    getSupabaseAdmin().from('gd_login_attempts').delete().eq('ip', ip);
+    // Reset rate limit après connexion réussie (IP + email)
+    getSupabaseAdmin()
+      .from('gd_login_attempts')
+      .delete()
+      .in('ip', [`login-ip:${ip}`, `login-email:${emailNorm}`]);
 
     // Vérifier si la 2FA est activée pour cet utilisateur
     const { data: twoFaRow } = await getSupabaseAdmin()

@@ -67,7 +67,10 @@ function mockRateLimit(limited: boolean) {
     }),
     upsert: () => ({ error: null }),
     update: () => ({ eq: () => ({ error: null }) }),
-    delete: () => ({ eq: () => ({ error: null }) }),
+    delete: () => ({
+      eq: () => ({ error: null }),
+      in: () => ({ error: null }),
+    }),
   }));
 }
 

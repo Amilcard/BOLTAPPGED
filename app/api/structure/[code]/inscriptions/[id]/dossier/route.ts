@@ -9,6 +9,95 @@ import { EDITABLE_BLOCS, getCompletedColumn, type EditableBloc } from '@/lib/dos
 import { validateBase64Image, UUID_RE } from '@/lib/validators';
 
 /**
+ * GET /api/structure/[code]/inscriptions/[id]/dossier
+ *
+ * Lecture du dossier enfant par le staff structure (pour alimenter l'UI
+ * "Remplir dossier en dépannage"). Miroir en lecture de la route PATCH
+ * ci-dessous.
+ *
+ * Auth + ownership identiques au PATCH. auditLog obligatoire car lecture
+ * Art.9 (données dossier enfant).
+ */
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ code: string; id: string }> },
+) {
+  try {
+    const rateLimited = await structureRateLimitGuard(req);
+    if (rateLimited) return rateLimited;
+
+    const { code, id: inscriptionId } = await params;
+
+    if (!UUID_RE.test(inscriptionId)) {
+      return NextResponse.json(
+        { error: { code: 'INVALID_ID', message: "ID inscription invalide." } },
+        { status: 400 },
+      );
+    }
+
+    const guard = await requireStructureRole(req, code, {
+      allowRoles: ['secretariat', 'direction', 'cds', 'cds_delegated'],
+      forbiddenMessage: 'Accès réservé au staff structure.',
+    });
+    if (!guard.ok) return guard.response;
+    const resolved = guard.resolved;
+
+    const supabase = getSupabaseAdmin();
+    const structureId = resolved.structure.id as string;
+
+    const ownership = await requireInscriptionInStructure({
+      supabase,
+      inscriptionId,
+      structureId,
+    });
+    if (!ownership.ok) return ownership.response;
+
+    const { data: dossier } = await supabase
+      .from('gd_dossier_enfant')
+      .select('*')
+      .eq('inscription_id', inscriptionId)
+      .maybeSingle();
+
+    await auditLog(supabase, {
+      action: 'read',
+      resourceType: 'dossier_enfant',
+      resourceId: inscriptionId,
+      inscriptionId,
+      actorType: 'referent',
+      actorId: resolved.email || undefined,
+      ipAddress: getClientIp(req),
+      metadata: { context: 'staff_view_dossier', actor_role: resolved.role },
+    });
+
+    // Renvoyer forme compatible avec la route référent (exists: bool + blocs).
+    if (!dossier) {
+      return NextResponse.json({
+        exists: false,
+        inscription_id: inscriptionId,
+        bulletin_complement: {},
+        fiche_sanitaire: {},
+        fiche_liaison_jeune: {},
+        fiche_renseignements: null,
+        documents_joints: [],
+        bulletin_completed: false,
+        sanitaire_completed: false,
+        liaison_completed: false,
+        renseignements_completed: false,
+        renseignements_required: false,
+      });
+    }
+
+    return NextResponse.json({ exists: true, ...dossier });
+  } catch (err) {
+    console.error('GET /api/structure/[code]/inscriptions/[id]/dossier error:', err);
+    return NextResponse.json(
+      { error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur' } },
+      { status: 500 },
+    );
+  }
+}
+
+/**
  * PATCH /api/structure/[code]/inscriptions/[id]/dossier
  *
  * Permet au staff structure (secrétariat, direction, CDS, CDS délégué) de

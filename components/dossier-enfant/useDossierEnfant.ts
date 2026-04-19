@@ -42,10 +42,35 @@ interface UseDossierEnfantReturn {
 }
 
 /**
- * Hook pour charger et sauvegarder le dossier enfant d'une inscription.
- * Sauvegarde progressive : chaque appel à saveBloc merge les données dans le bloc JSONB.
+ * Options du hook — permet de switcher entre le mode référent (suivi_token
+ * public, URLs `/api/dossier-enfant/*`) et le mode staff structure (session
+ * cookie JWT, URLs `/api/structure/[code]/inscriptions/[id]/dossier`).
+ *
+ * Par défaut : mode référent (backward-compat avec les callers existants
+ * dans /suivi/[token]).
  */
-export function useDossierEnfant(inscriptionId: string, token: string): UseDossierEnfantReturn {
+export interface UseDossierEnfantOptions {
+  /**
+   * Si fourni, le hook utilise la route structure staff (GET + PATCH via
+   * session cookie, pas de token dans l'URL ni le body). Use case :
+   * secrétariat/direction remplit en dépannage.
+   */
+  staffMode?: { structureCode: string };
+}
+
+/**
+ * Hook pour charger et sauvegarder le dossier enfant d'une inscription.
+ * Sauvegarde progressive : chaque appel à saveBloc merge les données dans
+ * le bloc JSONB.
+ *
+ * Backward-compat : appel historique `useDossierEnfant(id, token)` inchangé.
+ * Mode staff : `useDossierEnfant(id, '', { staffMode: { structureCode: 'XXX' } })`.
+ */
+export function useDossierEnfant(
+  inscriptionId: string,
+  token: string,
+  options: UseDossierEnfantOptions = {},
+): UseDossierEnfantReturn {
   const [dossier, setDossier] = useState<DossierEnfant | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -53,14 +78,26 @@ export function useDossierEnfant(inscriptionId: string, token: string): UseDossi
   const [error, setError] = useState<string | null>(null);
   const savedTimeout = useRef<NodeJS.Timeout | null>(null);
 
+  const staffMode = options.staffMode;
+
   const load = useCallback(async () => {
     const safeId = validateUUID(inscriptionId);
-    const safeToken = validateUUID(token);
-    if (!safeId || !safeToken) return;
+    if (!safeId) return;
+
+    // En mode staff, le token n'est pas requis — session cookie suffit.
+    if (!staffMode) {
+      const safeToken = validateUUID(token);
+      if (!safeToken) return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/dossier-enfant/${safeId}?token=${safeToken}`);
+      const url = staffMode
+        ? `/api/structure/${encodeURIComponent(staffMode.structureCode)}/inscriptions/${safeId}/dossier`
+        : `/api/dossier-enfant/${safeId}?token=${validateUUID(token)}`;
+
+      const res = await fetch(url);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body?.error?.message || 'Erreur de chargement');
@@ -72,7 +109,7 @@ export function useDossierEnfant(inscriptionId: string, token: string): UseDossi
     } finally {
       setLoading(false);
     }
-  }, [inscriptionId, token]);
+  }, [inscriptionId, token, staffMode]);
 
   useEffect(() => {
     void load();
@@ -90,15 +127,25 @@ export function useDossierEnfant(inscriptionId: string, token: string): UseDossi
     try {
       const safeId = validateUUID(inscriptionId);
       if (!safeId) throw new Error('ID invalide');
-      const res = await fetch(`/api/dossier-enfant/${safeId}`, {
+
+      const url = staffMode
+        ? `/api/structure/${encodeURIComponent(staffMode.structureCode)}/inscriptions/${safeId}/dossier`
+        : `/api/dossier-enfant/${safeId}`;
+
+      // En mode staff, ne pas inclure token — auth par session cookie.
+      const body = staffMode
+        ? { bloc, data, completed }
+        : { token, bloc, data, completed };
+
+      const res = await fetch(url, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, bloc, data, completed }),
+        body: JSON.stringify(body),
       });
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body?.error?.message || 'Erreur de sauvegarde');
+        const respBody = await res.json().catch(() => ({}));
+        throw new Error(respBody?.error?.message || 'Erreur de sauvegarde');
       }
 
       const result = await res.json();
@@ -115,7 +162,7 @@ export function useDossierEnfant(inscriptionId: string, token: string): UseDossi
     } finally {
       setSaving(false);
     }
-  }, [inscriptionId, token]);
+  }, [inscriptionId, token, staffMode]);
 
   return {
     dossier,

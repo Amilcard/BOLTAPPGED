@@ -48,7 +48,7 @@ jest.mock('@/lib/rate-limit-structure', () => ({
 }));
 
 import { NextRequest } from 'next/server';
-import { PATCH } from '@/app/api/structure/[code]/inscriptions/[id]/dossier/route';
+import { PATCH, GET } from '@/app/api/structure/[code]/inscriptions/[id]/dossier/route';
 
 const STRUCTURE = { id: 'struct-1', name: 'MECS Test' };
 const VALID_UUID = '11111111-2222-3333-4444-555555555555';
@@ -157,5 +157,58 @@ describe('PATCH /api/structure/[code]/inscriptions/[id]/dossier', () => {
       { params: params() },
     );
     expect(res.status).toBe(404);
+  });
+});
+
+function makeGetReq(): NextRequest {
+  return new NextRequest('http://localhost:3000/api/structure/CODE/inscriptions/x/dossier', {
+    method: 'GET',
+  });
+}
+
+describe('GET /api/structure/[code]/inscriptions/[id]/dossier', () => {
+  it('G1 — staff voit dossier existant', async () => {
+    mockResolve.mockResolvedValue({ structure: STRUCTURE, role: 'secretariat', email: 'sec@test.fr' });
+    mockFromChain.maybeSingle
+      .mockResolvedValueOnce({ data: { id: VALID_UUID }, error: null }) // ownership
+      .mockResolvedValueOnce({
+        data: {
+          inscription_id: VALID_UUID,
+          bulletin_complement: { nom: 'X' },
+          fiche_sanitaire: {},
+          fiche_liaison_jeune: {},
+          fiche_renseignements: null,
+          documents_joints: [],
+          bulletin_completed: true,
+          sanitaire_completed: false,
+          liaison_completed: false,
+          renseignements_completed: false,
+          renseignements_required: false,
+        },
+        error: null,
+      }); // dossier
+    const res = await GET(makeGetReq(), { params: params() });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.exists).toBe(true);
+    expect(body.bulletin_completed).toBe(true);
+  });
+
+  it('G2 — staff voit shell vide si dossier absent', async () => {
+    mockResolve.mockResolvedValue({ structure: STRUCTURE, role: 'direction', email: 'dir@test.fr' });
+    mockFromChain.maybeSingle
+      .mockResolvedValueOnce({ data: { id: VALID_UUID }, error: null }) // ownership
+      .mockResolvedValueOnce({ data: null, error: null }); // pas de dossier
+    const res = await GET(makeGetReq(), { params: params() });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.exists).toBe(false);
+    expect(body.bulletin_completed).toBe(false);
+  });
+
+  it('G3 — éducateur refusé', async () => {
+    mockResolve.mockResolvedValue({ structure: STRUCTURE, role: 'educateur', email: 'educ@test.fr' });
+    const res = await GET(makeGetReq(), { params: params() });
+    expect(res.status).toBe(403);
   });
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { ClipboardList, Stethoscope, Handshake, FileText, Paperclip, LockKeyhole, Download, Check } from 'lucide-react';
 import { DOC_OPT_LABELS } from '@/lib/dossier-shared';
@@ -23,6 +23,20 @@ interface DossierInfo {
 interface Props {
   inscription: DossierInfo;
   token: string;
+  /**
+   * Mode d'utilisation :
+   *  - 'referent' (défaut) : éducateur via `/suivi/[token]`, tous les onglets
+   *    + submit GED + téléchargement PDF + upload PJ activés.
+   *  - 'staff-fill' : staff structure (secrétariat/direction/CDS) remplit en
+   *    dépannage depuis `/structure/[code]`. Onglets édition OK, mais submit,
+   *    PDF download et upload PJ MASQUÉS (routes backend non équivalentes —
+   *    l'éducateur garde la main finale sur le dossier via son lien suivi).
+   */
+  mode?: 'referent' | 'staff-fill';
+  /** Code structure — REQUIS si mode='staff-fill' (routage staff URL). */
+  structureCode?: string;
+  /** Nom référent pour bandeau "absent" (optionnel, UX informative). */
+  referentNom?: string;
 }
 
 const BASE_TABS = [
@@ -291,7 +305,8 @@ function OfflineSignatureZone({
 
 // ─── Panel principal ───────────────────────────────────────────────────────────
 
-export function DossierEnfantPanel({ inscription, token }: Props) {
+export function DossierEnfantPanel({ inscription, token, mode = 'referent', structureCode, referentNom }: Props) {
+  const isStaffFill = mode === 'staff-fill';
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('bulletin');
   const [submitting, setSubmitting] = useState(false);
@@ -310,12 +325,19 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
     setSignatureMode({ ...signatureModeRef.current });
   };
 
+  // Mémoiser l'objet options — sinon le hook `useCallback` reçoit une
+  // nouvelle référence à chaque render et déclenche un re-fetch en boucle.
+  const hookOptions = useMemo(
+    () => (isStaffFill && structureCode ? { staffMode: { structureCode } } : undefined),
+    [isStaffFill, structureCode],
+  );
+
   const {
     dossier, loading, saving, saved, error, saveBloc, reload,
-  } = useDossierEnfant(inscription.id, token);
+  } = useDossierEnfant(inscription.id, token, hookOptions);
 
-  // Onglets visibles — tous les onglets sont toujours affichés (renseignements obligatoire pour tous)
-  const TABS = BASE_TABS;
+  // Onglets visibles — mode staff-fill masque "PJ" (upload non supporté côté route structure).
+  const TABS = isStaffFill ? BASE_TABS.filter(t => t.key !== 'pj') : BASE_TABS;
 
   // Progression — 4 blocs fixes obligatoires (PJ exclues du compteur)
   const hasPJ = (dossier?.documents_joints.length ?? 0) > 0;
@@ -442,6 +464,25 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
 
       {open && (
         <div className="px-6 pb-6">
+          {/* Bandeau mode dépannage — visible uniquement en staff-fill.
+              Rappelle à l'utilisateur que ses modifications sont tracées
+              (RGPD Art. 9) et que l'envoi final reste à l'éducateur. */}
+          {isStaffFill && (
+            <div
+              role="status"
+              className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-brand text-sm text-blue-900"
+            >
+              <p className="font-medium">
+                Mode dépannage {referentNom ? `— absence de ${referentNom}` : ''}
+              </p>
+              <p className="text-xs text-blue-800 mt-1">
+                Vous remplissez ce dossier en l&apos;absence de l&apos;éducateur référent.
+                Chaque modification est tracée (RGPD Art. 9). L&apos;envoi final du dossier
+                à la GED + téléchargement PDF + upload de pièces jointes restent réservés
+                au référent via son lien de suivi personnel.
+              </p>
+            </div>
+          )}
           {loading ? (
             <div className="flex items-center gap-2 py-8 justify-center text-gray-400">
               <div className="w-5 h-5 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
@@ -517,8 +558,10 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                 })}
               </div>
 
-              {/* Boutons téléchargement PDF — toujours visibles pour permettre le flux signature physique */}
-              {dossier?.exists && (
+              {/* Boutons téléchargement PDF — masqués en mode staff-fill
+                  (route /pdf prend suivi_token référent, pas de route structure équivalente).
+                  Le référent reste seul à télécharger/signer. */}
+              {dossier?.exists && !isStaffFill && (
                 <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                   <p className="text-xs text-gray-500 mb-2">Télécharger les documents (pré-remplis avec les données saisies) :</p>
                   <div className="flex flex-wrap gap-2">
@@ -660,8 +703,10 @@ export function DossierEnfantPanel({ inscription, token }: Props) {
                 </>
               )}
 
-              {/* Bouton envoi GED — visible dès que le dossier existe */}
-              {dossier?.exists && (
+              {/* Bouton envoi GED — masqué en mode staff-fill.
+                  Submit = décision finale du référent ; le staff dépanne mais
+                  n'a pas le droit d'envoyer le dossier à la GED à sa place. */}
+              {dossier?.exists && !isStaffFill && (
                 <div className="mt-6 pt-4 border-t border-gray-200">
                   {(alreadySent || !!dossier.ged_sent_at) ? (
                     <div data-testid="bandeau-envoye" className="p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800 font-medium text-center">

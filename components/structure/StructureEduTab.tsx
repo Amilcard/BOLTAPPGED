@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { DossierEnfantPanel } from '@/components/dossier-enfant/DossierEnfantPanel';
 import Link from 'next/link';
 import { Users, AlertTriangle, Phone, PhoneCall, FileText, Heart, ClipboardList, Shield, Lock, ChevronRight, CalendarClock, TrendingUp } from 'lucide-react';
 import IncidentsPanel from '@/components/structure/IncidentsPanel';
@@ -63,6 +64,11 @@ export default function StructureEduTab({
   const [selectedEnfant, setSelectedEnfant] = useState<string | null>(
     inscriptions.length > 0 ? inscriptions[0].id : null
   );
+  // Mode dépannage — staff (secrétariat/direction/CDS) remplit le dossier
+  // d'un enfant en l'absence de l'éducateur référent.
+  // Exclu pour role='educateur' — il utilise `/suivi/[token]` natif.
+  const [staffFillOpen, setStaffFillOpen] = useState(false);
+  const canFillDossier = role !== null && role !== 'educateur';
 
   // Timeline data (lazy loaded)
   const [notes, setNotes] = useState<Array<{ id: string; inscription_id: string; content: string; created_by: string; created_at: string }>>([]);
@@ -330,14 +336,26 @@ export default function StructureEduTab({
                       <h4 className="font-semibold text-gray-800">
                         {selectedInscription.jeune_prenom} {selectedInscription.jeune_nom.charAt(0)}.
                       </h4>
-                      {selectedInscription.suivi_token && (
-                        <Link
-                          href={`/suivi/${selectedInscription.suivi_token}`}
-                          className="text-xs text-primary hover:underline"
-                        >
-                          Dossier complet →
-                        </Link>
-                      )}
+                      <div className="flex items-center gap-3">
+                        {canFillDossier && (
+                          <button
+                            type="button"
+                            onClick={() => setStaffFillOpen(true)}
+                            className="text-xs text-secondary hover:underline font-medium"
+                            title="Remplir ce dossier en l'absence de l'éducateur référent (mode dépannage — tracé RGPD)"
+                          >
+                            Remplir en dépannage
+                          </button>
+                        )}
+                        {selectedInscription.suivi_token && (
+                          <Link
+                            href={`/suivi/${selectedInscription.suivi_token}`}
+                            className="text-xs text-primary hover:underline"
+                          >
+                            Dossier complet →
+                          </Link>
+                        )}
+                      </div>
                     </div>
                     {timelineLoaded ? (
                       <ChildTimeline
@@ -420,6 +438,50 @@ export default function StructureEduTab({
       {/* ── CODE ACCES compact (direction/cds uniquement) ── */}
       {(role === 'direction' || role === 'cds' || role === 'cds_delegated') && (
         <CodeAccesBox code={code} />
+      )}
+
+      {/* ── MODAL STAFF-FILL — dossier dépannage (secrétariat/direction/CDS) ── */}
+      {staffFillOpen && selectedInscription && canFillDossier && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center overflow-y-auto p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Remplir le dossier en mode dépannage"
+          onClick={() => setStaffFillOpen(false)}
+          onKeyDown={(e) => { if (e.key === 'Escape') setStaffFillOpen(false); }}
+        >
+          <div
+            className="bg-white rounded-brand shadow-card max-w-4xl w-full my-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h3 className="font-semibold text-primary">
+                Remplir le dossier — {selectedInscription.jeune_prenom} {selectedInscription.jeune_nom.charAt(0)}.
+              </h3>
+              <button
+                type="button"
+                onClick={() => setStaffFillOpen(false)}
+                autoFocus
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none focus:outline-none focus:ring-2 focus:ring-secondary rounded"
+                aria-label="Fermer"
+              >
+                ×
+              </button>
+            </div>
+            <DossierEnfantPanel
+              inscription={{
+                id: selectedInscription.id,
+                jeunePrenom: selectedInscription.jeune_prenom,
+                jeuneNom: selectedInscription.jeune_nom,
+                sejourNom: selectedInscription.sejour_titre || '',
+                sessionDate: selectedInscription.session_date || '',
+              }}
+              token=""
+              mode="staff-fill"
+              structureCode={code}
+            />
+          </div>
+        </div>
       )}
 
     </div>

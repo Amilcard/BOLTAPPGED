@@ -965,6 +965,11 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             </div>
             <div>
               <label htmlFor="child-birthdate" className="text-sm text-primary-600 mb-1 block">Date de naissance *</label>
+              {stay.ageMin && stay.ageMax && selectedSession?.startDate && (
+                <p className="text-xs text-primary-500 mb-1">
+                  &#9888;&#65039; L&apos;enfant doit avoir entre {stay.ageMin} et {stay.ageMax} ans au moment du séjour (date de départ : {formatDateLong(selectedSession.startDate)}), pas aujourd&apos;hui.
+                </p>
+              )}
               <input
                 id="child-birthdate"
                 ref={firstInputRef}
@@ -976,10 +981,14 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                 className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
                 required
               />
-              {step2.childBirthDate && calculateAge(step2.childBirthDate, selectedSession?.startDate ? new Date(selectedSession.startDate) : undefined) !== null && (
-                <p className={`mt-1 text-xs ${ageError ? 'text-red-500 font-medium' : 'text-primary-500'}`}>
+              {step2.childBirthDate && calculateAge(step2.childBirthDate, selectedSession?.startDate ? new Date(selectedSession.startDate) : undefined) !== null && !ageError && (
+                <p className="mt-1 text-xs text-primary-500">
                   Âge au départ : {calculateAge(step2.childBirthDate, selectedSession?.startDate ? new Date(selectedSession.startDate) : undefined)} ans
-                  {ageError && ` • ${ageError}`}
+                </p>
+              )}
+              {step2.childBirthDate && ageError && selectedSession?.startDate && stay.ageMin && stay.ageMax && (
+                <p className="mt-1 text-xs text-red-500 font-medium">
+                  Votre enfant aurait {calculateAge(step2.childBirthDate, new Date(selectedSession.startDate))} ans au départ du séjour du {formatDateLong(selectedSession.startDate)}. Ce séjour accueille les {stay.ageMin}-{stay.ageMax} ans. Choisissez un autre séjour ou vérifiez la date de naissance.
                 </p>
               )}
               <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">

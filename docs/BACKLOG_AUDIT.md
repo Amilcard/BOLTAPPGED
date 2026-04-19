@@ -51,7 +51,7 @@
 
 | Anomalie | Impact UI | Décision |
 |---|---|---|
-| 22 séjours avec `location_city='annecy'` (lowercase) dont ~15 hors Annecy | **Invisible** — `geoLabel` non consommé dans `StayDetail`. Le filtre search utilise `geography` qui préfère `location_region` | Corriger via `/admin/sejours/[id]/edit` OU NULLifier en masse OU laisser |
+| ~~22 séjours avec `location_city='annecy'`~~ | Invisible UI | ✅ **RÉSOLU 2026-04-19** — migration 079 NULLify 17 bugs (lowercase), 5 `'Annecy'` conservés car légitimes (Haute-Savoie) |
 | `ged_theme` casse incohérente (`MONTAGNE` vs `Lac & Montagne`) | **Invisible** — champ legacy, UI consomme `gd_stay_themes` (multi) | Déprécier le champ ou normaliser casse |
 | Séjour Berlin Street Art sans `marketing_title` | Invisible (published=false) | Compléter OU delete |
 | `/sejours` redirect vers `/` | 3 callers actifs (booking-flow, reserver page) | Garder redirect OU migrer callers vers `/` |

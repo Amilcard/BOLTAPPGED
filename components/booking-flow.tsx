@@ -1234,7 +1234,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               className="flex-1 py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-              {loading ? 'Envoi...' : paymentMethod === 'card' ? 'Payer maintenant' : 'Envoyer la demande'}
+              {loading ? 'Envoi...' : paymentMethod === 'card' ? 'Payer maintenant' : 'S\'inscrire'}
             </button>
           </div>
         </div>

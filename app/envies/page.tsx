@@ -58,8 +58,6 @@ export default function EnviesPage() {
     }
   }, []);
 
-  if (!mounted) return null;
-
   return (
     <main className="min-h-screen bg-muted pb-24">
       {/* Header */}
@@ -74,13 +72,21 @@ export default function EnviesPage() {
           <Heart className="w-5 h-5 text-red-400 fill-current" />
           <h1 className="text-lg font-bold text-primary">Mes colos préférées</h1>
         </div>
-        {items.length > 0 && (
+        {mounted && items.length > 0 && (
           <span className="ml-auto text-sm text-gray-400">{items.length} séjour{items.length !== 1 ? 's' : ''}</span>
         )}
       </div>
 
       <div className="max-w-lg mx-auto px-4 pt-6">
-        {items.length === 0 ? (
+        {!mounted ? (
+          /* Placeholder SSR / pré-hydratation — garde le body visible et l'h1 indexable */
+          <div className="text-center py-16" aria-hidden="true">
+            <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Heart className="w-10 h-10 text-red-300" />
+            </div>
+            <p className="text-sm text-gray-400">Chargement de tes colos préférées…</p>
+          </div>
+        ) : items.length === 0 ? (
           /* État vide */
           <div className="text-center py-16">
             <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">

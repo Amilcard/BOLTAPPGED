@@ -96,7 +96,7 @@ export default function SuiviProPage() {
   const params = useParams();
   const token = params?.token as string;
   const [data, setData] = useState<SuiviData | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -105,12 +105,15 @@ export default function SuiviProPage() {
       .then(async (res) => {
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
-          throw new Error(body?.error?.message || 'Lien de suivi invalide ou expiré.');
+          const code: string = body?.error?.code || 'UNKNOWN_ERROR';
+          const err = new Error(body?.error?.message || 'Lien de suivi invalide ou expiré.');
+          (err as Error & { code?: string }).code = code;
+          throw err;
         }
         return res.json();
       })
       .then(setData)
-      .catch((err) => setError(err.message))
+      .catch((err: Error & { code?: string }) => setErrorCode(err.code || 'UNKNOWN_ERROR'))
       .finally(() => setLoading(false));
   }, [token]);
 
@@ -125,8 +128,8 @@ export default function SuiviProPage() {
     );
   }
 
-  if (error || !data) {
-    return <ResendLinkBlock />;
+  if (errorCode || !data) {
+    return <ResendLinkBlock errorCode={errorCode} />;
   }
 
   return (
@@ -558,7 +561,7 @@ function PreferencesBlock({ dossier, token }: { dossier: DossierSuivi; token: st
 }
 
 // === Composant renvoi de lien (affiché quand le token est invalide) ===
-function ResendLinkBlock() {
+function ResendLinkBlock({ errorCode }: { errorCode?: string | null }) {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
@@ -577,13 +580,46 @@ function ResendLinkBlock() {
     }
   };
 
+  // Différenciation des messages selon le code retourné par l'API
+  // (cf. lib/verify-ownership.ts : INVALID_TOKEN, NOT_FOUND, TOKEN_EXPIRED, FORBIDDEN)
+  const errorView = (() => {
+    switch (errorCode) {
+      case 'TOKEN_EXPIRED':
+        return {
+          title: 'Ce lien a expiré',
+          message: 'Contactez votre référent pour obtenir un nouveau lien.',
+        };
+      case 'INVALID_TOKEN':
+      case 'NOT_FOUND':
+        return {
+          title: "Ce lien n'est pas valide",
+          message: "Vérifiez l'URL ou contactez GED.",
+        };
+      case 'FORBIDDEN':
+        return {
+          title: 'Accès non autorisé',
+          message: "Ce lien ne correspond pas au dossier demandé. Contactez GED si l'erreur persiste.",
+        };
+      default:
+        return {
+          title: "Ce lien n'est plus actif",
+          message:
+            'Contactez votre structure pour obtenir un nouveau lien. Vos données restent protégées.',
+        };
+    }
+  })();
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted p-4">
       <div className="bg-white rounded-brand shadow-brand-lg max-w-md w-full p-8 text-center">
         <div className="mb-4"><Mail className="w-10 h-10 text-secondary mx-auto" /></div>
-        <h1 className="text-xl font-bold text-gray-800 mb-2">Ce lien n&apos;est plus actif</h1>
-        <p className="text-gray-500 text-sm mb-1">
-          Ce lien a expiré pour des raisons de sécurité. Contactez votre structure pour obtenir un nouveau lien. Vos données restent protégées.
+        <h1 className="text-xl font-bold text-gray-800 mb-2">{errorView.title}</h1>
+        <p
+          role="alert"
+          aria-live="polite"
+          className="text-destructive text-sm mb-1"
+        >
+          {errorView.message}
         </p>
         <p className="text-gray-400 text-xs mb-6">Pensez aussi à vérifier vos spams.</p>
 

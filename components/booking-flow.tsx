@@ -788,8 +788,8 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                 placeholder="Ex: Croix-Rouge du Havre"
                 value={step1.structureName}
                 onChange={e => setStep1({ ...step1, structureName: e.target.value, organisation: e.target.value })}
-                disabled={step1.structureVerified}
-                className={`w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureVerified ? 'bg-gray-50 text-gray-600' : ''}`}
+                disabled={step1.structureVerified && !!step1.structureName}
+                className={`w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureVerified && step1.structureName ? 'bg-gray-50 text-gray-600' : ''}`}
               />
             </div>
 
@@ -801,8 +801,8 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                 placeholder="N° et rue"
                 value={step1.structureAddress}
                 onChange={e => setStep1({ ...step1, structureAddress: e.target.value })}
-                disabled={step1.structureVerified}
-                className={`w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureVerified ? 'bg-gray-50 text-gray-600' : ''}`}
+                disabled={step1.structureVerified && !!step1.structureAddress}
+                className={`w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureVerified && step1.structureAddress ? 'bg-gray-50 text-gray-600' : ''}`}
               />
             </div>
 
@@ -828,9 +828,9 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                       } catch { setStructureSearchResults([]); }
                     }
                   }}
-                  disabled={step1.structureVerified}
+                  disabled={step1.structureVerified && !!step1.structurePostalCode}
                   maxLength={5}
-                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structurePostalCode && step1.structurePostalCode.length !== 5 ? 'border-red-400' : 'border-primary-200'} ${step1.structureVerified ? 'bg-gray-50 text-gray-600' : ''}`}
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structurePostalCode && step1.structurePostalCode.length !== 5 ? 'border-red-400' : 'border-primary-200'} ${step1.structureVerified && step1.structurePostalCode ? 'bg-gray-50 text-gray-600' : ''}`}
                 />
               </div>
               <div className="col-span-2">
@@ -840,8 +840,8 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                   placeholder="Le Havre"
                   value={step1.structureCity}
                   onChange={e => setStep1({ ...step1, structureCity: e.target.value })}
-                  disabled={step1.structureVerified}
-                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureCity && step1.structureCity.trim().length < 2 ? 'border-red-400' : 'border-primary-200'} ${step1.structureVerified ? 'bg-gray-50 text-gray-600' : ''}`}
+                  disabled={step1.structureVerified && !!step1.structureCity}
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureCity && step1.structureCity.trim().length < 2 ? 'border-red-400' : 'border-primary-200'} ${step1.structureVerified && step1.structureCity ? 'bg-gray-50 text-gray-600' : ''}`}
                 />
               </div>
             </div>
@@ -863,8 +863,8 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               <select
                 value={step1.structureType}
                 onChange={e => setStep1({ ...step1, structureType: e.target.value })}
-                disabled={step1.structureVerified}
-                className={`w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureVerified ? 'bg-gray-50 text-gray-600' : ''}`}
+                disabled={step1.structureVerified && !!step1.structureType}
+                className={`w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureVerified && step1.structureType ? 'bg-gray-50 text-gray-600' : ''}`}
               >
                 <option value="">Sélectionner...</option>
                 <option value="asso">Association</option>
@@ -884,8 +884,8 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                 placeholder="contact@structure.fr"
                 value={step1.structureEmail}
                 onChange={e => setStep1({ ...step1, structureEmail: e.target.value })}
-                disabled={step1.structureVerified}
-                className={`w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureVerified ? 'bg-gray-50 text-gray-600' : ''}`}
+                disabled={step1.structureVerified && !!step1.structureEmail}
+                className={`w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.structureVerified && step1.structureEmail ? 'bg-gray-50 text-gray-600' : ''}`}
               />
               {!step1.structureVerified && (
                 <p className="mt-1 text-xs text-gray-500">Un code de validation sera envoyé à cette adresse. Pensez à vérifier cette boîte mail après l'inscription.</p>

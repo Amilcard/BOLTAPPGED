@@ -2,6 +2,102 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+---
+
+## ⛔ RÈGLE #0 — LECTURE OBLIGATOIRE ET ACTIONNABLE AVANT CHAQUE TÂCHE
+
+**NE FAIS AUCUN CHANGEMENT TANT QUE TU N'ES PAS À 95 % DE CONFIANCE.**
+**POSE-MOI DES QUESTIONS DE SUIVI À CET EFFET.**
+
+Cette règle **prime sur toutes les autres** règles de ce document. Elle s'applique à toute tâche — fix, feature, refacto, migration, audit, génération doc, création DB, commit, push.
+
+### Protocole obligatoire en début de tâche
+
+Avant toute écriture de code, de fichier, de migration, ou commande modifiant quoi que ce soit :
+
+1. **Auto-évalue ta confiance** sur une échelle 0-100 % :
+   - Ai-je tous les éléments pour agir ?
+   - Ai-je compris l'intent métier, pas juste la demande littérale ?
+   - Les contraintes (sécurité, RGPD, backward-compat) sont-elles claires ?
+   - Le blast radius est-il connu et acceptable ?
+   - Suis-je capable de justifier chaque ligne que je vais écrire ?
+   - Y a-t-il des ambigüités ou des hypothèses non validées ?
+
+2. **Si confiance < 95 %** → STOP. Pose des questions de clarification. N'invente pas. Ne comble pas les vides par hypothèse. N'écris pas de code "pour voir".
+
+3. **Si confiance ≥ 95 %** → annonce ton plan en 3-5 lignes avant d'agir, et exécute.
+
+### Formats de questions à privilégier
+
+- Questions fermées (oui/non ou A/B/C) plutôt qu'ouvertes
+- Regrouper 2-5 questions en un seul message, jamais à la chaîne
+- Donner le **coût** de chaque option (temps, risque, réversibilité)
+- Proposer un défaut quand c'est sensé
+
+### Ce qui compte comme "pas 95 %"
+
+- Ambigüité sur le périmètre ("corrige ce bug" → quel bug exactement ?)
+- Intent métier non explicite ("fais propre" → quel critère de "propre" ?)
+- Choix technique avec plusieurs options viables aux conséquences différentes
+- Données/IDs/paths/credentials manquants pour exécuter
+- Pas d'accès à la bonne documentation ou au bon contexte
+- Tests échouants dont la cause racine n'est pas ouverte et lue
+- Changement qui touche auth, paiement, RGPD, données mineurs, prod
+
+### Anti-patterns interdits
+
+- ❌ "Je vais essayer et si ça casse on reverra" → non, poser la question avant
+- ❌ "Par défaut je suppose que…" → non, demander explicitement
+- ❌ Écrire du code "placeholder" pour avancer → non, clarifier le vrai besoin
+- ❌ Conclusion de triage sans avoir ouvert les traces/logs individuels
+- ❌ Merge ou push sans validation cross-review quand le déclencheur CLAUDE.md s'applique
+
+### Corollaire
+
+Le coût d'une question qui perd 2 minutes est toujours inférieur au coût d'un changement inapproprié qui demande un revert, un rollback Vercel, ou pire un incident RGPD. **Préfère toujours demander.**
+
+---
+
+## ⛔ RÈGLE #0 bis — ÉVALUATION MCP OBLIGATOIRE AU DÉMARRAGE DE CHAQUE TÂCHE
+
+**À chaque nouvelle tâche, évalue quels serveurs MCP / plugins sont réellement utiles. Désactive (ou ignore) ceux qui ne servent pas.**
+
+### Pourquoi
+
+Chaque serveur MCP connecté charge sa liste d'outils dans le contexte = tokens consommés en pure perte si non utilisé. Sur GED_APP, les MCPs disponibles incluent : Airtable, Canva, Gamma, Gmail, Google Calendar, Netlify, Stripe, Supabase, data-gouv-fr, fetch, flooow-filesystem, ged-filesystem, git, Vercel plugin. **Rarement plus de 2-3 sont pertinents pour une tâche donnée.**
+
+### Protocole obligatoire au début de chaque tâche
+
+1. **Liste mentale** : quels MCPs sont loadés en contexte ?
+2. **Intersecte avec le besoin réel** : pour CETTE tâche, quels outils MCP sont utiles ? (souvent : `git`, parfois `ged-filesystem` ou `Supabase`, rarement plus)
+3. **Annonce explicitement** dans ta réponse d'ouverture : "MCP utiles pour cette tâche : X, Y. Je n'utiliserai pas les autres."
+4. **Si un MCP inutilisé pèse lourd** (Airtable, Canva, Gamma souvent), **recommande à l'utilisateur de le désactiver** dans `.mcp.json` ou les settings pour la durée de la session.
+
+### Tableau de pertinence MCP par type de tâche (GED_APP)
+
+| Type de tâche | MCPs utiles | MCPs à désactiver |
+|---|---|---|
+| Fix de bug code | `git`, `ged-filesystem` | tous les autres |
+| Migration Supabase / RLS | `Supabase` MCP, `git` | tous les autres |
+| Audit sécurité / triage tests | `git`, `ged-filesystem` | tous les autres |
+| Déploiement Vercel / config | Vercel plugin, `git` | tous les autres |
+| Lead / CRM / prospect | Airtable, Gmail | tous les autres |
+| Génération doc / brief | aucun MCP nécessaire | tous |
+| Création UI / design | aucun MCP nécessaire (Read/Edit natifs suffisent) | tous |
+
+### Anti-patterns interdits
+
+- ❌ Charger tous les MCPs au démarrage "au cas où"
+- ❌ Invoquer un MCP quand Read/Edit/Bash natifs suffisent
+- ❌ Utiliser `ged-filesystem` pour une opération que Read/Write font déjà
+- ❌ Passer par Airtable MCP pour une lecture de fichier local
+
+### Exception
+
+Les MCPs système (git, filesystem du repo courant) peuvent rester actifs par défaut — ils sont utilisés sur presque toutes les tâches.
+
+---
+
 ## Project Overview
 
 **Groupe & Découverte (GED)** is an educational stay management platform for children aged 3-17. It connects social workers (professionals) with families and children to organize educational vacations during school holidays.

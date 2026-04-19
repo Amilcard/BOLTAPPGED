@@ -39,7 +39,7 @@ describe('GET /api/structure/[code]/team', () => {
             order: () => Promise.resolve({
               data: [
                 { id: 'm1', email: 'sec@x.fr', role: 'secretariat', active: true, activated_at: '2026-04-17T10:00:00Z', prenom: 'Marie', nom: 'Dupont' },
-                { id: 'm2', email: 'edu@x.fr', role: 'educateur', active: false, activated_at: null, prenom: null, nom: null, invitation_expires_at: '2026-04-19T10:00:00Z' },
+                { id: 'm2', email: 'edu@x.fr', role: 'educateur', active: false, activated_at: null, prenom: null, nom: null, invitation_expires_at: '2099-12-31T10:00:00Z' },
               ],
               error: null,
             }),

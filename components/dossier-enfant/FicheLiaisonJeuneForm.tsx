@@ -3,6 +3,7 @@
 import { useState, useId } from 'react';
 import { SignaturePad } from './SignaturePad';
 import { computeProgress, ProgressBar } from './progress-shared';
+import { mergeSharedIntoInitial, type SharedFromBulletin } from './shared-data';
 
 interface Props {
   data: Record<string, unknown>;
@@ -12,37 +13,47 @@ interface Props {
   jeuneNom: string;
   sejourNom: string;
   sessionDate: string;
+  /**
+   * Donnees pre-remplies depuis le Bulletin (signature_fait_a propage
+   * depuis bulletin.autorisation_fait_a). Prop OPTIONNELLE : backward-compat.
+   */
+  initialShared?: SharedFromBulletin;
 }
 
 /**
  * Fiche de liaison page 1 — Partie jeune + éducateur.
  * Pages 2 et 3 sont internes (équipe GED) → pas de formulaire en ligne.
  */
-export function FicheLiaisonJeuneForm({ data, saving, onSave, jeunePrenom, jeuneNom, sejourNom, sessionDate }: Props) {
-  const [form, setForm] = useState<Record<string, unknown>>({
-    // Établissement
-    etablissement_nom: '',
-    etablissement_adresse: '',
-    etablissement_cp: '',
-    etablissement_ville: '',
-    // Responsable établissement joignable
-    resp_etablissement_nom: '',
-    resp_etablissement_prenom: '',
-    resp_etablissement_tel1: '',
-    resp_etablissement_tel2: '',
-    // Partie jeune
-    choix_seul: '',
-    choix_ami: '',
-    choix_educateur: '',
-    deja_parti: '',
-    deja_parti_detail: '',
-    pourquoi_ce_sejour: '',
-    fiche_technique_lue: '',
-    // Engagement
-    engagement_accepte: false,
-    signature_fait_a: '',
-    ...data,
-  });
+export function FicheLiaisonJeuneForm({ data, saving, onSave, jeunePrenom, jeuneNom, sejourNom, sessionDate, initialShared }: Props) {
+  const [form, setForm] = useState<Record<string, unknown>>(() =>
+    mergeSharedIntoInitial<Record<string, unknown>>(
+      {
+        // Établissement
+        etablissement_nom: '',
+        etablissement_adresse: '',
+        etablissement_cp: '',
+        etablissement_ville: '',
+        // Responsable établissement joignable
+        resp_etablissement_nom: '',
+        resp_etablissement_prenom: '',
+        resp_etablissement_tel1: '',
+        resp_etablissement_tel2: '',
+        // Partie jeune
+        choix_seul: '',
+        choix_ami: '',
+        choix_educateur: '',
+        deja_parti: '',
+        deja_parti_detail: '',
+        pourquoi_ce_sejour: '',
+        fiche_technique_lue: '',
+        // Engagement
+        engagement_accepte: false,
+        signature_fait_a: '',
+      },
+      data,
+      initialShared ?? {},
+    ),
+  );
 
   const update = (key: string, value: unknown) => {
     setForm(prev => ({ ...prev, [key]: value }));

@@ -878,7 +878,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
 
             {/* Email structure */}
             <div>
-              <label className="text-sm text-primary-600 mb-1 block">Email de la structure</label>
+              <label className="text-sm text-primary-600 mb-1 block">Email de la structure (standard, optionnel)</label>
               <input
                 type="email"
                 placeholder="contact@structure.fr"
@@ -902,7 +902,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               />
             </div>
             <div>
-              <label className="text-sm text-primary-600 mb-1 block">Email *</label>
+              <label className="text-sm text-primary-600 mb-1 block">Votre email personnel (référent) *</label>
               <input
                 type="email"
                 placeholder="nom@structure.fr"
@@ -910,6 +910,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
                 onChange={e => setStep1({ ...step1, email: e.target.value })}
                 className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent ${step1.email && !isEmailValid ? 'border-red-400' : 'border-primary-200'}`}
               />
+              <p className="text-xs text-gray-500 mt-1">C&apos;est sur cet email que vous recevrez tous les courriers du dossier enfant.</p>
               {step1.email && !isEmailValid && (
                 <p className="mt-1 text-xs text-red-500">Adresse email invalide (ex: nom@domaine.fr)</p>
               )}

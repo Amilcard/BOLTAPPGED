@@ -81,6 +81,9 @@ Deux routes émettent ce cookie :
 | `POST /team/[id]/reinvite` | ✓ | ✗ | ✗ | ✗ | ✗ |
 | `PATCH /delegation` | ✓ | ✗ | ✗ | ✗ | ✗ |
 | `PATCH /settings` | ✓ | ✗ | ✗ | ✗ | ✗ |
+| `PATCH /inscriptions/[id]/dossier` | ✓ | ✓ | ✓ | ✓ | ✗ |
+
+`PATCH /inscriptions/[id]/dossier` (ajouté 2026-04-19) : staff structure remplit un dossier enfant (cas absence éducateur). Éducateur utilise `/suivi/[token]` via suivi_token. Scope = `requireInscriptionInStructure` (structure_id only, pas de scope referent_email) car tout le staff voit toute la structure. RGPD Art. 9 auditLog obligatoire.
 
 **`cds_delegated` exclu de write ops** : risque récursion délégation + verrou regex 10-chars en amont (un CDS délégué a un code personnel, pas un code 10-chars). Analyse 2026-04-17.
 

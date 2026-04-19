@@ -1,19 +1,10 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
-import { REQUIS_TO_JOINT } from '@/lib/dossier-shared';
+import { REQUIS_TO_JOINT, EDITABLE_BLOCS, getCompletedColumn, type EditableBloc } from '@/lib/dossier-shared';
 import { verifyOwnership } from '@/lib/verify-ownership';
 import { auditLog, getClientIp } from '@/lib/audit-log';
 import { validateBase64Image } from '@/lib/validators';
-// Blocs JSONB éditables (whitelist)
-const EDITABLE_BLOCS = [
-  'bulletin_complement',
-  'fiche_sanitaire',
-  'fiche_liaison_jeune',
-  'fiche_renseignements',
-] as const;
-
-type BlocName = typeof EDITABLE_BLOCS[number];
 
 /**
  * GET /api/dossier-enfant/[inscriptionId]?token=xxx
@@ -164,7 +155,7 @@ export async function PATCH(
     }
 
     // Vérifier que le bloc est dans la whitelist
-    if (!EDITABLE_BLOCS.includes(bloc as BlocName)) {
+    if (!EDITABLE_BLOCS.includes(bloc as EditableBloc)) {
       return NextResponse.json(
         { error: { code: 'INVALID_BLOC', message: 'Bloc non autorisé.' } },
         { status: 403 }
@@ -353,14 +344,5 @@ async function getDocsOptionnelsManquants(
   return { requis, manquants };
 }
 
-function getCompletedColumn(bloc: string): string | null {
-  const map: Record<string, string> = {
-    bulletin_complement: 'bulletin_completed',
-    fiche_sanitaire: 'sanitaire_completed',
-    fiche_liaison_jeune: 'liaison_completed',
-    fiche_renseignements: 'renseignements_completed',
-  };
-  return Object.prototype.hasOwnProperty.call(map, bloc) ? map[bloc] : null;
-}
-
 // verifyOwnership importé depuis @/lib/verify-ownership (centralisé RGPD)
+// EDITABLE_BLOCS + getCompletedColumn importés depuis @/lib/dossier-shared (source unique)

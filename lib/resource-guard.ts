@@ -41,11 +41,17 @@ export async function requireInscriptionOwnership(params: {
     .eq('structure_id', structureId)
     .is('deleted_at', null);
 
-  // Éducateur / secrétariat : scope restreint à leur propre referent_email.
+  // Éducateur : scope restreint à ses propres referent_email.
   // Réassignation explicite — le builder Supabase retourne un nouvel objet
-  // chaîné, et ne pas capturer le retour casserait silencieusement le filtre
-  // (bug reproductible en test avec mocks stricts).
-  if (resolved.role === 'educateur' || resolved.role === 'secretariat') {
+  // chaîné ; ne pas capturer le retour casserait silencieusement le filtre.
+  //
+  // Note 2026-04-19 : secretariat RETIRÉ du scope. Dans les 4 POST actuels
+  // utilisant ce helper (medical/incidents/calls/notes), secretariat est
+  // bloqué en amont par `excludeRoles:['secretariat']` → scope jamais atteint
+  // en pratique. Pour les routes où secretariat a un accès légitime TOUTE
+  // la structure (ex. dossier inscription), utiliser `requireInscriptionInStructure`
+  // ci-dessous — pas ce helper.
+  if (resolved.role === 'educateur') {
     if (!resolved.email) {
       return {
         ok: false,
@@ -65,6 +71,47 @@ export async function requireInscriptionOwnership(params: {
       ok: false,
       response: NextResponse.json(
         { error: 'Inscription introuvable dans votre périmètre.' },
+        { status: 404 },
+      ),
+    };
+  }
+
+  return { ok: true };
+}
+
+/**
+ * Guard "inscription appartient à la structure" — sans scope referent_email.
+ *
+ * Utilisé par les routes où tout le staff (direction, cds, cds_delegated,
+ * secrétariat) doit pouvoir agir sur TOUS les dossiers de la structure —
+ * ex. `PATCH /api/structure/[code]/inscriptions/[id]/dossier` (secrétariat
+ * dépanne un éducateur absent).
+ *
+ * Contraste avec `requireInscriptionOwnership` qui restreint `educateur` à
+ * ses propres inscriptions (scope referent_email).
+ *
+ * Retour : OwnershipResult (ok:true | ok:false + response 404).
+ */
+export async function requireInscriptionInStructure(params: {
+  supabase: SupabaseClient;
+  inscriptionId: string;
+  structureId: string;
+}): Promise<OwnershipResult> {
+  const { supabase, inscriptionId, structureId } = params;
+
+  const { data } = await supabase
+    .from('gd_inscriptions')
+    .select('id')
+    .eq('id', inscriptionId)
+    .eq('structure_id', structureId)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (!data) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: 'Inscription introuvable dans cette structure.' },
         { status: 404 },
       ),
     };

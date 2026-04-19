@@ -17,7 +17,7 @@
 | 4 | `app/api/admin/factures/route.ts` PATCH | Aucun auditLog sur status transitions | ✅ FIXED 2026-04-18 (SELECT before + auditLog metadata status_from/to/numero/structure_id) |
 | 5 | `app/api/dossier-enfant/[inscriptionId]/pdf-email/route.ts` | Fetch interne 8s timeout silencieux | ✅ FIXED 2026-04-18 (timeout 60s + try/catch + logging body error, 504/502 au lieu de silent 500) |
 | 6 | `app/api/dossier-enfant/[inscriptionId]/route.ts` PATCH | Pas de size cap signature PNG | ✅ FIXED 2026-04-18 (`validateBase64Image({max: 500_000})`) |
-| 7 | Secrétariat sans route fill dossier | Intent métier non implémenté | 📋 `BACKLOG_ROUTES_MANQUANTES.md` |
+| 7 | ~~Secrétariat sans route fill dossier~~ | Intent métier non implémenté | ✅ **RÉSOLU 2026-04-19** — `PATCH /api/structure/[code]/inscriptions/[id]/dossier` créée (4 rôles staff autorisés, éducateur exclu, auditLog Art.9) |
 
 **Architect cross-review 2026-04-18** : GO — 488/488 tests verts, tsc clean, aucune régression GET/PATCH voisines.
 

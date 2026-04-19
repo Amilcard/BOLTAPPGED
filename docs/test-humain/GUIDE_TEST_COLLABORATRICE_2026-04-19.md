@@ -340,6 +340,28 @@ Ne les partagez avec personne. À la fin du test, GED les désactivera.
 
 ---
 
+## 4 bis — Points d'attention connus à ne pas confondre avec des bugs
+
+Avant de commencer, prenez 2 minutes pour lire ces **quirks connus** de
+l'application. Ce sont des particularités cosmétiques que nous connaissons,
+qui ne doivent PAS vous bloquer ni vous inquiéter.
+
+| Quirk | Où | Ce que vous verrez | Quoi faire |
+|---|---|---|---|
+| **Widget Cloudflare** | Étape 5/5 du formulaire d'inscription | Une case "Vérification" avec un logo Cloudflare entre les options paiement et le bouton | La **cocher** avant de cliquer "S'inscrire". Sans elle, le bouton reste grisé. C'est normal. |
+| **Adresse vide et grisée** | Étape 3/5 du formulaire | Le champ "N° et rue" est grisé et vide | Normal. Ne pas essayer de remplir. Le reste suffit. |
+| **Type de structure grisé "Sélectionner..."** | Étape 3/5 | Le select type est grisé sur "Sélectionner..." | Normal. Type est optionnel. |
+| **Email structure demandé 2 fois** | Étape 3/5 | Deux champs email : "Email de la structure" + "Email" (référent) | Remplir seulement "Email" (référent) : `ttu.nguyen188@gmail.com`. L'autre est grisé. |
+| **Référent = nom de la structure** | Page récap après inscription | Le champ "Référent" affiche "Structure Test Thanh" au lieu de "Thanh Nguyen" | Bug cosmétique connu. À ignorer. Signaler dans le tableau si ça vous choque. |
+| **Contrainte d'âge** | Étape 2/5 | Si vous mettez une date qui fait l'enfant trop jeune ou trop vieux à la date du séjour, l'étape se bloque | **Léa doit avoir 6 ans à la date du séjour**. Ex. pour un séjour début juillet 2026, mettez une date de naissance en août 2019. |
+| **Bouton final "S'inscrire"** | Étape 5/5 | Le bouton s'appelle "S'inscrire" pour virement/chèque et "Payer maintenant" pour carte | Les deux fonctionnent. |
+
+**Ces quirks ne doivent pas être comptés comme des bugs dans vos retours** —
+nous les connaissons et les fixons après votre test. Si vous en découvrez
+d'autres, **là** c'est précieux de les signaler.
+
+---
+
 ## 5. Checklist à faire AVANT de démarrer le 1er parcours
 
 Prenez 10 minutes pour ces 7 vérifications. Elles vous éviteront des blocages
@@ -574,6 +596,10 @@ votre éducatrice pour qu'elle vous inscrive à un séjour.
 | 4.6 | Ouvrir email | Joli, pro, tous séjours listés | | | | |
 | 4.7 | Cliquer lien dans email | Ouvre une page de l'appli | | | | |
 
+### 📍 Bug / UX déjà signalé par GED (à ne pas remonter)
+
+Aucun à ce stade du parcours.
+
 ---
 
 # BLOC B — Vous êtes l'éducatrice
@@ -802,25 +828,38 @@ structure (parcours 12) — ce qui fausse la suite du test.
 #### Suite du formulaire
 
 4. Remplissez le reste :
-   - Infos du jeune (prénom **"Camille"**, nom au choix, date de
-     naissance, sexe)
-   - Nom de la structure : **"Structure Test Thanh"** (déjà pré-rempli
-     si code reconnu)
-   - Votre email : **`ttu.nguyen188@gmail.com`** (votre mail perso —
-     c'est vous l'éducatrice référente pour le test)
-   - Choix de la session (dates)
-   - Choix du mode de paiement (carte / virement / chèque)
-5. Acceptez les conditions RGPD et mentions légales.
-6. Validez.
-7. Selon le mode de paiement :
-   - **Carte** : on vous redirige vers une page de paiement sécurisée
-     Stripe. Pour le test, utilisez le numéro de carte test :
-     `4242 4242 4242 4242`, date future quelconque (ex. 12/30),
-     CVC `123`, nom quelconque.
+   - **Prénom enfant** : `Camille` · **Nom** : au choix · **Sexe** : Fille
+   - **Date de naissance enfant** : **IMPORTANT** — Camille doit avoir
+     exactement **6 ans à la date du séjour** (pas 5, pas 7). Si vous
+     choisissez le séjour MY LITTLE FOREST (3-6 ans) le 5 juillet 2026,
+     mettez une date de naissance **1er août 2019** (6 ans révolus au
+     moment du séjour). Si vous mettez 4 ans, le site bloque avec "Âge
+     au départ : 7 ans • Âge requis : 3-6 ans" (c'est attendu, mais
+     empêche de continuer). Pour un séjour 6-12 ans, une date 2017-2018
+     fonctionnera.
+   - **Nom de la structure** : pré-rempli "Structure Test Thanh" — ne
+     touchez pas, il est grisé
+   - **Nom du référent** : `Thanh Nguyen`
+   - **Email référent** : `ttu.nguyen188@gmail.com`
+   - **Téléphone référent** : `0612345678` (fictif)
+   - **Session** : sélectionnez une date (ex. 5 juillet 2026)
+   - **Ville de départ** : "Sans transport" (plus simple)
+   - **Mode de paiement** : virement bancaire OU carte (au choix)
+
+5. À l'**étape 5/5**, cochez le widget **"Vérification" Cloudflare**
+   qui apparaît entre les options paiement et le bouton.
+6. Acceptez les conditions RGPD.
+7. Cliquez le bouton final :
+   - **Virement bancaire / Chèque** → bouton "**S'inscrire**"
+   - **Carte bancaire** → bouton "**Payer maintenant**"
+8. Selon le mode de paiement :
+   - **Carte** : on vous redirige vers Stripe. Pour le test, utilisez
+     la carte test `4242 4242 4242 4242`, date future quelconque
+     (ex. 12/30), CVC `123`, nom quelconque.
    - **Virement** : vous recevez un mail avec les coordonnées
-     bancaires. Ne faites PAS de vrai virement — c'est un test.
+     bancaires. **Ne faites PAS de vrai virement** — c'est un test.
    - **Chèque** : vous recevez un mail avec l'adresse postale.
-     N'envoyez PAS de vrai chèque — c'est un test.
+     **N'envoyez PAS de vrai chèque** — c'est un test.
 
 ### Ce que vous devez voir
 

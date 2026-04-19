@@ -126,7 +126,7 @@ export async function GET(
 
     return NextResponse.json({
       referent: {
-        nom: source.organisation || (rows[0]?.referent_nom as string ?? ''),
+        nom: (rows[0]?.referent_nom as string) || source.organisation || '',
         email: source.referent_email,
         organisation: source.organisation,
       },

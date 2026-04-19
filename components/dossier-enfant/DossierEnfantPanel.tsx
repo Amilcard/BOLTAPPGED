@@ -222,6 +222,9 @@ function OfflineSignatureZone({
   docLabel,
   signedType,
   onUploadSuccess,
+  pdfUrl,
+  pdfEmailUrl,
+  uploadUrl,
 }: {
   inscriptionId: string;
   token: string;
@@ -229,11 +232,19 @@ function OfflineSignatureZone({
   docLabel: string;
   signedType: string;
   onUploadSuccess: () => void;
+  /** URL PDF download override (staff mode). Forwardée au PdfDownloadButton. */
+  pdfUrl?: string;
+  /** URL POST email-fallback override (staff mode). */
+  pdfEmailUrl?: string;
+  /** URL POST upload override (staff mode). Si fourni : pas de token en FormData (auth session cookie). */
+  uploadUrl?: string;
 }) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [uploaded, setUploaded] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const isStaffMode = !!uploadUrl;
 
   const handleUpload = async () => {
     const file = fileRef.current?.files?.[0];
@@ -243,10 +254,12 @@ function OfflineSignatureZone({
     setUploadError('');
     try {
       const fd = new FormData();
-      fd.append('token', token);
+      // Token FormData uniquement en mode référent (staff = session cookie)
+      if (!isStaffMode) fd.append('token', token);
       fd.append('type', signedType);
       fd.append('file', file);
-      const res = await fetch(`/api/dossier-enfant/${inscriptionId}/upload`, { method: 'POST', body: fd });
+      const targetUrl = uploadUrl || `/api/dossier-enfant/${inscriptionId}/upload`;
+      const res = await fetch(targetUrl, { method: 'POST', body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erreur upload');
       setUploaded(true);
@@ -279,6 +292,8 @@ function OfflineSignatureZone({
           token={token}
           docType={docType}
           label={`Télécharger ${docLabel}`}
+          pdfUrl={pdfUrl}
+          pdfEmailUrl={pdfEmailUrl}
         />
       </div>
       <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
@@ -635,6 +650,9 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
                       docLabel="Bulletin d'inscription"
                       signedType="bulletin_signe"
                       onUploadSuccess={reload}
+                      pdfUrl={pdfApiBase}
+                      pdfEmailUrl={pdfEmailApiBase}
+                      uploadUrl={uploadApiBase}
                     />
                   ) : (
                     <BulletinComplementForm
@@ -664,6 +682,9 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
                       docLabel="Fiche sanitaire"
                       signedType="sanitaire_signe"
                       onUploadSuccess={reload}
+                      pdfUrl={pdfApiBase}
+                      pdfEmailUrl={pdfEmailApiBase}
+                      uploadUrl={uploadApiBase}
                     />
                   ) : (
                     <FicheSanitaireForm
@@ -694,6 +715,9 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
                       docLabel="Fiche de liaison"
                       signedType="liaison_signe"
                       onUploadSuccess={reload}
+                      pdfUrl={pdfApiBase}
+                      pdfEmailUrl={pdfEmailApiBase}
+                      uploadUrl={uploadApiBase}
                     />
                   ) : (
                     <FicheLiaisonJeuneForm

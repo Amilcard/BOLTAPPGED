@@ -55,7 +55,7 @@
 | ~~`ged_theme` casse incohérente~~ | Invisible UI | ✅ **RÉSOLU 2026-04-19** — migration 080 uniformise UPPERCASE (LAC_MONTAGNE, MER_SURF, NATURE_EQUITATION). Attention : workflow n8n v2 désactivé écrirait les valeurs UFOVAL brutes s'il était réactivé. |
 | ~~Séjour Berlin Street Art sans `marketing_title`~~ | Invisible (published=false) | ✅ **RÉSOLU 2026-04-19** — migration 081 DELETE stub (0 FK deps vérifiées). Ré-import possible via n8n UFOVAL si besoin. |
 | `/sejours` redirect vers `/` | 3 callers actifs (booking-flow, reserver page) | Garder redirect OU migrer callers vers `/` |
-| `/infos` redirect vers vitrine | 1 test E2E `parcours-kids.spec.ts:61` K7 + 1 doc `Topo_Parcours_Utilisateurs_GED.md` | Garder redirect (stubs légitimes) OU delete + update test + doc en PR dédiée |
+| ~~`/infos` redirect vers vitrine~~ | 1 test E2E + 1 doc | ✅ **RÉSOLU 2026-04-19** — page supprimée (`git rm app/infos/page.tsx`), test K7 redirigé vers `/`, doc Topo nettoyée |
 
 Non corrigés automatiquement dans la vague 2026-04-18 — requièrent validation produit.
 

@@ -57,8 +57,8 @@ test.describe('Parcours Kids', () => {
     await expect(actionBtn).toBeVisible({ timeout: 8000 });
   });
 
-  test('K7 — page infos accessible', async ({ page }) => {
-    const response = await page.goto('/infos');
+  test('K7 — accueil répond sans erreur serveur (smoke)', async ({ page }) => {
+    const response = await page.goto('/');
     expect(response?.status()).toBeLessThan(500);
     await expect(page.locator('body')).toBeVisible({ timeout: 8000 });
   });

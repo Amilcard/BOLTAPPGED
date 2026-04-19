@@ -161,7 +161,6 @@ Admin : Dashboard -> Validation inscription -> Relance si dossier incomplet
 - `/cgv` — Conditions generales de vente
 - `/confidentialite` — Politique de confidentialite
 - `/mentions-legales` — Mentions legales
-- `/infos` — Page d'information
 
 ---
 

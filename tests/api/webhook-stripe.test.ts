@@ -82,9 +82,10 @@ jest.mock('stripe', () => {
   }));
 });
 
-// Mock email
+// Mock email — toutes les fns appelées par le webhook
 jest.mock('@/lib/email', () => ({
   sendPaymentConfirmedAdminNotification: jest.fn().mockResolvedValue(undefined),
+  sendPaymentConfirmedClient: jest.fn().mockResolvedValue(undefined),
 }));
 
 // ── Import route AFTER mocks ────────────────────────────────────────────────

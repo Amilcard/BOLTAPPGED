@@ -90,6 +90,7 @@ jest.mock('@/lib/email', () => ({
   sendInscriptionConfirmation: jest.fn().mockResolvedValue(undefined),
   sendPaymentFailedNotification: jest.fn().mockResolvedValue(undefined),
   sendPaymentConfirmedAdminNotification: jest.fn().mockResolvedValue(undefined),
+  sendPaymentConfirmedClient: jest.fn().mockResolvedValue(undefined),
   sendAdminNewInscriptionNotification: jest.fn().mockResolvedValue(undefined),
 }));
 

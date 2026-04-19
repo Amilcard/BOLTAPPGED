@@ -580,6 +580,12 @@ export async function sendDossierCompletEmail(data: {
   jeunePrenom: string;
   jeuneNom: string;
   dossierRef?: string;
+  /**
+   * Copie carbone invisible — utilisée quand le staff structure (secrétariat,
+   * direction, CDS) soumet le dossier en mode dépannage. Garde le référent
+   * comme destinataire principal, mais donne au staff une preuve d'envoi.
+   */
+  bcc?: string;
 }) {
   if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
     console.warn('[EMAIL] Clé API manquante — email dossier complet non envoyé');
@@ -587,9 +593,11 @@ export async function sendDossierCompletEmail(data: {
   }
 
   try {
+    const shouldBcc = data.bcc && data.bcc !== data.referentEmail;
     const result = await getResend().emails.send({
       from: FROM_EMAIL,
       to: data.referentEmail,
+      ...(shouldBcc ? { bcc: data.bcc as string } : {}),
       subject: `Dossier complété - Réf. ${data.dossierRef || 'en cours'}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">

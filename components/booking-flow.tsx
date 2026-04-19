@@ -1389,7 +1389,7 @@ function WaitlistBlock({ sejourSlug }: { sejourSlug: string }) {
         <p className="text-sm text-gray-500">
           Nous vous enverrons un email dès qu&apos;une place se libère pour ce séjour.
         </p>
-        <Link href="/sejours" className="inline-block mt-4 text-sm text-primary hover:underline">
+        <Link href="/" className="inline-block mt-4 text-sm text-primary hover:underline">
           Voir d&apos;autres séjours →
         </Link>
       </div>
@@ -1433,7 +1433,7 @@ function WaitlistBlock({ sejourSlug }: { sejourSlug: string }) {
         )}
       </form>
       <div className="text-center mt-3">
-        <Link href="/sejours" className="text-xs text-gray-400 hover:text-primary">
+        <Link href="/" className="text-xs text-gray-400 hover:text-primary">
           Voir d&apos;autres séjours →
         </Link>
       </div>

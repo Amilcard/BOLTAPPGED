@@ -246,7 +246,7 @@ export default async function ReserverPage({ params, searchParams }: PageProps) 
               {/* CTAs */}
               <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
                 <Link
-                  href="/sejours"
+                  href="/"
                   className="flex-1 text-center bg-primary text-white rounded-xl py-3 px-4 font-medium text-sm hover:bg-primary/90 transition-colors"
                 >
                   Voir autres séjours

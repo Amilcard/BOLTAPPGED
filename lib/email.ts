@@ -209,6 +209,79 @@ export async function sendPaymentConfirmedAdminNotification(data: {
 }
 
 /**
+ * Email de confirmation de paiement CB envoyé au référent client.
+ * Distinct de sendInscriptionConfirmation (qui contient les instructions virement/chèque).
+ * Appelé par le webhook Stripe après payment_intent.succeeded.
+ */
+export async function sendPaymentConfirmedClient(data: {
+  referentEmail: string;
+  referentNom: string;
+  jeunePrenom: string;
+  jeuneNom: string;
+  sejourSlug: string;
+  dossierRef: string;
+  amount: number;
+  suiviUrl?: string | null;
+  paymentMethod?: string;
+}) {
+  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
+    console.warn('[EMAIL] Clé API manquante — email non envoyé');
+    return null;
+  }
+  if (!data.referentEmail) {
+    console.warn('[EMAIL] sendPaymentConfirmedClient: referentEmail manquant');
+    return null;
+  }
+
+  try {
+    const result = await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: data.referentEmail,
+      subject: `Paiement reçu — Réf. ${data.dossierRef || 'votre inscription'}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #16a34a; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 22px;">Paiement reçu</h1>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+            <p>Bonjour ${htmlEscape(data.referentNom)},</p>
+            <p>Nous avons bien reçu votre paiement pour l'inscription de <strong>${htmlEscape(data.jeunePrenom)} ${htmlEscape(data.jeuneNom)}</strong>.</p>
+
+            <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+              <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Séjour</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: bold;">${data.sejourSlug.replace(/-/g, ' ')}</td></tr>
+              <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Montant</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: bold; color: #16a34a;">${data.amount.toFixed(2)} €</td></tr>
+              <tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Méthode</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">Carte bancaire</td></tr>
+              ${data.dossierRef ? `<tr><td style="padding: 8px; color: #6b7280;">Référence dossier</td><td style="padding: 8px; font-weight: bold; font-family: monospace;">${data.dossierRef}</td></tr>` : ''}
+            </table>
+
+            ${data.suiviUrl ? `
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin: 16px 0;">
+              <h3 style="color: #166534; margin: 0 0 8px 0; font-size: 15px;">Suivi de votre dossier</h3>
+              <p style="margin: 0 0 12px 0; color: #15803d; font-size: 14px;">Retrouvez à tout moment l'état de votre inscription :</p>
+              <a href="${data.suiviUrl}" style="display: inline-block; background: #166534; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 14px;">Accéder au suivi</a>
+            </div>
+            ` : ''}
+
+            <p style="color: #6b7280; font-size: 14px;">Votre inscription est désormais confirmée. Vous recevrez d'autres communications au fur et à mesure de l'organisation du séjour.</p>
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
+            <p style="color: #9ca3af; font-size: 12px;">Groupe &amp; Découverte — Séjours de vacances pour enfants et adolescents</p>
+            <p style="font-size:11px;color:#6b7280;margin-top:24px;border-top:1px solid #e5e7eb;padding-top:12px;">
+              Securite :Les données collectées sont traitées conformément au RGPD et hébergées en Union européenne.
+              Pour exercer vos droits : <a href="mailto:dpo@groupeetdecouverte.fr" style="color: #6b7280;">dpo@groupeetdecouverte.fr</a>
+            </p>
+          </div>
+        </div>
+      `,
+    });
+    console.log('[EMAIL] Confirmation paiement client envoyée');
+    return result;
+  } catch (error) {
+    console.error('[EMAIL] Erreur envoi confirmation paiement client:', error);
+    return null;
+  }
+}
+
+/**
  * Email de changement de statut d'inscription
  */
 export async function sendStatusChangeEmail(

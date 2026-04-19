@@ -1,11 +1,32 @@
+import { createHmac } from 'crypto';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+
+/**
+ * Hash HMAC-SHA256 d'une clé rate-limit avant stockage.
+ * RGPD Art. 5.1.c (minimisation) : certaines routes utilisent un email comme
+ * discriminant (login-email, struct-login-email, priceiq) — ne jamais le persister
+ * en clair dans gd_login_attempts.
+ *
+ * Préfixe 'h:' = permet de distinguer les entrées hashées (nouvelles) des legacy.
+ * Si RATE_LIMIT_HMAC_SECRET absent (dev / tests), fallback sur clé brute avec warning.
+ */
+function hashRateLimitKey(raw: string): string {
+  const secret = process.env.RATE_LIMIT_HMAC_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[rate-limit] RATE_LIMIT_HMAC_SECRET manquant en prod — clés non-hashées');
+    }
+    return raw;
+  }
+  return 'h:' + createHmac('sha256', secret).update(raw).digest('hex').slice(0, 32);
+}
 
 /**
  * Rate limiter DB-backed via gd_login_attempts.
  * Persiste entre cold starts — complément du rate limiter in-memory du middleware.
  *
  * @param prefix   Préfixe de clé (ex: 'insc', 'wish') — permet le namespacing par route
- * @param ip       IP client
+ * @param ip       IP client (ou clé composée email+ip pour routes auth)
  * @param limit    Nombre max de requêtes dans la fenêtre
  * @param windowMin Durée de la fenêtre en minutes
  * @returns true si rate limited (bloquer), false sinon
@@ -18,7 +39,7 @@ export async function isRateLimited(
 ): Promise<boolean> {
   try {
     const supabase = getSupabaseAdmin();
-    const key = `${prefix}:${ip}`;
+    const key = hashRateLimitKey(`${prefix}:${ip}`);
 
     // RPC atomique — une seule opération SQL, pas de race condition
     const { data, error } = await supabase.rpc('check_rate_limit', {

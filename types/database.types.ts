@@ -264,6 +264,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "gd_calls_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "v_inscriptions_production"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "gd_calls_structure_id_fkey"
             columns: ["structure_id"]
             isOneToOne: false
@@ -332,6 +339,13 @@ export type Database = {
             referencedRelation: "gd_inscriptions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "gd_dossier_enfant_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "v_inscriptions_production"
+            referencedColumns: ["id"]
+          },
         ]
       }
       gd_educ_options: {
@@ -389,6 +403,170 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "gd_educateur_emails_structure_id_fkey"
+            columns: ["structure_id"]
+            isOneToOne: false
+            referencedRelation: "gd_structures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gd_facture_lignes: {
+        Row: {
+          enfant_nom: string
+          enfant_prenom: string
+          facture_id: string
+          id: string
+          inscription_id: string | null
+          prix_encadrement: number | null
+          prix_ligne_total: number | null
+          prix_sejour: number | null
+          prix_transport: number | null
+          sejour_titre: string
+          session_end: string | null
+          session_start: string | null
+          ville_depart: string | null
+        }
+        Insert: {
+          enfant_nom: string
+          enfant_prenom: string
+          facture_id: string
+          id?: string
+          inscription_id?: string | null
+          prix_encadrement?: number | null
+          prix_ligne_total?: number | null
+          prix_sejour?: number | null
+          prix_transport?: number | null
+          sejour_titre: string
+          session_end?: string | null
+          session_start?: string | null
+          ville_depart?: string | null
+        }
+        Update: {
+          enfant_nom?: string
+          enfant_prenom?: string
+          facture_id?: string
+          id?: string
+          inscription_id?: string | null
+          prix_encadrement?: number | null
+          prix_ligne_total?: number | null
+          prix_sejour?: number | null
+          prix_transport?: number | null
+          sejour_titre?: string
+          session_end?: string | null
+          session_start?: string | null
+          ville_depart?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gd_facture_lignes_facture_id_fkey"
+            columns: ["facture_id"]
+            isOneToOne: false
+            referencedRelation: "gd_factures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gd_facture_lignes_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "gd_inscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gd_facture_lignes_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "v_inscriptions_production"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gd_facture_paiements: {
+        Row: {
+          created_at: string | null
+          date_paiement: string
+          facture_id: string
+          id: string
+          methode: string
+          montant: number
+          note: string | null
+          reference: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date_paiement: string
+          facture_id: string
+          id?: string
+          methode: string
+          montant: number
+          note?: string | null
+          reference?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date_paiement?: string
+          facture_id?: string
+          id?: string
+          methode?: string
+          montant?: number
+          note?: string | null
+          reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gd_facture_paiements_facture_id_fkey"
+            columns: ["facture_id"]
+            isOneToOne: false
+            referencedRelation: "gd_factures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gd_factures: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          montant_total: number
+          numero: string
+          statut: string
+          structure_adresse: string | null
+          structure_cp: string | null
+          structure_id: string | null
+          structure_nom: string
+          structure_ville: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          montant_total?: number
+          numero?: string
+          statut?: string
+          structure_adresse?: string | null
+          structure_cp?: string | null
+          structure_id?: string | null
+          structure_nom: string
+          structure_ville?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          montant_total?: number
+          numero?: string
+          statut?: string
+          structure_adresse?: string | null
+          structure_cp?: string | null
+          structure_id?: string | null
+          structure_nom?: string
+          structure_ville?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gd_factures_structure_id_fkey"
             columns: ["structure_id"]
             isOneToOne: false
             referencedRelation: "gd_structures"
@@ -457,6 +635,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "gd_incidents_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "v_inscriptions_production"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "gd_incidents_structure_id_fkey"
             columns: ["structure_id"]
             isOneToOne: false
@@ -498,6 +683,13 @@ export type Database = {
             referencedRelation: "gd_inscriptions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "gd_inscription_status_logs_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "v_inscriptions_production"
+            referencedColumns: ["id"]
+          },
         ]
       }
       gd_inscriptions: {
@@ -521,6 +713,7 @@ export type Database = {
           jeune_nom: string
           jeune_prenom: string
           jeune_sexe: string | null
+          last_relance_at: string | null
           note_pro: string | null
           options_educatives: string | null
           organisation: string | null
@@ -578,6 +771,7 @@ export type Database = {
           jeune_nom: string
           jeune_prenom: string
           jeune_sexe?: string | null
+          last_relance_at?: string | null
           note_pro?: string | null
           options_educatives?: string | null
           organisation?: string | null
@@ -635,6 +829,7 @@ export type Database = {
           jeune_nom?: string
           jeune_prenom?: string
           jeune_sexe?: string | null
+          last_relance_at?: string | null
           note_pro?: string | null
           options_educatives?: string | null
           organisation?: string | null
@@ -765,6 +960,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "gd_medical_events_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "v_inscriptions_production"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "gd_medical_events_structure_id_fkey"
             columns: ["structure_id"]
             isOneToOne: false
@@ -804,6 +1006,13 @@ export type Database = {
             columns: ["inscription_id"]
             isOneToOne: false
             referencedRelation: "gd_inscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gd_notes_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "v_inscriptions_production"
             referencedColumns: ["id"]
           },
           {
@@ -869,6 +1078,8 @@ export type Database = {
           agrement_dscs: string | null
           created_at: string | null
           created_by: string | null
+          demandeur_email: string | null
+          demandeur_nom: string | null
           encadrement: boolean
           enfant_nom: string
           enfant_prenom: string
@@ -899,9 +1110,11 @@ export type Database = {
           agrement_dscs?: string | null
           created_at?: string | null
           created_by?: string | null
+          demandeur_email?: string | null
+          demandeur_nom?: string | null
           encadrement?: boolean
-          enfant_nom: string
-          enfant_prenom: string
+          enfant_nom?: string
+          enfant_prenom?: string
           id?: string
           inscription_id?: string | null
           options?: string | null
@@ -916,10 +1129,10 @@ export type Database = {
           session_end: string
           session_start: string
           status?: string
-          structure_adresse: string
-          structure_cp: string
+          structure_adresse?: string
+          structure_cp?: string
           structure_nom: string
-          structure_ville: string
+          structure_ville?: string
           updated_at?: string | null
           validated_at?: string | null
           ville_depart: string
@@ -929,6 +1142,8 @@ export type Database = {
           agrement_dscs?: string | null
           created_at?: string | null
           created_by?: string | null
+          demandeur_email?: string | null
+          demandeur_nom?: string | null
           encadrement?: boolean
           enfant_nom?: string
           enfant_prenom?: string
@@ -960,6 +1175,13 @@ export type Database = {
             columns: ["inscription_id"]
             isOneToOne: false
             referencedRelation: "gd_inscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gd_propositions_tarifaires_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "v_inscriptions_production"
             referencedColumns: ["id"]
           },
           {
@@ -1033,6 +1255,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "gd_rappels_internes_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "v_inscriptions_production"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "gd_rappels_internes_structure_id_fkey"
             columns: ["structure_id"]
             isOneToOne: false
@@ -1056,6 +1285,36 @@ export type Database = {
           expires_at?: string
           jti?: string
           revoked_at?: string | null
+        }
+        Relationships: []
+      }
+      gd_session_deletion_log: {
+        Row: {
+          deleted_at: string | null
+          deleted_by: string | null
+          end_date: string
+          id: string
+          old_data: Json | null
+          start_date: string
+          stay_slug: string
+        }
+        Insert: {
+          deleted_at?: string | null
+          deleted_by?: string | null
+          end_date: string
+          id?: string
+          old_data?: Json | null
+          start_date: string
+          stay_slug: string
+        }
+        Update: {
+          deleted_at?: string | null
+          deleted_by?: string | null
+          end_date?: string
+          id?: string
+          old_data?: Json | null
+          start_date?: string
+          stay_slug?: string
         }
         Relationships: []
       }
@@ -1114,20 +1373,6 @@ export type Database = {
             referencedRelation: "v_sejours_missing_images"
             referencedColumns: ["slug"]
           },
-          {
-            foreignKeyName: "gd_session_prices_stay_fk"
-            columns: ["stay_slug"]
-            isOneToOne: false
-            referencedRelation: "gd_stays"
-            referencedColumns: ["slug"]
-          },
-          {
-            foreignKeyName: "gd_session_prices_stay_fk"
-            columns: ["stay_slug"]
-            isOneToOne: false
-            referencedRelation: "v_sejours_missing_images"
-            referencedColumns: ["slug"]
-          },
         ]
       }
       gd_souhaits: {
@@ -1140,7 +1385,7 @@ export type Database = {
           educateur_token_expires_at: string | null
           id: string
           inscription_id: string | null
-          kid_prenom: string
+          kid_prenom: string | null
           kid_prenom_referent: string | null
           kid_session_token: string | null
           motivation: string | null
@@ -1163,7 +1408,7 @@ export type Database = {
           educateur_token_expires_at?: string | null
           id?: string
           inscription_id?: string | null
-          kid_prenom: string
+          kid_prenom?: string | null
           kid_prenom_referent?: string | null
           kid_session_token?: string | null
           motivation?: string | null
@@ -1186,7 +1431,7 @@ export type Database = {
           educateur_token_expires_at?: string | null
           id?: string
           inscription_id?: string | null
-          kid_prenom?: string
+          kid_prenom?: string | null
           kid_prenom_referent?: string | null
           kid_session_token?: string | null
           motivation?: string | null
@@ -1206,6 +1451,13 @@ export type Database = {
             columns: ["inscription_id"]
             isOneToOne: false
             referencedRelation: "gd_inscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gd_souhaits_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "v_inscriptions_production"
             referencedColumns: ["id"]
           },
           {
@@ -1464,42 +1716,63 @@ export type Database = {
       }
       gd_structure_access_codes: {
         Row: {
+          activated_at: string | null
           active: boolean | null
           code: string
           created_at: string | null
           email: string | null
           expires_at: string | null
           id: string
+          invitation_expires_at: string | null
+          invitation_token: string | null
+          invited_by_email: string | null
           label: string | null
+          last_jti: string | null
+          last_jti_exp: string | null
           nom: string | null
+          password_hash: string | null
           prenom: string | null
           role: string
           roles: string[] | null
           structure_id: string | null
         }
         Insert: {
+          activated_at?: string | null
           active?: boolean | null
           code: string
           created_at?: string | null
           email?: string | null
           expires_at?: string | null
           id?: string
+          invitation_expires_at?: string | null
+          invitation_token?: string | null
+          invited_by_email?: string | null
           label?: string | null
+          last_jti?: string | null
+          last_jti_exp?: string | null
           nom?: string | null
+          password_hash?: string | null
           prenom?: string | null
           role: string
           roles?: string[] | null
           structure_id?: string | null
         }
         Update: {
+          activated_at?: string | null
           active?: boolean | null
           code?: string
           created_at?: string | null
           email?: string | null
           expires_at?: string | null
           id?: string
+          invitation_expires_at?: string | null
+          invitation_token?: string | null
+          invited_by_email?: string | null
           label?: string | null
+          last_jti?: string | null
+          last_jti_exp?: string | null
           nom?: string | null
+          password_hash?: string | null
           prenom?: string | null
           role?: string
           roles?: string[] | null
@@ -1536,6 +1809,7 @@ export type Database = {
           domain: string | null
           email: string | null
           id: string
+          is_test: boolean | null
           name: string
           postal_code: string | null
           rgpd_accepted_at: string | null
@@ -1564,6 +1838,7 @@ export type Database = {
           domain?: string | null
           email?: string | null
           id?: string
+          is_test?: boolean | null
           name: string
           postal_code?: string | null
           rgpd_accepted_at?: string | null
@@ -1592,6 +1867,7 @@ export type Database = {
           domain?: string | null
           email?: string | null
           id?: string
+          is_test?: boolean | null
           name?: string
           postal_code?: string | null
           rgpd_accepted_at?: string | null
@@ -1645,6 +1921,13 @@ export type Database = {
             columns: ["inscription_id"]
             isOneToOne: false
             referencedRelation: "gd_inscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gd_suivi_appels_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "v_inscriptions_production"
             referencedColumns: ["id"]
           },
         ]
@@ -1737,6 +2020,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "gd_suivi_incidents_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "v_inscriptions_production"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "gd_suivi_incidents_structure_id_fkey"
             columns: ["structure_id"]
             isOneToOne: false
@@ -1799,6 +2089,13 @@ export type Database = {
             referencedRelation: "gd_inscriptions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "gd_suivi_medical_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "v_inscriptions_production"
+            referencedColumns: ["id"]
+          },
         ]
       }
       gd_suivi_messages: {
@@ -1841,6 +2138,13 @@ export type Database = {
             columns: ["inscription_id"]
             isOneToOne: false
             referencedRelation: "gd_inscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gd_suivi_messages_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: false
+            referencedRelation: "v_inscriptions_production"
             referencedColumns: ["id"]
           },
         ]
@@ -1909,6 +2213,13 @@ export type Database = {
             columns: ["inscription_id"]
             isOneToOne: true
             referencedRelation: "gd_inscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gd_suivi_sejour_inscription_id_fkey"
+            columns: ["inscription_id"]
+            isOneToOne: true
+            referencedRelation: "v_inscriptions_production"
             referencedColumns: ["id"]
           },
           {
@@ -2228,6 +2539,74 @@ export type Database = {
       }
     }
     Views: {
+      gd_structure_members: {
+        Row: {
+          activated_at: string | null
+          active: boolean | null
+          code: string | null
+          created_at: string | null
+          email: string | null
+          expires_at: string | null
+          id: string | null
+          invitation_expires_at: string | null
+          invited_by_email: string | null
+          label: string | null
+          last_jti: string | null
+          last_jti_exp: string | null
+          nom: string | null
+          prenom: string | null
+          role: string | null
+          roles: string[] | null
+          structure_id: string | null
+        }
+        Insert: {
+          activated_at?: string | null
+          active?: boolean | null
+          code?: string | null
+          created_at?: string | null
+          email?: string | null
+          expires_at?: string | null
+          id?: string | null
+          invitation_expires_at?: string | null
+          invited_by_email?: string | null
+          label?: string | null
+          last_jti?: string | null
+          last_jti_exp?: string | null
+          nom?: string | null
+          prenom?: string | null
+          role?: string | null
+          roles?: string[] | null
+          structure_id?: string | null
+        }
+        Update: {
+          activated_at?: string | null
+          active?: boolean | null
+          code?: string | null
+          created_at?: string | null
+          email?: string | null
+          expires_at?: string | null
+          id?: string | null
+          invitation_expires_at?: string | null
+          invited_by_email?: string | null
+          label?: string | null
+          last_jti?: string | null
+          last_jti_exp?: string | null
+          nom?: string | null
+          prenom?: string | null
+          role?: string | null
+          roles?: string[] | null
+          structure_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gd_structure_access_codes_structure_id_fkey"
+            columns: ["structure_id"]
+            isOneToOne: false
+            referencedRelation: "gd_structures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_activity_with_sessions: {
         Row: {
           accommodation: string | null
@@ -2254,6 +2633,102 @@ export type Database = {
           vacation_periods: string[] | null
         }
         Relationships: []
+      }
+      v_inscriptions_production: {
+        Row: {
+          besoins_pris_en_compte: boolean | null
+          besoins_specifiques: string | null
+          city_departure: string | null
+          consent_at: string | null
+          consignes_communication: string | null
+          created_at: string | null
+          deleted_at: string | null
+          documents_status: string | null
+          dossier_ref: string | null
+          email_pro_attendu: string | null
+          email_type: string | null
+          equipe_informee: boolean | null
+          id: string | null
+          inscription_urgence: boolean | null
+          jeune_besoins: string | null
+          jeune_date_naissance: string | null
+          jeune_nom: string | null
+          jeune_prenom: string | null
+          jeune_sexe: string | null
+          note_pro: string | null
+          options_educatives: string | null
+          organisation: string | null
+          parental_consent_at: string | null
+          parental_consent_version: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          payment_status: string | null
+          payment_validated_at: string | null
+          pref_bilan_fin_sejour: boolean | null
+          pref_canal_contact: string | null
+          pref_nouvelles_sejour: string | null
+          price_total: number | null
+          referent_email: string | null
+          referent_fonction: string | null
+          referent_nom: string | null
+          referent_tel: string | null
+          remarques: string | null
+          sejour_slug: string | null
+          session_date: string | null
+          status: string | null
+          stripe_payment_intent_id: string | null
+          structure_address: string | null
+          structure_city: string | null
+          structure_domain: string | null
+          structure_email: string | null
+          structure_id: string | null
+          structure_pending_name: string | null
+          structure_postal_code: string | null
+          structure_type: string | null
+          structure_validation_statut: string | null
+          structure_validee_at: string | null
+          structure_validee_par: string | null
+          suivi_token: string | null
+          suivi_token_expires_at: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_inscriptions_stay"
+            columns: ["sejour_slug"]
+            isOneToOne: false
+            referencedRelation: "gd_stays"
+            referencedColumns: ["slug"]
+          },
+          {
+            foreignKeyName: "fk_inscriptions_stay"
+            columns: ["sejour_slug"]
+            isOneToOne: false
+            referencedRelation: "v_sejours_missing_images"
+            referencedColumns: ["slug"]
+          },
+          {
+            foreignKeyName: "gd_inscriptions_sejour_slug_fkey"
+            columns: ["sejour_slug"]
+            isOneToOne: false
+            referencedRelation: "gd_stays"
+            referencedColumns: ["slug"]
+          },
+          {
+            foreignKeyName: "gd_inscriptions_sejour_slug_fkey"
+            columns: ["sejour_slug"]
+            isOneToOne: false
+            referencedRelation: "v_sejours_missing_images"
+            referencedColumns: ["slug"]
+          },
+          {
+            foreignKeyName: "gd_inscriptions_structure_id_fkey"
+            columns: ["structure_id"]
+            isOneToOne: false
+            referencedRelation: "gd_structures"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_orphaned_records: {
         Row: {
@@ -2394,12 +2869,34 @@ export type Database = {
           taux_prise_en_charge: number
         }[]
       }
+      gd_check_and_decrement_capacity: {
+        Args: { p_slug: string; p_start_date: string }
+        Returns: Json
+      }
       gd_check_session_capacity: {
         Args: { p_slug: string; p_start_date: string }
         Returns: Json
       }
+      gd_get_expired_linked_medical_events: {
+        Args: { threshold: string }
+        Returns: {
+          id: string
+        }[]
+      }
+      gd_get_medical_events_null_session_date: {
+        Args: { threshold: string }
+        Returns: {
+          id: string
+        }[]
+      }
+      gd_increment_capacity: {
+        Args: { p_slug: string; p_start_date: string }
+        Returns: Json
+      }
       gd_purge_expired_audit_logs: { Args: never; Returns: number }
+      gd_purge_expired_calls: { Args: never; Returns: number }
       gd_purge_expired_medical_data: { Args: never; Returns: number }
+      gd_purge_expired_notes: { Args: never; Returns: number }
       generate_director_code: { Args: never; Returns: string }
       generate_structure_code: { Args: never; Returns: string }
       get_random_sejour_image: {
@@ -2648,4 +3145,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-

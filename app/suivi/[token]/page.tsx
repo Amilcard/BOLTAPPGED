@@ -59,7 +59,7 @@ const PAYMENT_LABELS: Record<string, { label: string; color: string; bg: string 
 };
 
 const DOC_LABELS: Record<string, { label: string; color: string; bg: string }> = {
-  en_attente: { label: 'Documents en attente', color: '#c2410c', bg: '#fff7ed' },
+  en_attente: { label: 'Formulaires à compléter', color: '#c2410c', bg: '#fff7ed' },
   partiellement_recus: { label: 'Documents partiels', color: '#1d4ed8', bg: '#dbeafe' },
   complets: { label: 'Documents complets', color: '#166534', bg: '#dcfce7' },
 };

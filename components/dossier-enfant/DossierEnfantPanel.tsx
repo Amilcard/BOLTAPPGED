@@ -486,7 +486,7 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
       {dossier && !isComplete && missing.length > 0 && (
         <div className="mx-6 mb-3 p-3 bg-orange-50 border border-orange-200 rounded-xl text-sm">
           <p className="font-medium text-orange-800">
-            {missing.length} document{missing.length > 1 ? 's' : ''} manquant{missing.length > 1 ? 's' : ''} :
+            {missing.length} formulaire{missing.length > 1 ? 's' : ''} à compléter :
             {' '}<span className="font-normal">{missing.join(', ')}</span>
           </p>
           {inscription.sessionDate && (
@@ -791,7 +791,7 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
                       </button>
                       {!isComplete && (
                         <p className="text-xs text-gray-500">
-                          {totalDocs - completedCount} document{totalDocs - completedCount > 1 ? 's' : ''} restant{totalDocs - completedCount > 1 ? 's' : ''} avant envoi
+                          {totalDocs - completedCount} formulaire{totalDocs - completedCount > 1 ? 's' : ''} à compléter avant envoi
                         </p>
                       )}
                       {submitError && (

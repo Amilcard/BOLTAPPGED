@@ -175,18 +175,11 @@ export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeun
       {/* Boutons */}
       <div className="flex flex-wrap gap-3 pt-2">
         <button
-          onClick={() => { void handleSave(false); }}
-          disabled={saving}
-          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-medium transition disabled:opacity-50"
-        >
-          {saving ? 'Enregistrement...' : 'Enregistrer'}
-        </button>
-        <button
           onClick={() => { void handleSave(true); }}
           disabled={saving || !form.autorisation_accepte}
           className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
         >
-          Valider
+          {saving ? 'Enregistrement...' : 'Valider le bloc'}
         </button>
       </div>
       {!form.autorisation_accepte && (

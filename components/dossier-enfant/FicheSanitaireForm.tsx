@@ -3,6 +3,7 @@
 import { useState, useId } from 'react';
 import { Lock, Shield } from 'lucide-react';
 import { SignaturePad } from './SignaturePad';
+import { computeProgress, ProgressBar } from './progress-shared';
 
 interface Props {
   data: Record<string, unknown>;
@@ -90,12 +91,30 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
     await onSave(form, completed);
   };
 
+  // Progression — champs requis métier (marqués * dans le formulaire) +
+  // signature + autorisation. Le total (17) donne une granularité utile
+  // sans noyer l'utilisateur dans les dizaines de champs optionnels.
+  const progressFields = [
+    'sexe',
+    'resp1_nom', 'resp1_prenom', 'resp1_profession', 'resp1_adresse',
+    'resp1_email', 'resp1_tel_portable', 'resp1_tel_travail',
+    'allocataire_caf_msa', 'quotient_familial',
+    'medecin_nom', 'medecin_tel',
+    'poids', 'taille',
+    'autorisation_soins_soussigne',
+    'autorisation_soins_accepte',
+    'signature_image_url',
+  ];
+  const progress = computeProgress(form, progressFields);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 mb-2">
         <div className="w-1.5 h-6 bg-blue-500 rounded-full" />
         <h3 className="font-bold text-gray-800">Fiche sanitaire de liaison</h3>
       </div>
+
+      <ProgressBar label="Fiche sanitaire" filled={progress.filled} total={progress.total} color="blue" />
 
       <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 mb-4 flex items-start gap-2">
         <Lock className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />

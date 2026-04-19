@@ -2,6 +2,7 @@
 
 import { useState, useId } from 'react';
 import { SignaturePad } from './SignaturePad';
+import { computeProgress, ProgressBar } from './progress-shared';
 
 interface Props {
   data: Record<string, unknown>;
@@ -51,12 +52,25 @@ export function FicheLiaisonJeuneForm({ data, saving, onSave, jeunePrenom, jeune
     await onSave(form, completed);
   };
 
+  // Progression — champs clés de la fiche liaison page 1.
+  const progressFields = [
+    'etablissement_nom', 'etablissement_adresse', 'etablissement_cp', 'etablissement_ville',
+    'resp_etablissement_nom', 'resp_etablissement_prenom', 'resp_etablissement_tel1',
+    'pourquoi_ce_sejour', 'fiche_technique_lue',
+    'signature_fait_a',
+    'engagement_accepte',
+    'signature_image_url',
+  ];
+  const progress = computeProgress(form, progressFields);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 mb-2">
         <div className="w-1.5 h-6 bg-red-500 rounded-full" />
         <h3 className="font-bold text-gray-800">Fiche de liaison — Jeune / Éducateur</h3>
       </div>
+
+      <ProgressBar label="Fiche de liaison" filled={progress.filled} total={progress.total} color="red" />
 
       {/* Renseignements jeune */}
       <Section title="Renseignements concernant le jeune">

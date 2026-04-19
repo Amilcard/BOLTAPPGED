@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { computeProgress, ProgressBar } from './progress-shared';
 
 interface Props {
   data: Record<string, unknown>;
@@ -36,6 +37,17 @@ export function FicheRenseignementsForm({ data, saving, onSave, jeunePrenom, jeu
     await onSave(form, completed);
   };
 
+  // Progression — champs métier (requis * + infos clés).
+  const progressFields = [
+    'type_situation',
+    'amenagements_necessaires',
+    'medecin_referent_nom',
+    'medecin_referent_tel',
+    'contact_urgence_nom',
+    'contact_urgence_tel',
+  ];
+  const progress = computeProgress(form, progressFields);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 mb-2">
@@ -44,6 +56,8 @@ export function FicheRenseignementsForm({ data, saving, onSave, jeunePrenom, jeu
           Fiche de renseignements — {jeunePrenom} {jeuneNom}
         </h3>
       </div>
+
+      <ProgressBar label="Renseignements" filled={progress.filled} total={progress.total} color="purple" />
 
       <p className="text-sm text-gray-500">
         Cette fiche est requise pour ce séjour. Elle permet à l'équipe encadrante d'adapter l'accueil aux besoins spécifiques du jeune.

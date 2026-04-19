@@ -39,8 +39,21 @@ function LoginForm() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? 'Identifiants incorrects');
+      const data = await res.json().catch(() => ({}));
+
+      if (res.status === 429) {
+        const retryAfter = Number(res.headers.get('Retry-After'));
+        const minutes = Number.isFinite(retryAfter) && retryAfter > 0 ? Math.ceil(retryAfter / 60) : 15;
+        setError(`Trop de tentatives. Veuillez patienter ${minutes} minutes avant de réessayer.`);
+        return;
+      }
+
+      if (!res.ok) {
+        const raw = data?.error;
+        const msg = typeof raw === 'string' ? raw : raw?.message;
+        setError(msg || 'Identifiants incorrects.');
+        return;
+      }
 
       if (data.requires2fa) {
         // pendingToken est dans un cookie httpOnly — pas besoin de le stocker côté client
@@ -50,8 +63,8 @@ function LoginForm() {
 
       if (data?.user) setStoredUser({ role: data.user.role });
       router.replace('/admin');
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Erreur de connexion');
+    } catch {
+      setError('Erreur de connexion. Vérifiez votre réseau et réessayez.');
     } finally {
       setLoading(false);
     }
@@ -156,7 +169,7 @@ function LoginForm() {
                 />
               </div>
               {error && (
-                <div role="alert" className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>
+                <div role="alert" className="p-3 bg-destructive/10 text-destructive rounded-lg text-sm">{error}</div>
               )}
               <button
                 type="submit"
@@ -202,7 +215,7 @@ function LoginForm() {
               </div>
 
               {error && (
-                <div role="alert" className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>
+                <div role="alert" className="p-3 bg-destructive/10 text-destructive rounded-lg text-sm">{error}</div>
               )}
 
               <button
@@ -244,7 +257,7 @@ function LoginForm() {
               </div>
 
               {error && (
-                <div role="alert" className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>
+                <div role="alert" className="p-3 bg-destructive/10 text-destructive rounded-lg text-sm">{error}</div>
               )}
 
               <button

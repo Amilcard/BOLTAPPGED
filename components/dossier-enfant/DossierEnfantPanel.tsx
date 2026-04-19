@@ -63,8 +63,12 @@ type TabKey = typeof BASE_TABS[number]['key'];
  * Contient les onglets pour chaque document officiel.
  * Chaque onglet = un formulaire avec sauvegarde progressive.
  */
-function PdfDownloadButton({ inscriptionId, token, docType, label }: {
+function PdfDownloadButton({ inscriptionId, token, docType, label, pdfUrl, pdfEmailUrl }: {
   inscriptionId: string; token: string; docType: string; label: string;
+  /** URL PDF download override (staff mode). Par défaut : route référent avec token. */
+  pdfUrl?: string;
+  /** URL PDF email POST override (staff mode). */
+  pdfEmailUrl?: string;
 }) {
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState(false);
@@ -72,20 +76,23 @@ function PdfDownloadButton({ inscriptionId, token, docType, label }: {
   const [emailSent, setEmailSent] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
 
+  const isStaffMode = !!pdfUrl;
+
   const handleDownload = async () => {
     setDownloading(true);
     try {
-      const res = await fetch(
-        `/api/dossier-enfant/${inscriptionId}/pdf?token=${token}&type=${docType}`
-      );
+      const url = isStaffMode
+        ? `${pdfUrl}?type=${docType}`
+        : `/api/dossier-enfant/${inscriptionId}/pdf?token=${token}&type=${docType}`;
+      const res = await fetch(url);
       if (!res.ok) throw new Error('Erreur téléchargement');
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      const objUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
+      a.href = objUrl;
       a.download = `${label.replace(/ /g, '_')}.pdf`;
       a.click();
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(objUrl);
     } catch (err) {
       console.error('Download error:', err);
       setRetryCount(c => c + 1);
@@ -99,10 +106,12 @@ function PdfDownloadButton({ inscriptionId, token, docType, label }: {
   const handleSendByEmail = async () => {
     setSendingEmail(true);
     try {
-      await fetch(`/api/dossier-enfant/${inscriptionId}/pdf-email`, {
+      const url = pdfEmailUrl || `/api/dossier-enfant/${inscriptionId}/pdf-email`;
+      const body = isStaffMode ? { type: docType } : { token, type: docType };
+      await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, type: docType }),
+        body: JSON.stringify(body),
       });
       setEmailSent(true);
       setDownloadError(false);
@@ -336,8 +345,9 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
     dossier, loading, saving, saved, error, saveBloc, reload,
   } = useDossierEnfant(inscription.id, token, hookOptions);
 
-  // Onglets visibles — mode staff-fill masque "PJ" (upload non supporté côté route structure).
-  const TABS = isStaffFill ? BASE_TABS.filter(t => t.key !== 'pj') : BASE_TABS;
+  // Onglets visibles — tous onglets actifs en staff-fill depuis vague 2/4
+  // (routes upload staff livrées).
+  const TABS = BASE_TABS;
 
   // Progression — 4 blocs fixes obligatoires (PJ exclues du compteur)
   const hasPJ = (dossier?.documents_joints.length ?? 0) > 0;
@@ -367,16 +377,32 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
     missing.push(DOC_OPT_LABELS[k] ?? k);
   });
 
+  // URLs dépendant du mode (référent suivi_token vs staff session cookie)
+  const submitUrl = isStaffFill && structureCode
+    ? `/api/structure/${encodeURIComponent(structureCode)}/inscriptions/${inscription.id}/submit`
+    : `/api/dossier-enfant/${inscription.id}/submit`;
+  const uploadApiBase = isStaffFill && structureCode
+    ? `/api/structure/${encodeURIComponent(structureCode)}/inscriptions/${inscription.id}/upload`
+    : undefined;
+  const pdfApiBase = isStaffFill && structureCode
+    ? `/api/structure/${encodeURIComponent(structureCode)}/inscriptions/${inscription.id}/pdf`
+    : undefined;
+  const pdfEmailApiBase = isStaffFill && structureCode
+    ? `/api/structure/${encodeURIComponent(structureCode)}/inscriptions/${inscription.id}/pdf-email`
+    : undefined;
+
   // Envoi GED
   const handleSubmit = async () => {
     if (!isComplete || submitting) return;
     setSubmitting(true);
     setSubmitError('');
     try {
-      const res = await fetch(`/api/dossier-enfant/${inscription.id}/submit`, {
+      // Token dans body uniquement en mode référent ; staff = session cookie.
+      const submitBody = isStaffFill ? {} : { token };
+      const res = await fetch(submitUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify(submitBody),
       });
       const body = await res.json().catch(() => ({}));
       if (res.status === 409 || body?.alreadySent) {
@@ -558,10 +584,9 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
                 })}
               </div>
 
-              {/* Boutons téléchargement PDF — masqués en mode staff-fill
-                  (route /pdf prend suivi_token référent, pas de route structure équivalente).
-                  Le référent reste seul à télécharger/signer. */}
-              {dossier?.exists && !isStaffFill && (
+              {/* Boutons téléchargement PDF — actifs aussi en staff-fill depuis
+                  vague 3/4 (route GET /api/structure/.../pdf livrée). */}
+              {dossier?.exists && (
                 <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                   <p className="text-xs text-gray-500 mb-2">Télécharger les documents (pré-remplis avec les données saisies) :</p>
                   <div className="flex flex-wrap gap-2">
@@ -570,18 +595,24 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
                       token={token}
                       docType="bulletin"
                       label={dossier.bulletin_completed ? "Bulletin d'inscription" : "Bulletin (à faire signer)"}
+                      pdfUrl={pdfApiBase}
+                      pdfEmailUrl={pdfEmailApiBase}
                     />
                     <PdfDownloadButton
                       inscriptionId={inscription.id}
                       token={token}
                       docType="sanitaire"
                       label={dossier.sanitaire_completed ? 'Fiche sanitaire' : 'Fiche sanitaire (à faire signer)'}
+                      pdfUrl={pdfApiBase}
+                      pdfEmailUrl={pdfEmailApiBase}
                     />
                     <PdfDownloadButton
                       inscriptionId={inscription.id}
                       token={token}
                       docType="liaison"
                       label={dossier.liaison_completed ? 'Fiche de liaison' : 'Fiche de liaison (à faire signer)'}
+                      pdfUrl={pdfApiBase}
+                      pdfEmailUrl={pdfEmailApiBase}
                     />
                   </div>
                 </div>
@@ -699,14 +730,15 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
                     token={token}
                     onUploadSuccess={reload}
                     requiredTypes={dossier?.docs_optionnels_requis ?? []}
+                    apiBase={uploadApiBase}
                   />
                 </>
               )}
 
-              {/* Bouton envoi GED — masqué en mode staff-fill.
-                  Submit = décision finale du référent ; le staff dépanne mais
-                  n'a pas le droit d'envoyer le dossier à la GED à sa place. */}
-              {dossier?.exists && !isStaffFill && (
+              {/* Bouton envoi GED — actif en staff-fill depuis vague 1/4
+                  (décision produit 2026-04-19 : staff = mandataire légitime).
+                  L'email de confirmation est envoyé au référent + BCC staff. */}
+              {dossier?.exists && (
                 <div className="mt-6 pt-4 border-t border-gray-200">
                   {(alreadySent || !!dossier.ged_sent_at) ? (
                     <div data-testid="bandeau-envoye" className="p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800 font-medium text-center">

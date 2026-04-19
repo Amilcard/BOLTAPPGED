@@ -82,10 +82,26 @@ Deux routes émettent ce cookie :
 | `PATCH /delegation` | ✓ | ✗ | ✗ | ✗ | ✗ |
 | `PATCH /settings` | ✓ | ✗ | ✗ | ✗ | ✗ |
 | `PATCH /inscriptions/[id]/dossier` | ✓ | ✓ | ✓ | ✓ | ✗ |
+| `GET  /inscriptions/[id]/dossier` | ✓ | ✓ | ✓ | ✓ | ✗ |
+| `POST /inscriptions/[id]/submit` | ✓ | ✓ | ✓ | ✓ | ✗ |
+| `POST /inscriptions/[id]/upload` (multipart) | ✓ | ✓ | ✓ | ✓ | ✗ |
+| `DELETE /inscriptions/[id]/upload` | ✓ | ✓ | ✓ | ✓ | ✗ |
+| `GET  /inscriptions/[id]/pdf?type=` | ✓ | ✓ | ✓ | ✓ | ✗ |
+| `POST /inscriptions/[id]/pdf-email` | ✓ | ✓ | ✓ | ✓ | ✗ |
 
-`PATCH /inscriptions/[id]/dossier` (ajouté 2026-04-19) : staff structure remplit un dossier enfant (cas absence éducateur). Éducateur utilise `/suivi/[token]` via suivi_token. Scope = `requireInscriptionInStructure` (structure_id only, pas de scope referent_email) car tout le staff voit toute la structure. RGPD Art. 9 auditLog obligatoire.
+Routes staff `inscriptions/[id]/*` (ajoutées 2026-04-19, décision produit option 2) :
+staff structure = mandataire légitime de l'éducateur absent. Peut remplir, compléter,
+télécharger PDF, uploader PJ, envoyer le dossier à la GED. Le référent reçoit les
+emails de confirmation avec BCC du staff qui a agi (preuve d'envoi + traçabilité).
+Éducateur exclu — il utilise `/suivi/[token]` via suivi_token natif.
 
-**`cds_delegated` exclu de write ops** : risque récursion délégation + verrou regex 10-chars en amont (un CDS délégué a un code personnel, pas un code 10-chars). Analyse 2026-04-17.
+Scope = `requireInscriptionInStructure` (structure_id only, pas de scope referent_email)
+car tout le staff voit toute la structure. RGPD Art. 9 auditLog obligatoire avec
+metadata `actor_role` + `context: staff_<action>_dossier|doc|pdf`.
+
+**`cds_delegated` accès write ops** : exclu sur routes `/team`, `/invite`, `/delegation`, `/settings` (risque récursion délégation + verrou regex 10-chars — un CDS délégué a un code personnel, pas un code 10-chars). Analyse 2026-04-17.
+
+**INCLUS** sur routes dossier enfant (`/inscriptions/[id]/*`) depuis 2026-04-19 : use case dépannage légitime quand CDS + direction + secrétariat absents simultanément. Scope structure via `requireInscriptionInStructure` (pas de récursion possible sur ces actions).
 
 ## Règle OBLIGATOIRE — Consultation multi-agents avant intervention
 

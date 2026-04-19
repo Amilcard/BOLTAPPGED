@@ -12,11 +12,24 @@ interface DocJoint {
   size: number;
 }
 
+/**
+ * Props — 2 modes :
+ *  - référent (défaut) : `inscriptionId` + `token` → URLs `/api/dossier-enfant/*`, token en FormData/body
+ *  - staff structure : `apiBase` fourni → URL directe (ex.
+ *    `/api/structure/[code]/inscriptions/[id]/upload`), pas de token, auth par session cookie.
+ */
 interface Props {
   inscriptionId: string;
   token: string;
   onUploadSuccess?: () => void;
   requiredTypes?: string[]; // docs requis par le séjour (valeurs de documents_requis)
+  /**
+   * URL complète vers l'endpoint upload (POST/DELETE/GET). Si fourni, le
+   * composant bascule en mode staff : pas de token dans FormData/body.
+   * La route doit supporter POST multipart + DELETE body + GET ?token=... OU
+   * mode staff en cookie.
+   */
+  apiBase?: string;
 }
 
 // REQUIS_TO_JOINT et DOC_OPT_LABELS importés depuis @/lib/dossier-shared
@@ -43,7 +56,7 @@ function formatDate(iso: string): string {
   });
 }
 
-export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess, requiredTypes = [] }: Props) {
+export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess, requiredTypes = [], apiBase }: Props) {
   const [documents, setDocuments] = useState<DocJoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -52,8 +65,18 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess, r
   const [success, setSuccess] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const isStaffMode = !!apiBase;
+
   const loadDocuments = useCallback(async () => {
     try {
+      // Mode staff : pas de GET listing sur la route structure (scope vague 3+4 limité).
+      // Le Panel parent fournit `dossier.documents_joints` via useDossierEnfant GET
+      // structure déjà implémenté. On skip le load ici et laisse le parent gérer
+      // via reload() après chaque upload/delete.
+      if (isStaffMode) {
+        setLoading(false);
+        return;
+      }
       const res = await fetch(
         `/api/dossier-enfant/${inscriptionId}/upload?token=${token}`
       );
@@ -66,7 +89,7 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess, r
     } finally {
       setLoading(false);
     }
-  }, [inscriptionId, token]);
+  }, [inscriptionId, token, isStaffMode]);
 
   useEffect(() => {
     void loadDocuments();
@@ -90,11 +113,13 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess, r
 
     try {
       const formData = new FormData();
-      formData.append('token', token);
+      // Token FormData uniquement en mode référent (staff = session cookie)
+      if (!isStaffMode) formData.append('token', token);
       formData.append('type', selectedType);
       formData.append('file', file);
 
-      const res = await fetch(`/api/dossier-enfant/${inscriptionId}/upload`, {
+      const uploadUrl = apiBase || `/api/dossier-enfant/${inscriptionId}/upload`;
+      const res = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
       });
@@ -122,10 +147,14 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess, r
     if (!confirm('Supprimer ce document ?')) return;
 
     try {
-      const res = await fetch(`/api/dossier-enfant/${inscriptionId}/upload`, {
+      const deleteUrl = apiBase || `/api/dossier-enfant/${inscriptionId}/upload`;
+      const deleteBody = isStaffMode
+        ? { storage_path: storagePath }
+        : { token, storage_path: storagePath };
+      const res = await fetch(deleteUrl, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, storage_path: storagePath }),
+        body: JSON.stringify(deleteBody),
       });
 
       if (res.ok) {

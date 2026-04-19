@@ -75,12 +75,12 @@ export default function StructureLoginPage() {
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>
+              <div role="alert" className="p-3 bg-destructive/10 text-destructive rounded-lg text-sm">{error}</div>
             )}
 
             <button
               type="submit"
-              disabled={loading || (code.length !== 6 && code.length !== 10)}
+              disabled={loading}
               className="w-full py-3 bg-secondary text-white rounded-pill font-medium hover:bg-secondary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}

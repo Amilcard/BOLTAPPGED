@@ -250,17 +250,44 @@ test.
 | Email associé | `Thanh.Nguyen@univ-lyon2.fr` |
 | Valide jusqu'au | 19 octobre 2026 |
 
-### Votre compte admin GED lecture seule (Bloc D — parcours 16)
+### Votre compte admin GED (Bloc D — parcours 16)
 
 | Info | Valeur |
 |---|---|
 | Email | `Thanh.Nguyen@univ-lyon2.fr` |
 | Mot de passe | **`TestGED2026!`** |
-| Rôle | Lecture seule (VIEWER) |
+| Rôle | Éditeur |
 
-⚠️ Ce compte est en **lecture seule** : vous ne pouvez rien modifier par erreur.
-Si vous voyez un message type "action non autorisée", c'est normal, c'est la
-sécurité qui vous protège.
+### ⚠️⚠️⚠️ AVERTISSEMENT IMPORTANT pour le parcours 16 (admin) ⚠️⚠️⚠️
+
+Votre compte admin a les **droits d'écriture** sur la base de données réelle
+de GED. Cela signifie que vous **pourriez** modifier les vraies données si
+vous cliquez n'importe où.
+
+**Règle d'or pendant le parcours 16 :** regardez, ne cliquez pas.
+
+**Ne cliquez JAMAIS sur :**
+- ❌ Boutons rouges ou orange "Supprimer", "Annuler", "Révoquer"
+- ❌ Boutons "Valider l'inscription", "Changer le statut"
+- ❌ Boutons "Envoyer email", "Envoyer la facture", "Relancer"
+- ❌ Boutons "Exporter" (peuvent déclencher envois automatiques)
+- ❌ Changements de prix, de dates, de capacité
+- ❌ Tout bouton dont l'effet n'est pas évident à la lecture
+
+**Ce que vous POUVEZ faire sans risque :**
+- ✅ Cliquer sur "Voir" / "Détail" / "Consulter"
+- ✅ Naviguer dans les onglets et les listes
+- ✅ Utiliser les filtres et la recherche
+- ✅ Faire défiler les pages
+
+**Si vous avez un doute, notez dans votre tableau "je n'ai pas cliqué, je
+pense que ça aurait fait X" — c'est une info précieuse pour nous.**
+
+Si vous cliquez par erreur sur une action d'écriture :
+1. Ne paniquez pas
+2. Notez immédiatement dans le tableau ce que vous avez cliqué, à quelle heure
+3. Prévenez GED dès que possible
+4. Toutes les actions sont consignées et réversibles en moins de 5 minutes
 
 ### Votre compte éducatrice pro — À CRÉER VOUS-MÊME pendant le test
 
@@ -296,7 +323,7 @@ MA STRUCTURE TEST
   Direction  : 20A1F449A8  (10 chars)
   CDS        : 8D7FC4       (6 chars)
 ─────────────────────────────────────────────
-ADMIN GED (lecture seule)
+ADMIN GED (éditeur — lire section warning §4 avant P16)
   Email      : Thanh.Nguyen@univ-lyon2.fr
   Password   : TestGED2026!
 ─────────────────────────────────────────────
@@ -1130,17 +1157,22 @@ inscriptions, toutes les structures, tous les paiements.
 **Où :** Ordinateur
 **Temps :** 15 minutes
 
+### 🛑 AVANT DE COMMENCER — Relisez l'avertissement §4 du guide
+
+Ce parcours est le **seul** où vous avez des droits d'écriture sur la vraie
+prod. La règle d'or : **regardez, ne cliquez pas**. Relisez les 6 interdictions
+listées dans la section "§4 Vos identifiants de test" avant de démarrer.
+
 ### Étapes
 
 1. Connectez-vous sur **https://app.groupeetdecouverte.fr/login** (sans
-   `?context=pro`)
-2. Utilisez les identifiants admin fournis par GED.
-3. Vous arrivez sur le **tableau de bord admin**.
-4. Explorez les sections :
+   `?context=pro`) avec `Thanh.Nguyen@univ-lyon2.fr` + `TestGED2026!`
+2. Vous arrivez sur le **tableau de bord admin**.
+3. Explorez les sections en **consultation uniquement** :
    - Inscriptions (voir celle de Camille, vérifier qu'elle est présente)
-   - Structures (voir la structure test)
-   - Séjours (catalogue admin avec modification possible)
-   - Paiements / factures
+   - Structures (voir "Structure Test Thanh")
+   - Séjours (catalogue admin — **ne modifiez rien**)
+   - Paiements / factures (regardez, ne cliquez pas "Relancer" / "Valider")
    - Utilisateurs
 
 ### Ce que vous devez voir

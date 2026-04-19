@@ -198,7 +198,10 @@ export function getStoredUser(): StoredUser | null {
     const raw = localStorage.getItem(STORAGE_KEYS.USER);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (parsed?.email && parsed?.role) return parsed as StoredUser;
+    // Depuis commit a4b4fbc (RGPD), StoredUser = {role} uniquement (email retiré du localStorage).
+    // Le check ne doit valider que role, sinon getStoredUser() retourne systématiquement null
+    // → redirect /admin → /login en boucle.
+    if (parsed?.role) return parsed as StoredUser;
     return null;
   } catch {
     return null;

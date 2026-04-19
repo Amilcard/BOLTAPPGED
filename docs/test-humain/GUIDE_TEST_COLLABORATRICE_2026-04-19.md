@@ -778,23 +778,49 @@ un séjour.
 ### Étapes
 
 1. Depuis le catalogue pro, choisissez **un séjour** (au hasard, celui qui
-   vous plaît).
+   vous plaît, avec des dates disponibles).
 2. Ouvrez sa fiche.
 3. Cliquez sur **"Inscrire un jeune"** ou équivalent.
-4. Remplissez le formulaire d'inscription :
-   - Infos du jeune (prénom "Camille", nom, date de naissance, sexe)
-   - Infos de la structure (inventez ou utilisez les vraies de test)
-   - Votre email (votre mail perso — c'est vous l'éducatrice)
+
+#### 🔑 POINT CRITIQUE à ne pas rater — Code structure
+
+Dans le formulaire, vous verrez un champ intitulé **"Code structure
+(si vous en avez un)"**. **Vous DEVEZ y saisir votre code de
+structure de test.**
+
+➡️ Code à saisir : **`20A1F449A8`**
+
+Si vous le saisissez correctement, la bordure du champ devient
+**verte** et un message confirme "Structure reconnue : Structure
+Test Thanh". C'est ce qu'il faut voir.
+
+Si vous **oubliez ce code** ou que vous le tapez mal, votre
+inscription sera liée à une **nouvelle structure fantôme** créée
+automatiquement, et elle **n'apparaîtra pas** dans votre dashboard
+structure (parcours 12) — ce qui fausse la suite du test.
+
+#### Suite du formulaire
+
+4. Remplissez le reste :
+   - Infos du jeune (prénom **"Camille"**, nom au choix, date de
+     naissance, sexe)
+   - Nom de la structure : **"Structure Test Thanh"** (déjà pré-rempli
+     si code reconnu)
+   - Votre email : **`ttu.nguyen188@gmail.com`** (votre mail perso —
+     c'est vous l'éducatrice référente pour le test)
    - Choix de la session (dates)
    - Choix du mode de paiement (carte / virement / chèque)
 5. Acceptez les conditions RGPD et mentions légales.
 6. Validez.
 7. Selon le mode de paiement :
-   - **Carte** : on vous redirige vers une page de paiement sécurisée Stripe.
-     Pour le test, utilisez le numéro de carte test : `4242 4242 4242 4242`,
-     date future quelconque, CVC quelconque, nom quelconque.
-   - **Virement** : vous recevez un mail avec les coordonnées bancaires.
+   - **Carte** : on vous redirige vers une page de paiement sécurisée
+     Stripe. Pour le test, utilisez le numéro de carte test :
+     `4242 4242 4242 4242`, date future quelconque (ex. 12/30),
+     CVC `123`, nom quelconque.
+   - **Virement** : vous recevez un mail avec les coordonnées
+     bancaires. Ne faites PAS de vrai virement — c'est un test.
    - **Chèque** : vous recevez un mail avec l'adresse postale.
+     N'envoyez PAS de vrai chèque — c'est un test.
 
 ### Ce que vous devez voir
 
@@ -833,10 +859,31 @@ un séjour.
 
 ---
 
-## Parcours 10 — Remplir le dossier administratif du jeune
+## Parcours 10 — Remplir le dossier administratif du jeune 🎯 CŒUR DU TEST
 
 **Où :** Ordinateur
 **Temps :** 30 minutes
+
+### 🎯 Pourquoi ce parcours est le plus important
+
+Remplir un dossier enfant en ligne de bout en bout est **la raison d'être** de
+l'application. Si ce parcours bugue, le produit ne sert à rien. Consacrez-y
+tout le soin possible, c'est celui qui nous intéresse le plus.
+
+### 📁 À préparer AVANT de démarrer (5 min)
+
+Pour ne pas être bloquée en milieu de dossier, préparez ces 4 fichiers dans
+un dossier facile à retrouver (Bureau, Desktop, Téléchargements) :
+
+| Fichier | Usage | Comment le créer |
+|---|---|---|
+| `test-vaccins.pdf` (< 5 Mo) | Simuler carnet de vaccination | N'importe quel PDF — copiez-en un de vos documents |
+| `test-attestation.jpg` (< 5 Mo) | Simuler une attestation | N'importe quelle photo |
+| `test-gros-fichier.pdf` (> 5 Mo) | Tester le refus de fichiers trop lourds | Un PDF scanné haute résolution, ou un PDF de cours avec beaucoup d'images |
+| `test-interdit.exe` | Tester le refus de formats interdits | Sur Mac : créez un fichier vide et renommez en .exe. Sur Windows : n'importe quel exécutable |
+
+Ces fichiers ne sont pas lus par GED, ils servent juste à tester que l'appli
+accepte/refuse correctement.
 
 Après l'inscription, l'éducatrice doit remplir un dossier avec des infos
 médicales, administratives, et signer des documents.

@@ -60,7 +60,7 @@ export async function GET(
   let query = supabase
     .from('gd_inscriptions')
     .select(
-      'id, jeune_prenom, jeune_nom, jeune_date_naissance, referent_nom, referent_email, sejour_slug, session_id, status, payment_status, payment_method, price_total, dossier_ref, created_at, suivi_token, structure_id, gd_dossier_enfant(bulletin_completed, sanitaire_completed, liaison_completed, renseignements_completed, ged_sent_at), gd_stays!fk_inscriptions_stay(marketing_title, title)'
+      'id, jeune_prenom, jeune_nom, jeune_date_naissance, referent_nom, referent_email, sejour_slug, session_date, status, payment_status, payment_method, price_total, dossier_ref, created_at, suivi_token, structure_id, gd_dossier_enfant(bulletin_completed, sanitaire_completed, liaison_completed, renseignements_completed, ged_sent_at), gd_stays!fk_inscriptions_stay(marketing_title, title)'
     )
     .eq('structure_id', structureId)
     .is('deleted_at', null)

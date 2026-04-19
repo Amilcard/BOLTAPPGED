@@ -149,18 +149,11 @@ export function FicheLiaisonJeuneForm({ data, saving, onSave, jeunePrenom, jeune
       {/* Boutons */}
       <div className="flex flex-wrap gap-3 pt-2">
         <button
-          onClick={() => handleSave(false)}
-          disabled={saving}
-          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-medium transition disabled:opacity-50"
-        >
-          {saving ? 'Enregistrement...' : 'Enregistrer'}
-        </button>
-        <button
           onClick={() => handleSave(true)}
           disabled={saving || !form.engagement_accepte}
           className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
         >
-          Valider
+          {saving ? 'Enregistrement...' : 'Valider le bloc'}
         </button>
       </div>
       {!form.engagement_accepte && (

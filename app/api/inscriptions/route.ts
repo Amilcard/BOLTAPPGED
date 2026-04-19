@@ -636,8 +636,30 @@ export async function POST(request: NextRequest) {
     );
 
     // Supprimer cookie pro après inscription réussie (re-auth requise pour chaque enfant)
-    if (request.cookies.get('gd_pro_session')) {
+    // + révoquer le jti dans gd_revoked_tokens pour invalider immédiatement le JWT
+    // si un attaquant l'avait intercepté (S4 backlog).
+    const proCookie = request.cookies.get('gd_pro_session')?.value;
+    if (proCookie) {
       response.cookies.set('gd_pro_session', '', { maxAge: 0, path: '/' });
+      try {
+        const secret = process.env.NEXTAUTH_SECRET;
+        if (secret) {
+          const { jwtVerify } = await import('jose');
+          const encodedSecret = new TextEncoder().encode(secret);
+          const { payload } = await jwtVerify(proCookie, encodedSecret).catch(() => ({ payload: null }));
+          if (payload?.jti && payload?.exp) {
+            const expiresAt = new Date(payload.exp * 1000).toISOString();
+            const { error: dbErr } = await supabase
+              .from('gd_revoked_tokens')
+              .insert({ jti: payload.jti as string, expires_at: expiresAt });
+            if (dbErr && dbErr.code !== '23505') {
+              console.error('[inscriptions] pro jti revoke failed:', dbErr.message);
+            }
+          }
+        }
+      } catch (revokeErr) {
+        console.error('[inscriptions] pro session revoke exception:', revokeErr);
+      }
     }
 
     return response;

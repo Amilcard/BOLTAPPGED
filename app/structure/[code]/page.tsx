@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Building2 } from 'lucide-react';
+import { Building2, LogOut } from 'lucide-react';
 import StructureAdminTab from '@/components/structure/StructureAdminTab';
 import StructureEduTab from '@/components/structure/StructureEduTab';
 import StructureFacturesTab from '@/components/structure/StructureFacturesTab';
@@ -84,7 +84,18 @@ const TYPE_LABELS: Record<string, string> = {
 
 export default function StructureDashboard() {
   const params = useParams();
+  const router = useRouter();
   const code = (params?.code as string)?.toUpperCase();
+
+  async function handleLogout() {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    } catch {
+      // logout doit rester effectif même en cas d'erreur réseau
+    }
+    router.push('/login?context=pro');
+  }
+
   const [data, setData] = useState<StructureData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -324,6 +335,15 @@ export default function StructureDashboard() {
                 {structure.code}
               </code>
             </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors print:hidden min-h-[44px]"
+              aria-label="Se déconnecter"
+            >
+              <LogOut size={16} aria-hidden="true" />
+              <span>Se déconnecter</span>
+            </button>
           </div>
         </div>
       </header>

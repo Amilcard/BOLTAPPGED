@@ -33,3 +33,8 @@ export function clearSessionCookie(response: NextResponse): NextResponse {
   response.cookies.delete('gd_session');
   return response;
 }
+
+export function clearProSessionCookie(response: NextResponse): NextResponse {
+  response.cookies.delete('gd_pro_session');
+  return response;
+}

@@ -52,6 +52,8 @@ export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeun
     envoi_convocation: 'permanente',
     autorisation_accepte: false,
     autorisation_fait_a: '',
+    // C#3 — Qualité du signataire (SES eIDAS). Enum back : responsable_legal | delegataire_ase | tuteur.
+    signer_qualite: '',
     ...flattenObject(data),
   });
 
@@ -221,6 +223,10 @@ export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeun
         <div className="mb-3 max-w-xs">
           <Input label="Fait à" value={form.autorisation_fait_a} onChange={v => update('autorisation_fait_a', v)} />
         </div>
+        <SignerQualiteSelect
+          value={(form.signer_qualite as string) || ''}
+          onChange={v => update('signer_qualite', v)}
+        />
         <Checkbox
           label="J'atteste l'exactitude des renseignements et j'accepte les conditions générales"
           checked={!!form.autorisation_accepte}
@@ -239,7 +245,10 @@ export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeun
       {/* Boutons */}
       {(() => {
         const urgenceTelOk = !!(form.contact_urgence_telephone as string)?.trim();
-        const canValidate = !!form.autorisation_accepte && urgenceTelOk;
+        const signatureOk = !!(form.signature_image_url as string)?.trim();
+        const qualiteOk = !!(form.signer_qualite as string)?.trim();
+        const canValidate =
+          !!form.autorisation_accepte && urgenceTelOk && signatureOk && qualiteOk;
         return (
           <>
             <div className="flex flex-wrap gap-3 pt-2">
@@ -256,6 +265,12 @@ export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeun
             )}
             {form.autorisation_accepte && !urgenceTelOk && (
               <p className="text-xs text-orange-600 mt-1">Renseignez le téléphone du contact d&apos;urgence (champ obligatoire).</p>
+            )}
+            {form.autorisation_accepte && urgenceTelOk && !qualiteOk && (
+              <p className="text-xs text-orange-600 mt-1">Indiquez la qualité du signataire.</p>
+            )}
+            {form.autorisation_accepte && urgenceTelOk && qualiteOk && !signatureOk && (
+              <p className="text-xs text-orange-600 mt-1">Signez dans le cadre pour valider le bloc.</p>
             )}
           </>
         );
@@ -296,6 +311,35 @@ function Input({
         value={(value as string) || ''}
         onChange={e => onChange(e.target.value)}
       />
+    </div>
+  );
+}
+
+/**
+ * C#3 — Sélecteur "qualité du signataire" pour la signature électronique simple (SES eIDAS).
+ * Valeur envoyée au back : enum (responsable_legal | delegataire_ase | tuteur).
+ * Obligatoire dans les 3 blocs Bulletin / Sanitaire / Liaison.
+ */
+function SignerQualiteSelect({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="mb-3">
+      <label className="text-xs text-gray-600 block mb-1">Qualité du signataire *</label>
+      <select
+        className="w-full sm:max-w-sm border rounded-lg px-3 py-1.5 text-sm"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+      >
+        <option value="">— Sélectionnez —</option>
+        <option value="responsable_legal">Responsable légal (parent de l&apos;enfant)</option>
+        <option value="delegataire_ase">Délégataire de l&apos;autorité parentale (ASE)</option>
+        <option value="tuteur">Tuteur / tutrice</option>
+      </select>
     </div>
   );
 }

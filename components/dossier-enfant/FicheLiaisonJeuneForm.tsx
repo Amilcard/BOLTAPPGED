@@ -49,6 +49,8 @@ export function FicheLiaisonJeuneForm({ data, saving, onSave, jeunePrenom, jeune
         // Engagement
         engagement_accepte: false,
         signature_fait_a: '',
+        // C#3 — Qualité du signataire (SES eIDAS). Enum back : responsable_legal | delegataire_ase | tuteur.
+        signer_qualite: '',
       },
       data,
       initialShared ?? {},
@@ -168,6 +170,12 @@ export function FicheLiaisonJeuneForm({ data, saving, onSave, jeunePrenom, jeune
           onChange={v => update('engagement_accepte', v)}
         />
         <div className="mt-3">
+          <SignerQualiteSelect
+            value={(form.signer_qualite as string) || ''}
+            onChange={v => update('signer_qualite', v)}
+          />
+        </div>
+        <div className="mt-3">
           <SignaturePad
             label="Signature du jeune et du responsable"
             value={form.signature_image_url as string | null}
@@ -182,7 +190,10 @@ export function FicheLiaisonJeuneForm({ data, saving, onSave, jeunePrenom, jeune
         const respOk = !!(form.resp_etablissement_nom as string)?.trim()
           && !!(form.resp_etablissement_prenom as string)?.trim()
           && !!(form.resp_etablissement_tel1 as string)?.trim();
-        const canValidate = !!form.engagement_accepte && respOk;
+        const signatureOk = !!(form.signature_image_url as string)?.trim();
+        const qualiteOk = !!(form.signer_qualite as string)?.trim();
+        const canValidate =
+          !!form.engagement_accepte && respOk && signatureOk && qualiteOk;
         return (
           <>
             <div className="flex flex-wrap gap-3 pt-2">
@@ -199,6 +210,12 @@ export function FicheLiaisonJeuneForm({ data, saving, onSave, jeunePrenom, jeune
             )}
             {form.engagement_accepte && !respOk && (
               <p className="text-xs text-red-600 mt-1">Renseignez le responsable d&apos;établissement (nom, prénom, téléphone).</p>
+            )}
+            {form.engagement_accepte && respOk && !qualiteOk && (
+              <p className="text-xs text-red-600 mt-1">Indiquez la qualité du signataire.</p>
+            )}
+            {form.engagement_accepte && respOk && qualiteOk && !signatureOk && (
+              <p className="text-xs text-red-600 mt-1">Signez dans le cadre pour valider le bloc.</p>
             )}
           </>
         );
@@ -229,6 +246,34 @@ function Input({
       <label className="text-xs text-gray-500 block mb-0.5">{label}</label>
       <input type={type} required={required} className="w-full border rounded-lg px-3 py-1.5 text-sm"
         value={(value as string) || ''} onChange={e => onChange(e.target.value)} />
+    </div>
+  );
+}
+
+/**
+ * C#3 — Sélecteur "qualité du signataire" pour la signature électronique simple (SES eIDAS).
+ * Valeur envoyée au back : enum (responsable_legal | delegataire_ase | tuteur).
+ */
+function SignerQualiteSelect({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div>
+      <label className="text-xs text-gray-600 block mb-1">Qualité du signataire *</label>
+      <select
+        className="w-full sm:max-w-sm border rounded-lg px-3 py-1.5 text-sm"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+      >
+        <option value="">— Sélectionnez —</option>
+        <option value="responsable_legal">Responsable légal (parent de l&apos;enfant)</option>
+        <option value="delegataire_ase">Délégataire de l&apos;autorité parentale (ASE)</option>
+        <option value="tuteur">Tuteur / tutrice</option>
+      </select>
     </div>
   );
 }

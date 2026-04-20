@@ -80,6 +80,8 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
     // Autorisation soins
     autorisation_soins_soussigne: '',
     autorisation_soins_accepte: false,
+    // C#3 — Qualité du signataire (SES eIDAS). Enum back : responsable_legal | delegataire_ase | tuteur.
+    signer_qualite: '',
     ...data,
   });
 
@@ -315,6 +317,12 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
           />
         </div>
         <div className="mt-3">
+          <SignerQualiteSelect
+            value={(form.signer_qualite as string) || ''}
+            onChange={v => update('signer_qualite', v)}
+          />
+        </div>
+        <div className="mt-3">
           <SignaturePad
             label="Signature du responsable légal"
             value={form.signature_image_url as string | null}
@@ -328,7 +336,10 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
       {(() => {
         const phonesOk = !!(form.resp1_tel_portable as string)?.trim()
           && !!(form.medecin_tel as string)?.trim();
-        const canValidate = !!form.autorisation_soins_accepte && phonesOk;
+        const signatureOk = !!(form.signature_image_url as string)?.trim();
+        const qualiteOk = !!(form.signer_qualite as string)?.trim();
+        const canValidate =
+          !!form.autorisation_soins_accepte && phonesOk && signatureOk && qualiteOk;
         return (
           <>
             <div className="flex flex-wrap gap-3 pt-2">
@@ -345,6 +356,12 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
             )}
             {form.autorisation_soins_accepte && !phonesOk && (
               <p className="text-xs text-blue-600 mt-1">Renseignez les téléphones obligatoires : responsable légal 1 (portable) et médecin traitant.</p>
+            )}
+            {form.autorisation_soins_accepte && phonesOk && !qualiteOk && (
+              <p className="text-xs text-blue-600 mt-1">Indiquez la qualité du signataire.</p>
+            )}
+            {form.autorisation_soins_accepte && phonesOk && qualiteOk && !signatureOk && (
+              <p className="text-xs text-blue-600 mt-1">Signez dans le cadre pour valider le bloc.</p>
             )}
           </>
         );
@@ -377,6 +394,34 @@ function Input({
       </label>
       <input type={type} className="w-full border rounded-lg px-3 py-1.5 text-sm"
         value={(value as string) || ''} onChange={e => onChange(e.target.value)} />
+    </div>
+  );
+}
+
+/**
+ * C#3 — Sélecteur "qualité du signataire" pour la signature électronique simple (SES eIDAS).
+ * Valeur envoyée au back : enum (responsable_legal | delegataire_ase | tuteur).
+ */
+function SignerQualiteSelect({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div>
+      <label className="text-xs text-gray-600 block mb-1">Qualité du signataire *</label>
+      <select
+        className="w-full sm:max-w-sm border rounded-lg px-3 py-1.5 text-sm"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+      >
+        <option value="">— Sélectionnez —</option>
+        <option value="responsable_legal">Responsable légal (parent de l&apos;enfant)</option>
+        <option value="delegataire_ase">Délégataire de l&apos;autorité parentale (ASE)</option>
+        <option value="tuteur">Tuteur / tutrice</option>
+      </select>
     </div>
   );
 }

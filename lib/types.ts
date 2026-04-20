@@ -162,12 +162,20 @@ export interface StayWithWaitlist extends Stay {
 export interface DossierEnfant {
   id?: string;
   inscription_id?: string;
+  exists?: boolean;
   bulletin_completed?: boolean | null;
   sanitaire_completed?: boolean | null;
   liaison_completed?: boolean | null;
   renseignements_completed?: boolean | null;
   documents_joints?: DossierDocument[] | null;
   ged_sent_at?: string | null;
+  signatures_status?: {
+    bulletin: boolean;
+    sanitaire: boolean;
+    liaison: boolean;
+    renseignements: boolean;
+  };
+  partial_docs_missing?: Array<{ key: string; label: string }>;
   [key: string]: unknown;
 }
 

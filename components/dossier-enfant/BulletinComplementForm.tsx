@@ -25,6 +25,12 @@ interface Props {
 export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeuneNom }: Props) {
   const [form, setForm] = useState<Record<string, unknown>>({
     adresse_permanente: '',
+    // #13 — Sous-champs adresse permanente (éclatement num/rue/CP/ville).
+    // adresse_permanente (string concaténée) reste maintenu pour compat PDF.
+    adresse_permanente_numero: '',
+    adresse_permanente_rue: '',
+    adresse_permanente_cp: '',
+    adresse_permanente_ville: '',
     adresse_depart_nom: '',
     adresse_depart_adresse: '',
     adresse_depart_lien: '',
@@ -50,7 +56,15 @@ export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeun
   });
 
   const update = (key: string, value: unknown) => {
-    setForm(prev => ({ ...prev, [key]: value }));
+    setForm(prev => {
+      const next = { ...prev, [key]: value };
+      // #13 — Recompose la string adresse_permanente à partir des sous-champs
+      // pour rester compatible avec le rendu PDF existant (s(d.adresse_permanente)).
+      if (key.startsWith('adresse_permanente_')) {
+        next.adresse_permanente = composeAdressePermanente(next);
+      }
+      return next;
+    });
   };
 
   const handleSave = async (completed = false) => {
@@ -87,15 +101,43 @@ export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeun
         compléter ou corriger à tout moment avant l&apos;envoi final.
       </div>
 
-      {/* Adresse permanente */}
+      {/* Adresse permanente — #13 éclatée en 4 champs */}
       <Section title="Adresse permanente">
-        <textarea
-          className="w-full border rounded-lg px-3 py-2 text-sm"
-          rows={2}
-          placeholder="Adresse complète (rue, code postal, ville)"
-          value={(form.adresse_permanente as string) || ''}
-          onChange={e => update('adresse_permanente', e.target.value)}
-        />
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+          <Input
+            label="Numéro"
+            value={form.adresse_permanente_numero}
+            onChange={v => update('adresse_permanente_numero', v)}
+            className="sm:col-span-2"
+          />
+          <Input
+            label="Rue *"
+            value={form.adresse_permanente_rue}
+            onChange={v => update('adresse_permanente_rue', v)}
+            className="sm:col-span-10"
+            required
+          />
+          <Input
+            label="Code postal *"
+            value={form.adresse_permanente_cp}
+            onChange={v => update('adresse_permanente_cp', v.replace(/\D/g, '').slice(0, 5))}
+            className="sm:col-span-3"
+            required
+          />
+          <Input
+            label="Ville *"
+            value={form.adresse_permanente_ville}
+            onChange={v => update('adresse_permanente_ville', v)}
+            className="sm:col-span-9"
+            required
+          />
+        </div>
+        {!!form.adresse_permanente && !form.adresse_permanente_rue && !form.adresse_permanente_cp && !form.adresse_permanente_ville && (
+          <p className="mt-2 text-xs text-orange-700 bg-orange-50 border border-orange-200 rounded p-2">
+            Adresse précédente : <strong>{form.adresse_permanente as string}</strong>.
+            Recopiez-la dans les champs ci-dessus pour la mettre à jour.
+          </p>
+        )}
       </Section>
 
       {/* Adresse de départ */}
@@ -276,6 +318,21 @@ function Checkbox({
       {label}
     </label>
   );
+}
+
+// #13 — Recompose "12 rue Flobert, 42000 Saint-Étienne" depuis les sous-champs.
+// Tolère les champs vides : produit "rue, cp ville" minimum. Renvoie '' si tout vide.
+function composeAdressePermanente(form: Record<string, unknown>): string {
+  const num = ((form.adresse_permanente_numero as string) || '').trim();
+  const rue = ((form.adresse_permanente_rue as string) || '').trim();
+  const cp = ((form.adresse_permanente_cp as string) || '').trim();
+  const ville = ((form.adresse_permanente_ville as string) || '').trim();
+  const left = [num, rue].filter(Boolean).join(' ');
+  const right = [cp, ville].filter(Boolean).join(' ');
+  if (!left && !right) return '';
+  if (!left) return right;
+  if (!right) return left;
+  return `${left}, ${right}`;
 }
 
 // Utilitaire : aplatir un objet nested en clés plates

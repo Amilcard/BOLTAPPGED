@@ -109,9 +109,9 @@ export function FicheLiaisonJeuneForm({ data, saving, onSave, jeunePrenom, jeune
       {/* Responsable établissement */}
       <Section title="Responsable de l'établissement joignable à tout moment">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Input label="Nom" value={form.resp_etablissement_nom} onChange={v => update('resp_etablissement_nom', v)} />
-          <Input label="Prénom" value={form.resp_etablissement_prenom} onChange={v => update('resp_etablissement_prenom', v)} />
-          <Input label="Tél. portable 1" value={form.resp_etablissement_tel1} onChange={v => update('resp_etablissement_tel1', v)} type="tel" />
+          <Input label="Nom *" value={form.resp_etablissement_nom} onChange={v => update('resp_etablissement_nom', v)} required />
+          <Input label="Prénom *" value={form.resp_etablissement_prenom} onChange={v => update('resp_etablissement_prenom', v)} required />
+          <Input label="Tél. portable 1 *" value={form.resp_etablissement_tel1} onChange={v => update('resp_etablissement_tel1', v)} type="tel" required />
           <Input label="Tél. portable 2" value={form.resp_etablissement_tel2} onChange={v => update('resp_etablissement_tel2', v)} type="tel" />
         </div>
       </Section>
@@ -178,18 +178,31 @@ export function FicheLiaisonJeuneForm({ data, saving, onSave, jeunePrenom, jeune
       </Section>
 
       {/* Boutons */}
-      <div className="flex flex-wrap gap-3 pt-2">
-        <button
-          onClick={() => handleSave(true)}
-          disabled={saving || !form.engagement_accepte}
-          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
-        >
-          {saving ? 'Enregistrement...' : 'Valider le bloc'}
-        </button>
-      </div>
-      {!form.engagement_accepte && (
-        <p className="text-xs text-red-600 mt-1">Cochez la case d'engagement ci-dessus pour pouvoir valider ce bloc.</p>
-      )}
+      {(() => {
+        const respOk = !!(form.resp_etablissement_nom as string)?.trim()
+          && !!(form.resp_etablissement_prenom as string)?.trim()
+          && !!(form.resp_etablissement_tel1 as string)?.trim();
+        const canValidate = !!form.engagement_accepte && respOk;
+        return (
+          <>
+            <div className="flex flex-wrap gap-3 pt-2">
+              <button
+                onClick={() => handleSave(true)}
+                disabled={saving || !canValidate}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
+              >
+                {saving ? 'Enregistrement...' : 'Valider le bloc'}
+              </button>
+            </div>
+            {!form.engagement_accepte && (
+              <p className="text-xs text-red-600 mt-1">Cochez la case d&apos;engagement ci-dessus pour pouvoir valider ce bloc.</p>
+            )}
+            {form.engagement_accepte && !respOk && (
+              <p className="text-xs text-red-600 mt-1">Renseignez le responsable d&apos;établissement (nom, prénom, téléphone).</p>
+            )}
+          </>
+        );
+      })()}
     </div>
   );
 }
@@ -206,15 +219,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function Input({
-  label, value, onChange, type = 'text', className = '',
+  label, value, onChange, type = 'text', className = '', required = false,
 }: {
   label: string; value: unknown; onChange: (v: string) => void;
-  type?: string; className?: string;
+  type?: string; className?: string; required?: boolean;
 }) {
   return (
     <div className={className}>
       <label className="text-xs text-gray-500 block mb-0.5">{label}</label>
-      <input type={type} className="w-full border rounded-lg px-3 py-1.5 text-sm"
+      <input type={type} required={required} className="w-full border rounded-lg px-3 py-1.5 text-sm"
         value={(value as string) || ''} onChange={e => onChange(e.target.value)} />
     </div>
   );

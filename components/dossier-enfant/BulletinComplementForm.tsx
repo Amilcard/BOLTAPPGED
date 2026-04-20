@@ -195,18 +195,29 @@ export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeun
       </Section>
 
       {/* Boutons */}
-      <div className="flex flex-wrap gap-3 pt-2">
-        <button
-          onClick={() => { void handleSave(true); }}
-          disabled={saving || !form.autorisation_accepte}
-          className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
-        >
-          {saving ? 'Enregistrement...' : 'Valider le bloc'}
-        </button>
-      </div>
-      {!form.autorisation_accepte && (
-        <p className="text-xs text-orange-600 mt-1">Cochez la case d'autorisation ci-dessus pour pouvoir valider ce bloc.</p>
-      )}
+      {(() => {
+        const urgenceTelOk = !!(form.contact_urgence_telephone as string)?.trim();
+        const canValidate = !!form.autorisation_accepte && urgenceTelOk;
+        return (
+          <>
+            <div className="flex flex-wrap gap-3 pt-2">
+              <button
+                onClick={() => { void handleSave(true); }}
+                disabled={saving || !canValidate}
+                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
+              >
+                {saving ? 'Enregistrement...' : 'Valider le bloc'}
+              </button>
+            </div>
+            {!form.autorisation_accepte && (
+              <p className="text-xs text-orange-600 mt-1">Cochez la case d&apos;autorisation ci-dessus pour pouvoir valider ce bloc.</p>
+            )}
+            {form.autorisation_accepte && !urgenceTelOk && (
+              <p className="text-xs text-orange-600 mt-1">Renseignez le téléphone du contact d&apos;urgence (champ obligatoire).</p>
+            )}
+          </>
+        );
+      })()}
     </div>
   );
 }

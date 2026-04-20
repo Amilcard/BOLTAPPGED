@@ -188,8 +188,8 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
       {/* 4. Vaccinations */}
       <Section title="4. Vaccinations">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-          <Input label="Nom du médecin traitant" value={form.medecin_nom} onChange={v => update('medecin_nom', v)} />
-          <Input label="Téléphone médecin" value={form.medecin_tel} onChange={v => update('medecin_tel', v)} type="tel" />
+          <Input label="Nom du médecin traitant *" value={form.medecin_nom} onChange={v => update('medecin_nom', v)} required />
+          <Input label="Téléphone médecin *" value={form.medecin_tel} onChange={v => update('medecin_tel', v)} type="tel" required />
         </div>
         <p className="text-xs text-gray-400 mb-2">Joindre obligatoirement une copie des vaccins du carnet de santé.</p>
         <div className="overflow-x-auto">
@@ -325,18 +325,30 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
       </Section>
 
       {/* Boutons */}
-      <div className="flex flex-wrap gap-3 pt-2">
-        <button
-          onClick={() => handleSave(true)}
-          disabled={saving || !form.autorisation_soins_accepte}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
-        >
-          {saving ? 'Enregistrement...' : 'Valider le bloc'}
-        </button>
-      </div>
-      {!form.autorisation_soins_accepte && (
-        <p className="text-xs text-blue-600 mt-1">Cochez la case d'autorisation de soins ci-dessus pour pouvoir valider ce bloc.</p>
-      )}
+      {(() => {
+        const phonesOk = !!(form.resp1_tel_portable as string)?.trim()
+          && !!(form.medecin_tel as string)?.trim();
+        const canValidate = !!form.autorisation_soins_accepte && phonesOk;
+        return (
+          <>
+            <div className="flex flex-wrap gap-3 pt-2">
+              <button
+                onClick={() => handleSave(true)}
+                disabled={saving || !canValidate}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
+              >
+                {saving ? 'Enregistrement...' : 'Valider le bloc'}
+              </button>
+            </div>
+            {!form.autorisation_soins_accepte && (
+              <p className="text-xs text-blue-600 mt-1">Cochez la case d&apos;autorisation de soins ci-dessus pour pouvoir valider ce bloc.</p>
+            )}
+            {form.autorisation_soins_accepte && !phonesOk && (
+              <p className="text-xs text-blue-600 mt-1">Renseignez les téléphones obligatoires : responsable légal 1 (portable) et médecin traitant.</p>
+            )}
+          </>
+        );
+      })()}
     </div>
   );
 }

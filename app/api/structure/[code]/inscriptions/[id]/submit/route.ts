@@ -5,7 +5,7 @@ import { requireStructureRole } from '@/lib/structure-guard';
 import { requireInscriptionInStructure } from '@/lib/resource-guard';
 import { auditLog, getClientIp } from '@/lib/audit-log';
 import { structureRateLimitGuard } from '@/lib/rate-limit-structure';
-import { sendDossierCompletEmail, sendDossierGedAdminNotification } from '@/lib/email';
+import { sendDossierCompletEmail, sendDossierGedAdminNotification, sendStructureArchivageEmail } from '@/lib/email';
 import { REQUIS_TO_JOINT } from '@/lib/dossier-shared';
 import { UUID_RE } from '@/lib/validators';
 
@@ -145,12 +145,24 @@ export async function POST(
       return NextResponse.json({ error: 'Dossier déjà envoyé.', alreadySent: true }, { status: 409 });
     }
 
-    // Envoi emails — accusé référent (BCC staff) + notif admin GED
+    // Envoi emails — accusé référent (BCC staff) + notif admin GED + archivage structure
     const { data: insc } = await supabase
       .from('gd_inscriptions')
-      .select('referent_email, referent_nom, jeune_prenom, jeune_nom, dossier_ref, sejour_slug, session_date')
+      .select('referent_email, referent_nom, jeune_prenom, jeune_nom, dossier_ref, sejour_slug, session_date, suivi_token')
       .eq('id', inscriptionId)
       .single();
+
+    // Lookup email structure (séparé pour metadata auditLog).
+    // structureId vient déjà du guard staff — pas besoin de l'extraire de l'inscription.
+    let structureArchiveEmail: string | null = null;
+    {
+      const { data: structureRow } = await supabase
+        .from('gd_structures')
+        .select('email')
+        .eq('id', structureId)
+        .maybeSingle();
+      structureArchiveEmail = (structureRow as { email?: string | null } | null)?.email ?? null;
+    }
 
     if (insc) {
       const i = insc as {
@@ -161,10 +173,19 @@ export async function POST(
         dossier_ref?: string;
         sejour_slug?: string;
         session_date?: string;
+        suivi_token?: string;
       };
       const base = process.env.NEXT_PUBLIC_APP_URL || 'https://app.groupeetdecouverte.fr';
 
-      await Promise.allSettled([
+      // Email archivage structure : on utilise la route référent (token) pour
+      // que le destinataire (secrétariat) puisse télécharger le PDF sans
+      // session structure. Type=bulletin = doc principal pour registre ASE.
+      // Si suivi_token absent (édge case), pas d'archivage envoyé.
+      const pdfArchiveLink = i.suivi_token
+        ? `${base}/api/dossier-enfant/${inscriptionId}/pdf?token=${encodeURIComponent(i.suivi_token)}&type=bulletin`
+        : null;
+
+      const emailPromises: Promise<unknown>[] = [
         sendDossierCompletEmail({
           referentEmail: i.referent_email,
           referentNom: i.referent_nom,
@@ -187,13 +208,33 @@ export async function POST(
           inscriptionId,
           adminUrl: `${base}/admin/demandes`,
         }),
-      ]);
+      ];
+
+      // Fire-and-forget archivage structure — n'altère ni le statut HTTP ni
+      // le timing critique de la réponse. Echec loggé dans la fonction email.
+      if (structureArchiveEmail && pdfArchiveLink) {
+        emailPromises.push(
+          sendStructureArchivageEmail({
+            structureEmail: structureArchiveEmail,
+            jeunePrenom: i.jeune_prenom,
+            jeuneNom: i.jeune_nom,
+            dossierRef: i.dossier_ref ?? undefined,
+            pdfLink: pdfArchiveLink,
+          }).catch(err => {
+            console.error('[structure/submit] sendStructureArchivageEmail failed:', err);
+            return null;
+          }),
+        );
+      }
+
+      await Promise.allSettled(emailPromises);
     } else {
       console.error('[structure/submit] inscription non trouvée pour emails', { inscriptionId });
     }
 
     // AuditLog RGPD Art.9 — dossier enfant soumis par staff (pas référent).
     // partial_docs : true si PJ optionnelles manquantes (envoi partiel toléré).
+    // structure_archive_sent : true si l'email d'archivage structure a été déclenché.
     await auditLog(supabase, {
       action: 'submit',
       resourceType: 'dossier_enfant',
@@ -208,6 +249,7 @@ export async function POST(
         bcc_staff: !!resolved.email,
         partial_docs: partialDocsMissing.length > 0,
         docs_missing_count: partialDocsMissing.length,
+        structure_archive_sent: !!structureArchiveEmail,
       },
     });
 

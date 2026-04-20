@@ -43,6 +43,7 @@ jest.mock('@/lib/supabase-server', () => ({
 jest.mock('@/lib/email', () => ({
   sendDossierCompletEmail: jest.fn().mockResolvedValue(undefined),
   sendDossierGedAdminNotification: jest.fn().mockResolvedValue(undefined),
+  sendStructureArchivageEmail: jest.fn().mockResolvedValue(undefined),
 }));
 
 import { POST } from '@/app/api/dossier-enfant/[inscriptionId]/submit/route';
@@ -86,12 +87,16 @@ function setupMocks(opts: {
   dossier?: Record<string, unknown> | null;
   updateError?: unknown;
   documentsRequis?: string[]; // ce que gd_stays.documents_requis retourne
+  structureEmail?: string | null; // email contact structure (null = pas d'archive)
+  structureId?: string | null; // structure_id sur l'inscription (null = pas de lookup)
 } = {}) {
   const {
     ownership = 'ok',
     dossier = completeDossier(),
     updateError = null,
     documentsRequis = [], // par défaut aucun doc optionnel requis
+    structureEmail = 'archivage@struct.fr',
+    structureId = 'struct-test-1',
   } = opts;
 
   let inscriptionCallCount = 0;
@@ -108,8 +113,15 @@ function setupMocks(opts: {
                 if (inscriptionCallCount <= 1) return { data: { referent_email: REFERENT_EMAIL }, error: null };
                 return { data: { referent_email: 'autre@autre.fr' }, error: null };
               }
-              // ok — retourne email ET sejour_slug pour toutes les requêtes
-              return { data: { referent_email: REFERENT_EMAIL, sejour_slug: 'test-sejour' }, error: null };
+              // ok — retourne email ET sejour_slug ET structure_id pour toutes les requêtes
+              return {
+                data: {
+                  referent_email: REFERENT_EMAIL,
+                  sejour_slug: 'test-sejour',
+                  structure_id: structureId,
+                },
+                error: null,
+              };
             };
             return {
               is: () => ({ single: singleFn }),
@@ -126,6 +138,19 @@ function setupMocks(opts: {
           eq: () => ({
             maybeSingle: () => ({
               data: { documents_requis: documentsRequis },
+              error: null,
+            }),
+          }),
+        }),
+      };
+    }
+
+    if (table === 'gd_structures') {
+      return {
+        select: () => ({
+          eq: () => ({
+            maybeSingle: () => ({
+              data: structureEmail !== null ? { email: structureEmail } : null,
               error: null,
             }),
           }),
@@ -288,6 +313,74 @@ describe('POST /api/dossier-enfant/[inscriptionId]/submit', () => {
     expect(res.status).toBe(200);
     expect(json.ok).toBe(true);
     expect(json.partial_docs_missing).toEqual([]);
+  });
+
+  // ─── Archivage structure (email post-soumission) ─────────────────────
+
+  it('archivage structure : envoie sendStructureArchivageEmail quand gd_structures.email présent', async () => {
+    setupMocks({ structureEmail: 'archivage@struct.fr' });
+    const email = jest.requireMock('@/lib/email') as {
+      sendStructureArchivageEmail: jest.Mock;
+    };
+    const auditLogMock = jest.requireMock('@/lib/audit-log') as { auditLog: jest.Mock };
+
+    const req = makeRequest({ token: VALID_TOKEN });
+    const res = await POST(req, makeParams(VALID_INSCRIPTION_ID));
+
+    expect(res.status).toBe(200);
+    expect(email.sendStructureArchivageEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        structureEmail: 'archivage@struct.fr',
+        pdfLink: expect.stringContaining(`/api/dossier-enfant/${VALID_INSCRIPTION_ID}/pdf?token=`),
+      }),
+    );
+    expect(email.sendStructureArchivageEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pdfLink: expect.stringContaining('type=bulletin'),
+      }),
+    );
+    expect(auditLogMock.auditLog).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        metadata: expect.objectContaining({ structure_archive_sent: true }),
+      }),
+    );
+  });
+
+  it('archivage structure : skip si gd_structures.email null', async () => {
+    setupMocks({ structureEmail: null });
+    const email = jest.requireMock('@/lib/email') as {
+      sendStructureArchivageEmail: jest.Mock;
+    };
+    const auditLogMock = jest.requireMock('@/lib/audit-log') as { auditLog: jest.Mock };
+
+    const req = makeRequest({ token: VALID_TOKEN });
+    const res = await POST(req, makeParams(VALID_INSCRIPTION_ID));
+
+    expect(res.status).toBe(200);
+    expect(email.sendStructureArchivageEmail).not.toHaveBeenCalled();
+    expect(auditLogMock.auditLog).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        metadata: expect.objectContaining({ structure_archive_sent: false }),
+      }),
+    );
+  });
+
+  it('archivage structure : échec email NE BLOQUE PAS la réponse 200 (fire-and-forget)', async () => {
+    setupMocks({ structureEmail: 'archivage@struct.fr' });
+    const email = jest.requireMock('@/lib/email') as {
+      sendStructureArchivageEmail: jest.Mock;
+    };
+    email.sendStructureArchivageEmail.mockRejectedValueOnce(new Error('SMTP down'));
+
+    const req = makeRequest({ token: VALID_TOKEN });
+    const res = await POST(req, makeParams(VALID_INSCRIPTION_ID));
+
+    // Réponse OK même si l'email d'archivage échoue.
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.ok).toBe(true);
   });
 
   it('4 blocs OK + 0 PJ uploadée → 200 + liste complète des PJ manquantes', async () => {

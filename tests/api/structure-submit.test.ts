@@ -46,9 +46,11 @@ jest.mock('@/lib/audit-log', () => ({
 
 const mockSendComplet = jest.fn().mockResolvedValue({ id: 'email-1' });
 const mockSendNotif = jest.fn().mockResolvedValue({ id: 'email-2' });
+const mockSendArchive = jest.fn().mockResolvedValue({ id: 'email-3' });
 jest.mock('@/lib/email', () => ({
   sendDossierCompletEmail: (...args: unknown[]) => mockSendComplet(...args),
   sendDossierGedAdminNotification: (...args: unknown[]) => mockSendNotif(...args),
+  sendStructureArchivageEmail: (...args: unknown[]) => mockSendArchive(...args),
 }));
 
 jest.mock('@/lib/rate-limit-structure', () => ({
@@ -98,6 +100,7 @@ beforeEach(() => {
   mockFromChain.update.mockReturnThis();
   mockSendComplet.mockResolvedValue({ id: 'email-1' });
   mockSendNotif.mockResolvedValue({ id: 'email-2' });
+  mockSendArchive.mockResolvedValue({ id: 'email-3' });
   mockAuditLog.mockResolvedValue(undefined);
   // Rate limit default = null (pas de limitation)
   const rl = jest.requireMock('@/lib/rate-limit-structure') as { structureRateLimitGuard: jest.Mock };
@@ -105,7 +108,7 @@ beforeEach(() => {
 });
 
 describe('POST /api/structure/[code]/inscriptions/[id]/submit', () => {
-  it('S1 — secrétariat submit complet → 200 + emails + bcc', async () => {
+  it('S1 — secrétariat submit complet → 200 + emails + bcc + archivage structure', async () => {
     mockResolve.mockResolvedValue({ structure: STRUCTURE, role: 'secretariat', email: 'sec@test.fr' });
 
     // Séquence des appels supabase.from (dans l'ordre du code route) :
@@ -114,10 +117,12 @@ describe('POST /api/structure/[code]/inscriptions/[id]/submit', () => {
     // 3. inscForStay            : .from('gd_inscriptions').select.eq.single
     // 4. stayForDocs            : .from('gd_stays').select.eq.maybeSingle
     // 5. UPDATE conditionnel    : .from('gd_dossier_enfant').update.eq.is.select → [{id}]
-    // 6. insc (emails)          : .from('gd_inscriptions').select.eq.single
+    // 6. insc (emails)          : .from('gd_inscriptions').select.eq.single (suivi_token inclus)
+    // 7. structure email lookup : .from('gd_structures').select('email').eq.maybeSingle
     mockFromChain.maybeSingle
       .mockResolvedValueOnce({ data: { id: VALID_UUID }, error: null }) // ownership
-      .mockResolvedValueOnce({ data: { documents_requis: [] }, error: null }); // stay docs
+      .mockResolvedValueOnce({ data: { documents_requis: [] }, error: null }) // stay docs
+      .mockResolvedValueOnce({ data: { email: 'archivage@struct.fr' }, error: null }); // structure email
     mockFromChain.single
       .mockResolvedValueOnce({ data: dossierComplete(), error: null }) // load dossier
       .mockResolvedValueOnce({ data: { sejour_slug: 'summer' }, error: null }) // inscForStay
@@ -130,6 +135,7 @@ describe('POST /api/structure/[code]/inscriptions/[id]/submit', () => {
           dossier_ref: 'DOS-1',
           sejour_slug: 'summer',
           session_date: '2026-08-01',
+          suivi_token: 'token-abc-123',
         },
         error: null,
       });
@@ -159,6 +165,20 @@ describe('POST /api/structure/[code]/inscriptions/[id]/submit', () => {
       expect.objectContaining({ bcc: 'sec@test.fr', referentEmail: 'ref@test.fr' }),
     );
     expect(mockSendNotif).toHaveBeenCalled();
+    // Archivage structure : envoyé à gd_structures.email avec lien suivi_token
+    expect(mockSendArchive).toHaveBeenCalledWith(
+      expect.objectContaining({
+        structureEmail: 'archivage@struct.fr',
+        jeunePrenom: 'Enfant',
+        jeuneNom: 'Nom',
+        pdfLink: expect.stringContaining('token=token-abc-123'),
+      }),
+    );
+    expect(mockSendArchive).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pdfLink: expect.stringContaining('type=bulletin'),
+      }),
+    );
     expect(mockAuditLog).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
@@ -168,9 +188,94 @@ describe('POST /api/structure/[code]/inscriptions/[id]/submit', () => {
           actor_role: 'secretariat',
           partial_docs: false,
           docs_missing_count: 0,
+          structure_archive_sent: true,
         }),
       }),
     );
+  });
+
+  it('S8 — archivage structure : skip si gd_structures.email null', async () => {
+    mockResolve.mockResolvedValue({ structure: STRUCTURE, role: 'direction', email: 'dir@test.fr' });
+
+    mockFromChain.maybeSingle
+      .mockResolvedValueOnce({ data: { id: VALID_UUID }, error: null }) // ownership
+      .mockResolvedValueOnce({ data: { documents_requis: [] }, error: null }) // stay docs
+      .mockResolvedValueOnce({ data: { email: null }, error: null }); // structure email = null
+    mockFromChain.single
+      .mockResolvedValueOnce({ data: dossierComplete(), error: null })
+      .mockResolvedValueOnce({ data: { sejour_slug: 'summer' }, error: null })
+      .mockResolvedValueOnce({
+        data: {
+          referent_email: 'ref@test.fr',
+          referent_nom: 'Alice',
+          jeune_prenom: 'Enfant',
+          jeune_nom: 'Nom',
+          dossier_ref: 'DOS-8',
+          sejour_slug: 'summer',
+          session_date: '2026-08-01',
+          suivi_token: 'token-xyz',
+        },
+        error: null,
+      });
+
+    let selectCallCount = 0;
+    mockFromChain.select = jest.fn((...args: unknown[]) => {
+      selectCallCount++;
+      if (args[0] === 'id' && selectCallCount > 1) {
+        return Promise.resolve({ data: [{ id: 'dos-1' }], error: null }) as unknown as typeof mockFromChain;
+      }
+      return mockFromChain;
+    }) as unknown as typeof mockFromChain.select;
+
+    const res = await POST(req(), { params: params() });
+    expect(res.status).toBe(200);
+    expect(mockSendArchive).not.toHaveBeenCalled();
+    expect(mockAuditLog).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        metadata: expect.objectContaining({ structure_archive_sent: false }),
+      }),
+    );
+  });
+
+  it('S9 — archivage structure : échec email NE BLOQUE PAS le 200 (fire-and-forget)', async () => {
+    mockResolve.mockResolvedValue({ structure: STRUCTURE, role: 'cds', email: 'cds@test.fr' });
+    mockSendArchive.mockRejectedValueOnce(new Error('SMTP down'));
+
+    mockFromChain.maybeSingle
+      .mockResolvedValueOnce({ data: { id: VALID_UUID }, error: null })
+      .mockResolvedValueOnce({ data: { documents_requis: [] }, error: null })
+      .mockResolvedValueOnce({ data: { email: 'archivage@struct.fr' }, error: null });
+    mockFromChain.single
+      .mockResolvedValueOnce({ data: dossierComplete(), error: null })
+      .mockResolvedValueOnce({ data: { sejour_slug: 'summer' }, error: null })
+      .mockResolvedValueOnce({
+        data: {
+          referent_email: 'ref@test.fr',
+          referent_nom: 'Alice',
+          jeune_prenom: 'Enfant',
+          jeune_nom: 'Nom',
+          dossier_ref: 'DOS-9',
+          sejour_slug: 'summer',
+          session_date: '2026-08-01',
+          suivi_token: 'token-fail',
+        },
+        error: null,
+      });
+
+    let selectCallCount = 0;
+    mockFromChain.select = jest.fn((...args: unknown[]) => {
+      selectCallCount++;
+      if (args[0] === 'id' && selectCallCount > 1) {
+        return Promise.resolve({ data: [{ id: 'dos-1' }], error: null }) as unknown as typeof mockFromChain;
+      }
+      return mockFromChain;
+    }) as unknown as typeof mockFromChain.select;
+
+    const res = await POST(req(), { params: params() });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
   });
 
   it('S2 — éducateur refusé (403)', async () => {
@@ -224,7 +329,8 @@ describe('POST /api/structure/[code]/inscriptions/[id]/submit', () => {
     // absent de documents_joints → doit passer en 200 + remonter dans la réponse.
     mockFromChain.maybeSingle
       .mockResolvedValueOnce({ data: { id: VALID_UUID }, error: null }) // ownership
-      .mockResolvedValueOnce({ data: { documents_requis: ['pass_nautique'] }, error: null }); // stay docs
+      .mockResolvedValueOnce({ data: { documents_requis: ['pass_nautique'] }, error: null }) // stay docs
+      .mockResolvedValueOnce({ data: { email: 'archivage@struct.fr' }, error: null }); // structure email
     mockFromChain.single
       .mockResolvedValueOnce({ data: dossierComplete(), error: null }) // load dossier (documents_joints: [])
       .mockResolvedValueOnce({ data: { sejour_slug: 'nautique' }, error: null }) // inscForStay
@@ -237,6 +343,7 @@ describe('POST /api/structure/[code]/inscriptions/[id]/submit', () => {
           dossier_ref: 'DOS-7',
           sejour_slug: 'nautique',
           session_date: '2026-08-01',
+          suivi_token: 'token-s7',
         },
         error: null,
       });

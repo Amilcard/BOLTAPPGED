@@ -1341,3 +1341,113 @@ export async function sendTeamMemberInvite(data: TeamInviteData) {
     return null;
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// Email — Archivage structure (post-soumission GED)
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * Email institutionnel envoyé à l'adresse de contact de la structure
+ * (gd_structures.email — secrétariat / direction) dès qu'un dossier enfant
+ * a été soumis avec succès à la GED.
+ *
+ * Objectif métier : permettre à la structure d'alimenter ses propres
+ * registres officiels ASE en téléchargeant le récapitulatif PDF du dossier
+ * (bulletin pré-rempli signé). Aucune donnée Art.9 dans le corps de l'email
+ * — uniquement nom/prénom + référence + lien sécurisé.
+ *
+ * Fire-and-forget : l'échec d'envoi NE BLOQUE PAS la réponse de la route
+ * /submit. La route appelante doit utiliser .catch() ou Promise.allSettled.
+ */
+export async function sendStructureArchivageEmail(data: {
+  structureEmail: string;
+  jeunePrenom: string;
+  jeuneNom: string;
+  dossierRef?: string;
+  /**
+   * URL absolue de téléchargement du PDF (bulletin pré-rempli).
+   * Pour le mode référent : inclut le suivi_token en query string.
+   * Pour le mode staff : route /api/structure/[code]/inscriptions/[id]/pdf
+   * (auth session cookie — le destinataire doit être connecté).
+   */
+  pdfLink: string;
+}) {
+  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
+    console.warn('[EMAIL] Clé API manquante — archivage structure non envoyé');
+    return null;
+  }
+  if (!data.structureEmail) {
+    console.warn('[EMAIL] structureEmail manquant — archivage structure non envoyé');
+    return null;
+  }
+  try {
+    const refLine = data.dossierRef ? ` (réf. ${data.dossierRef})` : '';
+    const fullName = `${data.jeunePrenom} ${data.jeuneNom}`;
+    const subject = `Dossier ${fullName}${refLine} — récapitulatif PDF disponible pour archivage`;
+
+    const text = [
+      `Madame, Monsieur,`,
+      ``,
+      `Le dossier de ${fullName}${refLine} a été transmis à l'équipe Groupe & Découverte.`,
+      ``,
+      `Pour vos registres internes (archivage ASE), vous pouvez télécharger le récapitulatif PDF du dossier à l'adresse suivante :`,
+      data.pdfLink,
+      ``,
+      `Ce document reprend le bulletin d'inscription pré-rempli avec les informations transmises. Aucune donnée médicale n'est incluse dans cet email.`,
+      ``,
+      `Conservation conforme RGPD : 3 mois après le séjour côté Groupe & Découverte. Côté structure, votre durée de conservation suit votre propre politique d'archivage.`,
+      ``,
+      `Cet envoi est automatique. Pour toute question : contact@groupeetdecouverte.fr`,
+      ``,
+      `Groupe & Découverte`,
+    ].join('\n');
+
+    const result = await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: data.structureEmail,
+      subject,
+      text,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #2a383f;">
+          <div style="background: #2a383f; color: white; padding: 18px 22px; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 20px; font-weight: 600;">Groupe &amp; Découverte</h1>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+            <p style="margin: 0 0 14px 0;">Madame, Monsieur,</p>
+            <p style="margin: 0 0 14px 0;">
+              Le dossier de <strong>${htmlEscape(fullName)}</strong>${data.dossierRef ? ` (réf. <span style="font-family: monospace;">${htmlEscape(data.dossierRef)}</span>)` : ''}
+              a été transmis à l'équipe Groupe &amp; Découverte.
+            </p>
+            <p style="margin: 0 0 14px 0;">
+              Pour vos registres internes (archivage ASE), vous pouvez télécharger le récapitulatif PDF du dossier :
+            </p>
+            <p style="margin: 18px 0;">
+              <a href="${data.pdfLink}"
+                 style="display: inline-block; background: #de7356; color: white; padding: 11px 22px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">
+                Télécharger le récapitulatif PDF
+              </a>
+            </p>
+            <p style="margin: 0 0 14px 0; color: #4b5563; font-size: 13px;">
+              Ce document reprend le bulletin d'inscription pré-rempli avec les informations transmises.
+              Aucune donnée médicale n'est incluse dans cet email.
+            </p>
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
+            <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 12px;">
+              Conservation conforme RGPD : 3 mois après le séjour côté Groupe &amp; Découverte.
+              Côté structure, votre durée de conservation suit votre propre politique d'archivage.
+            </p>
+            <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+              Cet envoi est automatique. Pour toute question :
+              <a href="mailto:contact@groupeetdecouverte.fr" style="color: #6b7280;">contact@groupeetdecouverte.fr</a>
+            </p>
+          </div>
+        </div>
+      `,
+    });
+    console.log('[EMAIL] Archivage structure envoyé ok');
+    return result;
+  } catch (error) {
+    console.error('[EMAIL] Erreur envoi archivage structure:', error);
+    return null;
+  }
+}

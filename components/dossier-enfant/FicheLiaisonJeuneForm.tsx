@@ -83,6 +83,12 @@ export function FicheLiaisonJeuneForm({ data, saving, onSave, jeunePrenom, jeune
 
       <ProgressBar label="Fiche de liaison" filled={progress.filled} total={progress.total} color="red" />
 
+      <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 text-xs text-blue-800" role="note">
+        Ces informations complètent le dossier sanitaire et aident l&apos;équipe
+        encadrante à mieux accompagner votre enfant. Prenez le temps de partager
+        tout ce qui vous semble utile.
+      </div>
+
       {/* Renseignements jeune */}
       <Section title="Renseignements concernant le jeune">
         <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-600 mb-3">

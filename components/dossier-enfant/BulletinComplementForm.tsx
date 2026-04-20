@@ -81,6 +81,12 @@ export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeun
 
       <ProgressBar label="Bulletin" filled={progress.filled} total={progress.total} color="orange" />
 
+      <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 text-xs text-blue-800" role="note">
+        Ce formulaire engage les responsabilités. Prenez le temps nécessaire,
+        toutes vos saisies sont sauvegardées automatiquement. Vous pourrez revenir
+        compléter ou corriger à tout moment avant l&apos;envoi final.
+      </div>
+
       {/* Adresse permanente */}
       <Section title="Adresse permanente">
         <textarea

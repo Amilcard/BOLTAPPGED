@@ -74,9 +74,12 @@ export function FicheRenseignementsForm({ data, saving, onSave, jeunePrenom, jeu
 
       <ProgressBar label="Renseignements" filled={progress.filled} total={progress.total} color="purple" />
 
-      <p className="text-sm text-gray-500">
-        Cette fiche est requise pour ce séjour. Elle permet à l'équipe encadrante d'adapter l'accueil aux besoins spécifiques du jeune.
-      </p>
+      <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 text-xs text-blue-800" role="note">
+        Section requise pour ce séjour — utile quand le séjour demande des infos
+        spécifiques (situation particulière, aménagements, contact d&apos;urgence).
+        Elle permet à l&apos;équipe encadrante d&apos;adapter l&apos;accueil aux besoins
+        du jeune.
+      </div>
 
       {/* Type de situation */}
       <Section title="Situation particulière / Handicap">

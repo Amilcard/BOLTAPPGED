@@ -349,16 +349,66 @@ qui ne doivent PAS vous bloquer ni vous inquiéter.
 | Quirk | Où | Ce que vous verrez | Quoi faire |
 |---|---|---|---|
 | **Widget Cloudflare** | Étape 5/5 du formulaire d'inscription | Une case "Vérification" avec un logo Cloudflare entre les options paiement et le bouton | La **cocher** avant de cliquer "S'inscrire". Sans elle, le bouton reste grisé. C'est normal. |
-| **Adresse vide et grisée** | Étape 3/5 du formulaire | Le champ "N° et rue" est grisé et vide | Normal. Ne pas essayer de remplir. Le reste suffit. |
-| **Type de structure grisé "Sélectionner..."** | Étape 3/5 | Le select type est grisé sur "Sélectionner..." | Normal. Type est optionnel. |
-| **Email structure demandé 2 fois** | Étape 3/5 | Deux champs email : "Email de la structure" + "Email" (référent) | Remplir seulement "Email" (référent) : `ttu.nguyen188@gmail.com`. L'autre est grisé. |
-| **Référent = nom de la structure** | Page récap après inscription | Le champ "Référent" affiche "Structure Test Thanh" au lieu de "Thanh Nguyen" | Bug cosmétique connu. À ignorer. Signaler dans le tableau si ça vous choque. |
-| **Contrainte d'âge** | Étape 2/5 | Si vous mettez une date qui fait l'enfant trop jeune ou trop vieux à la date du séjour, l'étape se bloque | **Léa doit avoir 6 ans à la date du séjour**. Ex. pour un séjour début juillet 2026, mettez une date de naissance en août 2019. |
-| **Bouton final "S'inscrire"** | Étape 5/5 | Le bouton s'appelle "S'inscrire" pour virement/chèque et "Payer maintenant" pour carte | Les deux fonctionnent. |
+| **Contrainte d'âge** | Étape 2/5 | Un bandeau au-dessus du champ date de naissance vous indique la fourchette d'âge attendue. Si vous tapez une date hors plage, un message pédagogique s'affiche. | **Léa doit avoir 6 ans à la date du séjour**. Ex. pour un séjour début juillet 2026, mettez une date de naissance en août 2019. Le hint préventif vous guide en amont. |
 
 **Ces quirks ne doivent pas être comptés comme des bugs dans vos retours** —
 nous les connaissons et les fixons après votre test. Si vous en découvrez
 d'autres, **là** c'est précieux de les signaler.
+
+---
+
+## 4 ter — Nouvelles améliorations UX déployées le 19 avril au soir
+
+Plusieurs ajustements viennent d'être mis en ligne pour rendre les parcours plus
+clairs. Lisez cette section avant de tester : ce qui était décrit comme "à
+améliorer" dans des versions précédentes du guide est désormais corrigé.
+
+### Création de structure (parcours 9, étape 3/5)
+
+- **Adresse "N° et rue"** : maintenant **éditable si vide** après vérification
+  du code structure. Vous pouvez la remplir.
+- **Type de structure** : maintenant **éditable si vide**. Vous pouvez choisir
+  dans la liste si la structure n'avait pas encore de type.
+- **Email de la structure (standard, optionnel)** : libellé clarifié — c'est
+  l'email général de la structure (accueil, secrétariat). Optionnel.
+- **Votre email personnel (référent)** : libellé clarifié avec un texte d'aide
+  *"C'est sur cet email que vous recevrez tous les courriers"*. Champ obligatoire.
+
+### Récap après inscription (parcours 9 fin)
+
+- **Référent** : affiche désormais **"Prénom Nom"** du référent (ex. "Thanh
+  Nguyen"), plus le nom de la structure.
+
+### Date de naissance (parcours 9, étape 2/5)
+
+- **Hint préventif** affiché au-dessus du champ : *"⚠️ L'enfant doit avoir entre
+  X et Y ans au moment du séjour"*.
+- **Message d'erreur pédagogique** si la date saisie est hors plage (au lieu
+  d'un blocage sec).
+
+### Remplir le dossier (parcours 10)
+
+- **Un seul bouton "Valider le bloc"** par formulaire (à la place des deux
+  anciens boutons "Enregistrer" + "Valider").
+- **Wording corrigé** : on parle de *"formulaires à compléter"* (et non plus
+  de *"documents manquants"*) pour ne pas confondre avec les pièces jointes.
+- **Barre de progression %** sur chaque bloc, avec compteur "X% complété" et
+  "n/total" champs remplis. À 100% : pastille verte **"Complet ✓"**.
+- **Auto-fill** entre blocs pour éviter de retaper :
+  - **Nom du contact d'urgence** : recopié du Bulletin vers les Renseignements.
+  - **Téléphone du contact d'urgence** : recopié du Bulletin vers les Renseignements.
+  - **Lieu de signature ("Fait à")** : recopié du Bulletin vers la Liaison.
+
+### Envoi du dossier (parcours 11)
+
+- **Envoi possible avec des PJ optionnelles manquantes** : si les 4 blocs sont
+  complétés et signés, vous pouvez envoyer le dossier à GED même s'il manque
+  certaines pièces jointes (vaccins, assurance, etc.).
+- **Récapitulatif post-envoi** : la liste des PJ manquantes s'affiche après
+  envoi (*"Dossier envoyé. X documents optionnels manquants : vaccins,
+  assurance…"*).
+- **Relance manuelle** : GED vous recontactera au besoin pour les pièces
+  manquantes.
 
 ---
 
@@ -931,32 +981,49 @@ médicales, administratives, et signer des documents.
 
 1. Dans le mail reçu à l'étape 9, cliquez sur le lien "Remplir le dossier".
 2. Une page s'ouvre dans votre navigateur : c'est l'espace de suivi du jeune.
-3. Vous voyez plusieurs **blocs à compléter** (onglets ou cartes) :
+3. Vous voyez le compteur **"X formulaires à compléter"** (et non plus
+   "documents manquants"). Plusieurs **blocs à compléter** sont affichés
+   (onglets ou cartes) :
    - **Bulletin d'inscription** : coordonnées parents, personnes autorisées à
      venir chercher l'enfant, etc.
    - **Fiche sanitaire** : allergies, maladies, traitements, vaccinations
    - **Fiche de liaison jeune** : infos personnelles complémentaires
    - **Renseignements** (si le séjour le demande) : informations spécifiques
-4. Remplissez le **Bulletin d'inscription** au moins partiellement.
-5. Fermez la page sans rien enregistrer. Rouvrez le lien du mail.
-6. **Vérifiez que vos données sont toujours là** (sauvegarde automatique).
-7. Continuez : remplissez la **Fiche sanitaire** complètement. Mettez de
+4. Sur chaque bloc, repérez la **barre de progression %** en haut (ex. "0%
+   complété — 0/12 champs"). Elle se remplit au fur et à mesure de votre
+   saisie.
+5. Remplissez le **Bulletin d'inscription** au moins partiellement, puis
+   cliquez sur le **bouton unique "Valider le bloc"** (un seul bouton, plus
+   les anciens "Enregistrer" + "Valider" séparés).
+6. Fermez la page sans rien faire de plus. Rouvrez le lien du mail.
+7. **Vérifiez que vos données sont toujours là** (sauvegarde automatique).
+8. Ouvrez les **Renseignements** et vérifiez que le **nom et le téléphone du
+   contact d'urgence** sont déjà préremplis depuis le Bulletin (auto-fill).
+   Vérifiez aussi que le champ **"Fait à"** de la Liaison reprend le lieu de
+   signature du Bulletin.
+9. Continuez : remplissez la **Fiche sanitaire** complètement. Mettez de
    fausses infos mais crédibles (allergie aux arachides, vacciné, pas de
-   traitement).
-8. Remplissez la **Fiche de liaison jeune**.
-9. Si "Renseignements" est présent, remplissez-le aussi.
-10. **Uploadez un document** (n'importe quel PDF ou JPG que vous avez :
-    photo d'identité factice, pdf quelconque). Essayez des tailles < 5 Mo.
-11. Essayez d'uploader un fichier **> 5 Mo** : un message d'erreur doit
+   traitement). Cliquez "Valider le bloc".
+10. Remplissez la **Fiche de liaison jeune**, validez.
+11. Si "Renseignements" est présent, complétez-le et validez.
+12. À 100% sur chaque bloc, vérifiez l'apparition de la pastille verte
+    **"Complet ✓"**.
+13. **Uploadez un document** (n'importe quel PDF ou JPG : photo d'identité
+    factice, pdf quelconque). Essayez des tailles < 5 Mo.
+14. Essayez d'uploader un fichier **> 5 Mo** : un message d'erreur doit
     apparaître.
-12. Essayez d'uploader un fichier interdit (ex. fichier `.exe` ou `.doc`) : un
+15. Essayez d'uploader un fichier interdit (ex. fichier `.exe` ou `.doc`) : un
     message d'erreur doit apparaître.
-13. Pour chaque bloc complété, cochez "Bloc complet" (ou équivalent).
 
 ### Ce que vous devez voir
 
-- Interface claire avec les 4 blocs visibles
-- Barre de progression ou pastilles indiquant ce qui est rempli
+- Interface claire avec les 4 blocs visibles et un compteur "X formulaires à
+  compléter"
+- **Une barre de progression %** par bloc, qui évolue à la saisie
+- **Un seul bouton "Valider le bloc"** par formulaire (plus deux séparés)
+- **Pastille verte "Complet ✓"** quand un bloc atteint 100%
+- **Auto-fill effectif** : nom + téléphone contact urgence préremplis dans les
+  Renseignements ; "Fait à" prérempli dans la Liaison
 - Sauvegarde automatique (pas besoin de cliquer "Enregistrer" tout le temps)
 - Upload qui fonctionne pour les formats autorisés (PDF, JPG, PNG, WebP)
 - Refus clair et poli des formats ou tailles non autorisés
@@ -975,18 +1042,23 @@ médicales, administratives, et signer des documents.
 
 | # | Action | Attendu | Observé | OK ? | Captures | Remarques |
 |---|---|---|---|---|---|---|
-| 10.1 | Ouvrir lien dossier depuis mail | Page s'ouvre | | | | |
+| 10.1 | Ouvrir lien dossier depuis mail | Page s'ouvre, compteur "X formulaires à compléter" affiché | | | | |
 | 10.2 | Voir les 4 blocs | Onglets/cartes visibles | | | | |
-| 10.3 | Remplir bulletin partiel | Fluide | | | | |
-| 10.4 | Fermer puis rouvrir | Données conservées | | | | |
-| 10.5 | Remplir sanitaire complet | Tous champs utilisables | | | | |
-| 10.6 | Remplir liaison jeune | Champs clairs | | | | |
-| 10.7 | Upload PDF < 5 Mo | Accepté, visible dans la liste | | | | |
-| 10.8 | Upload fichier > 5 Mo | Refusé avec message clair | | | | |
-| 10.9 | Upload .exe | Refusé avec message clair | | | | |
-| 10.10 | Supprimer un upload | Fonctionne | | | | |
-| 10.11 | Générer PDF bulletin | Téléchargement possible | | | | |
-| 10.12 | Envoyer PDF par mail | Mail reçu | | | | |
+| 10.3 | Voir la barre de progression % par bloc | Barre visible, compteur "X% — n/total" | | | | |
+| 10.4 | Remplir bulletin partiel | Barre % qui progresse, fluide | | | | |
+| 10.5 | Cliquer "Valider le bloc" (un seul bouton) | Validation OK, plus deux boutons séparés | | | | |
+| 10.6 | Fermer puis rouvrir | Données conservées | | | | |
+| 10.7 | Vérifier auto-fill contact urgence (Bulletin → Renseignements) | Nom + téléphone préremplis | | | | |
+| 10.8 | Vérifier auto-fill "Fait à" (Bulletin → Liaison) | Lieu prérempli | | | | |
+| 10.9 | Remplir sanitaire complet | Tous champs utilisables, barre à 100% | | | | |
+| 10.10 | Voir pastille verte "Complet ✓" à 100% | Pastille affichée | | | | |
+| 10.11 | Remplir liaison jeune | Champs clairs | | | | |
+| 10.12 | Upload PDF < 5 Mo | Accepté, visible dans la liste | | | | |
+| 10.13 | Upload fichier > 5 Mo | Refusé avec message clair | | | | |
+| 10.14 | Upload .exe | Refusé avec message clair | | | | |
+| 10.15 | Supprimer un upload | Fonctionne | | | | |
+| 10.16 | Générer PDF bulletin | Téléchargement possible | | | | |
+| 10.17 | Envoyer PDF par mail | Mail reçu | | | | |
 
 ---
 
@@ -1001,20 +1073,28 @@ la signature)
 1. Dans chaque bloc, cherchez la zone de **signature** (souvent en bas).
 2. Signez avec votre souris ou votre doigt (sur tablette).
 3. Essayez d'effacer et de recommencer.
-4. Une fois les blocs complets et signés, cherchez un bouton **"Envoyer le
-   dossier à GED"** ou **"Soumettre"**.
-5. Si un bloc est incomplet, le bouton doit être grisé ou vous signaler quoi
-   compléter.
-6. Envoyez.
-7. Vous devez recevoir un **email d'accusé de réception**.
-8. Essayez d'envoyer une 2e fois : un message doit vous dire "déjà envoyé".
+4. Une fois **les 4 blocs complétés (100%) et signés**, cherchez un bouton
+   **"Envoyer le dossier à GED"** ou **"Soumettre"**.
+5. **Bonne nouvelle** : l'envoi est désormais **possible même s'il manque
+   certaines pièces jointes optionnelles** (vaccins, attestation assurance,
+   etc.). Le blocage ne porte que sur les 4 formulaires + signatures.
+6. Si un bloc est incomplet ou non signé, le bouton doit être grisé ou vous
+   signaler quoi compléter.
+7. Envoyez.
+8. Après l'envoi, vérifiez que la liste des **PJ optionnelles manquantes**
+   apparaît dans le récap (ex. *"Dossier envoyé. 2 documents optionnels
+   manquants : vaccins, assurance"*).
+9. Vous devez recevoir un **email d'accusé de réception**.
+10. Essayez d'envoyer une 2e fois : un message doit vous dire "déjà envoyé".
 
 ### Ce que vous devez voir
 
 - Zone de signature claire avec bouton "Effacer"
 - Visualisation de la signature après tracé
-- Bouton d'envoi grisé tant que tout n'est pas complet
-- Liste claire de ce qui manque si incomplet
+- Bouton d'envoi **actif dès que les 4 blocs sont à 100% et signés**, même si
+  des PJ optionnelles manquent
+- Liste claire de ce qui manque si un bloc/signature est incomplet
+- Récap post-envoi listant les PJ optionnelles manquantes (le cas échéant)
 - Email d'accusé de réception envoyé à l'éducatrice (vous)
 - Message "dossier déjà envoyé" si tentative 2
 
@@ -1024,10 +1104,11 @@ la signature)
 |---|---|---|---|---|---|---|
 | 11.1 | Signer avec la souris | Trait visible | | | | |
 | 11.2 | Effacer signature | Bouton fonctionnel | | | | |
-| 11.3 | Essayer d'envoyer incomplet | Empêché, message clair | | | | |
-| 11.4 | Compléter et envoyer | Succès | | | | |
-| 11.5 | Mail accusé réception | Reçu < 3 min | | | | |
-| 11.6 | Retenter un envoi | Bloqué "déjà envoyé" | | | | |
+| 11.3 | Essayer d'envoyer avec un bloc incomplet | Empêché, message clair | | | | |
+| 11.4 | Envoyer avec PJ optionnelles manquantes | Succès (envoi autorisé) | | | | |
+| 11.5 | Voir la liste des PJ manquantes dans le récap | Liste affichée post-envoi | | | | |
+| 11.6 | Mail accusé réception | Reçu < 3 min | | | | |
+| 11.7 | Retenter un envoi | Bloqué "déjà envoyé" | | | | |
 
 ---
 

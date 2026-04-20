@@ -5,6 +5,7 @@ import { REQUIS_TO_JOINT, EDITABLE_BLOCS, getCompletedColumn, type EditableBloc 
 import { verifyOwnership } from '@/lib/verify-ownership';
 import { auditLog, getClientIp } from '@/lib/audit-log';
 import { validateBase64Image } from '@/lib/validators';
+import { buildSignatureMeta, CONSENT_TEXT_VERSION } from '@/lib/signature-meta';
 
 /**
  * GET /api/dossier-enfant/[inscriptionId]?token=xxx
@@ -201,6 +202,32 @@ export async function PATCH(
       );
     }
 
+    // Vérifier si le dossier existe déjà
+    const { data: existing } = await supabase
+      .from('gd_dossier_enfant')
+      .select('id, ' + bloc)
+      .eq('inscription_id', inscriptionId)
+      .maybeSingle();
+
+    // C#3 — Métadonnées signature SES eIDAS (si signature nouvelle détectée)
+    const existingBlocData =
+      (existing as unknown as Record<string, unknown>)?.[bloc] as
+        | Record<string, unknown>
+        | undefined;
+    const sigMeta = buildSignatureMeta({
+      bloc,
+      incomingData: data as Record<string, unknown>,
+      existingBlocData: existingBlocData || {},
+      ip: getClientIp(req),
+    });
+    if (!sigMeta.ok) {
+      return NextResponse.json(
+        { error: { code: sigMeta.code, message: sigMeta.message } },
+        { status: 400 },
+      );
+    }
+    const signatureApposed = Object.keys(sigMeta.columns).length > 0;
+
     // Audit log : modification dossier enfant (RGPD Art. 9)
     await auditLog(supabase, {
       action: 'update',
@@ -210,15 +237,18 @@ export async function PATCH(
       actorType: 'referent',
       actorId: ownership.ok ? ownership.referentEmail : undefined,
       ipAddress: getClientIp(req),
-      metadata: { bloc, completed },
+      metadata: {
+        bloc,
+        completed,
+        signature_apposed: signatureApposed,
+        ...(signatureApposed
+          ? {
+              signer_qualite: (data as Record<string, unknown>).signer_qualite,
+              consent_version: CONSENT_TEXT_VERSION,
+            }
+          : {}),
+      },
     });
-
-    // Vérifier si le dossier existe déjà
-    const { data: existing } = await supabase
-      .from('gd_dossier_enfant')
-      .select('id, ' + bloc)
-      .eq('inscription_id', inscriptionId)
-      .maybeSingle();
 
     let result;
 
@@ -227,6 +257,7 @@ export async function PATCH(
       const insertData: Record<string, unknown> = {
         inscription_id: inscriptionId,
         [bloc]: data,
+        ...sigMeta.columns,
       };
       if (typeof completed === 'boolean') {
         // Map bloc name to completed column
@@ -272,6 +303,7 @@ export async function PATCH(
 
       const updateData: Record<string, unknown> = {
         [bloc]: merged,
+        ...sigMeta.columns,
       };
       const completedCol = getCompletedColumn(bloc);
       if (typeof completed === 'boolean' && completedCol) {

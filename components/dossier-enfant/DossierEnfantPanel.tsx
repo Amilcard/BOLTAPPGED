@@ -776,8 +776,29 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
               {dossier?.exists && (
                 <div className="mt-6 pt-4 border-t border-gray-200">
                   {(alreadySent || !!dossier.ged_sent_at) ? (
-                    <div data-testid="bandeau-envoye" className="p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800 font-medium text-center">
-                      Votre dossier a bien été envoyé à l'équipe Groupe &amp; Découverte.
+                    <div data-testid="bandeau-envoye" className="p-4 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800 space-y-3">
+                      <p className="font-medium flex items-center gap-2">
+                        <Check className="w-4 h-4" aria-hidden="true" />
+                        Votre dossier a bien été envoyé à l&apos;équipe Groupe &amp; Découverte
+                        {dossier.ged_sent_at && (
+                          <span className="text-xs font-normal text-green-700">
+                            le {new Date(dossier.ged_sent_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          </span>
+                        )}
+                      </p>
+                      <div className="pt-2 border-t border-green-200 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                        <p className="text-xs text-green-700 flex-1">
+                          Téléchargez le récapitulatif PDF pour l&apos;archivage de votre structure.
+                        </p>
+                        <PdfDownloadButton
+                          inscriptionId={inscription.id}
+                          token={token}
+                          docType="bulletin"
+                          label="Télécharger le PDF"
+                          pdfUrl={pdfApiBase}
+                          pdfEmailUrl={pdfEmailApiBase}
+                        />
+                      </div>
                     </div>
                   ) : (
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">

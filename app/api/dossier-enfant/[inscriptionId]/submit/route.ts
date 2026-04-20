@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
-import { sendDossierCompletEmail, sendDossierGedAdminNotification } from '@/lib/email';
+import { sendDossierCompletEmail, sendDossierGedAdminNotification, sendStructureArchivageEmail } from '@/lib/email';
 import { REQUIS_TO_JOINT } from '@/lib/dossier-shared';
 import { verifyOwnership } from '@/lib/verify-ownership';
 import { auditLog, getClientIp } from '@/lib/audit-log';
@@ -145,9 +145,22 @@ export async function POST(
     // (en serverless, les Promise après return ne sont pas garanties d'être exécutées)
     const { data: insc } = await supabase
       .from('gd_inscriptions')
-      .select('referent_email, referent_nom, jeune_prenom, jeune_nom, dossier_ref, sejour_slug, session_date')
+      .select('referent_email, referent_nom, jeune_prenom, jeune_nom, dossier_ref, sejour_slug, session_date, structure_id')
       .eq('id', inscriptionId)
       .single();
+
+    // Lookup email structure pour archivage automatique (fire-and-forget plus bas).
+    // Hors du `await Promise.allSettled` ci-dessous : on veut connaître la valeur
+    // pour le metadata auditLog `structure_archive_sent`.
+    let structureArchiveEmail: string | null = null;
+    if (insc && (insc as { structure_id?: string }).structure_id) {
+      const { data: structureRow } = await supabase
+        .from('gd_structures')
+        .select('email')
+        .eq('id', (insc as { structure_id: string }).structure_id)
+        .maybeSingle();
+      structureArchiveEmail = (structureRow as { email?: string | null } | null)?.email ?? null;
+    }
 
     if (insc) {
       const i = insc as {
@@ -158,10 +171,17 @@ export async function POST(
         dossier_ref?: string;
         sejour_slug?: string;
         session_date?: string;
+        structure_id?: string;
       };
       const base = process.env.NEXT_PUBLIC_APP_URL || 'https://app.groupeetdecouverte.fr';
 
-      await Promise.allSettled([
+      // Email archivage structure : type=bulletin (récap principal pré-rempli).
+      // Pas de type "complet" disponible côté générateur PDF — bulletin couvre
+      // l'usage registre ASE structure (identité jeune + responsable + séjour).
+      // Lien suivi_token (mode référent) : structure peut télécharger sans login.
+      const pdfArchiveLink = `${base}/api/dossier-enfant/${inscriptionId}/pdf?token=${encodeURIComponent(token)}&type=bulletin`;
+
+      const emailPromises: Promise<unknown>[] = [
         sendDossierCompletEmail({
           referentEmail: i.referent_email,
           referentNom: i.referent_nom,
@@ -180,7 +200,26 @@ export async function POST(
           inscriptionId,
           adminUrl: `${base}/admin/demandes`,
         }),
-      ]);
+      ];
+
+      // Fire-and-forget archivage structure — n'altère ni le statut HTTP ni
+      // le timing critique de la réponse. Echec loggé dans la fonction email.
+      if (structureArchiveEmail) {
+        emailPromises.push(
+          sendStructureArchivageEmail({
+            structureEmail: structureArchiveEmail,
+            jeunePrenom: i.jeune_prenom,
+            jeuneNom: i.jeune_nom,
+            dossierRef: i.dossier_ref ?? undefined,
+            pdfLink: pdfArchiveLink,
+          }).catch(err => {
+            console.error('[submit] sendStructureArchivageEmail failed:', err);
+            return null;
+          }),
+        );
+      }
+
+      await Promise.allSettled(emailPromises);
     } else {
       console.error('[GED submit email] inscription non trouvée pour envoi emails', { inscriptionId });
     }
@@ -188,6 +227,7 @@ export async function POST(
     // Audit log : soumission dossier complet (RGPD).
     // partial_docs : true si des PJ optionnelles manquent (envoi partiel toléré).
     // GED voit dans les logs si une relance manuelle des PJ est nécessaire.
+    // structure_archive_sent : true si l'email d'archivage structure a été déclenché.
     await auditLog(supabase, {
       action: 'submit',
       resourceType: 'dossier_enfant',
@@ -199,6 +239,7 @@ export async function POST(
       metadata: {
         partial_docs: partialDocsMissing.length > 0,
         docs_missing_count: partialDocsMissing.length,
+        structure_archive_sent: !!structureArchiveEmail,
       },
     });
 

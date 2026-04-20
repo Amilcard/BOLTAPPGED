@@ -8,7 +8,9 @@
 -- 1. Vue gd_structure_members — retrait last_jti / last_jti_exp
 -- ═══════════════════════════════════════════════════════════════════════
 
-CREATE OR REPLACE VIEW gd_structure_members
+DROP VIEW IF EXISTS gd_structure_members;
+
+CREATE VIEW gd_structure_members
 WITH (security_invoker = true)
 AS
 SELECT

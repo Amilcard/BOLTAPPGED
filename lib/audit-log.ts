@@ -20,7 +20,7 @@ interface AuditLogEntry {
   resourceType: 'dossier_enfant' | 'inscription' | 'document' | 'structure' | 'facture' | 'team_member' | 'proposition' | 'paiement' | 'delegation' | 'session';
   resourceId: string;
   inscriptionId?: string;
-  actorType: 'referent' | 'admin' | 'system';
+  actorType: 'referent' | 'admin' | 'system' | 'staff';
   actorId?: string;       // email ou userId
   ipAddress?: string;
   metadata?: Record<string, unknown>;

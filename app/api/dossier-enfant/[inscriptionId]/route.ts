@@ -228,28 +228,6 @@ export async function PATCH(
     }
     const signatureApposed = Object.keys(sigMeta.columns).length > 0;
 
-    // Audit log : modification dossier enfant (RGPD Art. 9)
-    await auditLog(supabase, {
-      action: 'update',
-      resourceType: 'dossier_enfant',
-      resourceId: inscriptionId,
-      inscriptionId,
-      actorType: 'referent',
-      actorId: ownership.ok ? ownership.referentEmail : undefined,
-      ipAddress: getClientIp(req),
-      metadata: {
-        bloc,
-        completed,
-        signature_apposed: signatureApposed,
-        ...(signatureApposed
-          ? {
-              signer_qualite: (data as Record<string, unknown>).signer_qualite,
-              consent_version: CONSENT_TEXT_VERSION,
-            }
-          : {}),
-      },
-    });
-
     let result;
 
     if (!existing) {
@@ -325,6 +303,26 @@ export async function PATCH(
 
     }
 
+    await auditLog(supabase, {
+      action: 'update',
+      resourceType: 'dossier_enfant',
+      resourceId: inscriptionId,
+      inscriptionId,
+      actorType: 'referent',
+      actorId: ownership.ok ? ownership.referentEmail : undefined,
+      ipAddress: getClientIp(req),
+      metadata: {
+        bloc,
+        completed,
+        signature_apposed: signatureApposed,
+        ...(signatureApposed
+          ? {
+              signer_qualite: (data as Record<string, unknown>).signer_qualite,
+              consent_version: CONSENT_TEXT_VERSION,
+            }
+          : {}),
+      },
+    });
     return NextResponse.json({ ok: true, dossier: result });
   } catch (error) {
     console.error('PATCH /api/dossier-enfant error:', error);

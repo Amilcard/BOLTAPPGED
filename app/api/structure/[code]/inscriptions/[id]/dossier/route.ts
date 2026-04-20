@@ -240,30 +240,6 @@ export async function PATCH(
     }
     const signatureApposed = Object.keys(sigMeta.columns).length > 0;
 
-    // Audit log RGPD Art. 9 — données mineurs ASE.
-    await auditLog(supabase, {
-      action: 'update',
-      resourceType: 'dossier_enfant',
-      resourceId: inscriptionId,
-      inscriptionId,
-      actorType: 'referent',
-      actorId: resolved.email || undefined,
-      ipAddress: getClientIp(req),
-      metadata: {
-        bloc,
-        completed,
-        context: 'staff_fill_dossier',
-        actor_role: resolved.role,
-        signature_apposed: signatureApposed,
-        ...(signatureApposed
-          ? {
-              signer_qualite: (data as Record<string, unknown>).signer_qualite,
-              consent_version: CONSENT_TEXT_VERSION,
-            }
-          : {}),
-      },
-    });
-
     const completedCol = getCompletedColumn(bloc);
 
     if (!existing) {
@@ -290,6 +266,28 @@ export async function PATCH(
         );
       }
 
+      await auditLog(supabase, {
+        action: 'update',
+        resourceType: 'dossier_enfant',
+        resourceId: inscriptionId,
+        inscriptionId,
+        actorType: 'staff',
+        actorId: resolved.email || undefined,
+        ipAddress: getClientIp(req),
+        metadata: {
+          bloc,
+          completed,
+          context: 'staff_fill_dossier',
+          actor_role: resolved.role,
+          signature_apposed: signatureApposed,
+          ...(signatureApposed
+            ? {
+                signer_qualite: (data as Record<string, unknown>).signer_qualite,
+                consent_version: CONSENT_TEXT_VERSION,
+              }
+            : {}),
+        },
+      });
       return NextResponse.json({ ok: true, dossier: inserted });
     }
 
@@ -317,6 +315,28 @@ export async function PATCH(
       );
     }
 
+    await auditLog(supabase, {
+      action: 'update',
+      resourceType: 'dossier_enfant',
+      resourceId: inscriptionId,
+      inscriptionId,
+      actorType: 'staff',
+      actorId: resolved.email || undefined,
+      ipAddress: getClientIp(req),
+      metadata: {
+        bloc,
+        completed,
+        context: 'staff_fill_dossier',
+        actor_role: resolved.role,
+        signature_apposed: signatureApposed,
+        ...(signatureApposed
+          ? {
+              signer_qualite: (data as Record<string, unknown>).signer_qualite,
+              consent_version: CONSENT_TEXT_VERSION,
+            }
+          : {}),
+      },
+    });
     return NextResponse.json({ ok: true, dossier: updated });
   } catch (err) {
     console.error('PATCH /api/structure/[code]/inscriptions/[id]/dossier error:', err);

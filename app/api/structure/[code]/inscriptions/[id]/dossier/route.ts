@@ -7,6 +7,7 @@ import { auditLog, getClientIp } from '@/lib/audit-log';
 import { structureRateLimitGuard } from '@/lib/rate-limit-structure';
 import { EDITABLE_BLOCS, getCompletedColumn, type EditableBloc } from '@/lib/dossier-shared';
 import { validateBase64Image, UUID_RE } from '@/lib/validators';
+import { buildSignatureMeta, CONSENT_TEXT_VERSION } from '@/lib/signature-meta';
 
 /**
  * GET /api/structure/[code]/inscriptions/[id]/dossier
@@ -213,6 +214,32 @@ export async function PATCH(
     });
     if (!ownership.ok) return ownership.response;
 
+    // Merge logic identique à la route référent.
+    const { data: existing } = await supabase
+      .from('gd_dossier_enfant')
+      .select('id, ' + bloc)
+      .eq('inscription_id', inscriptionId)
+      .maybeSingle();
+
+    // C#3 — Métadonnées signature SES eIDAS (si signature nouvelle détectée)
+    const existingBlocData =
+      (existing as unknown as Record<string, unknown>)?.[bloc] as
+        | Record<string, unknown>
+        | undefined;
+    const sigMeta = buildSignatureMeta({
+      bloc,
+      incomingData: data as Record<string, unknown>,
+      existingBlocData: existingBlocData || {},
+      ip: getClientIp(req),
+    });
+    if (!sigMeta.ok) {
+      return NextResponse.json(
+        { error: { code: sigMeta.code, message: sigMeta.message } },
+        { status: 400 },
+      );
+    }
+    const signatureApposed = Object.keys(sigMeta.columns).length > 0;
+
     // Audit log RGPD Art. 9 — données mineurs ASE.
     await auditLog(supabase, {
       action: 'update',
@@ -227,15 +254,15 @@ export async function PATCH(
         completed,
         context: 'staff_fill_dossier',
         actor_role: resolved.role,
+        signature_apposed: signatureApposed,
+        ...(signatureApposed
+          ? {
+              signer_qualite: (data as Record<string, unknown>).signer_qualite,
+              consent_version: CONSENT_TEXT_VERSION,
+            }
+          : {}),
       },
     });
-
-    // Merge logic identique à la route référent.
-    const { data: existing } = await supabase
-      .from('gd_dossier_enfant')
-      .select('id, ' + bloc)
-      .eq('inscription_id', inscriptionId)
-      .maybeSingle();
 
     const completedCol = getCompletedColumn(bloc);
 
@@ -243,6 +270,7 @@ export async function PATCH(
       const insertData: Record<string, unknown> = {
         inscription_id: inscriptionId,
         [bloc]: data,
+        ...sigMeta.columns,
       };
       if (typeof completed === 'boolean' && completedCol) {
         insertData[completedCol] = completed;
@@ -269,7 +297,7 @@ export async function PATCH(
       ((existing as unknown as Record<string, unknown>)[bloc] as Record<string, unknown>) || {};
     const merged = { ...existingBloc, ...(data as Record<string, unknown>) };
 
-    const updateData: Record<string, unknown> = { [bloc]: merged };
+    const updateData: Record<string, unknown> = { [bloc]: merged, ...sigMeta.columns };
     if (typeof completed === 'boolean' && completedCol) {
       updateData[completedCol] = completed;
     }

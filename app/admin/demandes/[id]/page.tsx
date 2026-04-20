@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { formatDate } from '@/lib/utils';
 import {
   ArrowLeft, Trash2, ExternalLink, ClipboardCopy,
-  FileCheck, FileClock, Loader2,
+  FileCheck, FileClock, Loader2, CheckCircle2, AlertTriangle, XCircle, Send,
 } from 'lucide-react';
 import { InscriptionSupabase, InscriptionEnriched, DossierEnfant } from '@/lib/types';
 import { useAdminUI } from '@/components/admin/admin-ui';
@@ -399,7 +399,25 @@ export default function InscriptionDetailPage() {
 
       {/* Dossier enfant */}
       <div className="bg-white rounded-brand shadow-card p-6">
-        <h2 className="text-lg font-semibold mb-4">Dossier enfant</h2>
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h2 className="text-lg font-semibold">Dossier enfant</h2>
+          {dossier?.ged_sent_at && (
+            <span
+              data-testid="badge-ged-sent"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-300"
+              title="Dossier soumis à la GED"
+            >
+              <Send size={12} aria-hidden="true" />
+              Dossier envoyé le {formatDate(dossier.ged_sent_at)}
+            </span>
+          )}
+          {dossier?.exists && !dossier?.ged_sent_at && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-300">
+              <FileClock size={12} aria-hidden="true" />
+              En cours de remplissage
+            </span>
+          )}
+        </div>
         {dossierLoading ? (
           <div className="flex items-center gap-2 text-gray-400"><Loader2 size={16} className="animate-spin" /> Chargement...</div>
         ) : !dossier || !dossier.exists ? (
@@ -412,6 +430,57 @@ export default function InscriptionDetailPage() {
               </div>
               <span className="text-sm font-medium text-gray-600">{completedCount}/{totalDocs}</span>
             </div>
+
+            {/* Vue rapide signatures (4 blocs B/S/L/R) — pour vérifier en 1 coup d'œil
+                que le dossier soumis est correctement signé. */}
+            {dossier.ged_sent_at && (
+              <div data-testid="signatures-strip" className="flex flex-wrap items-center gap-2 mb-2 text-xs">
+                <span className="text-gray-500 font-medium uppercase tracking-wide">Signatures :</span>
+                {[
+                  { key: 'bulletin', initial: 'B', label: 'Bulletin', completed: dossier.bulletin_completed, signed: dossier.signatures_status?.bulletin },
+                  { key: 'sanitaire', initial: 'S', label: 'Fiche sanitaire', completed: dossier.sanitaire_completed, signed: dossier.signatures_status?.sanitaire },
+                  { key: 'liaison', initial: 'L', label: 'Fiche liaison', completed: dossier.liaison_completed, signed: dossier.signatures_status?.liaison },
+                  { key: 'renseignements', initial: 'R', label: 'Renseignements', completed: dossier.renseignements_completed, signed: dossier.signatures_status?.renseignements },
+                ].map(b => {
+                  const ok = b.completed && b.signed;
+                  const partial = b.completed && !b.signed;
+                  const cls = ok
+                    ? 'bg-green-100 text-green-800 border-green-300'
+                    : partial
+                      ? 'bg-orange-100 text-orange-800 border-orange-300'
+                      : 'bg-gray-100 text-gray-500 border-gray-200';
+                  const Icon = ok ? CheckCircle2 : partial ? AlertTriangle : XCircle;
+                  const tooltip = ok
+                    ? `${b.label} : signé`
+                    : partial
+                      ? `${b.label} : rempli mais SANS signature`
+                      : `${b.label} : non rempli`;
+                  return (
+                    <span
+                      key={b.key}
+                      data-testid={`sig-${b.key}`}
+                      data-status={ok ? 'signed' : partial ? 'unsigned' : 'empty'}
+                      title={tooltip}
+                      aria-label={tooltip}
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border font-mono font-bold ${cls}`}
+                    >
+                      <Icon size={12} aria-hidden="true" />
+                      {b.initial}
+                    </span>
+                  );
+                })}
+                {dossier.partial_docs_missing && dossier.partial_docs_missing.length > 0 && (
+                  <span
+                    data-testid="badge-pj-missing"
+                    title={`PJ optionnelles manquantes :\n- ${dossier.partial_docs_missing.map(d => d.label).join('\n- ')}`}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-amber-300 bg-amber-50 text-amber-800 font-medium"
+                  >
+                    <AlertTriangle size={12} aria-hidden="true" />
+                    {dossier.partial_docs_missing.length} PJ manquante{dossier.partial_docs_missing.length > 1 ? 's' : ''}
+                  </span>
+                )}
+              </div>
+            )}
 
             <div className="grid grid-cols-4 gap-3">
               {[

@@ -90,7 +90,11 @@ export async function POST(
       );
     }
 
-    // 5. Vérifier documents optionnels requis par le séjour
+    // 5. Calculer les PJ optionnelles manquantes (NON-BLOQUANT — décision CEO 2026-04-19).
+    //    Règle : un dossier rempli à 90% vaut mieux que rien à cause d'un petit doc.
+    //    Si les 4 blocs sont signés, l'envoi est OK ; GED relance manuellement
+    //    en post-envoi pour récupérer les PJ manquantes (vaccins, ordonnance, etc.).
+    let partialDocsMissing: string[] = [];
     const { data: inscForStay } = await supabase
       .from('gd_inscriptions')
       .select('sejour_slug')
@@ -111,16 +115,9 @@ export async function POST(
         const uploadedTypes = new Set(
           (dossier.documents_joints as Array<{ type: string }>).map(d => d.type)
         );
-        const manquants = docsRequis
+        partialDocsMissing = docsRequis
           .filter(k => REQUIS_TO_JOINT[k])
           .filter(k => !uploadedTypes.has(REQUIS_TO_JOINT[k]));
-
-        if (manquants.length > 0) {
-          return NextResponse.json(
-            { error: 'Documents requis manquants.', docs_manquants: manquants },
-            { status: 400 }
-          );
-        }
       }
     }
 
@@ -188,7 +185,9 @@ export async function POST(
       console.error('[GED submit email] inscription non trouvée pour envoi emails', { inscriptionId });
     }
 
-    // Audit log : soumission dossier complet (RGPD)
+    // Audit log : soumission dossier complet (RGPD).
+    // partial_docs : true si des PJ optionnelles manquent (envoi partiel toléré).
+    // GED voit dans les logs si une relance manuelle des PJ est nécessaire.
     await auditLog(supabase, {
       action: 'submit',
       resourceType: 'dossier_enfant',
@@ -197,9 +196,17 @@ export async function POST(
       actorType: 'referent',
       actorId: ownership.ok ? ownership.referentEmail : undefined,
       ipAddress: getClientIp(req),
+      metadata: {
+        partial_docs: partialDocsMissing.length > 0,
+        docs_missing_count: partialDocsMissing.length,
+      },
     });
 
-    return NextResponse.json({ ok: true, gedSentAt: new Date().toISOString() });
+    return NextResponse.json({
+      ok: true,
+      gedSentAt: new Date().toISOString(),
+      partial_docs_missing: partialDocsMissing,
+    });
   } catch (error) {
     console.error('POST /submit error:', error);
     return NextResponse.json(

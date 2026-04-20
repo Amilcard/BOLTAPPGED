@@ -53,7 +53,7 @@ export async function GET(
       action: 'read',
       resourceType: 'team_member',
       resourceId: resolved.structure.id as string,
-      actorType: 'referent',
+      actorType: 'staff',
       actorId: resolved.email || undefined,
       ipAddress: getStructureClientIp(req),
       metadata: { type: 'team_list', actor_role: resolved.role },

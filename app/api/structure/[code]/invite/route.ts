@@ -119,7 +119,7 @@ export async function POST(
       action: 'create',
       resourceType: 'team_member',
       resourceId: structureId,
-      actorType: 'referent',
+      actorType: 'staff',
       actorId: resolved.email || `direction-code:${code.slice(0, 4)}…`,
       ipAddress: getStructureClientIp(req),
       metadata: { type: 'team_invite', actor_role: resolved.role, invited_email: emailNorm, role, email_sent: emailSent },

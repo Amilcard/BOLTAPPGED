@@ -70,7 +70,7 @@ export async function GET(
     action: 'read',
     resourceType: 'dossier_enfant',
     resourceId: structureId,
-    actorType: 'referent',
+    actorType: 'staff',
     actorId: resolved.email || undefined,
     metadata: { type: 'medical_events_read', role: resolved.role, count: data?.length ?? 0 },
   });
@@ -157,7 +157,7 @@ export async function POST(
     resourceType: 'dossier_enfant',
     resourceId: event.id,
     inscriptionId: inscription_id as string,
-    actorType: 'referent',
+    actorType: 'staff',
     actorId: resolved.email || undefined,
     metadata: { type: 'medical_event_created', event_type: event_type.trim(), role: resolved.role },
   });

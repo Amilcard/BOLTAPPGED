@@ -106,7 +106,7 @@ export async function POST(
       resourceType: 'document',
       resourceId: storagePath,
       inscriptionId,
-      actorType: 'referent',
+      actorType: 'staff',
       actorId: resolved.email || undefined,
       ipAddress: getClientIp(req),
       metadata: {
@@ -204,7 +204,7 @@ export async function DELETE(
       resourceType: 'document',
       resourceId: storagePath,
       inscriptionId,
-      actorType: 'referent',
+      actorType: 'staff',
       actorId: resolved.email || undefined,
       ipAddress: getClientIp(req),
       metadata: {

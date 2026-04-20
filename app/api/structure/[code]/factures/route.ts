@@ -86,7 +86,7 @@ export async function GET(
     action: 'read',
     resourceType: 'facture',
     resourceId: structureId,
-    actorType: 'referent',
+    actorType: 'staff',
     actorId: resolved.email || undefined,
     metadata: { type: 'structure_factures_list', role: resolved.role, count: result.length },
   });

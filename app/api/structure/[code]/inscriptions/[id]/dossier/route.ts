@@ -64,7 +64,7 @@ export async function GET(
       resourceType: 'dossier_enfant',
       resourceId: inscriptionId,
       inscriptionId,
-      actorType: 'referent',
+      actorType: 'staff',
       actorId: resolved.email || undefined,
       ipAddress: getClientIp(req),
       metadata: { context: 'staff_view_dossier', actor_role: resolved.role },

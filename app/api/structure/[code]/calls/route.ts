@@ -152,7 +152,7 @@ export async function POST(
     resourceType: 'structure',
     resourceId: call.id,
     inscriptionId: (inscription_id as string) || undefined,
-    actorType: 'referent',
+    actorType: 'staff',
     actorId: resolved.email || undefined,
     metadata: { type: 'call_traced', call_type, direction, role: resolved.role },
   });

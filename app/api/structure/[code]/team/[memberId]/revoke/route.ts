@@ -64,7 +64,7 @@ export async function POST(
       action: 'update',
       resourceType: 'team_member',
       resourceId: structureId,
-      actorType: 'referent',
+      actorType: 'staff',
       actorId: resolved.email || undefined,
       ipAddress: getStructureClientIp(req),
       metadata: {

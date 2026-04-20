@@ -89,7 +89,7 @@ export async function PATCH(
     action: 'update',
     resourceType: 'inscription',
     resourceId: structureId,
-    actorType: 'referent',
+    actorType: 'staff',
     metadata: { field: 'email', role: 'directeur' },
   });
 

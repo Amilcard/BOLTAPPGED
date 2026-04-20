@@ -59,7 +59,7 @@ export async function GET(
     action: 'read',
     resourceType: 'inscription',
     resourceId: structureId,
-    actorType: 'referent',
+    actorType: 'staff',
     actorId: resolved.email || undefined,
     metadata: { type: 'notes_read', role: resolved.role, count: data?.length ?? 0 },
   });
@@ -141,7 +141,7 @@ export async function POST(
     resourceType: 'inscription',
     resourceId: note.id,
     inscriptionId: inscription_id as string,
-    actorType: 'referent',
+    actorType: 'staff',
     actorId: resolved.email || undefined,
     metadata: { type: 'note_created', role: resolved.role },
   });

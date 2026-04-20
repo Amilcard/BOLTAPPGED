@@ -52,7 +52,7 @@ export async function GET(
     action: 'read',
     resourceType: 'inscription',
     resourceId: structureId,
-    actorType: 'referent',
+    actorType: 'staff',
     metadata: { access_type: 'structure_code', role, roles, ip: getStructureClientIp(_req), code_length: code.length },
   });
 
@@ -212,7 +212,7 @@ export async function POST(
     action: 'create',
     resourceType: 'structure',
     resourceId: structure.id,
-    actorType: 'referent',
+    actorType: 'staff',
     actorId: resolved.email || codeNorm,
     metadata: {
       type: 'rgpd_consent',

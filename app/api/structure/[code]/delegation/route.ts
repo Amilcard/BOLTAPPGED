@@ -66,7 +66,7 @@ export async function PATCH(
       action: 'update',
       resourceType: 'delegation',
       resourceId: resolved.structure.id as string,
-      actorType: 'referent',
+      actorType: 'staff',
       metadata: { type: 'delegation_removed', role: 'directeur' },
     });
 
@@ -135,7 +135,7 @@ export async function PATCH(
     action: 'update',
     resourceType: 'delegation',
     resourceId: resolved.structure.id as string,
-    actorType: 'referent',
+    actorType: 'staff',
     metadata: {
       type: 'delegation_set',
       role: 'directeur',

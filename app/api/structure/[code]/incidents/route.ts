@@ -137,7 +137,7 @@ export async function POST(
     resourceType: 'structure',
     resourceId: incident.id,
     inscriptionId: inscription_id as string,
-    actorType: 'referent',
+    actorType: 'staff',
     actorId: resolved.email || undefined,
     metadata: { type: 'incident_created', category, severity, role: resolved.role },
   });
@@ -241,7 +241,7 @@ export async function PATCH(
       action: 'update',
       resourceType: 'structure',
       resourceId: incident_id,
-      actorType: 'referent',
+      actorType: 'staff',
       actorId: resolved.email || undefined,
       metadata: { type: 'incident_vu', role: resolved.role },
     });
@@ -284,7 +284,7 @@ export async function PATCH(
     action: 'update',
     resourceType: 'structure',
     resourceId: incident_id as string,
-    actorType: 'referent',
+    actorType: 'staff',
     actorId: resolved.email || undefined,
     metadata: { type: 'incident_status_change', new_status: status, role: resolved.role },
   });

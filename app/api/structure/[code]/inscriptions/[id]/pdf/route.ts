@@ -118,7 +118,7 @@ export async function GET(
       resourceType: 'document',
       resourceId: inscriptionId,
       inscriptionId,
-      actorType: 'referent',
+      actorType: 'staff',
       actorId: resolved.email || undefined,
       ipAddress: getClientIp(req),
       metadata: {

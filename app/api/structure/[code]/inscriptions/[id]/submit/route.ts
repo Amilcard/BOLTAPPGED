@@ -98,7 +98,10 @@ export async function POST(
       return NextResponse.json({ error: 'Dossier incomplet.' }, { status: 400 });
     }
 
-    // Docs optionnels requis par le séjour
+    // Docs optionnels — NON-BLOQUANT depuis 2026-04-19 (décision CEO).
+    // Mêmes règles que la route référent : 4 blocs OK suffit, PJ manquantes
+    // sont remontées dans la réponse pour relance GED post-envoi.
+    let partialDocsMissing: string[] = [];
     const { data: inscForStay } = await supabase
       .from('gd_inscriptions')
       .select('sejour_slug')
@@ -119,16 +122,9 @@ export async function POST(
         const uploadedTypes = new Set(
           (dossier.documents_joints as Array<{ type: string }>).map(d => d.type),
         );
-        const manquants = docsRequis
+        partialDocsMissing = docsRequis
           .filter(k => REQUIS_TO_JOINT[k])
           .filter(k => !uploadedTypes.has(REQUIS_TO_JOINT[k]));
-
-        if (manquants.length > 0) {
-          return NextResponse.json(
-            { error: 'Documents requis manquants.', docs_manquants: manquants },
-            { status: 400 },
-          );
-        }
       }
     }
 
@@ -196,7 +192,8 @@ export async function POST(
       console.error('[structure/submit] inscription non trouvée pour emails', { inscriptionId });
     }
 
-    // AuditLog RGPD Art.9 — dossier enfant soumis par staff (pas référent)
+    // AuditLog RGPD Art.9 — dossier enfant soumis par staff (pas référent).
+    // partial_docs : true si PJ optionnelles manquantes (envoi partiel toléré).
     await auditLog(supabase, {
       action: 'submit',
       resourceType: 'dossier_enfant',
@@ -209,6 +206,8 @@ export async function POST(
         context: 'staff_submit_dossier',
         actor_role: resolved.role,
         bcc_staff: !!resolved.email,
+        partial_docs: partialDocsMissing.length > 0,
+        docs_missing_count: partialDocsMissing.length,
       },
     });
 
@@ -216,6 +215,7 @@ export async function POST(
       ok: true,
       gedSentAt: new Date().toISOString(),
       bccStaff: !!resolved.email,
+      partial_docs_missing: partialDocsMissing,
     });
   } catch (err) {
     console.error('POST /api/structure/[code]/inscriptions/[id]/submit error:', err);

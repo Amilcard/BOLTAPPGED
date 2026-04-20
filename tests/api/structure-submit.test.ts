@@ -10,6 +10,8 @@
  *  S4. Dossier déjà envoyé (ged_sent_at not null) → 409
  *  S5. Race concurrence (update renvoie 0 rows) → 409
  *  S6. Inscription d'une autre structure → 404
+ *  S7. 4 blocs OK mais PJ optionnelles manquantes → 200 + partial_docs_missing
+ *      (règle CEO 2026-04-19 — non-bloquant, relance GED post-envoi)
  */
 
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
@@ -151,6 +153,8 @@ describe('POST /api/structure/[code]/inscriptions/[id]/submit', () => {
 
     const res = await POST(req(), { params: params() });
     expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.partial_docs_missing).toEqual([]);
     expect(mockSendComplet).toHaveBeenCalledWith(
       expect.objectContaining({ bcc: 'sec@test.fr', referentEmail: 'ref@test.fr' }),
     );
@@ -162,6 +166,8 @@ describe('POST /api/structure/[code]/inscriptions/[id]/submit', () => {
         metadata: expect.objectContaining({
           context: 'staff_submit_dossier',
           actor_role: 'secretariat',
+          partial_docs: false,
+          docs_missing_count: 0,
         }),
       }),
     );
@@ -209,5 +215,55 @@ describe('POST /api/structure/[code]/inscriptions/[id]/submit', () => {
   it('S-invalid — ID non-UUID → 400', async () => {
     const res = await POST(req(), { params: params('not-a-uuid') });
     expect(res.status).toBe(400);
+  });
+
+  it('S7 — 4 blocs OK + PJ optionnelles manquantes → 200 + partial_docs_missing (règle CEO 2026-04-19)', async () => {
+    mockResolve.mockResolvedValue({ structure: STRUCTURE, role: 'direction', email: 'dir@test.fr' });
+
+    // Séquence identique à S1, mais stayForDocs retourne un doc requis
+    // absent de documents_joints → doit passer en 200 + remonter dans la réponse.
+    mockFromChain.maybeSingle
+      .mockResolvedValueOnce({ data: { id: VALID_UUID }, error: null }) // ownership
+      .mockResolvedValueOnce({ data: { documents_requis: ['pass_nautique'] }, error: null }); // stay docs
+    mockFromChain.single
+      .mockResolvedValueOnce({ data: dossierComplete(), error: null }) // load dossier (documents_joints: [])
+      .mockResolvedValueOnce({ data: { sejour_slug: 'nautique' }, error: null }) // inscForStay
+      .mockResolvedValueOnce({
+        data: {
+          referent_email: 'ref@test.fr',
+          referent_nom: 'Alice',
+          jeune_prenom: 'Enfant',
+          jeune_nom: 'Nom',
+          dossier_ref: 'DOS-7',
+          sejour_slug: 'nautique',
+          session_date: '2026-08-01',
+        },
+        error: null,
+      });
+
+    let selectCallCount = 0;
+    mockFromChain.select = jest.fn((...args: unknown[]) => {
+      selectCallCount++;
+      if (args[0] === 'id' && selectCallCount > 1) {
+        return Promise.resolve({ data: [{ id: 'dos-1' }], error: null }) as unknown as typeof mockFromChain;
+      }
+      return mockFromChain;
+    }) as unknown as typeof mockFromChain.select;
+
+    const res = await POST(req(), { params: params() });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.partial_docs_missing).toContain('pass_nautique');
+    expect(mockSendComplet).toHaveBeenCalled(); // envoi email OK malgré PJ manquante
+    expect(mockAuditLog).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          partial_docs: true,
+          docs_missing_count: 1,
+        }),
+      }),
+    );
   });
 });

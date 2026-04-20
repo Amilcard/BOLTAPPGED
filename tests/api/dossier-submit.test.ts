@@ -13,10 +13,12 @@
  *  5. Dossier introuvable → 404
  *  6. Dossier déjà envoyé → 409
  *  7. Dossier incomplet (bloc manquant) → 400
- *  8. Dossier complet → 200 + ged_sent_at
+ *  8. Dossier complet → 200 + ged_sent_at + partial_docs_missing vide
  *  9. Renseignements non-requis → OK même sans renseignements_completed
- * 10. Doc optionnel requis par séjour manquant → 400 + docs_manquants
- * 11. Doc optionnel requis présent dans documents_joints → 200
+ * 10. Doc optionnel requis par séjour manquant → 200 + partial_docs_missing
+ *     (changement 2026-04-19 : règle CEO non-bloquante, GED relance manuel)
+ * 11. Doc optionnel requis présent dans documents_joints → 200 + partial vide
+ * 12. 4 blocs OK + zéro PJ uploadée → 200 + liste complète des PJ manquantes
  */
 
 // ── Env ──────────────────────────────────────────────────────────────────────
@@ -227,7 +229,7 @@ describe('POST /api/dossier-enfant/[inscriptionId]/submit', () => {
 
   // ─── Succès ──────────────────────────────────────────────────────────
 
-  it('dossier complet → 200 + ok: true + gedSentAt', async () => {
+  it('dossier complet → 200 + ok: true + gedSentAt + partial_docs_missing vide', async () => {
     setupMocks();
     const req = makeRequest({ token: VALID_TOKEN });
     const res = await POST(req, makeParams(VALID_INSCRIPTION_ID));
@@ -236,6 +238,7 @@ describe('POST /api/dossier-enfant/[inscriptionId]/submit', () => {
     expect(res.status).toBe(200);
     expect(json.ok).toBe(true);
     expect(json.gedSentAt).toBeDefined();
+    expect(json.partial_docs_missing).toEqual([]);
   });
 
   it('renseignements non-requis → OK même si renseignements_completed = false', async () => {
@@ -255,9 +258,10 @@ describe('POST /api/dossier-enfant/[inscriptionId]/submit', () => {
 
   // ─── Docs optionnels requis par séjour ───────────────────────────────
 
-  it('doc optionnel requis manquant → 400 + docs_manquants', async () => {
+  it('doc optionnel requis manquant → 200 + partial_docs_missing (règle CEO 2026-04-19)', async () => {
     setupMocks({
-      // pass_nautique requis par le séjour mais absent des documents_joints
+      // pass_nautique requis par le séjour mais absent des documents_joints.
+      // Auparavant bloquant (400). Désormais 200 + info remontée pour relance GED.
       documentsRequis: ['pass_nautique'],
       dossier: completeDossier({ documents_joints: [] }),
     });
@@ -265,11 +269,12 @@ describe('POST /api/dossier-enfant/[inscriptionId]/submit', () => {
     const res = await POST(req, makeParams(VALID_INSCRIPTION_ID));
     const json = await res.json();
 
-    expect(res.status).toBe(400);
-    expect(json.docs_manquants).toContain('pass_nautique');
+    expect(res.status).toBe(200);
+    expect(json.ok).toBe(true);
+    expect(json.partial_docs_missing).toContain('pass_nautique');
   });
 
-  it('doc optionnel requis présent dans documents_joints → 200', async () => {
+  it('doc optionnel requis présent dans documents_joints → 200 + partial vide', async () => {
     setupMocks({
       documentsRequis: ['pass_nautique'],
       dossier: completeDossier({
@@ -282,5 +287,25 @@ describe('POST /api/dossier-enfant/[inscriptionId]/submit', () => {
 
     expect(res.status).toBe(200);
     expect(json.ok).toBe(true);
+    expect(json.partial_docs_missing).toEqual([]);
+  });
+
+  it('4 blocs OK + 0 PJ uploadée → 200 + liste complète des PJ manquantes', async () => {
+    // Scénario extrême : toutes les PJ optionnelles requises manquent.
+    // Règle CEO : envoi OK, GED relance les 3 docs en post-envoi.
+    setupMocks({
+      documentsRequis: ['pass_nautique', 'certificat_medical', 'attestation_assurance'],
+      dossier: completeDossier({ documents_joints: [] }),
+    });
+    const req = makeRequest({ token: VALID_TOKEN });
+    const res = await POST(req, makeParams(VALID_INSCRIPTION_ID));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.ok).toBe(true);
+    expect(json.partial_docs_missing).toEqual(
+      expect.arrayContaining(['pass_nautique', 'certificat_medical', 'attestation_assurance']),
+    );
+    expect(json.partial_docs_missing).toHaveLength(3);
   });
 });

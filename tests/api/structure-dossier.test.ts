@@ -158,6 +158,112 @@ describe('PATCH /api/structure/[code]/inscriptions/[id]/dossier', () => {
     );
     expect(res.status).toBe(404);
   });
+
+  // C#3 — Signature en ligne (SES eIDAS) sans upload PDF
+  it('9 — signature canvas + qualité + completed=true → 200 + persist metadata (insert)', async () => {
+    mockResolve.mockResolvedValue({ structure: STRUCTURE, role: 'direction', email: 'dir@test.fr' });
+    mockFromChain.maybeSingle
+      .mockResolvedValueOnce({ data: { id: VALID_UUID }, error: null }) // ownership
+      .mockResolvedValueOnce({ data: null, error: null }); // pas de dossier → insert
+    let insertPayload: Record<string, unknown> = {};
+    mockFromChain.insert.mockImplementation((payload: Record<string, unknown>) => {
+      insertPayload = payload;
+      return mockFromChain;
+    });
+    mockFromChain.single.mockResolvedValueOnce({
+      data: { id: 'dos-1', ...insertPayload },
+      error: null,
+    });
+
+    const tinySig = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgAAIAAAUAAeImBZsAAAAASUVORK5CYII=';
+    const res = await PATCH(
+      makeReq({
+        bloc: 'bulletin_complement',
+        data: { signature_image_url: tinySig, signer_qualite: 'delegataire_ase' },
+        completed: true,
+      }),
+      { params: params() },
+    );
+    expect(res.status).toBe(200);
+    // Metadata SES eIDAS persistée côté insert
+    expect(insertPayload.bulletin_signed_at).toBeTruthy();
+    expect(insertPayload.bulletin_signer_qualite).toBe('delegataire_ase');
+    expect(insertPayload.bulletin_signature_hash).toMatch(/^[a-f0-9]{64}$/);
+    expect(insertPayload.consent_text_version).toBe('v2026-04');
+    expect(insertPayload.bulletin_completed).toBe(true);
+  });
+
+  it('10 — signature canvas SANS qualité → 400 INVALID_SIGNER_QUALITE', async () => {
+    mockResolve.mockResolvedValue({ structure: STRUCTURE, role: 'direction', email: 'dir@test.fr' });
+    mockFromChain.maybeSingle
+      .mockResolvedValueOnce({ data: { id: VALID_UUID }, error: null }) // ownership
+      .mockResolvedValueOnce({ data: null, error: null }); // pas de dossier
+
+    const tinySig = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgAAIAAAUAAeImBZsAAAAASUVORK5CYII=';
+    const res = await PATCH(
+      makeReq({
+        bloc: 'fiche_sanitaire',
+        data: { signature_image_url: tinySig },
+      }),
+      { params: params() },
+    );
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error.code).toBe('INVALID_SIGNER_QUALITE');
+  });
+
+  it('11 — même signature que existing → pas de re-persist metadata (update)', async () => {
+    mockResolve.mockResolvedValue({ structure: STRUCTURE, role: 'cds', email: 'cds@test.fr' });
+    const existingSig = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgAAIAAAUAAeImBZsAAAAASUVORK5CYII=';
+    mockFromChain.maybeSingle
+      .mockResolvedValueOnce({ data: { id: VALID_UUID }, error: null }) // ownership
+      .mockResolvedValueOnce({
+        data: {
+          id: 'dos-1',
+          fiche_liaison_jeune: { signature_image_url: existingSig, autre: 1 },
+        },
+        error: null,
+      });
+    let updatePayload: Record<string, unknown> = {};
+    mockFromChain.update.mockImplementation((payload: Record<string, unknown>) => {
+      updatePayload = payload;
+      return mockFromChain;
+    });
+    mockFromChain.single.mockResolvedValueOnce({ data: { id: 'dos-1' }, error: null });
+
+    const res = await PATCH(
+      makeReq({
+        bloc: 'fiche_liaison_jeune',
+        data: { signature_image_url: existingSig, champ_nouveau: 'x' },
+      }),
+      { params: params() },
+    );
+    expect(res.status).toBe(200);
+    // Aucune colonne signature_* dans updatePayload (signature inchangée)
+    expect(updatePayload.liaison_signed_at).toBeUndefined();
+    expect(updatePayload.liaison_signature_hash).toBeUndefined();
+  });
+
+  it('12 — PATCH sans signature → pas de metadata persistée', async () => {
+    mockResolve.mockResolvedValue({ structure: STRUCTURE, role: 'secretariat', email: 'sec@test.fr' });
+    mockFromChain.maybeSingle
+      .mockResolvedValueOnce({ data: { id: VALID_UUID }, error: null }) // ownership
+      .mockResolvedValueOnce({ data: null, error: null }); // pas de dossier
+    let insertPayload: Record<string, unknown> = {};
+    mockFromChain.insert.mockImplementation((payload: Record<string, unknown>) => {
+      insertPayload = payload;
+      return mockFromChain;
+    });
+    mockFromChain.single.mockResolvedValueOnce({ data: { id: 'dos-1' }, error: null });
+
+    const res = await PATCH(
+      makeReq({ bloc: 'bulletin_complement', data: { contact_urgence_nom: 'Jean' } }),
+      { params: params() },
+    );
+    expect(res.status).toBe(200);
+    expect(insertPayload.bulletin_signed_at).toBeUndefined();
+    expect(insertPayload.bulletin_signer_qualite).toBeUndefined();
+  });
 });
 
 function makeGetReq(): NextRequest {

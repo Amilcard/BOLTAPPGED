@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { computeProgress, ProgressBar } from './progress-shared';
+import { mergeSharedIntoInitial, type SharedFromBulletin } from './shared-data';
 
 interface Props {
   data: Record<string, unknown>;
@@ -8,6 +10,13 @@ interface Props {
   onSave: (data: Record<string, unknown>, completed?: boolean) => Promise<boolean>;
   jeunePrenom: string;
   jeuneNom: string;
+  /**
+   * Donnees pre-remplies depuis le Bulletin (contact urgence, fait_a...).
+   * Prop OPTIONNELLE : backward-compat avec les appels existants. Les
+   * valeurs ne sont appliquees qu'au mount et ne sont JAMAIS repropagees
+   * vers le Bulletin (sens unique).
+   */
+  initialShared?: SharedFromBulletin;
 }
 
 /**
@@ -16,17 +25,24 @@ interface Props {
  * mais ne conditionne plus la visibilité ni la complétude.
  * Pattern identique aux autres formulaires (brouillon / valider).
  */
-export function FicheRenseignementsForm({ data, saving, onSave, jeunePrenom, jeuneNom }: Props) {
-  const [form, setForm] = useState<Record<string, unknown>>({
-    type_situation: '',
-    amenagements_necessaires: '',
-    traitement_medical: '',
-    medecin_referent_nom: '',
-    medecin_referent_tel: '',
-    contact_urgence_nom: '',
-    contact_urgence_tel: '',
-    ...data,
-  });
+export function FicheRenseignementsForm({ data, saving, onSave, jeunePrenom, jeuneNom, initialShared }: Props) {
+  // Initial state = defaults + shared (appliques uniquement si vides) + persisted.
+  // mergeSharedIntoInitial garantit l'ordre : data persiste prime toujours sur shared.
+  const [form, setForm] = useState<Record<string, unknown>>(() =>
+    mergeSharedIntoInitial<Record<string, unknown>>(
+      {
+        type_situation: '',
+        amenagements_necessaires: '',
+        traitement_medical: '',
+        medecin_referent_nom: '',
+        medecin_referent_tel: '',
+        contact_urgence_nom: '',
+        contact_urgence_tel: '',
+      },
+      data,
+      initialShared ?? {},
+    ),
+  );
 
   const update = (key: string, value: unknown) => {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -36,6 +52,17 @@ export function FicheRenseignementsForm({ data, saving, onSave, jeunePrenom, jeu
     await onSave(form, completed);
   };
 
+  // Progression — champs métier (requis * + infos clés).
+  const progressFields = [
+    'type_situation',
+    'amenagements_necessaires',
+    'medecin_referent_nom',
+    'medecin_referent_tel',
+    'contact_urgence_nom',
+    'contact_urgence_tel',
+  ];
+  const progress = computeProgress(form, progressFields);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 mb-2">
@@ -44,6 +71,8 @@ export function FicheRenseignementsForm({ data, saving, onSave, jeunePrenom, jeu
           Fiche de renseignements — {jeunePrenom} {jeuneNom}
         </h3>
       </div>
+
+      <ProgressBar label="Renseignements" filled={progress.filled} total={progress.total} color="purple" />
 
       <p className="text-sm text-gray-500">
         Cette fiche est requise pour ce séjour. Elle permet à l'équipe encadrante d'adapter l'accueil aux besoins spécifiques du jeune.

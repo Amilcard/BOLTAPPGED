@@ -2,6 +2,8 @@
 
 import { useState, useId } from 'react';
 import { SignaturePad } from './SignaturePad';
+import { computeProgress, ProgressBar } from './progress-shared';
+import { mergeSharedIntoInitial, type SharedFromBulletin } from './shared-data';
 
 interface Props {
   data: Record<string, unknown>;
@@ -11,37 +13,47 @@ interface Props {
   jeuneNom: string;
   sejourNom: string;
   sessionDate: string;
+  /**
+   * Donnees pre-remplies depuis le Bulletin (signature_fait_a propage
+   * depuis bulletin.autorisation_fait_a). Prop OPTIONNELLE : backward-compat.
+   */
+  initialShared?: SharedFromBulletin;
 }
 
 /**
  * Fiche de liaison page 1 — Partie jeune + éducateur.
  * Pages 2 et 3 sont internes (équipe GED) → pas de formulaire en ligne.
  */
-export function FicheLiaisonJeuneForm({ data, saving, onSave, jeunePrenom, jeuneNom, sejourNom, sessionDate }: Props) {
-  const [form, setForm] = useState<Record<string, unknown>>({
-    // Établissement
-    etablissement_nom: '',
-    etablissement_adresse: '',
-    etablissement_cp: '',
-    etablissement_ville: '',
-    // Responsable établissement joignable
-    resp_etablissement_nom: '',
-    resp_etablissement_prenom: '',
-    resp_etablissement_tel1: '',
-    resp_etablissement_tel2: '',
-    // Partie jeune
-    choix_seul: '',
-    choix_ami: '',
-    choix_educateur: '',
-    deja_parti: '',
-    deja_parti_detail: '',
-    pourquoi_ce_sejour: '',
-    fiche_technique_lue: '',
-    // Engagement
-    engagement_accepte: false,
-    signature_fait_a: '',
-    ...data,
-  });
+export function FicheLiaisonJeuneForm({ data, saving, onSave, jeunePrenom, jeuneNom, sejourNom, sessionDate, initialShared }: Props) {
+  const [form, setForm] = useState<Record<string, unknown>>(() =>
+    mergeSharedIntoInitial<Record<string, unknown>>(
+      {
+        // Établissement
+        etablissement_nom: '',
+        etablissement_adresse: '',
+        etablissement_cp: '',
+        etablissement_ville: '',
+        // Responsable établissement joignable
+        resp_etablissement_nom: '',
+        resp_etablissement_prenom: '',
+        resp_etablissement_tel1: '',
+        resp_etablissement_tel2: '',
+        // Partie jeune
+        choix_seul: '',
+        choix_ami: '',
+        choix_educateur: '',
+        deja_parti: '',
+        deja_parti_detail: '',
+        pourquoi_ce_sejour: '',
+        fiche_technique_lue: '',
+        // Engagement
+        engagement_accepte: false,
+        signature_fait_a: '',
+      },
+      data,
+      initialShared ?? {},
+    ),
+  );
 
   const update = (key: string, value: unknown) => {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -51,12 +63,25 @@ export function FicheLiaisonJeuneForm({ data, saving, onSave, jeunePrenom, jeune
     await onSave(form, completed);
   };
 
+  // Progression — champs clés de la fiche liaison page 1.
+  const progressFields = [
+    'etablissement_nom', 'etablissement_adresse', 'etablissement_cp', 'etablissement_ville',
+    'resp_etablissement_nom', 'resp_etablissement_prenom', 'resp_etablissement_tel1',
+    'pourquoi_ce_sejour', 'fiche_technique_lue',
+    'signature_fait_a',
+    'engagement_accepte',
+    'signature_image_url',
+  ];
+  const progress = computeProgress(form, progressFields);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 mb-2">
         <div className="w-1.5 h-6 bg-red-500 rounded-full" />
         <h3 className="font-bold text-gray-800">Fiche de liaison — Jeune / Éducateur</h3>
       </div>
+
+      <ProgressBar label="Fiche de liaison" filled={progress.filled} total={progress.total} color="red" />
 
       {/* Renseignements jeune */}
       <Section title="Renseignements concernant le jeune">

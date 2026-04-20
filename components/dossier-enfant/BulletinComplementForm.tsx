@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { SignaturePad } from './SignaturePad';
+import { computeProgress, ProgressBar } from './progress-shared';
 
 interface Props {
   data: Record<string, unknown>;
@@ -56,6 +57,19 @@ export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeun
     await onSave(form, completed);
   };
 
+  // Progression — champs requis minimaux pour la complétude du bloc.
+  // La liste reflète les contraintes métier + la checkbox d'autorisation
+  // (seule condition actuelle du bouton "Valider").
+  const progressFields = [
+    'adresse_permanente',
+    'contact_urgence_nom',
+    'contact_urgence_telephone',
+    'autorisation_fait_a',
+    'autorisation_accepte',
+    'signature_image_url',
+  ];
+  const progress = computeProgress(form, progressFields);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 mb-2">
@@ -64,6 +78,8 @@ export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeun
           Bulletin d&apos;inscription — Complément pour {jeunePrenom} {jeuneNom}
         </h3>
       </div>
+
+      <ProgressBar label="Bulletin" filled={progress.filled} total={progress.total} color="orange" />
 
       {/* Adresse permanente */}
       <Section title="Adresse permanente">
@@ -258,3 +274,4 @@ function flattenObject(obj: Record<string, unknown>, prefix = ''): Record<string
   }
   return result;
 }
+

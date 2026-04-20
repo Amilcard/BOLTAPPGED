@@ -10,6 +10,7 @@ import { FicheSanitaireForm } from './FicheSanitaireForm';
 import { FicheLiaisonJeuneForm } from './FicheLiaisonJeuneForm';
 import { FicheRenseignementsForm } from './FicheRenseignementsForm';
 import { DocumentsJointsUpload } from './DocumentsJointsUpload';
+import { getSharedDataFromBulletin } from './shared-data';
 
 interface DossierInfo {
   id: string;
@@ -359,6 +360,14 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
   const {
     dossier, loading, saving, saved, error, saveBloc, reload,
   } = useDossierEnfant(inscription.id, token, hookOptions);
+
+  // Donnees partagees extraites du Bulletin, memoisees pour stabilite
+  // referentielle (sinon les sub-forms verraient une nouvelle ref a
+  // chaque render et ignoreraient initialShared via lazy useState).
+  const sharedFromBulletin = useMemo(
+    () => getSharedDataFromBulletin(dossier?.bulletin_complement),
+    [dossier?.bulletin_complement],
+  );
 
   // Onglets visibles — tous onglets actifs en staff-fill depuis vague 2/4
   // (routes upload staff livrées).
@@ -728,6 +737,7 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
                       jeuneNom={inscription.jeuneNom}
                       sejourNom={inscription.sejourNom}
                       sessionDate={inscription.sessionDate}
+                      initialShared={sharedFromBulletin}
                     />
                   )}
                 </>
@@ -740,6 +750,7 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
                   onSave={(data, completed) => saveBloc('fiche_renseignements', data, completed)}
                   jeunePrenom={inscription.jeunePrenom}
                   jeuneNom={inscription.jeuneNom}
+                  initialShared={sharedFromBulletin}
                 />
               )}
 

@@ -240,7 +240,7 @@ export async function POST(
       resourceType: 'dossier_enfant',
       resourceId: inscriptionId,
       inscriptionId,
-      actorType: 'referent',
+      actorType: 'staff',
       actorId: resolved.email || undefined,
       ipAddress: getClientIp(req),
       metadata: {

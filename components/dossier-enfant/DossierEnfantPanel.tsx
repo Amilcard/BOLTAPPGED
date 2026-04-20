@@ -260,7 +260,7 @@ function OfflineSignatureZone({
       fd.append('type', signedType);
       fd.append('file', file);
       const targetUrl = uploadUrl || `/api/dossier-enfant/${inscriptionId}/upload`;
-      const res = await fetch(targetUrl, { method: 'POST', body: fd });
+      const res = await fetch(targetUrl, { method: 'POST', body: fd, credentials: 'include' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erreur upload');
       setUploaded(true);
@@ -385,8 +385,7 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
       ].filter(Boolean).length
     : 0;
   const progressPct = Math.round((completedCount / totalDocs) * 100);
-  const isComplete = completedCount === totalDocs &&
-    (dossier?.docs_optionnels_manquants?.length ?? 0) === 0;
+  const isComplete = completedCount === totalDocs;
 
   // DOC_OPT_LABELS importé depuis @/lib/dossier-shared
 

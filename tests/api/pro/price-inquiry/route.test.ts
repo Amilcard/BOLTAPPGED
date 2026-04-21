@@ -9,6 +9,10 @@
  *  - Consentement RGPD obligatoire
  *  - Honeypot `website` → 200 silencieux, pas d'email ni de lead
  *  - Sanitization : email.trim().toLowerCase()
+ *  - Ordre transactionnel : INSERT lead AVANT email + auditLog RGPD
+ *  - email KO + insert OK → user 200, lead persisté, auditLog email_failed
+ *  - insert KO → 500 LEAD_PERSIST_FAILED, pas d'email envoyé, auditLog critical
+ *  - consent_at tracé dans metadata auditLog
  */
 
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
@@ -25,13 +29,29 @@ jest.mock('@/lib/email', () => ({
   sendPriceInquiryAlertGED: (...args: unknown[]) => mockSendPriceInquiryAlertGED(...args),
 }));
 
-const mockInsert = jest.fn().mockResolvedValue({ error: null });
+const mockAuditLog = jest.fn().mockResolvedValue(undefined);
+jest.mock('@/lib/audit-log', () => ({
+  auditLog: (...args: unknown[]) => mockAuditLog(...args),
+  getClientIp: jest.fn(),
+}));
+
+const mockIsRateLimited = jest.fn().mockResolvedValue(false);
+jest.mock('@/lib/rate-limit', () => ({
+  isRateLimited: (...args: unknown[]) => mockIsRateLimited(...args),
+  getClientIpFromHeaders: () => '127.0.0.1',
+}));
+
+// smart_form_submissions.insert(...).select('id').single()
+const mockInsertSingle = jest.fn();
+const mockInsertChain = jest.fn(() => ({
+  select: () => ({ single: mockInsertSingle }),
+}));
 const mockSejourSingle = jest.fn();
 jest.mock('@/lib/supabase-server', () => ({
   getSupabaseAdmin: () => ({
     from: (table: string) => {
       if (table === 'smart_form_submissions') {
-        return { insert: mockInsert };
+        return { insert: mockInsertChain };
       }
       // gd_stays
       return {
@@ -81,6 +101,10 @@ function mockSejourFound() {
   });
 }
 
+function mockInsertOk(id = 'lead-uuid-123') {
+  mockInsertSingle.mockResolvedValue({ data: { id }, error: null });
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('POST /api/pro/price-inquiry', () => {
@@ -88,7 +112,9 @@ describe('POST /api/pro/price-inquiry', () => {
     jest.clearAllMocks();
     mockSendPriceInquiryToEducateur.mockResolvedValue({ ok: true });
     mockSendPriceInquiryAlertGED.mockResolvedValue({ ok: true });
+    mockIsRateLimited.mockResolvedValue(false);
     mockSejourFound();
+    mockInsertOk();
   });
 
   // ── Validation email ──
@@ -237,7 +263,7 @@ describe('POST /api/pro/price-inquiry', () => {
     expect(body.ok).toBe(true);
     expect(mockSendPriceInquiryToEducateur).not.toHaveBeenCalled();
     expect(mockSendPriceInquiryAlertGED).not.toHaveBeenCalled();
-    expect(mockInsert).not.toHaveBeenCalled();
+    expect(mockInsertChain).not.toHaveBeenCalled();
   });
 
   it('honeypot vide ("") → traitement normal', async () => {
@@ -247,18 +273,160 @@ describe('POST /api/pro/price-inquiry', () => {
   });
 
   // ── Happy path complet ──
-  it('payload valide → 200 + 2 emails envoyés + lead inséré', async () => {
+  it('payload valide → 200 + 2 emails envoyés + lead inséré + auditLog create', async () => {
     const res = await POST(makeRequest(VALID_PAYLOAD));
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(body.ok).toBe(true);
-    expect(mockSendPriceInquiryToEducateur).toHaveBeenCalledTimes(1);
-    expect(mockSendPriceInquiryAlertGED).toHaveBeenCalledTimes(1);
-    expect(mockInsert).toHaveBeenCalledWith(
+    expect(mockInsertChain).toHaveBeenCalledWith(
       expect.objectContaining({
         contact_email: 'educ@mecs.fr',
         referent_organization: 'MECS Les Tilleuls',
       })
     );
+    expect(mockSendPriceInquiryToEducateur).toHaveBeenCalledTimes(1);
+    expect(mockSendPriceInquiryAlertGED).toHaveBeenCalledTimes(1);
+    // auditLog create sur lead
+    expect(mockAuditLog).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: 'create',
+        resourceType: 'inscription',
+        actorId: 'educ@mecs.fr',
+        metadata: expect.objectContaining({
+          form: 'price_inquiry',
+          structure: 'MECS Les Tilleuls',
+          sejour_slug: 'les-ptits-puisotins-1',
+          consent_at: expect.any(String),
+        }),
+      })
+    );
+  });
+
+  // ── Ordre transactionnel : INSERT avant emails ──
+  it('INSERT lead est appelé AVANT les emails', async () => {
+    const callOrder: string[] = [];
+    mockInsertSingle.mockImplementation(async () => {
+      callOrder.push('insert');
+      return { data: { id: 'lead-1' }, error: null };
+    });
+    mockSendPriceInquiryToEducateur.mockImplementation(async () => {
+      callOrder.push('email_educ');
+      return { ok: true };
+    });
+    mockSendPriceInquiryAlertGED.mockImplementation(async () => {
+      callOrder.push('email_ged');
+      return { ok: true };
+    });
+
+    await POST(makeRequest(VALID_PAYLOAD));
+
+    expect(callOrder[0]).toBe('insert');
+    expect(callOrder).toContain('email_educ');
+    expect(callOrder).toContain('email_ged');
+  });
+
+  // ── Fix #5/6 : email KO + insert OK → user success, lead persisté, auditLog email_failed ──
+  it('email éducateur KO + insert OK → 200, lead persisté, auditLog email_failed', async () => {
+    mockSendPriceInquiryToEducateur.mockRejectedValue(new Error('Resend 503'));
+
+    const res = await POST(makeRequest(VALID_PAYLOAD));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(mockInsertChain).toHaveBeenCalledTimes(1);
+
+    // auditLog create + auditLog email_failed
+    const emailFailedCall = mockAuditLog.mock.calls.find(
+      (c) => c[1]?.metadata?.event === 'email_failed'
+    );
+    expect(emailFailedCall).toBeDefined();
+    expect(emailFailedCall[1].metadata.educateur_email_status).toBe('failed');
+    expect(emailFailedCall[1].metadata.ged_email_status).toBe('sent');
+    expect(emailFailedCall[1].metadata.severity).toBe('medium');
+  });
+
+  it('les 2 emails KO + insert OK → 200 (user ne voit pas l\'erreur), auditLog severity=high', async () => {
+    mockSendPriceInquiryToEducateur.mockRejectedValue(new Error('Resend 503'));
+    mockSendPriceInquiryAlertGED.mockRejectedValue(new Error('Resend 503'));
+
+    const res = await POST(makeRequest(VALID_PAYLOAD));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.ok).toBe(true);
+
+    const emailFailedCall = mockAuditLog.mock.calls.find(
+      (c) => c[1]?.metadata?.event === 'email_failed'
+    );
+    expect(emailFailedCall[1].metadata.severity).toBe('high');
+  });
+
+  // ── Fix #6 : insert KO → 500 + auditLog critical + pas d'email envoyé ──
+  it('insert lead KO → 500 LEAD_PERSIST_FAILED + auditLog critical + aucun email', async () => {
+    mockInsertSingle.mockResolvedValue({
+      data: null,
+      error: { code: '23505', message: 'duplicate key' },
+    });
+
+    const res = await POST(makeRequest(VALID_PAYLOAD));
+    const body = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(body.error.code).toBe('LEAD_PERSIST_FAILED');
+    expect(mockSendPriceInquiryToEducateur).not.toHaveBeenCalled();
+    expect(mockSendPriceInquiryAlertGED).not.toHaveBeenCalled();
+
+    const criticalCall = mockAuditLog.mock.calls.find(
+      (c) => c[1]?.metadata?.event === 'lead_insert_failed'
+    );
+    expect(criticalCall).toBeDefined();
+    expect(criticalCall[1].metadata.severity).toBe('critical');
+    expect(criticalCall[1].metadata.error_code).toBe('23505');
+  });
+
+  // ── Rate-limit appelé APRÈS insert (ne brûle pas de tentative si DB KO) ──
+  it('rate-limit appelé APRÈS insert lead', async () => {
+    const callOrder: string[] = [];
+    mockInsertSingle.mockImplementation(async () => {
+      callOrder.push('insert');
+      return { data: { id: 'lead-1' }, error: null };
+    });
+    mockIsRateLimited.mockImplementation(async () => {
+      callOrder.push('rate_limit');
+      return false;
+    });
+
+    await POST(makeRequest(VALID_PAYLOAD));
+
+    expect(callOrder.indexOf('insert')).toBeLessThan(callOrder.indexOf('rate_limit'));
+  });
+
+  it('rate-limit bloque → 429 mais lead déjà persisté', async () => {
+    mockIsRateLimited.mockResolvedValue(true);
+
+    const res = await POST(makeRequest(VALID_PAYLOAD));
+    const body = await res.json();
+
+    expect(res.status).toBe(429);
+    expect(body.error.code).toBe('RATE_LIMITED');
+    expect(mockInsertChain).toHaveBeenCalledTimes(1); // lead persisté avant blocage
+    expect(mockSendPriceInquiryToEducateur).not.toHaveBeenCalled();
+  });
+
+  // ── Consent tracé dans metadata auditLog ──
+  it('consent_at tracé dans metadata auditLog (colonne table absente → metadata only)', async () => {
+    const before = new Date().toISOString();
+    await POST(makeRequest(VALID_PAYLOAD));
+    const after = new Date().toISOString();
+
+    const createCall = mockAuditLog.mock.calls.find(
+      (c) => c[1]?.action === 'create' && c[1]?.metadata?.form === 'price_inquiry'
+    );
+    expect(createCall).toBeDefined();
+    const consentAt = createCall[1].metadata.consent_at;
+    expect(typeof consentAt).toBe('string');
+    expect(consentAt >= before && consentAt <= after).toBe(true);
   });
 });

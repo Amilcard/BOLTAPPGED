@@ -4,8 +4,27 @@ import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendSouhaitNotificationEducateur } from '@/lib/email';
 import { generateEducateurAggregateToken } from '@/lib/educateur-token';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
-import { EMAIL_REGEX, UUID_RE } from '@/lib/validators';
+import { EMAIL_REGEX, UUID_RE, isSafeImageUrl } from '@/lib/validators';
 import { auditLog } from '@/lib/audit-log';
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+/**
+ * P2.1 — récupère l'URL image hero d'un séjour pour l'email éducateur.
+ * Fallback silencieux sur undefined si pas d'image / séjour absent / URL invalide.
+ * Lecture seule — pas PII, pas de RLS impact (service_role).
+ */
+async function getSejourHeroImage(supabase: SupabaseClient, slug: string): Promise<string | undefined> {
+  if (!slug) return undefined;
+  const { data } = await supabase
+    .from('gd_stays')
+    .select('images')
+    .eq('slug', slug)
+    .single();
+  const images = data?.images as unknown;
+  const first = Array.isArray(images) ? (images as unknown[])[0] : null;
+  return typeof first === 'string' && isSafeImageUrl(first) ? first : undefined;
+}
+
 /**
  * POST /api/souhaits
  * Crée un souhait côté serveur et envoie un email à l'éducateur.
@@ -107,12 +126,16 @@ export async function POST(req: NextRequest) {
 
       if (safeEmail) {
         const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.groupeetdecouverte.fr';
-        const aggregateToken = await generateEducateurAggregateToken(safeEmail);
+        const [aggregateToken, sejourImageUrl] = await Promise.all([
+          generateEducateurAggregateToken(safeEmail),
+          getSejourHeroImage(supabase, sejourSlug),
+        ]);
         await sendSouhaitNotificationEducateur({
           educateurEmail: safeEmail,
           educateurPrenom: educateurPrenom || undefined,
           kidPrenom: typeof kidPrenom === 'string' ? kidPrenom : '',
           sejourTitre: sejourTitre || sejourSlug,
+          sejourImageUrl,
           motivation,
           lienReponse: `${baseUrl}/educateur/souhait/${existing.educateur_token}`,
           lienTousSouhaits: aggregateToken ? `${baseUrl}/educateur/souhaits/${aggregateToken}` : undefined,
@@ -171,12 +194,16 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Erreur configuration souhait.' }, { status: 500 });
       }
       const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.groupeetdecouverte.fr';
-      const aggregateToken = await generateEducateurAggregateToken(safeEmail);
+      const [aggregateToken, sejourImageUrl] = await Promise.all([
+        generateEducateurAggregateToken(safeEmail),
+        getSejourHeroImage(supabase, sejourSlug),
+      ]);
       await sendSouhaitNotificationEducateur({
         educateurEmail: safeEmail,
         educateurPrenom: typeof educateurPrenom === 'string' ? educateurPrenom : undefined,
         kidPrenom: typeof kidPrenom === 'string' ? kidPrenom : '',
         sejourTitre: String(sejourTitre || sejourSlug),
+        sejourImageUrl,
         motivation: String(motivation),
         lienReponse: `${baseUrl}/educateur/souhait/${souhait.educateur_token as string}`,
         lienTousSouhaits: aggregateToken ? `${baseUrl}/educateur/souhaits/${aggregateToken}` : undefined,

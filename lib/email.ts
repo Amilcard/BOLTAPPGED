@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { isSafeImageUrl } from '@/lib/validators';
 
 // Lazy singleton — prevents top-level crash when EMAIL_SERVICE_API_KEY is absent at build time.
 let _resend: Resend | null = null;
@@ -346,6 +347,7 @@ interface SouhaitEmailData {
   educateurPrenom?: string;
   kidPrenom: string;
   sejourTitre: string;
+  sejourImageUrl?: string;
   motivation: string;
   lienReponse: string;
   lienTousSouhaits?: string;
@@ -358,6 +360,10 @@ export async function sendSouhaitNotificationEducateur(data: SouhaitEmailData) {
   try {
     const resend = getResend();
     const prenom = data.educateurPrenom ? ` ${htmlEscape(data.educateurPrenom)}` : '';
+    // P2.1 — image hero séjour si fournie ET URL validée (guard XSS attribut src)
+    const imageBlock = isSafeImageUrl(data.sejourImageUrl)
+      ? `<img src="${data.sejourImageUrl}" alt="${htmlEscape(data.sejourTitre)}" width="560" style="display:block;width:100%;max-width:560px;height:auto;border:0;outline:none;text-decoration:none;" />`
+      : '';
     return await resend.emails.send({
       from: FROM_EMAIL,
       to: data.educateurEmail,
@@ -367,6 +373,7 @@ export async function sendSouhaitNotificationEducateur(data: SouhaitEmailData) {
           <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
             <h1 style="margin: 0; font-size: 20px;">Groupe &amp; Découverte</h1>
           </div>
+          ${imageBlock}
           <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
             <h2 style="color: #2a383f;">Un souhait de séjour à traiter</h2>
             <p>Bonjour${prenom},</p>

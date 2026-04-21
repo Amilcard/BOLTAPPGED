@@ -76,6 +76,21 @@ export function validateUploadSize(
 }
 
 /**
+ * Validator d'URL image pour injection HTML (attribut src) ou JSON sortant.
+ * Accepte https:// absolu uniquement. Rejette caractères de break-out d'attribut
+ * ("/'/<>/backtick/\) et pseudo-protocoles (javascript:, data:, file:).
+ *
+ * Utilisé pour sécuriser les URLs venant de sources semi-trusted (n8n scraping
+ * UFOVAL → Supabase Storage) avant injection dans templates email ou réponses API.
+ */
+export function isSafeImageUrl(value: unknown): value is string {
+  if (typeof value !== 'string' || value.length === 0 || value.length > 2048) return false;
+  if (!/^https:\/\//i.test(value)) return false;
+  if (/[\s"'<>`\\]/.test(value)) return false;
+  return true;
+}
+
+/**
  * Validator de data URL image (PNG/JPEG) avec cap de taille.
  * Prévient les DoS par payload volumineux sur les inputs canvas/signature.
  *

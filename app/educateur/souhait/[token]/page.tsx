@@ -10,6 +10,7 @@ interface Souhait {
   kid_prenom: string | null;
   sejour_slug: string;
   sejour_titre: string;
+  sejour_image_url?: string | null;
   motivation: string;
   status: string;
   reponse_educateur: string | null;
@@ -116,7 +117,17 @@ export default function EducateurSouhaitPage() {
 
       <main className="max-w-lg mx-auto px-4 py-8 space-y-4">
         {/* Carte souhait */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          {souhait.sejour_image_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={souhait.sejour_image_url}
+              alt={souhait.sejour_titre || souhait.sejour_slug}
+              className="w-full h-40 object-cover"
+              loading="lazy"
+            />
+          )}
+          <div className="p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center">
               <Heart className="w-6 h-6 text-red-400 fill-current" />
@@ -146,6 +157,7 @@ export default function EducateurSouhaitPage() {
           <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${statutInfo.bg} ${statutInfo.color}`}>
             <Clock className="w-3 h-3" />
             {statutInfo.label}
+          </div>
           </div>
         </div>
 

@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
-import { UUID_RE } from '@/lib/validators';
+import { UUID_RE, isSafeImageUrl } from '@/lib/validators';
 import { auditLog } from '@/lib/audit-log';
 /**
  * GET /api/educateur/souhait/[token]
@@ -53,7 +53,23 @@ export async function GET(
       metadata: { route: '/api/educateur/souhait/[token]', kind: 'souhait' },
     });
 
-    return NextResponse.json(data);
+    // P2.1 — enrichir avec l'image hero du séjour (JOIN gd_stays via sejour_slug).
+    // Lecture seule, pas PII, pas de RLS requis. Fallback silencieux si absente.
+    let sejour_image_url: string | null = null;
+    if (data.sejour_slug) {
+      const { data: stayInfo } = await supabase
+        .from('gd_stays')
+        .select('images')
+        .eq('slug', data.sejour_slug)
+        .single();
+      const images = stayInfo?.images as unknown;
+      const firstImage = Array.isArray(images) ? (images as unknown[])[0] : null;
+      if (typeof firstImage === 'string' && isSafeImageUrl(firstImage)) {
+        sejour_image_url = firstImage;
+      }
+    }
+
+    return NextResponse.json({ ...data, sejour_image_url });
   } catch (err) {
     console.error('GET /api/educateur/souhait error:', err);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });

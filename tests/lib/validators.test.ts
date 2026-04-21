@@ -1,5 +1,5 @@
 /** @jest-environment node */
-import { UUID_RE, EMAIL_REGEX, isUuid, isEmail } from '@/lib/validators';
+import { UUID_RE, EMAIL_REGEX, isUuid, isEmail, isSafeImageUrl } from '@/lib/validators';
 
 describe('UUID_RE', () => {
   test('valide UUID v4', () => {
@@ -22,5 +22,31 @@ describe('EMAIL_REGEX', () => {
     expect(EMAIL_REGEX.test('pas-email')).toBe(false);
     expect(EMAIL_REGEX.test('@y.fr')).toBe(false);
     expect(isEmail(null as unknown as string)).toBe(false);
+  });
+});
+
+describe('isSafeImageUrl', () => {
+  test('accepte URL https absolue', () => {
+    expect(isSafeImageUrl('https://iirfvndgzutbxwfdwawu.supabase.co/storage/v1/object/public/stays/hero.jpg')).toBe(true);
+    expect(isSafeImageUrl('https://example.com/img.png')).toBe(true);
+  });
+  test('rejette http, protocoles dangereux, relatifs', () => {
+    expect(isSafeImageUrl('http://example.com/img.jpg')).toBe(false);
+    expect(isSafeImageUrl('javascript:alert(1)')).toBe(false);
+    expect(isSafeImageUrl('data:image/png;base64,iVBOR')).toBe(false);
+    expect(isSafeImageUrl('/relative/path.jpg')).toBe(false);
+    expect(isSafeImageUrl('')).toBe(false);
+  });
+  test('rejette chars de break-out attribut (XSS)', () => {
+    expect(isSafeImageUrl('https://evil.com/x.jpg" onerror="alert(1)')).toBe(false);
+    expect(isSafeImageUrl('https://evil.com/<script>')).toBe(false);
+    expect(isSafeImageUrl('https://evil.com/x\'.jpg')).toBe(false);
+    expect(isSafeImageUrl('https://evil.com/ x.jpg')).toBe(false);
+  });
+  test('rejette types non-string et overflow', () => {
+    expect(isSafeImageUrl(null)).toBe(false);
+    expect(isSafeImageUrl(undefined)).toBe(false);
+    expect(isSafeImageUrl(123)).toBe(false);
+    expect(isSafeImageUrl('https://x.com/' + 'a'.repeat(2100))).toBe(false);
   });
 });

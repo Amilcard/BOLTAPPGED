@@ -7,13 +7,16 @@ const GRAY = rgb(0.4, 0.4, 0.4);
 const LIGHT_BG = rgb(0.96, 0.96, 0.96);
 const WHITE = rgb(1, 1, 1);
 
-function fmtDate(dateStr: string): string {
+function fmtDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return '';
   const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
   return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-function fmtPrice(amount: number): string {
-  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount) + ' EUR';
+function fmtPrice(amount: number | null | undefined): string {
+  const n = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
+  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) + ' EUR';
 }
 
 export async function generatePropositionPdf(prop: Record<string, unknown>): Promise<Uint8Array> {
@@ -104,7 +107,13 @@ export async function generatePropositionPdf(prop: Record<string, unknown>): Pro
     w(VAL, Y, act, bold, 9, ORANGE);
     Y += 18;
   }
-  infoRow('Periode :', `Du ${fmtDate(p.session_start as string)} au ${fmtDate(p.session_end as string)}`);
+  const dStart = fmtDate(p.session_start as string | null | undefined);
+  const dEnd = fmtDate(p.session_end as string | null | undefined);
+  const periode = (dStart && dEnd) ? `Du ${dStart} au ${dEnd}`
+                : (dStart) ? `A partir du ${dStart}`
+                : (dEnd) ? `Jusqu'au ${dEnd}`
+                : 'Dates a preciser';
+  infoRow('Periode :', periode);
   infoRow('Ville de depart :', c(p.ville_depart || ''));
   infoRow('N. agrement DSCS :', c(p.agrement_dscs || '069ORG0667'));
 

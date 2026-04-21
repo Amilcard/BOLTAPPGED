@@ -18,14 +18,16 @@ function c(str: unknown): string {
     .replace(/[^\x20-\xFF]/g, '');
 }
 
-function fmtDate(dateStr: string): string {
+function fmtDate(dateStr: string | null | undefined): string {
   if (!dateStr) return '';
   const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
   return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-function fmtPrice(amount: number): string {
-  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount) + ' EUR';
+function fmtPrice(amount: number | null | undefined): string {
+  const n = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
+  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) + ' EUR';
 }
 
 interface FactureLigne {

@@ -494,13 +494,18 @@ export async function GET(
     // Générer le PDF final
     const pdfBytes = await pdfDoc.save();
 
+    // D9 — fallback prénom + nettoyage legacy "À RENSEIGNER" (déjà fait pour nom ligne 89-90)
+    const rawPrenom = (inscription.jeune_prenom || '').trim();
+    const jeunePrenomDisplay = (!rawPrenom || rawPrenom === 'À RENSEIGNER') ? 'sans-prenom' : rawPrenom;
+    const jeuneNomFile = jeuneNomDisplay || 'sans-nom';
+
     const fileNames: Record<DocType, string> = {
-      bulletin: `Bulletin_Inscription_${inscription.jeune_prenom}_${jeuneNomDisplay || 'sans-nom'}.pdf`,
-      sanitaire: `Fiche_Sanitaire_${inscription.jeune_prenom}_${jeuneNomDisplay || 'sans-nom'}.pdf`,
-      liaison: `Fiche_Liaison_${inscription.jeune_prenom}_${jeuneNomDisplay || 'sans-nom'}.pdf`,
+      bulletin: `Bulletin_Inscription_${jeunePrenomDisplay}_${jeuneNomFile}.pdf`,
+      sanitaire: `Fiche_Sanitaire_${jeunePrenomDisplay}_${jeuneNomFile}.pdf`,
+      liaison: `Fiche_Liaison_${jeunePrenomDisplay}_${jeuneNomFile}.pdf`,
     };
 
-    const fileName = Object.prototype.hasOwnProperty.call(fileNames, docType) ? fileNames[docType] : `document_${inscription.jeune_prenom}_${jeuneNomDisplay || 'sans-nom'}.pdf`;
+    const fileName = Object.prototype.hasOwnProperty.call(fileNames, docType) ? fileNames[docType] : `document_${jeunePrenomDisplay}_${jeuneNomFile}.pdf`;
 
     // Audit RGPD Art. 9 — tracer chaque téléchargement de document contenant des données sensibles
     await auditLog(supabase, {

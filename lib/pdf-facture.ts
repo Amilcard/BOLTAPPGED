@@ -4,11 +4,15 @@ const ORANGE = rgb(0.878, 0.478, 0.373);
 const DARK   = rgb(0.12, 0.12, 0.2);
 const GRAY   = rgb(0.4, 0.4, 0.4);
 
-function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+function fmtDate(d: string | null | undefined): string {
+  if (!d) return '';
+  const date = new Date(d);
+  if (isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
-function fmtPrice(n: number) {
-  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2 }).format(n) + ' EUR';
+function fmtPrice(n: number | null | undefined): string {
+  const num = typeof n === 'number' && !isNaN(n) ? n : 0;
+  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2 }).format(num) + ' EUR';
 }
 
 export interface FactureLigne {

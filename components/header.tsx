@@ -94,7 +94,7 @@ export function Header({ variant: _variant = 'minimal' }: HeaderProps) {
                   }`}
                 >
                   <Users className="w-3.5 h-3.5" />
-                  <span className="hidden xs:inline">Pro</span>
+                  <span>Pro</span>
                 </button>
                 <button
                   onClick={() => setMode('kids')}
@@ -106,7 +106,7 @@ export function Header({ variant: _variant = 'minimal' }: HeaderProps) {
                   }`}
                 >
                   <Baby className="w-3.5 h-3.5" />
-                  <span className="hidden xs:inline">Kids</span>
+                  <span>Kids</span>
                 </button>
               </div>
             )}
@@ -166,6 +166,16 @@ export function Header({ variant: _variant = 'minimal' }: HeaderProps) {
                   Admin
                 </Link>
               )}
+              {/* Accès espace professionnel */}
+              <Link
+                href="/acceder-pro"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-4 py-3 rounded-lg text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 flex items-center gap-3 transition-all focus:outline-none focus:ring-2 focus:ring-primary/50"
+              >
+                <Users className="w-4 h-4" />
+                Accéder à mon espace pro
+              </Link>
+
               {/* Reset in mobile menu */}
               {mounted && (
                 <button

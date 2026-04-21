@@ -1,8 +1,13 @@
 -- ----------------------------------------------------------------------------
 -- preview.sql — Seed minimal pour Supabase branch preview/e2e-tests
 --
--- 3 séjours fictifs + 1 structure test + 1 user test Thanh
+-- 3 séjours fictifs + 1 structure test
 -- Zéro PII réelle. Régénérable à volonté.
+--
+-- Tables cibles (schéma prod vérifié 2026-04-21) :
+--   - gd_stays (PK slug)
+--   - gd_stay_sessions (PK composite stay_slug + start_date)
+--   - gd_structures (PK id uuid auto)
 --
 -- Appliqué auto par scripts/preview/create-branch.sh
 -- ----------------------------------------------------------------------------
@@ -43,23 +48,21 @@ INSERT INTO gd_stays (
   )
 ON CONFLICT (slug) DO NOTHING;
 
--- 2. Sessions (1 par séjour, dates futures)
-INSERT INTO gd_sessions (stay_slug, session_id, date_debut, date_fin, price_cents, age_min, age_max, places_restantes, is_full)
+-- 2. Sessions (1 par séjour, dates futures) — table gd_stay_sessions
+INSERT INTO gd_stay_sessions (
+  stay_slug, start_date, end_date, seats_left, city_departure,
+  price, age_min, age_max, is_full, transport_included
+)
 VALUES
-  ('preview-test-montagne', 'preview-montagne-s1', '2026-07-15', '2026-07-22', 69000, 8, 14, 15, false),
-  ('preview-test-mer', 'preview-mer-s1', '2026-07-20', '2026-08-03', 89000, 6, 12, 20, false),
-  ('preview-test-equitation', 'preview-equitation-s1', '2026-08-10', '2026-08-20', 79000, 10, 17, 12, false)
-ON CONFLICT (session_id) DO NOTHING;
+  ('preview-test-montagne',   '2026-07-15', '2026-07-22', 15, 'Lyon',        690.00, 8,  14, false, true),
+  ('preview-test-mer',        '2026-07-20', '2026-08-03', 20, 'Paris',       890.00, 6,  12, false, true),
+  ('preview-test-equitation', '2026-08-10', '2026-08-20', 12, 'Bordeaux',    790.00, 10, 17, false, true)
+ON CONFLICT DO NOTHING;
 
--- 3. Structure test (foyer ASE fictif)
-INSERT INTO gd_structures (code, nom, type, email_direction, statut, created_at)
-VALUES ('PREVIEW-TEST', 'Foyer Test Preview', 'foyer', 'preview@groupeetdecouverte.test', 'active', NOW())
-ON CONFLICT (code) DO NOTHING;
-
--- 4. Thanh user fictif (sans mdp — test via magic link)
--- Note : le vrai compte user passera par Supabase Auth — ici juste un educateur_email valide
--- pour tester les flows /educateur/souhait/[token].
--- Pas d'insert gd_users ici : créé à la volée lors de l'inscription test.
+-- 3. Structure test (foyer ASE fictif) — gd_structures
+INSERT INTO gd_structures (name, type, email, status, code, address_private)
+VALUES ('Foyer Test Preview', 'foyer', 'preview@groupeetdecouverte.test', 'active', 'PREVIEW-TEST', false)
+ON CONFLICT DO NOTHING;
 
 COMMIT;
 
@@ -68,6 +71,6 @@ COMMIT;
 -- ----------------------------------------------------------------------------
 SELECT 'gd_stays seed' AS table_name, count(*) AS rows FROM gd_stays WHERE slug LIKE 'preview-%'
 UNION ALL
-SELECT 'gd_sessions seed', count(*) FROM gd_sessions WHERE session_id LIKE 'preview-%'
+SELECT 'gd_stay_sessions seed', count(*) FROM gd_stay_sessions WHERE stay_slug LIKE 'preview-%'
 UNION ALL
 SELECT 'gd_structures seed', count(*) FROM gd_structures WHERE code = 'PREVIEW-TEST';

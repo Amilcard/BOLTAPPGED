@@ -86,8 +86,18 @@ function PdfDownloadButton({ inscriptionId, token, docType, label, pdfUrl, pdfEm
         ? `${pdfUrl}?type=${docType}`
         : `/api/dossier-enfant/${inscriptionId}/pdf?token=${token}&type=${docType}`;
       const res = await fetch(url);
-      if (!res.ok) throw new Error('Erreur téléchargement');
+      if (!res.ok) {
+        // Consommer et ignorer le body (souvent JSON d'erreur) — on affiche un
+        // message humain, jamais le payload brut.
+        await res.text().catch(() => '');
+        throw new Error('Erreur lors de la génération du PDF. Réessayez ou contactez le support.');
+      }
       const blob = await res.blob();
+      // Garde-fou : si le serveur renvoie 200 mais avec du JSON (contrat cassé),
+      // on ne télécharge pas un PDF corrompu — on bascule en erreur humaine.
+      if (blob.type && blob.type.includes('application/json')) {
+        throw new Error('Erreur lors de la génération du PDF. Réessayez ou contactez le support.');
+      }
       const objUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = objUrl;
@@ -138,7 +148,7 @@ function PdfDownloadButton({ inscriptionId, token, docType, label, pdfUrl, pdfEm
       {downloadError && !emailSent && (
         <div className="text-xs text-amber-700 space-y-1">
           {retryCount < 2 ? (
-            <p>Le document n&apos;est pas sorti. <button onClick={handleDownload} className="underline">Réessayer</button></p>
+            <p>Erreur lors de la génération du PDF. <button onClick={handleDownload} className="underline">Réessayer</button></p>
           ) : (
             <p>
               Toujours bloqué ?{' '}

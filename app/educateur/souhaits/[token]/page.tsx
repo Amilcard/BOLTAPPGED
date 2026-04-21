@@ -9,6 +9,7 @@ interface Souhait {
   id: string;
   kid_prenom: string | null;
   kid_prenom_referent: string | null;
+  nom_groupe: string | null;
   sejour_slug: string;
   sejour_titre: string | null;
   motivation: string;
@@ -219,6 +220,9 @@ function SouhaitCard({ souhait: initialSouhait }: { souhait: Souhait }) {
             </div>
             <div>
               <p className="font-semibold text-gray-900 text-sm">{souhait.kid_prenom || 'Anonyme'}</p>
+              {souhait.nom_groupe && (
+                <p className="text-xs text-gray-500">Groupe : {souhait.nom_groupe}</p>
+              )}
               {souhait.kid_prenom_referent && (
                 <p className="text-xs text-gray-400">accompagné par {souhait.kid_prenom_referent}</p>
               )}

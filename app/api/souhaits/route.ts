@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
       kidSessionToken,   // UUID localStorage du kid
       kidPrenom,
       kidPrenomReferent, // prénom de l'accompagnant (optionnel)
+      nomGroupe,         // nom foyer/structure/groupe (optionnel, max 80)
       sejourSlug,
       sejourTitre,
       motivation,
@@ -57,6 +58,11 @@ export async function POST(req: NextRequest) {
       educateurPrenom,
       choixMode,         // 'seul' | 'ami' | 'educateur' | 'app' (optionnel)
     } = body;
+
+    const safeNomGroupe =
+      typeof nomGroupe === 'string' && nomGroupe.trim()
+        ? nomGroupe.trim().slice(0, 80)
+        : null;
 
     // Valider choixMode si fourni
     const validChoixModes = ['seul', 'ami', 'educateur', 'app'];
@@ -107,7 +113,9 @@ export async function POST(req: NextRequest) {
         motivation,
         educateur_email: safeEmail,
         educateur_prenom: educateurPrenom || null,
+        kid_prenom: typeof kidPrenom === 'string' && kidPrenom.trim() ? kidPrenom.trim().slice(0, 40) : null,
         kid_prenom_referent: kidPrenomReferent || null,
+        nom_groupe: safeNomGroupe,
         choix_mode: safeChoixMode,
         status: 'emis',
         reponse_educateur: null,
@@ -163,8 +171,9 @@ export async function POST(req: NextRequest) {
       .from('gd_souhaits')
       .insert({
         kid_session_token: kidSessionToken,
-        kid_prenom: typeof kidPrenom === 'string' && kidPrenom.trim() ? kidPrenom.trim() : null,
+        kid_prenom: typeof kidPrenom === 'string' && kidPrenom.trim() ? kidPrenom.trim().slice(0, 40) : null,
         kid_prenom_referent: kidPrenomReferent || null,
+        nom_groupe: safeNomGroupe,
         sejour_slug: sejourSlug,
         sejour_titre: sejourTitre || null,
         motivation,

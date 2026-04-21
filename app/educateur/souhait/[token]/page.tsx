@@ -8,6 +8,7 @@ import { Heart, Check, MessageCircle, X, Clock, ExternalLink, LockKeyhole } from
 interface Souhait {
   id: string;
   kid_prenom: string | null;
+  nom_groupe: string | null;
   sejour_slug: string;
   sejour_titre: string;
   sejour_image_url?: string | null;
@@ -135,6 +136,9 @@ export default function EducateurSouhaitPage() {
             <div>
               <p className="text-xs text-gray-400">Souhait de</p>
               <h2 className="text-lg font-bold text-primary">{souhait.kid_prenom || 'Anonyme'}</h2>
+              {souhait.nom_groupe && (
+                <p className="text-xs text-gray-500 mt-0.5">Groupe : {souhait.nom_groupe}</p>
+              )}
             </div>
           </div>
 

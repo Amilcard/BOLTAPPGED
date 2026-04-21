@@ -23,7 +23,7 @@ export async function GET(
     const supabase = getSupabaseAdmin();
     const { data, error } = await supabase
       .from('gd_souhaits')
-      .select('id, kid_prenom, kid_prenom_referent, sejour_slug, sejour_titre, motivation, status, reponse_educateur, reponse_date, educateur_prenom, choix_mode, created_at')
+      .select('id, kid_prenom, kid_prenom_referent, nom_groupe, sejour_slug, sejour_titre, motivation, status, reponse_educateur, reponse_date, educateur_prenom, choix_mode, created_at')
       .eq('educateur_email', email)
       .order('created_at', { ascending: false });
 

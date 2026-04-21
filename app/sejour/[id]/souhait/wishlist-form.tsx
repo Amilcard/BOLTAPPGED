@@ -45,6 +45,8 @@ function toChoixMode(origin: DiscoveryOrigin): string | null {
 
 export function WishlistForm({ stayTitle, staySlug }: WishlistFormProps) {
   const router = useRouter();
+  const [prenom, setPrenom]                     = useState('');
+  const [nomGroupe, setNomGroupe]               = useState('');
   const [motivation, setMotivation]             = useState('');
   const [educateurEmail, setEducateurEmail]     = useState('');
   const [discoveryOrigin, setDiscoveryOrigin]   = useState<DiscoveryOrigin>(null);
@@ -75,7 +77,9 @@ export function WishlistForm({ stayTitle, staySlug }: WishlistFormProps) {
   }, [errors]);
 
   const isFormValid = () =>
-    motivation.trim().length >= minMessageChars && validateEmail(educateurEmail);
+    prenom.trim().length > 0 &&
+    motivation.trim().length >= minMessageChars &&
+    validateEmail(educateurEmail);
 
   const handleSaveMotivation = async () => {
     if (isSubmitting) return;
@@ -94,6 +98,8 @@ export function WishlistForm({ stayTitle, staySlug }: WishlistFormProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           kidSessionToken,
+          kidPrenom: prenom.trim(),
+          nomGroupe: nomGroupe.trim() || null,
           sejourSlug: staySlug,
           sejourTitre: stayTitle,
           motivation: motivation.trim(),
@@ -181,6 +187,53 @@ export function WishlistForm({ stayTitle, staySlug }: WishlistFormProps) {
 
       {!saved && (
         <>
+          {/* Prénom du jeune (required) */}
+          <div className="mb-4">
+            <Label htmlFor="kid-prenom" className="block text-sm font-medium text-primary mb-2">
+              Ton prénom <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="kid-prenom"
+              type="text"
+              value={prenom}
+              onChange={(e) => setPrenom(e.target.value.slice(0, 40))}
+              onBlur={() => {
+                if (!prenom.trim()) {
+                  setErrors(prev => ({ ...prev, prenom: 'Ton prénom est obligatoire.' }));
+                } else {
+                  setErrors(prev => { const { prenom: _p, ...rest } = prev; return rest; });
+                }
+              }}
+              placeholder="Ex: Lina"
+              className="focus-visible:ring-secondary"
+              maxLength={40}
+              required
+              aria-invalid={!!errors.prenom}
+              aria-describedby={errors.prenom ? 'error-prenom' : undefined}
+            />
+            {errors.prenom && (
+              <p id="error-prenom" className="mt-1 text-xs text-red-600" role="alert">
+                {errors.prenom}
+              </p>
+            )}
+          </div>
+
+          {/* Nom du groupe (optionnel) */}
+          <div className="mb-4">
+            <Label htmlFor="nom-groupe" className="block text-sm font-medium text-primary mb-2">
+              Nom du groupe <span className="text-xs text-gray-400 font-normal">(optionnel)</span>
+            </Label>
+            <Input
+              id="nom-groupe"
+              type="text"
+              value={nomGroupe}
+              onChange={(e) => setNomGroupe(e.target.value.slice(0, 80))}
+              placeholder="Ex: MECS Les Hirondelles, Foyer Soleil…"
+              className="focus-visible:ring-secondary"
+              maxLength={80}
+            />
+          </div>
+
           {/* Email éducateur */}
           <div className="mb-4">
             <Label htmlFor="educateur-email" className="block text-sm font-medium text-primary mb-2">
@@ -297,7 +350,7 @@ export function WishlistForm({ stayTitle, staySlug }: WishlistFormProps) {
             {isSubmitting ? (
               <><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> On note ça...</>
             ) : (
-              'Envoyer mon envie'
+              'Envoyer mon souhait'
             )}
           </Button>
 
@@ -305,7 +358,7 @@ export function WishlistForm({ stayTitle, staySlug }: WishlistFormProps) {
           <div className="flex flex-col gap-2">
             <Button variant="secondary" asChild className="w-full" size="lg">
               <Link href="/envies">
-                <Heart className="w-4 h-4" aria-hidden="true" /> Voir mes envies
+                <Heart className="w-4 h-4" aria-hidden="true" /> Voir mes souhaits
               </Link>
             </Button>
             <Button
@@ -328,7 +381,7 @@ export function WishlistForm({ stayTitle, staySlug }: WishlistFormProps) {
           </Button>
           <Button variant="secondary" asChild className="w-full" size="lg">
             <Link href="/envies">
-              <Heart className="w-4 h-4" aria-hidden="true" /> Voir mes envies
+              <Heart className="w-4 h-4" aria-hidden="true" /> Voir mes souhaits
             </Link>
           </Button>
           <Button

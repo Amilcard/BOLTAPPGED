@@ -12,6 +12,7 @@ process.env.NEXTAUTH_SECRET = 'test-secret-32-chars-minimum-key!';
 const mockFrom = jest.fn();
 const mockSendProposition = jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' });
 const mockGeneratePdf = jest.fn().mockResolvedValue(new Uint8Array([1, 2, 3]));
+const mockLogEmailFailure = jest.fn().mockResolvedValue(undefined);
 
 jest.mock('@/lib/supabase-server', () => ({
   getSupabaseAdmin: () => ({ from: mockFrom }),
@@ -19,6 +20,10 @@ jest.mock('@/lib/supabase-server', () => ({
 
 jest.mock('@/lib/email', () => ({
   sendPropositionEmail: (...args: unknown[]) => mockSendProposition(...args),
+}));
+
+jest.mock('@/lib/email-logger', () => ({
+  logEmailFailure: (...args: unknown[]) => mockLogEmailFailure(...args),
 }));
 
 jest.mock('@/lib/pdf-proposition', () => ({
@@ -230,9 +235,9 @@ describe('runSendProposition', () => {
     expect(auditLog).not.toHaveBeenCalled();
   });
 
-  test('Email échoue après UPDATE → 502 + auditLog avec email_status=failed', async () => {
+  test('L5 — Email KO (provider_error) → 502 + logEmailFailure + auditLog email_status=failed', async () => {
     setupSupabase({ prop: sampleProp() });
-    mockSendProposition.mockRejectedValueOnce(new Error('SMTP timeout'));
+    mockSendProposition.mockResolvedValueOnce({ sent: false, reason: 'provider_error' });
 
     const res = await runSendProposition({
       id: PROP_ID,
@@ -244,14 +249,69 @@ describe('runSendProposition', () => {
       error: 'Statut mis à jour mais envoi email échoué.',
       status: 502,
     });
+
+    // logEmailFailure centralisé appelé avec context + result + resourceType/Id
+    expect(mockLogEmailFailure).toHaveBeenCalledWith(
+      'sendPropositionEmail',
+      { sent: false, reason: 'provider_error' },
+      'proposition',
+      PROP_ID,
+    );
+
+    // auditLog reflète email_status + reason (ENUM, pas PII)
     expect(auditLog).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
         action: 'submit',
-        metadata: expect.objectContaining({ email_status: 'failed' }),
+        metadata: expect.objectContaining({
+          email_status: 'failed',
+          reason: 'provider_error',
+        }),
       }),
     );
-    // Reset pour tests suivants
-    mockSendProposition.mockResolvedValue(undefined);
+    // Anti-PII : demandeur_email NE DOIT PAS figurer dans le metadata auditLog
+    const auditCall = (auditLog as jest.Mock).mock.calls[0][1];
+    expect(auditCall.metadata).not.toHaveProperty('demandeur_email');
+  });
+
+  test('L5 — Email KO (missing_api_key) → 502 + reason propagé', async () => {
+    setupSupabase({ prop: sampleProp() });
+    mockSendProposition.mockResolvedValueOnce({ sent: false, reason: 'missing_api_key' });
+
+    const res = await runSendProposition({
+      id: PROP_ID,
+      actorEmail: 'admin@gd.fr',
+    });
+
+    expect(res).toEqual({
+      ok: false,
+      error: 'Statut mis à jour mais envoi email échoué.',
+      status: 502,
+    });
+    expect(mockLogEmailFailure).toHaveBeenCalledWith(
+      'sendPropositionEmail',
+      { sent: false, reason: 'missing_api_key' },
+      'proposition',
+      PROP_ID,
+    );
+  });
+
+  test('L5 — happy path : pas de logEmailFailure, auditLog email_status=sent', async () => {
+    setupSupabase({ prop: sampleProp() });
+    mockSendProposition.mockResolvedValueOnce({ sent: true, messageId: 'msg-abc' });
+
+    const res = await runSendProposition({
+      id: PROP_ID,
+      actorEmail: 'admin@gd.fr',
+    });
+
+    expect(res).toEqual({ ok: true });
+    expect(mockLogEmailFailure).not.toHaveBeenCalled();
+    expect(auditLog).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        metadata: expect.objectContaining({ email_status: 'sent' }),
+      }),
+    );
   });
 });

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyProSession } from '@/lib/auth-middleware';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendPropositionAlertGED } from '@/lib/email';
+import { logEmailFailure } from '@/lib/email-logger';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
@@ -111,14 +112,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  await sendPropositionAlertGED({
+  // L5/6 — refactor EmailResult : await + check sent, mais on NE BLOQUE PAS
+  // la réponse 201 (l'insert proposition a réussi côté DB, l'alerte admin est
+  // un side-effect best-effort). M2 audit 2026-04-21 : tracer proprement les
+  // échecs via logEmailFailure plutôt qu'un console.error seul.
+  const alertResult = await sendPropositionAlertGED({
     demandeurNom:   auth.structureName || auth.email,
     demandeurEmail: auth.email,
     sejourTitre,
     sessionDate:    dateFormatted,
     villeDepart:    city_departure,
     propositionId:  proposition.id,
-  }).catch(err => console.error('[propositions/request] alert email failed:', err));
+  });
+  if (!alertResult.sent) {
+    await logEmailFailure('sendPropositionAlertGED', alertResult, 'proposition', proposition.id);
+  }
 
   return NextResponse.json({ ok: true, propositionId: proposition.id }, { status: 201 });
 }

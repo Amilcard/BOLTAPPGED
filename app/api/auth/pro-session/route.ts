@@ -1,6 +1,5 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { resolveCodeToStructure } from '@/lib/structure';
 import { buildProSessionToken, type ProStructureRole } from '@/lib/auth-middleware';
 
@@ -8,7 +7,7 @@ const MAX_ATTEMPTS = 10;
 const WINDOW_MINUTES = 5;
 
 // M6 fix : centraliser sur isRateLimited() RPC atomique (lib/rate-limit.ts)
-import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
+import { isRateLimited, resetRateLimit, getClientIpFromHeaders } from '@/lib/rate-limit';
 function getClientIp(req: NextRequest): string {
   return getClientIpFromHeaders(req.headers);
 }
@@ -100,9 +99,12 @@ export async function POST(req: NextRequest) {
       maxAge: 1800, // 30 min
     });
 
-    // 6. Reset rate limit après succès
-    const supabase = getSupabaseAdmin();
-    await supabase.from('gd_login_attempts').delete().eq('ip', `pro:${ip}`);
+    // 6. Reset rate limit après succès.
+    // M3 audit functional-bug-hunter 2026-04-21 : auparavant le delete utilisait
+    // la clé brute `pro:${ip}` sans hashage — donc ne matchait JAMAIS la ligne
+    // réellement stockée (qui est `h:<hash>` quand RATE_LIMIT_HMAC_SECRET actif).
+    // Helper `resetRateLimit` applique le même hash que `isRateLimited`.
+    await resetRateLimit('pro', ip);
 
     return response;
   } catch (error) {

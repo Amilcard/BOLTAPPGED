@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { headers } from 'next/headers';
 import { sendPaymentConfirmedAdminNotification, sendPaymentConfirmedClient } from '@/lib/email';
+import { logEmailFailure } from '@/lib/email-logger';
 import { errorResponse } from '@/lib/auth-middleware';
 
 // ── Helpers idempotency ──
@@ -112,17 +113,23 @@ export async function POST(req: NextRequest) {
             .from('gd_inscriptions')
             .update({ payment_status: 'amount_mismatch' })
             .eq('id', inscriptionId);
-          // Alerte admin — montant divergent, intervention manuelle requise
-          sendPaymentConfirmedAdminNotification({
-            inscriptionId,
-            referentNom: (inscription.referent_nom as string) || '',
-            jeunePrenom: (inscription.jeune_prenom as string) || '',
-            jeuneNom: (inscription.jeune_nom as string) || '',
-            sejourSlug: (inscription.sejour_slug as string) || '',
-            dossierRef: (inscription.dossier_ref as string) || '',
-            amount: stripeAmountEur,
-            subject: `[ALERTE] AMOUNT MISMATCH — Stripe ${stripeAmountEur}€ vs DB ${dbAmount}€`,
-          }).catch((err) => { console.error('[webhook/stripe] sendAmountMismatchAlert failed', err); });
+          // Alerte admin — montant divergent, intervention manuelle requise.
+          // L5/6 : EmailResult + logEmailFailure. JAMAIS return 500 (retry loop Stripe).
+          {
+            const r = await sendPaymentConfirmedAdminNotification({
+              inscriptionId,
+              referentNom: (inscription.referent_nom as string) || '',
+              jeunePrenom: (inscription.jeune_prenom as string) || '',
+              jeuneNom: (inscription.jeune_nom as string) || '',
+              sejourSlug: (inscription.sejour_slug as string) || '',
+              dossierRef: (inscription.dossier_ref as string) || '',
+              amount: stripeAmountEur,
+              subject: `[ALERTE] AMOUNT MISMATCH — Stripe ${stripeAmountEur}€ vs DB ${dbAmount}€`,
+            });
+            if (!r.sent) {
+              await logEmailFailure('stripe_amount_mismatch_admin', r, 'payment', inscriptionId);
+            }
+          }
           // amount_mismatch est permanent — claim déjà fait, Stripe ne réessaiera pas
           break;
         }
@@ -153,7 +160,10 @@ export async function POST(req: NextRequest) {
             const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.groupeetdecouverte.fr';
             const suiviUrl = rec.suivi_token ? `${appUrl}/suivi/${rec.suivi_token as string}` : null;
 
-            sendPaymentConfirmedAdminNotification({
+            // L5/6 — EmailResult + logEmailFailure. Notifications best-effort :
+            // JAMAIS return 500 ici (retry loop Stripe). Claim gd_processed_events
+            // déjà posé en amont → idempotence OK même si email KO ponctuel.
+            const adminNotif = await sendPaymentConfirmedAdminNotification({
               inscriptionId,
               referentNom: (rec.referent_nom as string) || '',
               jeunePrenom: (rec.jeune_prenom as string) || '',
@@ -161,10 +171,13 @@ export async function POST(req: NextRequest) {
               sejourSlug: (rec.sejour_slug as string) || '',
               dossierRef: (rec.dossier_ref as string) || '',
               amount: paymentIntent.amount / 100,
-            }).catch((err) => { console.error('[webhook/stripe] sendPaymentConfirmedAdminNotification failed', err); });
+            });
+            if (!adminNotif.sent) {
+              await logEmailFailure('stripe_payment_confirmed_admin', adminNotif, 'payment', inscriptionId);
+            }
 
             // Confirmation client (référent) — H1 backlog
-            sendPaymentConfirmedClient({
+            const clientNotif = await sendPaymentConfirmedClient({
               referentEmail: (rec.referent_email as string) || '',
               referentNom: (rec.referent_nom as string) || '',
               jeunePrenom: (rec.jeune_prenom as string) || '',
@@ -173,7 +186,10 @@ export async function POST(req: NextRequest) {
               dossierRef: (rec.dossier_ref as string) || '',
               amount: paymentIntent.amount / 100,
               suiviUrl,
-            }).catch((err) => { console.error('[webhook/stripe] sendPaymentConfirmedClient failed', { inscriptionId, err: err?.message }); });
+            });
+            if (!clientNotif.sent) {
+              await logEmailFailure('stripe_payment_confirmed_client', clientNotif, 'payment', inscriptionId);
+            }
           }
         }
         break;

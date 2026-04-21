@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendPropositionEmail } from '@/lib/email';
+import { logEmailFailure } from '@/lib/email-logger';
 import { generatePropositionPdf } from '@/lib/pdf-proposition';
 import { auditLog } from '@/lib/audit-log';
 import { UUID_RE, EMAIL_REGEX } from '@/lib/validators';
@@ -97,19 +98,23 @@ export async function runSendProposition(params: {
   // Génération PDF + envoi email APRÈS lock du statut.
   const pdfBytes = await generatePropositionPdf(prop as Record<string, unknown>);
 
-  try {
-    await sendPropositionEmail({
-      to:              destEmail,
-      destinataireNom: prop.demandeur_nom || destEmail,
-      sejourTitre:     prop.sejour_titre || prop.sejour_slug,
-      dossierRef:      prop.id.slice(0, 8).toUpperCase(),
-      pdfBuffer:       pdfBytes,
-    });
-  } catch (emailErr) {
+  // L5/6 — refactor EmailResult : check sent au lieu de try/catch.
+  // M1 audit 2026-04-21 : sans ce check, un échec silencieux (missing_api_key,
+  // provider_error) laissait proposition en 'envoyee' en DB + toast admin OK
+  // mais aucun email envoyé. Désormais, retour 502 explicite + log centralisé.
+  const emailResult = await sendPropositionEmail({
+    to:              destEmail,
+    destinataireNom: prop.demandeur_nom || destEmail,
+    sejourTitre:     prop.sejour_titre || prop.sejour_slug,
+    dossierRef:      prop.id.slice(0, 8).toUpperCase(),
+    pdfBuffer:       pdfBytes,
+  });
+
+  if (!emailResult.sent) {
     // Status déjà à 'envoyee' : on ne revert pas (évite le risque de doublon
     // si retry sur instance suivante). L'audit reflète l'échec email pour
-    // qu'un opérateur puisse renvoyer manuellement.
-    console.error('[propositions/send] email failed:', emailErr);
+    // qu'un opérateur puisse renvoyer manuellement + logEmailFailure centralisé.
+    await logEmailFailure('sendPropositionEmail', emailResult, 'proposition', id);
     await auditLog(supabase, {
       action: 'submit',
       resourceType: 'proposition',
@@ -119,10 +124,9 @@ export async function runSendProposition(params: {
       ipAddress: ip,
       metadata: {
         context: 'proposition_send',
-        demandeur_email: destEmail,
         sejour_titre: prop.sejour_titre,
         email_status: 'failed',
-        error: emailErr instanceof Error ? emailErr.message : 'unknown',
+        reason: emailResult.reason,
       },
     });
     return { ok: false, error: 'Statut mis à jour mais envoi email échoué.', status: 502 };
@@ -135,7 +139,7 @@ export async function runSendProposition(params: {
     actorType: 'admin',
     actorId: actorEmail,
     ipAddress: ip,
-    metadata: { context: 'proposition_send', demandeur_email: destEmail, sejour_titre: prop.sejour_titre, email_status: 'sent' },
+    metadata: { context: 'proposition_send', sejour_titre: prop.sejour_titre, email_status: 'sent' },
   });
 
   return { ok: true };

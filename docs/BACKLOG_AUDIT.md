@@ -65,6 +65,12 @@ Non corrigés automatiquement dans la vague 2026-04-18 — requièrent validatio
 |---|---|---|---|
 | 8 | `lib/structure.ts:80-91, 117-125` | **Directeur/CDS bloqué dès la 1re invitation équipe** : dès qu'une entrée est créée dans `gd_structure_access_codes`, le fallback legacy était désactivé. Workaround DB manuel appliqué 2026-04-21. | ✅ **RÉSOLU 2026-04-21 (commit b8ecf7d)** — guard restreint à `role='direction'`. Le fallback legacy reste actif tant qu'aucune entrée direction migrée n'existe. Symétrie CDS appliquée. |
 
+## Dettes UX — audit 2026-04-21
+
+| # | Zone | Dette | Impact | Urgence |
+|---|---|---|---|---|
+| M3 | `app/structure/[code]/page.tsx` | Aucun écran côté structure ne liste les propositions tarifaires reçues. Seul canal actuel = email + PDF attaché. Si email perdu → structure ne peut pas consulter. | UX majeure, compense M1/M2 déjà fixés | 🟠 Medium — créer `StructurePropositionsTab` (lecture de `gd_propositions_tarifaires` filtré par `structure_id`), ajouter onglet dans dashboard structure. |
+
 ## Dettes RGPD — audit 2026-04-21
 
 | # | Zone | Dette | Impact | Urgence |

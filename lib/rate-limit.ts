@@ -98,3 +98,26 @@ export function getClientIpFromHeaders(headers: Headers): string {
     'unknown'
   );
 }
+
+/**
+ * Reset l'entrée rate-limit pour une clé donnée.
+ *
+ * Utilise le MÊME hash que `isRateLimited` (préfixe `h:` + HMAC-SHA256) —
+ * indispensable sinon le `.delete()` ne matche jamais la ligne réellement
+ * stockée quand `RATE_LIMIT_HMAC_SECRET` est configuré.
+ *
+ * Appelé typiquement après un succès d'authentification pour créditer
+ * l'utilisateur légitime (évite qu'un user qui réussit consomme du quota).
+ *
+ * Fail-silent : une erreur DB n'est PAS bloquante — le cron `gd_login_attempts`
+ * purge de toute façon les entrées > fenêtre. Log seulement.
+ */
+export async function resetRateLimit(prefix: string, ip: string): Promise<void> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const key = hashRateLimitKey(`${prefix}:${ip}`);
+    await supabase.from('gd_login_attempts').delete().eq('ip', key);
+  } catch (err) {
+    console.error('[rate-limit] resetRateLimit failed:', err);
+  }
+}

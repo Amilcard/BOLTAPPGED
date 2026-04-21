@@ -5,6 +5,7 @@ import { requireStructureRole } from '@/lib/structure-guard';
 import { requireInscriptionOwnership } from '@/lib/resource-guard';
 import { auditLog } from '@/lib/audit-log';
 import { sendIncidentNotification } from '@/lib/email';
+import { logEmailFailure } from '@/lib/email-logger';
 import { structureRateLimitGuard } from '@/lib/rate-limit-structure';
 
 const VALID_CATEGORIES = ['medical', 'comportemental', 'fugue', 'accident', 'autre'] as const;
@@ -167,17 +168,36 @@ export async function POST(
     if (structureData?.email) emails.add(structureData.email);
 
     if (emails.size > 0) {
-      try {
-        await sendIncidentNotification([...emails], {
-          structureName: (resolved.structure as { name?: string }).name || 'Structure',
-          jeunePrenom: inscData?.jeune_prenom || 'Enfant',
-          category: category as string,
-          severity: severity as string,
-          description: (description as string).trim(),
-          createdBy: resolved.email || 'unknown',
+      // L5/6 — EmailResult + logEmailFailure. SENSIBLE RGPD (sécurité enfants) :
+      // on NE BLOQUE PAS la création incident (201 Created conservé) — un incident
+      // enregistré sans email notifié > incident non tracé. En revanche on audit
+      // deux fois : logEmailFailure (reason enum) + auditLog sévérité haute pour
+      // qu'un opérateur puisse renvoyer manuellement la notification.
+      const notif = await sendIncidentNotification([...emails], {
+        structureName: (resolved.structure as { name?: string }).name || 'Structure',
+        jeunePrenom: inscData?.jeune_prenom || 'Enfant',
+        category: category as string,
+        severity: severity as string,
+        description: (description as string).trim(),
+        createdBy: resolved.email || 'unknown',
+      });
+      if (!notif.sent) {
+        await logEmailFailure('sendIncidentNotification', notif, 'incident', incident.id);
+        await auditLog(supabase, {
+          action: 'update',
+          resourceType: 'structure',
+          resourceId: incident.id,
+          inscriptionId: inscription_id as string,
+          actorType: 'system',
+          metadata: {
+            type: 'incident_notification_failed',
+            severity: severity as string,
+            reason: notif.reason,
+            // RGPD Art. 33/34 : notification ratée sur incident sensible.
+            // Alerte opérateur pour renvoi manuel.
+            alert: 'notification_email_missing',
+          },
         });
-      } catch (emailErr) {
-        console.error('[incidents POST] notification email failed:', emailErr);
       }
     }
   }

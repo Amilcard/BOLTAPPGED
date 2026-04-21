@@ -10,7 +10,7 @@ Format : 1 ligne par item, trié par âge (plus ancien = top priorité).
 
 ## Actifs
 
-_(vide pour l'instant — ajouter les FIXME/TODO légitimes ici au fil de l'eau)_
+- [2026-04-21] `tests/e2e/*` — 85/130 tests E2E en échec depuis run 2026-04-19 (tag: tests). Fichiers 0-passant : `reservation-{kids,pro,virement}`, `dossier-enfant`, `verify-db`, `parcours-staff-fill`, `parcours-inscription-complet`. Décision dans `docs/adr/2026-04-21-e2e-smoke-only.md`. Action : restaurer par lot avant sprint F1 complet.
 
 ## Résolus
 

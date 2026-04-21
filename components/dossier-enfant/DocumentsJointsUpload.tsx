@@ -143,14 +143,15 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess, r
     }
   };
 
-  const handleDelete = async (storagePath: string) => {
-    if (!confirm('Supprimer ce document ?')) return;
+  const handleDelete = async (doc: DocJoint) => {
+    const docLabel = doc.filename || getTypeLabel(doc.type);
+    if (!confirm(`Supprimer "${docLabel}" ?`)) return;
 
     try {
       const deleteUrl = apiBase || `/api/dossier-enfant/${inscriptionId}/upload`;
       const deleteBody = isStaffMode
-        ? { storage_path: storagePath }
-        : { token, storage_path: storagePath };
+        ? { storage_path: doc.storage_path }
+        : { token, storage_path: doc.storage_path };
       const res = await fetch(deleteUrl, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
@@ -249,7 +250,7 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess, r
                 </div>
               </div>
               <button
-                onClick={() => handleDelete(doc.storage_path)}
+                onClick={() => handleDelete(doc)}
                 className="text-gray-400 hover:text-red-500 transition flex-shrink-0 ml-2"
                 title="Supprimer"
               >

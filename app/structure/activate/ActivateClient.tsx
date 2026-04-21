@@ -31,7 +31,18 @@ export default function ActivateClient() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (password.length < 12) { setError('Au moins 12 caractères.'); return; }
+    // Validation séquentielle : on pointe la PREMIÈRE règle qui manque
+    // (feedback précis, sinon l'utilisateur ne sait pas laquelle corriger).
+    // Regex dupliquées ici pour éviter d'importer `lib/password.ts` côté
+    // client (risque de bundle bcrypt/argon2).
+    const rules = [
+      { ok: password.length >= 12, msg: 'Au moins 12 caractères.' },
+      { ok: /[a-z]/.test(password), msg: 'Au moins une minuscule.' },
+      { ok: /[A-Z]/.test(password), msg: 'Au moins une majuscule.' },
+      { ok: /[0-9]/.test(password), msg: 'Au moins un chiffre.' },
+    ];
+    const firstFail = rules.find(r => !r.ok);
+    if (firstFail) { setError(firstFail.msg); return; }
     const samePwd = password.length === confirm.length
       && Array.from(password).every((c, i) => c === confirm[i]);
     if (!samePwd) { setError('Les mots de passe ne correspondent pas.'); return; }

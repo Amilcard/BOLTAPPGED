@@ -9,7 +9,7 @@
 |---|---|---|---|
 | `gd_inscriptions` | admin detail | create/update/delete | RGPD Art.9 indirect |
 | `gd_dossier_enfant` | obligatoire (Art.9 direct) | obligatoire | `verifyOwnership()` + auditLog |
-| `gd_propositions_tarifaires` | admin detail | create/update/send/delete | |
+| `gd_propositions_tarifaires` | admin detail + structure list/pdf (B2 M3) | create/update/send/delete | structure routes 2026-04-21 |
 | `gd_factures` | admin detail | create/update (PATCH status) | **Ajouté 2026-04-18** — trou détecté |
 | `gd_suivi_incidents` | pro + admin | create/update/delete | |
 | `gd_suivi_medical` | pro + admin | create/update/delete | Art.9 direct — purge 3 mois |

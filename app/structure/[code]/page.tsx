@@ -7,6 +7,7 @@ import { Building2, LogOut } from 'lucide-react';
 import StructureAdminTab from '@/components/structure/StructureAdminTab';
 import StructureEduTab from '@/components/structure/StructureEduTab';
 import StructureFacturesTab from '@/components/structure/StructureFacturesTab';
+import StructurePropositionsTab from '@/components/structure/StructurePropositionsTab';
 import StructureTeamTab from '@/components/structure/StructureTeamTab';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -101,7 +102,7 @@ export default function StructureDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [role, setRole] = useState<'direction' | 'cds' | 'cds_delegated' | 'secretariat' | 'educateur' | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'admin' | 'educatif' | 'factures' | 'team'>('admin');
+  const [activeTab, setActiveTab] = useState<'admin' | 'educatif' | 'propositions' | 'factures' | 'team'>('admin');
   const [delegFrom,  setDelegFrom]  = useState('');
   const [delegUntil, setDelegUntil] = useState('');
   const [delegSaving, setDelegSaving] = useState(false);
@@ -373,6 +374,16 @@ export default function StructureDashboard() {
                 Suivi éducatif
               </button>
             )}
+            {(role === 'direction' || role === 'cds' || role === 'cds_delegated' || role === 'secretariat' || role === 'educateur') && (
+              <button
+                onClick={() => setActiveTab('propositions')}
+                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'propositions' ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                Propositions
+              </button>
+            )}
             {(role === 'direction' || role === 'cds' || role === 'cds_delegated') && (
               <button
                 onClick={() => setActiveTab('factures')}
@@ -408,6 +419,11 @@ export default function StructureDashboard() {
             medicalCount={medicalCount}
             souhaits={data?.souhaits || []}
           />
+        )}
+
+        {/* ── Contenu onglet Propositions ── */}
+        {activeTab === 'propositions' && (
+          <StructurePropositionsTab code={code} />
         )}
 
         {/* ── Contenu onglet Factures ── */}

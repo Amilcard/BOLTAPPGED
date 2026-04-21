@@ -266,6 +266,21 @@ export async function PATCH(
         );
       }
 
+      // Sync nom_famille → gd_inscriptions.jeune_nom (Option C, 2026-04-21)
+      if (bloc === 'bulletin_complement') {
+        const nomFamille = (data as Record<string, unknown>)?.nom_famille;
+        if (typeof nomFamille === 'string' && nomFamille.trim().length > 0) {
+          const cleaned = nomFamille.trim().slice(0, 100);
+          const { error: syncErr } = await supabase
+            .from('gd_inscriptions')
+            .update({ jeune_nom: cleaned, updated_at: new Date().toISOString() })
+            .eq('id', inscriptionId);
+          if (syncErr) {
+            console.error('[structure/dossier INSERT] sync jeune_nom failed:', syncErr.message);
+          }
+        }
+      }
+
       await auditLog(supabase, {
         action: 'update',
         resourceType: 'dossier_enfant',
@@ -313,6 +328,22 @@ export async function PATCH(
         { error: { code: 'UPDATE_ERROR', message: 'Erreur mise à jour dossier.' } },
         { status: 500 },
       );
+    }
+
+    // Sync nom_famille → gd_inscriptions.jeune_nom (Option C, 2026-04-21)
+    // Miroir exact du sync côté PATCH référent.
+    if (bloc === 'bulletin_complement') {
+      const nomFamille = (data as Record<string, unknown>)?.nom_famille;
+      if (typeof nomFamille === 'string' && nomFamille.trim().length > 0) {
+        const cleaned = nomFamille.trim().slice(0, 100);
+        const { error: syncErr } = await supabase
+          .from('gd_inscriptions')
+          .update({ jeune_nom: cleaned, updated_at: new Date().toISOString() })
+          .eq('id', inscriptionId);
+        if (syncErr) {
+          console.error('[structure/dossier PATCH] sync jeune_nom failed:', syncErr.message);
+        }
+      }
     }
 
     await auditLog(supabase, {

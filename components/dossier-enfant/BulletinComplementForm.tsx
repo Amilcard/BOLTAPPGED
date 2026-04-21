@@ -23,7 +23,20 @@ interface Props {
  * - Envoi documents (adresse pour fiche liaison + convocation)
  */
 export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeuneNom }: Props) {
+  // Nom de famille — collecté au niveau dossier (décision produit Option C, 2026-04-21).
+  // Form /reserver ne capture que le prénom (minimisation RGPD février 2026) ;
+  // le nom de famille officiel est saisi ici par le responsable légal et
+  // synchronisé dans gd_inscriptions.jeune_nom côté serveur (PATCH route).
+  const nomFamilleInitial = (() => {
+    const existing = (data as Record<string, unknown>)?.nom_famille;
+    if (typeof existing === 'string' && existing.trim() !== '') return existing;
+    // jeuneNom peut être 'À RENSEIGNER' (backfill mig 074) → ignoré
+    if (jeuneNom && jeuneNom !== 'À RENSEIGNER' && jeuneNom.trim() !== '') return jeuneNom;
+    return '';
+  })();
+
   const [form, setForm] = useState<Record<string, unknown>>({
+    nom_famille: nomFamilleInitial,
     adresse_permanente: '',
     // #13 — Sous-champs adresse permanente (éclatement num/rue/CP/ville).
     // adresse_permanente (string concaténée) reste maintenu pour compat PDF.
@@ -77,6 +90,7 @@ export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeun
   // La liste reflète les contraintes métier + la checkbox d'autorisation
   // (seule condition actuelle du bouton "Valider").
   const progressFields = [
+    'nom_famille',
     'adresse_permanente',
     'contact_urgence_nom',
     'contact_urgence_telephone',
@@ -91,7 +105,7 @@ export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeun
       <div className="flex items-center gap-2 mb-2">
         <div className="w-1.5 h-6 bg-orange-500 rounded-full" />
         <h3 className="font-bold text-gray-800">
-          Bulletin d&apos;inscription — Complément pour {jeunePrenom} {jeuneNom}
+          Bulletin d&apos;inscription — Complément pour {jeunePrenom} {(form.nom_famille as string) || (jeuneNom === 'À RENSEIGNER' ? '' : jeuneNom)}
         </h3>
       </div>
 
@@ -102,6 +116,32 @@ export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeun
         toutes vos saisies sont sauvegardées automatiquement. Vous pourrez revenir
         compléter ou corriger à tout moment avant l&apos;envoi final.
       </div>
+
+      {/* Identité de l'enfant — nom de famille (collecté au niveau dossier
+          plutôt qu'à l'inscription, minimisation RGPD février 2026).
+          Synchronisé automatiquement dans gd_inscriptions.jeune_nom côté serveur. */}
+      <Section title="Identité de l'enfant">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Input
+            label="Prénom"
+            value={jeunePrenom}
+            onChange={() => { /* lecture seule : saisi à l'inscription */ }}
+            className="opacity-60 pointer-events-none"
+          />
+          <Input
+            label="Nom de famille *"
+            value={form.nom_famille}
+            onChange={v => update('nom_famille', v)}
+            required
+          />
+        </div>
+        {(!form.nom_famille || (form.nom_famille as string).trim() === '') && (
+          <p className="mt-2 text-xs text-orange-700 bg-orange-50 border border-orange-200 rounded p-2" role="note">
+            Le nom de famille est obligatoire pour les documents officiels (bulletin,
+            fiche sanitaire, fiche de liaison).
+          </p>
+        )}
+      </Section>
 
       {/* Adresse permanente — #13 éclatée en 4 champs */}
       <Section title="Adresse permanente">
@@ -216,7 +256,7 @@ export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeun
       {/* Autorisation */}
       <Section title="Autorisation du responsable légal">
         <div className="p-3 bg-gray-50 rounded-lg text-xs text-gray-600 mb-3">
-          Je soussigné(e), responsable légal de l&apos;enfant {jeunePrenom} {jeuneNom}, déclare exacts
+          Je soussigné(e), responsable légal de l&apos;enfant {jeunePrenom} {(form.nom_famille as string) || (jeuneNom === 'À RENSEIGNER' ? '' : jeuneNom)}, déclare exacts
           les renseignements ci-dessus et avoir pris connaissance et accepté les conditions générales des séjours.
           J&apos;autorise l&apos;enfant à participer au centre de vacances et à toutes les activités proposées dans le cadre du séjour.
         </div>

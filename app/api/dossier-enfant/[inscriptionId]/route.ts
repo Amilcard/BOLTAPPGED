@@ -303,6 +303,25 @@ export async function PATCH(
 
     }
 
+    // Sync nom_famille → gd_inscriptions.jeune_nom (Option C, 2026-04-21)
+    // Le nom officiel est saisi dans bulletin_complement.nom_famille par le
+    // responsable légal. On propage vers la colonne inscription pour que les
+    // PDFs / emails / dashboards affichent le nom correct sans double-lecture.
+    if (bloc === 'bulletin_complement') {
+      const nomFamille = (data as Record<string, unknown>)?.nom_famille;
+      if (typeof nomFamille === 'string' && nomFamille.trim().length > 0) {
+        const cleaned = nomFamille.trim().slice(0, 100);
+        const { error: syncErr } = await supabase
+          .from('gd_inscriptions')
+          .update({ jeune_nom: cleaned, updated_at: new Date().toISOString() })
+          .eq('id', inscriptionId);
+        if (syncErr) {
+          console.error('[dossier-enfant PATCH] sync jeune_nom failed:', syncErr.message);
+          // Non-bloquant : l'écriture dossier est déjà OK
+        }
+      }
+    }
+
     await auditLog(supabase, {
       action: 'update',
       resourceType: 'dossier_enfant',

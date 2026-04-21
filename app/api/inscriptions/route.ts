@@ -120,6 +120,9 @@ export async function POST(request: NextRequest) {
     }
 
     const data = parsed.data;
+    // B3 — capturer le prix envoyé par le front AVANT tout override serveur.
+    // Sert au logging RGPD si le serveur le remplace par la valeur DB (écart silencieux).
+    const frontPriceTotal = data.priceTotal;
 
     // Validation âge (garde-fou serveur : 3-17 ans global GED)
     const birthDate = new Date(data.childBirthDate);
@@ -259,6 +262,16 @@ export async function POST(request: NextRequest) {
       }
       // Forcer le prix vérifié (frontCalc si disponible, sinon sansBase)
       data.priceTotal = matchesFrontCalcFallback ? Math.round(frontCalcFallback) : sansBasePrice;
+      // B3 — tracer tout écart silencieux front ↔ serveur > 1€ (PII table gd_inscriptions, CLAUDE.md §15)
+      if (Math.abs(frontPriceTotal - data.priceTotal) > 1) {
+        console.warn('[inscriptions] price_corrected (fallback):', {
+          front: frontPriceTotal,
+          server: data.priceTotal,
+          diff: data.priceTotal - frontPriceTotal,
+          city: data.cityDeparture,
+          reason: 'frontend_calc_mismatch',
+        });
+      }
     } else {
       // Prix exact trouvé pour cette ville + session
       const serverCityPrice = priceRow.price_ged_total ?? 0;
@@ -298,6 +311,16 @@ export async function POST(request: NextRequest) {
       }
       // Forcer le prix serveur validé (prix ville DB = source de vérité)
       data.priceTotal = serverCityPrice;
+      // B3 — tracer tout écart silencieux front ↔ serveur > 1€ (PII table gd_inscriptions, CLAUDE.md §15)
+      if (Math.abs(frontPriceTotal - data.priceTotal) > 1) {
+        console.warn('[inscriptions] price_corrected:', {
+          front: frontPriceTotal,
+          server: data.priceTotal,
+          diff: data.priceTotal - frontPriceTotal,
+          city: data.cityDeparture,
+          reason: 'frontend_calc_mismatch',
+        });
+      }
     }
 
     // Validation âge session-spécifique AVANT la décrémentation de capacité
@@ -592,6 +615,27 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // B3 — Audit RGPD : tracer tout écart silencieux prix front ↔ serveur > 1€.
+    // Mutation PII (gd_inscriptions) — auditLog obligatoire (CLAUDE.md §15).
+    if (inscription.id && Math.abs(frontPriceTotal - data.priceTotal) > 1) {
+      await auditLog(supabase, {
+        action: 'update',
+        resourceType: 'inscription',
+        resourceId: inscription.id as string,
+        actorType: 'referent',
+        actorId: data.email,
+        ipAddress: getClientIp(request),
+        metadata: {
+          event: 'price_corrected',
+          front: frontPriceTotal,
+          server: data.priceTotal,
+          diff: data.priceTotal - frontPriceTotal,
+          city: data.cityDeparture,
+          reason: 'frontend_calc_mismatch',
+        },
+      });
+    }
+
     // Récupérer le nom marketing du séjour pour l'email
     const { data: stayInfo } = await supabasePublic
       .from('gd_stays')
@@ -611,7 +655,9 @@ export async function POST(request: NextRequest) {
       sejourSlug: sejourDisplayName,
       sessionDate: normalizedDate,
       cityDeparture: data.cityDeparture === 'sans_transport' ? 'Sans transport' : data.cityDeparture,
-      priceTotal: data.priceTotal,
+      // B3 — source de vérité = prix persisté en DB (évite tout désalignement futur
+      // si un trigger/policy modifie price_total à l'INSERT).
+      priceTotal: (inscription.price_total as number | null) ?? data.priceTotal,
       paymentMethod: data.paymentMethod,
       paymentReference: inscription.payment_reference || inscription.id,
       dossierRef: inscription.dossier_ref || dossierRef,

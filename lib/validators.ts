@@ -16,6 +16,35 @@ export function isEmail(value: unknown): boolean {
 }
 
 /**
+ * Validator de taille pour le body JSON d'une requête (Content-Length).
+ * À utiliser AVANT `request.json()` pour rejeter tôt les payloads trop gros
+ * (DoS, injection volumétrique, erreurs client).
+ *
+ * Ne remplace pas le parser JSON (qui peut encore échouer sur malformé),
+ * mais coupe les payloads volumineux sans parser.
+ *
+ * @param headers - Headers de la requête (ex: `request.headers`)
+ * @param opts.max - taille max en octets (défaut : 32 Ko = 32_768)
+ * @returns { ok: true } si OK ou header absent ; { ok: false } si trop gros
+ *
+ * Exemple :
+ *   const bodyCheck = validateBodySize(request.headers, { max: 32_768 });
+ *   if (!bodyCheck.ok) return errorResponse('PAYLOAD_TOO_LARGE', '...', 413);
+ */
+export function validateBodySize(
+  headers: Headers,
+  opts: { max?: number } = {},
+): { ok: true; bytes?: number } | { ok: false; reason: 'too_large'; actual: number; max: number } {
+  const max = opts.max ?? 32_768;
+  const raw = headers.get('content-length');
+  if (!raw) return { ok: true }; // header absent : on ne bloque pas (ex: chunked)
+  const bytes = Number.parseInt(raw, 10);
+  if (!Number.isFinite(bytes) || bytes < 0) return { ok: true }; // malformé → laisser passer, parse gérera
+  if (bytes > max) return { ok: false, reason: 'too_large', actual: bytes, max };
+  return { ok: true, bytes };
+}
+
+/**
  * Validator de taille pour upload multipart (File/Blob).
  * Complémentaire de `validateBase64Image` — utilisé pour formData uploads
  * (PDF, JPEG, PNG, WebP) côté routes upload dossier-enfant par exemple.

@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { requireStructureRole } from '@/lib/structure-guard';
 import { auditLog } from '@/lib/audit-log';
-import { structureRateLimitGuard, getStructureClientIp } from '@/lib/rate-limit-structure';
+import { structureRateLimitGuardStrict, getStructureClientIp } from '@/lib/rate-limit-structure';
 import { generateInvitationToken, computeInvitationExpiry } from '@/lib/invitation-token';
 import { sendTeamMemberInvite } from '@/lib/email';
 import { logEmailFailure } from '@/lib/email-logger';
@@ -18,7 +18,7 @@ export async function POST(
   { params }: { params: Promise<{ code: string }> }
 ) {
   try {
-    const rateLimited = await structureRateLimitGuard(req);
+    const rateLimited = await structureRateLimitGuardStrict(req);
     if (rateLimited) return rateLimited;
 
     const { code } = await params;

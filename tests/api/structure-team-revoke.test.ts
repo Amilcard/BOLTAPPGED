@@ -6,6 +6,7 @@ jest.mock('@/lib/structure');
 jest.mock('@/lib/supabase-server');
 jest.mock('@/lib/rate-limit-structure', () => ({
   structureRateLimitGuard: jest.fn().mockResolvedValue(null),
+  structureRateLimitGuardStrict: jest.fn().mockResolvedValue(null),
   getStructureClientIp: jest.fn().mockReturnValue('127.0.0.1'),
 }));
 jest.mock('@/lib/audit-log', () => ({ auditLog: jest.fn().mockResolvedValue(undefined) }));

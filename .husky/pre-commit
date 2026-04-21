@@ -10,10 +10,18 @@ if [ $? -ne 0 ]; then
 fi
 
 # 2. ESLint sur fichiers staged uniquement
+#
+# NB : --no-ignore contourne un bug ESLint 8.x où les paths Next.js
+# dynamic routes (app/api/.../[param]/route.ts) sont signalés comme
+# "File ignored by default" à cause de l'interprétation des brackets
+# comme glob character class. Le .eslintignore ne couvre que
+# supabase/** — non-modifié dans les routes app/, donc --no-ignore
+# sûr ici. Les .eslintrc.ignorePatterns (.next/, scripts/, etc.) sont
+# aussi bypassés mais ces dossiers ne sont pas staged normalement.
 echo "[2/3] ESLint..."
 STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$' || true)
 if [ -n "$STAGED" ]; then
-  echo "$STAGED" | xargs npx eslint --max-warnings 0 2>&1
+  echo "$STAGED" | xargs npx eslint --no-ignore --max-warnings 0 2>&1
   if [ $? -ne 0 ]; then
     echo "[FAIL] Erreurs ESLint."
     exit 1

@@ -51,6 +51,28 @@ Documents_Legaux/
 # tooling IA local
 .ai-workspace/
 .claude/agent-memory/
+.claude/settings.local.json
+.claude/launch.json
+.claude/skills/
+.claude/worktrees/
+.mcp.json
+
+# Supabase CLI temp (auto-généré, user-local)
+supabase/.temp/
+
+# Rapports tests locaux
+test-reports/
+
+# Briefs contenant potentiellement des secrets (à conserver hors repo)
+BRIEF_SUPABASE_KEYS_*.md
+BRIEF_*_KEYS_*.md
+
+# Fichiers de génération images IA (workflow local)
+GENERATION_IMAGES_*.json
+GENERATION\ IMAGES*.json
+
+# Exports Excel anciens formats
+*.xltx
 
 # fichiers temporaires
 .tmp-check.ts

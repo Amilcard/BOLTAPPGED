@@ -59,6 +59,12 @@
 
 Non corrigés automatiquement dans la vague 2026-04-18 — requièrent validation produit.
 
+## P1 BLOCKERS — audit 2026-04-21 (tests humains Thanh)
+
+| # | Fichier | Issue | Statut |
+|---|---|---|---|
+| 8 | `lib/structure.ts:117-125` | **Directeur bloqué dès la 1re invitation équipe** : dès qu'une entrée est créée dans `gd_structure_access_codes`, le fallback legacy `code_directeur` est désactivé — mais aucune entrée `direction` n'est créée en parallèle → directeur perd l'accès. Reproduit : Thanh invite secrétariat → ne peut plus se connecter. Workaround DB 2026-04-21 : INSERT direction entry manuelle. | 🔴 OPEN — fix structurel requis : soit créer l'entrée `direction` auto à la 1re invitation, soit ne désactiver le legacy que si une entrée `direction` existe déjà |
+
 ## Carryover audits précédents
 
 - W3 UX refacto 3 écrans C (AdminPropositionsClient, ActivateClient, StructureTeamTab)

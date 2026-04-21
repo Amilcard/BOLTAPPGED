@@ -127,12 +127,22 @@ export async function GET(
      * Écrire du texte sur le PDF.
      * Les coordonnées (x, y) sont en top-down (origine en haut à gauche),
      * converties en bottom-up pour pdf-lib.
+     *
+     * P2.3 — skip cohérent sur valeurs vides :
+     *   - null / undefined / '' → skip silencieux (comportement existant)
+     *   - littéraux 'null' / 'undefined' (data legacy bogue) → skip aussi
+     *   - inputs non-string (number, boolean, objet) → coercition sûre via String()
+     * Évite l'affichage de "null" / "undefined" dans les PDF dossier enfant (Art.9).
      */
-    const writeText = (pageIndex: number, x: number, y: number, text: string, options?: { bold?: boolean; size?: number }) => {
+    const writeText = (pageIndex: number, x: number, y: number, text: unknown, options?: { bold?: boolean; size?: number }) => {
       const page = pdfDoc.getPages()[pageIndex];
-      if (!page || !text) return;
+      if (!page) return;
+      if (text === null || text === undefined) return;
+      const str = typeof text === 'string' ? text : String(text);
+      const trimmed = str.trim();
+      if (!trimmed || trimmed === 'null' || trimmed === 'undefined') return;
       const { height } = page.getSize();
-      page.drawText(String(text).slice(0, 120), {
+      page.drawText(str.slice(0, 120), {
         x,
         y: height - y,
         size: options?.size || fontSize,

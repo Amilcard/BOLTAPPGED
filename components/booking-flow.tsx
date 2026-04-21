@@ -160,11 +160,21 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   const departureCities = (stay as Stay & { departureCities?: DepartureCity[] }).departureCities || [];
   const enrichmentSessions = (stay as Stay & { enrichmentSessions?: SessionPriceData[] }).enrichmentSessions || [];
 
-  // Normaliser la ville depuis l'URL vers le format DB
-  // "Sans transport" ou "Sans+transport" → "sans_transport"
-  const normalizedInitialCity = initialCity.toLowerCase().replace(/\s+/g, '_') === 'sans_transport'
-    ? 'sans_transport'
-    : initialCity;
+  // B3 — normalisation ville : comparaison robuste URL (ex: "Paris", "Sans+transport")
+  // ↔ DB (ex: "paris", "sans_transport"). Sans ça, le récap étape 5 affichait le prix
+  // sans transport alors que Stripe facturait le prix ville (écart silencieux, cf. find ligne 249).
+  const normalizeCity = (c: string) => c.trim().toLowerCase().replace(/\s+/g, '_');
+
+  // Résoudre initialCity (URL) vers la valeur exacte stockée en DB (dc.city)
+  // pour que tous les === ultérieurs (selectedCity === city.city, etc.) restent corrects.
+  const resolveInitialCity = (raw: string): string => {
+    if (!raw) return '';
+    const normRaw = normalizeCity(raw);
+    if (normRaw === 'sans_transport') return 'sans_transport';
+    const match = departureCities.find((dc: DepartureCity) => normalizeCity(dc.city) === normRaw);
+    return match ? match.city : raw;
+  };
+  const normalizedInitialCity = resolveInitialCity(initialCity);
 
   const getInitialStep = () => {
     if (initialSessionId && normalizedInitialCity) return 2;
@@ -177,12 +187,17 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   const [selectedCity, setSelectedCity] = useState<string>(normalizedInitialCity);
   const [loading, setLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  // B4: true dès qu'un token est reçu du widget Turnstile. Si aucune clé configurée, toujours prêt.
+  const [turnstileReady, setTurnstileReady] = useState<boolean>(!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
   // Écouter le callback Turnstile + définir le callback global (sans dangerouslySetInnerHTML)
   useEffect(() => {
     type TurnstileWindow = Window & { onTurnstileSuccess?: (t: string) => void; __turnstileToken?: string };
     const tw = window as TurnstileWindow;
-    const handler = (e: Event) => setTurnstileToken((e as CustomEvent).detail);
+    const handler = (e: Event) => {
+      setTurnstileToken((e as CustomEvent).detail);
+      setTurnstileReady(true);
+    };
     window.addEventListener('turnstile-success', handler);
     tw.onTurnstileSuccess = (token: string) => {
       tw.__turnstileToken = token;
@@ -1215,19 +1230,27 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
           )}
           {/* Turnstile CAPTCHA — RGPD-friendly (Cloudflare, pas de cookie tracking) */}
           {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
-            <div className="flex justify-center mb-4">
-              <div
-                className="cf-turnstile"
-                data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                data-callback="onTurnstileSuccess"
-                data-theme="light"
-                data-size="normal"
-              />
-              <script
-                src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-                async
-                defer
-              />
+            <div className="space-y-2 mb-4">
+              <div className="flex justify-center">
+                <div
+                  className="cf-turnstile"
+                  data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                  data-callback="onTurnstileSuccess"
+                  data-theme="light"
+                  data-size="normal"
+                />
+                <script
+                  src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+                  async
+                  defer
+                />
+              </div>
+              {!turnstileReady && (
+                <p className="text-xs text-primary-500 text-center flex items-center justify-center gap-1.5">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Vérification anti-robot en cours…
+                </p>
+              )}
             </div>
           )}
 
@@ -1240,7 +1263,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             </button>
             <button
               onClick={handleSubmit}
-              disabled={loading || totalPrice === null || ageError !== '' || !paymentMethod || !!stripeFailedInscriptionId || (!!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken)}
+              disabled={loading || totalPrice === null || ageError !== '' || !paymentMethod || !!stripeFailedInscriptionId || (!!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (!turnstileReady || !turnstileToken))}
               className="flex-1 py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}

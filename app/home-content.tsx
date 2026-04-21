@@ -112,8 +112,13 @@ export function HomeContent({
         return false;
       }
 
-      // Age filter
-      if (!ageMatchesFilter(stay.ageMin ?? 0, stay.ageMax ?? 99, filters.ages)) {
+      // Age filter — P2.4 : séjours sans âge DB (ageMin=0/ageMax=0 depuis mapper) ou
+      // valeurs manquantes sont ramenés à la tranche plateforme 3-17 ans. Évite
+      // l'exclusion systématique des séjours dont les sessions n'ont pas encore de
+      // age_min/age_max renseignés côté UFOVAL. Sémantique overlap conservée.
+      const effectiveAgeMin = stay.ageMin && stay.ageMin > 0 ? stay.ageMin : 3;
+      const effectiveAgeMax = stay.ageMax && stay.ageMax > 0 ? stay.ageMax : 17;
+      if (!ageMatchesFilter(effectiveAgeMin, effectiveAgeMax, filters.ages)) {
         return false;
       }
 

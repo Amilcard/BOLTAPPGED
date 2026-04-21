@@ -1,0 +1,45 @@
+name: CI PR Blocking
+
+# Filet PR bloquant : TypeScript + Jest unit.
+# Vient compléter typecheck.yml (push main) et eslint.yml (non-bloquant).
+# Objectif : empêcher une PR cassée d'être mergeable.
+# Voir docs/adr/2026-04-21-ci-hardening.md
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-pr-blocking-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    name: TypeScript (blocking on PR)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm install --legacy-peer-deps
+      - run: npx tsc --noEmit
+
+  unit-tests:
+    name: Jest unit (blocking on PR)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm install --legacy-peer-deps
+      - run: npm run test:unit

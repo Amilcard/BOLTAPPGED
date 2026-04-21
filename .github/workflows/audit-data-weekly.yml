@@ -1,0 +1,42 @@
+name: Audit Data Integrity (weekly)
+
+# Cron hebdo dimanche 06:00 UTC + trigger manuel.
+# Lance scripts/audit-data-integrity.ts contre la DB prod (fonction RPC gd_audit_data_integrity).
+# Upload rapport JSON en artifact, fail le job si un check 'blocking' remonte >0.
+# Voir docs/adr/2026-04-21-data-integrity-audit.md + docs/adr/2026-04-21-ci-hardening.md
+
+on:
+  schedule:
+    - cron: '0 6 * * 0'  # Dimanche 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Audit data integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # TODO: scope à un environment GitHub dédié (ex: audit-readonly)
+    # avec required reviewers avant le premier run en prod (cf. ADR).
+    environment: audit-readonly
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm install --legacy-peer-deps
+      - name: Run audit
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npm run audit:data
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: data-integrity-report
+          path: test-reports/data-integrity-*.json
+          retention-days: 90

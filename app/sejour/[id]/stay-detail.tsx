@@ -181,7 +181,14 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
 
   const isKids = mode === 'kids';
   const isPro = !isKids;
-  const canSeePrices = isPro && enrichment !== null;
+  // U1 fix (2026-04-21) — découplage auth/data.
+  // canSeePrices : droit de voir les prix = authentification pro seule.
+  // hasUfovalData : présence de données UFOVAL (sessions, prix calculés,
+  //   villes avec suppléments). Le précédent couplage `isPro && enrichment
+  //   !== null` cachait silencieusement les sections prix pour un pro sur
+  //   un séjour sans enrichment UFOVAL → parcours dégradé (audit V2).
+  const canSeePrices = isPro;
+  const hasUfovalData = isPro && enrichment !== null;
   const slug = stay?.slug ?? '';
   const isAlreadyInWishlist = mounted && !!getWishlistMotivation(slug);
 
@@ -744,7 +751,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                   <div className="flex items-center gap-2 text-xs text-primary font-medium bg-primary/5 px-3 py-2 rounded-lg">
                     <Check className="w-3.5 h-3.5" />
                     Ville sélectionnée : {preSelectedCity}
-                    {canSeePrices && (() => {
+                    {hasUfovalData && (() => {
                       const cityData = enrichment.departures.find(d => d.city === preSelectedCity);
                       return cityData && cityData.extra_eur > 0 ? ` (+${cityData.extra_eur}€)` : ' (inclus)';
                     })()}
@@ -806,8 +813,11 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                 </div>
               )}
 
-              {/* === TARIFS === */}
-              {canSeePrices ? (
+              {/* === TARIFS ===
+                  hasUfovalData requis : le bloc affiche priceBreakdown
+                  (baseSession, transport, total) calculé depuis enrichment.sessions.
+                  Sans UFOVAL, fallback sur PriceInquiryBlock (branche isPro ci-dessous). */}
+              {hasUfovalData ? (
                 <div className="border-t border-gray-100 pt-3 mb-3 space-y-2">
                   <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-2.5 text-xs text-emerald-700">
                     Ces tarifs sont visibles par les professionnels uniquement.
@@ -1006,7 +1016,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
       {/* Mobile Sticky Action Bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className={`flex items-center ${isKids ? 'justify-center' : 'gap-4'}`}>
-          {canSeePrices && priceBreakdown.minPrice ? (
+          {hasUfovalData && priceBreakdown.minPrice ? (
             <div className="flex-1">
               <div className="flex flex-col">
                 <span className="text-xs text-gray-500">À partir de</span>

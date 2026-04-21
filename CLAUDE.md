@@ -301,7 +301,7 @@ Rapporte findings AVANT d'écrire du code.
 ### Tables PII — liste à jour OBLIGATOIRE (2026-04-18)
 
 Toute mutation sur ces tables DOIT appeler `auditLog()` :
-`gd_inscriptions`, `gd_dossier_enfant`, `gd_propositions_tarifaires`, `gd_factures`, `gd_suivi_incidents`, `gd_suivi_medical`, `gd_suivi_calls`, `gd_suivi_notes`, `gd_structure_access_codes`, `gd_educateur_emails`, `gd_stay_sessions` (si affecte dossier), `gd_souhaits`.
+`gd_inscriptions`, `gd_dossier_enfant`, `gd_propositions_tarifaires`, `gd_factures`, `gd_suivi_incidents`, `gd_suivi_medical`, `gd_suivi_calls`, `gd_suivi_notes`, `gd_structure_access_codes`, `gd_educateur_emails`, `gd_stay_sessions` (si affecte dossier), `gd_souhaits`, `smart_form_submissions`.
 
 **Ajout d'une nouvelle table PII** = ligne ajoutée ici dans la même PR, sinon merge bloqué.
 

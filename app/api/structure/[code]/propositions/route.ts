@@ -176,7 +176,8 @@ export async function GET(
       prix_encadrement: p.prix_encadrement,
       encadrement: p.encadrement,
       status: p.status,
-      has_pdf: Boolean(p.pdf_storage_path) || true, // PDF régénéré à la volée si pas stocké
+      // PDF stocké OU régénérable à la volée (brouillon sans PDF = pas téléchargeable)
+      has_pdf: Boolean(p.pdf_storage_path) || p.status !== 'brouillon',
       inscription_id: p.inscription_id,
       created_at: p.created_at,
       validated_at: p.validated_at,

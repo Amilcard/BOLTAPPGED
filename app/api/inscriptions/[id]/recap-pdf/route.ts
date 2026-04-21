@@ -11,14 +11,18 @@ const SECONDARY = rgb(0.871, 0.451, 0.337);  // #de7356
 const GRAY = rgb(0.4, 0.4, 0.4);
 const LIGHT_BG = rgb(0.96, 0.96, 0.96);
 
-function fmtDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('fr-FR', {
+function fmtDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('fr-FR', {
     day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
 }
 
-function fmtPrice(amount: number): string {
-  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount) + ' €';
+function fmtPrice(amount: number | null | undefined): string {
+  const n = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
+  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) + ' €';
 }
 
 // Nettoyage caractères non-WinAnsi (pdf-lib limitation)

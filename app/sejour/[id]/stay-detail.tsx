@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -18,6 +18,7 @@ import {
   ChevronRight,
   ChevronDown,
   Home,
+  Info,
   Tag,
   Share2,
 
@@ -26,6 +27,7 @@ import {
   FileText,
   Image as ImageIcon,
 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { getReassurancePoints, getThemeStyle } from '@/config/premium-themes';
 import type { Stay, StaySession, RawSessionData } from '@/lib/types';
 import { formatDateLong, getWishlistMotivation, addToWishlist } from '@/lib/utils';
@@ -49,16 +51,33 @@ function PriceInquiryBlock({ sejourSlug }: { sejourSlug: string; sejourTitle: st
   const [prenom, setPrenom] = useState('');
   const [structureName, setStructureName] = useState('');
   const [email, setEmail] = useState('');
+  const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
+  // B6-UX anti-double-submit : flag synchrone qui bloque les submits concurrents
+  // même avant que setLoading(true) ait été commit par React.
+  const submittingRef = useRef(false);
+
+  const canSubmit =
+    !loading &&
+    consent &&
+    prenom.trim().length > 0 &&
+    structureName.trim().length > 0 &&
+    email.trim().length > 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     if (!prenom.trim() || !structureName.trim() || !email.trim()) {
       setError('Veuillez remplir tous les champs.');
       return;
     }
+    if (!consent) {
+      setError('Merci de cocher la case de consentement pour continuer.');
+      return;
+    }
+    submittingRef.current = true;
     setLoading(true);
     setError('');
     try {
@@ -76,6 +95,7 @@ function PriceInquiryBlock({ sejourSlug }: { sejourSlug: string; sejourTitle: st
       setError('Erreur réseau. Veuillez réessayer.');
     }
     setLoading(false);
+    submittingRef.current = false;
   };
 
   if (done) {
@@ -93,6 +113,22 @@ function PriceInquiryBlock({ sejourSlug }: { sejourSlug: string; sejourTitle: st
       <p className="text-xs text-gray-500 mb-4">
         Les tarifs sont adaptés à votre type de structure. Renseignez vos informations — nous vous les envoyons immédiatement par email.
       </p>
+
+      {/* B6-RGPD — mention OBLIGATOIRE avant collecte (CLAUDE.md § Règles sécurité & RGPD #4). */}
+      <div
+        className="flex gap-2 items-start bg-white/60 border border-gray-200 rounded-lg p-3 mb-4"
+        role="note"
+      >
+        <Info className="w-4 h-4 text-gray-500 mt-0.5 shrink-0" aria-hidden="true" />
+        <p className="text-[11px] text-gray-600 leading-relaxed">
+          Données (prénom, structure, email) traitées pour l&apos;envoi d&apos;une proposition tarifaire.
+          Conservation 12 mois. Base légale : intérêt légitime.{' '}
+          <a href="/confidentialite" className="underline font-medium text-gray-700 hover:text-primary">
+            Politique de confidentialité
+          </a>.
+        </p>
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-3">
         <div>
           <label htmlFor="piq-prenom" className="block text-xs font-medium text-gray-600 mb-1">Votre prénom</label>
@@ -125,18 +161,30 @@ function PriceInquiryBlock({ sejourSlug }: { sejourSlug: string; sejourTitle: st
             className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
+
+        {/* B6-RGPD — consentement explicite obligatoire avant submit */}
+        <div className="flex items-start gap-2 pt-1">
+          <Checkbox
+            id="piq-consent"
+            checked={consent}
+            onCheckedChange={(v) => { setConsent(v === true); setError(''); }}
+            aria-required="true"
+            className="mt-0.5"
+          />
+          <label htmlFor="piq-consent" className="text-[11px] text-gray-600 leading-relaxed cursor-pointer">
+            J&apos;accepte que mes données soient utilisées pour recevoir la proposition tarifaire et être recontacté(e) par Groupe &amp; Découverte à ce sujet.
+          </label>
+        </div>
+
         {error && <p className="text-xs text-red-500" role="alert">{error}</p>}
         <button
           type="submit"
-          disabled={loading}
-          className="w-full py-2.5 bg-secondary text-white rounded-pill text-sm font-medium hover:bg-secondary/90 transition disabled:opacity-50"
+          disabled={!canSubmit}
+          className="w-full py-2.5 bg-secondary text-white rounded-pill text-sm font-medium hover:bg-secondary/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Envoi en cours…' : 'Recevoir les tarifs par email'}
         </button>
       </form>
-      <p className="text-[11px] text-gray-400 mt-3">
-        Aucun engagement. Vos données sont utilisées uniquement pour vous répondre. <a href="/confidentialite" className="underline">Politique de confidentialité</a>
-      </p>
     </div>
   );
 }

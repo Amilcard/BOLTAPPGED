@@ -52,7 +52,7 @@ jest.mock('@/lib/audit-log', () => ({
 }));
 
 jest.mock('@/lib/email', () => ({
-  sendIncidentNotification: jest.fn().mockResolvedValue(undefined),
+  sendIncidentNotification: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
 }));
 
 import { NextRequest } from 'next/server';

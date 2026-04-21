@@ -22,8 +22,8 @@ process.env.NEXTAUTH_SECRET = 'test-secret-32-chars-minimum-ok!';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
-const mockSendPriceInquiryToEducateur = jest.fn();
-const mockSendPriceInquiryAlertGED = jest.fn();
+const mockSendPriceInquiryToEducateur = jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' });
+const mockSendPriceInquiryAlertGED = jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' });
 jest.mock('@/lib/email', () => ({
   sendPriceInquiryToEducateur: (...args: unknown[]) => mockSendPriceInquiryToEducateur(...args),
   sendPriceInquiryAlertGED: (...args: unknown[]) => mockSendPriceInquiryAlertGED(...args),

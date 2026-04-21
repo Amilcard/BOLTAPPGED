@@ -37,7 +37,7 @@ jest.mock('@/lib/supabase-server', () => ({
 }));
 
 jest.mock('@/lib/email', () => ({
-  sendSouhaitNotificationEducateur: jest.fn().mockResolvedValue(undefined),
+  sendSouhaitNotificationEducateur: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
 }));
 
 import * as emailLib from '@/lib/email';

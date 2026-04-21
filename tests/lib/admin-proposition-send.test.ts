@@ -10,7 +10,7 @@ process.env.SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.fa
 process.env.NEXTAUTH_SECRET = 'test-secret-32-chars-minimum-key!';
 
 const mockFrom = jest.fn();
-const mockSendProposition = jest.fn().mockResolvedValue(undefined);
+const mockSendProposition = jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' });
 const mockGeneratePdf = jest.fn().mockResolvedValue(new Uint8Array([1, 2, 3]));
 
 jest.mock('@/lib/supabase-server', () => ({

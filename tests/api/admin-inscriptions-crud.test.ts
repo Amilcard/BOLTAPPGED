@@ -42,7 +42,7 @@ jest.mock('@/lib/supabase-server', () => ({
 }));
 
 jest.mock('@/lib/email', () => ({
-  sendStatusChangeEmail: jest.fn().mockResolvedValue(undefined),
+  sendStatusChangeEmail: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
 }));
 
 import jwt from 'jsonwebtoken';

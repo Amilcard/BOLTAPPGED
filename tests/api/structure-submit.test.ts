@@ -44,9 +44,9 @@ jest.mock('@/lib/audit-log', () => ({
   getClientIp: () => '1.2.3.4',
 }));
 
-const mockSendComplet = jest.fn().mockResolvedValue({ id: 'email-1' });
-const mockSendNotif = jest.fn().mockResolvedValue({ id: 'email-2' });
-const mockSendArchive = jest.fn().mockResolvedValue({ id: 'email-3' });
+const mockSendComplet = jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' });
+const mockSendNotif = jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' });
+const mockSendArchive = jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' });
 jest.mock('@/lib/email', () => ({
   sendDossierCompletEmail: (...args: unknown[]) => mockSendComplet(...args),
   sendDossierGedAdminNotification: (...args: unknown[]) => mockSendNotif(...args),

@@ -18,8 +18,8 @@ process.env.NEXTAUTH_SECRET = 'test-secret-32-chars-minimum-key!';
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
 const mockFrom = jest.fn();
-const mockSendRappel = jest.fn().mockResolvedValue(undefined);
-const mockSendAdminNotif = jest.fn().mockResolvedValue(undefined);
+const mockSendRappel = jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' });
+const mockSendAdminNotif = jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' });
 
 jest.mock('@/lib/supabase-server', () => ({
   getSupabaseAdmin: () => ({ from: mockFrom }),

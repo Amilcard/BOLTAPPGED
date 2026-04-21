@@ -30,7 +30,8 @@ describe('sendStructureArchivageEmail', () => {
       pdfLink: 'https://app.groupeetdecouverte.fr/api/dossier-enfant/abc/pdf?token=xyz&type=bulletin',
     });
 
-    expect(result).toBeTruthy();
+    // Nouveau contrat L2 : EmailResult discriminé {sent:true, messageId}
+    expect(result).toEqual({ sent: true, messageId: 'email-archive-id' });
     expect(mockSend).toHaveBeenCalledTimes(1);
     const call = mockSend.mock.calls[0][0];
     expect(call.to).toBe('secretariat@mecs.fr');
@@ -62,18 +63,19 @@ describe('sendStructureArchivageEmail', () => {
     expect(call.text).not.toContain('(réf.');
   });
 
-  test('retourne null si structureEmail vide (pas d\'envoi)', async () => {
+  test('retourne {sent:false, reason:invalid_input} si structureEmail vide (pas d\'envoi)', async () => {
     const result = await sendStructureArchivageEmail({
       structureEmail: '',
       jeunePrenom: 'X',
       jeuneNom: 'Y',
       pdfLink: 'https://example.org/pdf',
     });
-    expect(result).toBeNull();
+    // Nouveau contrat L2 — guard input-invalide avant tryResendSend.
+    expect(result).toEqual({ sent: false, reason: 'invalid_input' });
     expect(mockSend).not.toHaveBeenCalled();
   });
 
-  test('retourne null si EMAIL_SERVICE_API_KEY absente', async () => {
+  test('retourne {sent:false, reason:missing_api_key} si EMAIL_SERVICE_API_KEY absente', async () => {
     const old = process.env.EMAIL_SERVICE_API_KEY;
     delete process.env.EMAIL_SERVICE_API_KEY;
     const result = await sendStructureArchivageEmail({
@@ -82,7 +84,8 @@ describe('sendStructureArchivageEmail', () => {
       jeuneNom: 'Y',
       pdfLink: 'https://example.org/pdf',
     });
-    expect(result).toBeNull();
+    // Nouveau contrat L2 — tryResendSend retourne missing_api_key.
+    expect(result).toEqual({ sent: false, reason: 'missing_api_key' });
     expect(mockSend).not.toHaveBeenCalled();
     process.env.EMAIL_SERVICE_API_KEY = old;
   });
@@ -100,7 +103,7 @@ describe('sendStructureArchivageEmail', () => {
     expect(call.html).toContain('&lt;script&gt;');
   });
 
-  test('retourne null si Resend lance une erreur (try/catch interne)', async () => {
+  test('retourne {sent:false, reason:provider_error} si Resend lance une erreur (catch interne via tryResendSend)', async () => {
     mockSend.mockRejectedValueOnce(new Error('SMTP boom'));
     const result = await sendStructureArchivageEmail({
       structureEmail: 'sec@x.fr',
@@ -108,6 +111,7 @@ describe('sendStructureArchivageEmail', () => {
       jeuneNom: 'Y',
       pdfLink: 'https://example.org/pdf',
     });
-    expect(result).toBeNull();
+    // Nouveau contrat L2 — provider_error (jamais throw, jamais PII dans reason).
+    expect(result).toEqual({ sent: false, reason: 'provider_error' });
   });
 });

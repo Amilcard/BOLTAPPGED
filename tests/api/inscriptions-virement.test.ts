@@ -47,10 +47,10 @@ jest.mock('@/lib/supabase-server', () => ({
   getSupabaseUser: () => ({ from: mockFrom, rpc: mockRpc }),
 }));
 
-const mockSendConfirmation = jest.fn().mockResolvedValue(undefined);
-const mockSendAdminNotif = jest.fn().mockResolvedValue(undefined);
-const mockSendStructureCode = jest.fn().mockResolvedValue(undefined);
-const mockSendNewEducAlert = jest.fn().mockResolvedValue(undefined);
+const mockSendConfirmation = jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' });
+const mockSendAdminNotif = jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' });
+const mockSendStructureCode = jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' });
+const mockSendNewEducAlert = jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' });
 
 jest.mock('@/lib/email', () => ({
   sendInscriptionConfirmation: (...args: unknown[]) => mockSendConfirmation(...args),

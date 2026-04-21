@@ -87,11 +87,11 @@ jest.mock('stripe', () => ({
 }));
 
 jest.mock('@/lib/email', () => ({
-  sendInscriptionConfirmation: jest.fn().mockResolvedValue(undefined),
-  sendPaymentFailedNotification: jest.fn().mockResolvedValue(undefined),
-  sendPaymentConfirmedAdminNotification: jest.fn().mockResolvedValue(undefined),
-  sendPaymentConfirmedClient: jest.fn().mockResolvedValue(undefined),
-  sendAdminNewInscriptionNotification: jest.fn().mockResolvedValue(undefined),
+  sendInscriptionConfirmation: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
+  sendPaymentFailedNotification: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
+  sendPaymentConfirmedAdminNotification: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
+  sendPaymentConfirmedClient: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
+  sendAdminNewInscriptionNotification: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
 }));
 
 import { POST } from '@/app/api/webhooks/stripe/route';

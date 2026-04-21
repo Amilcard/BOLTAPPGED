@@ -34,10 +34,10 @@ jest.mock('@/lib/supabase-server', () => ({
 }));
 
 jest.mock('@/lib/email', () => ({
-  sendInscriptionConfirmation: jest.fn().mockResolvedValue(undefined),
-  sendAdminNewInscriptionNotification: jest.fn().mockResolvedValue(undefined),
-  sendStructureCodeEmail: jest.fn().mockResolvedValue(undefined),
-  sendNewEducateurAlert: jest.fn().mockResolvedValue(undefined),
+  sendInscriptionConfirmation: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
+  sendAdminNewInscriptionNotification: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
+  sendStructureCodeEmail: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
+  sendNewEducateurAlert: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
 }));
 
 jest.mock('@/lib/audit-log', () => ({

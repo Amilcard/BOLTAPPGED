@@ -7,7 +7,9 @@ import { NextRequest } from 'next/server';
 
 jest.mock('@/lib/structure');
 jest.mock('@/lib/supabase-server');
-jest.mock('@/lib/email');
+jest.mock('@/lib/email', () => ({
+  sendTeamMemberInvite: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
+}));
 jest.mock('@/lib/rate-limit-structure', () => ({
   structureRateLimitGuard: jest.fn().mockResolvedValue(null),
   getStructureClientIp: jest.fn().mockReturnValue('127.0.0.1'),
@@ -78,7 +80,7 @@ describe('POST /api/structure/[code]/invite', () => {
     fromMock
       .mockReturnValueOnce({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: null }) }) }) }) })
       .mockReturnValueOnce({ insert: () => ({ select: () => ({ single: () => Promise.resolve({ data: { id: 'new-id' }, error: null }) }) }) });
-    (sendTeamMemberInvite as jest.Mock).mockResolvedValue({ id: 'email-id' });
+    (sendTeamMemberInvite as jest.Mock).mockResolvedValue({ sent: true, messageId: 'mock-id' });
     const res = await POST(makeReq('ABCDEFGHIJ', { email: 'marie@x.fr', prenom: 'Marie', role: 'secretariat' }),
       { params: Promise.resolve({ code: 'ABCDEFGHIJ' }) });
     expect(res.status).toBe(201);

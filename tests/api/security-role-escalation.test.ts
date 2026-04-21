@@ -20,8 +20,8 @@ jest.mock('@/lib/supabase-server', () => ({
   getSupabaseAdmin: () => ({ from: mockFrom }),
 }));
 jest.mock('@/lib/email', () => ({
-  sendRappelDossierIncomplet: jest.fn().mockResolvedValue(undefined),
-  sendRelanceAdminNotification: jest.fn().mockResolvedValue(undefined),
+  sendRappelDossierIncomplet: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
+  sendRelanceAdminNotification: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
 }));
 
 import jwt from 'jsonwebtoken';

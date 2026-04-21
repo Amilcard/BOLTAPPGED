@@ -18,17 +18,19 @@ describe('sendTeamMemberInvite', () => {
       activationUrl: 'https://app.groupeetdecouverte.fr/structure/activate?token=abc',
       invitedBy: 'direction@example.com',
     });
-    expect(result).toBeDefined();
+    // Nouveau contrat L2 — EmailResult discriminé, sent:true attendu.
+    expect(result).toEqual({ sent: true, messageId: 'email-id' });
   });
 
-  test('retourne null si pas de clé API', async () => {
+  test('retourne {sent:false, reason:missing_api_key} si pas de clé API', async () => {
     const old = process.env.EMAIL_SERVICE_API_KEY;
     delete process.env.EMAIL_SERVICE_API_KEY;
     const result = await sendTeamMemberInvite({
       to: 'x@y.fr', prenom: 'X', structureName: 'S', role: 'secretariat',
       activationUrl: 'https://x', invitedBy: 'd@e.f',
     });
-    expect(result).toBeNull();
+    // Nouveau contrat L2 — tryResendSend retourne missing_api_key.
+    expect(result).toEqual({ sent: false, reason: 'missing_api_key' });
     process.env.EMAIL_SERVICE_API_KEY = old;
   });
 });

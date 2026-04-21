@@ -41,9 +41,9 @@ jest.mock('@/lib/supabase-server', () => ({
 }));
 
 jest.mock('@/lib/email', () => ({
-  sendDossierCompletEmail: jest.fn().mockResolvedValue(undefined),
-  sendDossierGedAdminNotification: jest.fn().mockResolvedValue(undefined),
-  sendStructureArchivageEmail: jest.fn().mockResolvedValue(undefined),
+  sendDossierCompletEmail: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
+  sendDossierGedAdminNotification: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
+  sendStructureArchivageEmail: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
 }));
 
 import { POST } from '@/app/api/dossier-enfant/[inscriptionId]/submit/route';

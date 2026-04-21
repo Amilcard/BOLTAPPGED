@@ -87,20 +87,16 @@ interface InscriptionEmailData {
 
 /**
  * Email de confirmation d'inscription envoyé au référent
+ *
+ * Refactor L2/6 — délègue à tryResendSend (wrapper unique, retour EmailResult).
  */
-export async function sendInscriptionConfirmation(data: InscriptionEmailData) {
-  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
-    console.warn('[EMAIL] Clé API manquante — email non envoyé');
-    return null;
-  }
-
-  try {
-    // PII supprimé — RGPD Art. 32
-    const result = await getResend().emails.send({
-      from: FROM_EMAIL,
-      to: data.referentEmail,
-      subject: `Confirmation d'inscription - Réf. ${data.dossierRef || 'en cours'}`,
-      html: `
+export async function sendInscriptionConfirmation(data: InscriptionEmailData): Promise<EmailResult> {
+  // PII supprimé — RGPD Art. 32 : aucun log avec email/nom.
+  return await tryResendSend({
+    from: FROM_EMAIL,
+    to: data.referentEmail,
+    subject: `Confirmation d'inscription - Réf. ${data.dossierRef || 'en cours'}`,
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
             <h1 style="margin: 0; font-size: 24px;">Groupe &amp; Découverte</h1>
@@ -167,29 +163,18 @@ export async function sendInscriptionConfirmation(data: InscriptionEmailData) {
           </div>
         </div>
       `,
-    });
-    console.log('[EMAIL] Confirmation envoyée ok');
-    return result;
-  } catch (error) {
-    console.error('[EMAIL] Erreur envoi confirmation:', error);
-    return null;
-  }
+  });
 }
 
 /**
  * Notification admin pour nouvelle inscription
  */
-export async function sendAdminNewInscriptionNotification(data: InscriptionEmailData) {
-  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
-    return null;
-  }
-
-  try {
-    const result = await getResend().emails.send({
-      from: FROM_EMAIL,
-      to: ADMIN_EMAIL,
-      subject: `Nouvelle inscription - Réf. ${data.dossierRef || 'en cours'}`,
-      html: `
+export async function sendAdminNewInscriptionNotification(data: InscriptionEmailData): Promise<EmailResult> {
+  return await tryResendSend({
+    from: FROM_EMAIL,
+    to: ADMIN_EMAIL,
+    subject: `Nouvelle inscription - Réf. ${data.dossierRef || 'en cours'}`,
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #2a383f;">Nouvelle inscription reçue</h2>
           <ul>
@@ -206,12 +191,7 @@ export async function sendAdminNewInscriptionNotification(data: InscriptionEmail
           <p><a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://app.groupeetdecouverte.fr'}/admin/demandes" style="background: #2a383f; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none;">Voir dans l'admin</a></p>
         </div>
       `,
-    });
-    return result;
-  } catch (error) {
-    console.error('[EMAIL] Erreur envoi notification admin:', error);
-    return null;
-  }
+  });
 }
 
 /**
@@ -226,17 +206,12 @@ export async function sendPaymentConfirmedAdminNotification(data: {
   dossierRef: string;
   amount: number;
   subject?: string;
-}) {
-  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
-    return null;
-  }
-
-  try {
-    const result = await getResend().emails.send({
-      from: FROM_EMAIL,
-      to: ADMIN_EMAIL,
-      subject: data.subject || `Paiement confirmé — Réf. ${data.dossierRef || 'N/A'} (${data.amount.toFixed(2)} €)`,
-      html: `
+}): Promise<EmailResult> {
+  return await tryResendSend({
+    from: FROM_EMAIL,
+    to: ADMIN_EMAIL,
+    subject: data.subject || `Paiement confirmé — Réf. ${data.dossierRef || 'N/A'} (${data.amount.toFixed(2)} €)`,
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #16a34a; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">
             <h2 style="margin: 0; font-size: 18px;">Paiement CB confirmé</h2>
@@ -253,12 +228,7 @@ export async function sendPaymentConfirmedAdminNotification(data: {
           </div>
         </div>
       `,
-    });
-    return result;
-  } catch (error) {
-    console.error('[EMAIL] Erreur envoi notification paiement admin:', error);
-    return null;
-  }
+  });
 }
 
 /**
@@ -276,22 +246,17 @@ export async function sendPaymentConfirmedClient(data: {
   amount: number;
   suiviUrl?: string | null;
   paymentMethod?: string;
-}) {
-  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
-    console.warn('[EMAIL] Clé API manquante — email non envoyé');
-    return null;
-  }
+}): Promise<EmailResult> {
+  // Guard spécifique — si le référent n'a pas d'email, inutile d'appeler Resend.
   if (!data.referentEmail) {
     console.warn('[EMAIL] sendPaymentConfirmedClient: referentEmail manquant');
-    return null;
+    return { sent: false, reason: 'invalid_input' };
   }
-
-  try {
-    const result = await getResend().emails.send({
-      from: FROM_EMAIL,
-      to: data.referentEmail,
-      subject: `Paiement reçu — Réf. ${data.dossierRef || 'votre inscription'}`,
-      html: `
+  return await tryResendSend({
+    from: FROM_EMAIL,
+    to: data.referentEmail,
+    subject: `Paiement reçu — Réf. ${data.dossierRef || 'votre inscription'}`,
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #16a34a; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
             <h1 style="margin: 0; font-size: 22px;">Paiement reçu</h1>
@@ -325,13 +290,7 @@ export async function sendPaymentConfirmedClient(data: {
           </div>
         </div>
       `,
-    });
-    console.log('[EMAIL] Confirmation paiement client envoyée');
-    return result;
-  } catch (error) {
-    console.error('[EMAIL] Erreur envoi confirmation paiement client:', error);
-    return null;
-  }
+  });
 }
 
 /**
@@ -343,11 +302,7 @@ export async function sendStatusChangeEmail(
   jeunePrenom: string,
   jeuneNom: string,
   newStatus: string
-) {
-  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
-    return null;
-  }
-
+): Promise<EmailResult> {
   const statusLabels: Record<string, { label: string; color: string; message: string }> = {
     validee: { label: 'Validée', color: '#16a34a', message: 'Votre inscription a été validée. Le séjour est confirmé !' },
     refusee: { label: 'Refusée', color: '#dc2626', message: 'Votre inscription n\'a malheureusement pas pu être retenue. N\'hésitez pas à nous contacter pour plus d\'informations.' },
@@ -355,14 +310,14 @@ export async function sendStatusChangeEmail(
   };
 
   const statusInfo = statusLabels[newStatus];
-  if (!statusInfo) return null;
+  // Statut inconnu → input invalide, pas d'appel Resend.
+  if (!statusInfo) return { sent: false, reason: 'invalid_input' };
 
-  try {
-    const result = await getResend().emails.send({
-      from: FROM_EMAIL,
-      to: referentEmail,
-      subject: `Inscription ${statusInfo.label.toLowerCase()}`,
-      html: `
+  return await tryResendSend({
+    from: FROM_EMAIL,
+    to: referentEmail,
+    subject: `Inscription ${statusInfo.label.toLowerCase()}`,
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
             <h1 style="margin: 0; font-size: 24px;">Groupe &amp; Découverte</h1>
@@ -382,12 +337,7 @@ export async function sendStatusChangeEmail(
           </div>
         </div>
       `,
-    });
-    return result;
-  } catch (error) {
-    console.error('[EMAIL] Erreur envoi changement statut:', error);
-    return null;
-  }
+  });
 }
 
 // ============================================================
@@ -405,22 +355,17 @@ interface SouhaitEmailData {
   lienTousSouhaits?: string;
 }
 
-export async function sendSouhaitNotificationEducateur(data: SouhaitEmailData) {
-  const apiKey = process.env.EMAIL_SERVICE_API_KEY;
-  if (!apiKey || apiKey === 'YOUR_EMAIL_API_KEY_HERE') return null;
-
-  try {
-    const resend = getResend();
-    const prenom = data.educateurPrenom ? ` ${htmlEscape(data.educateurPrenom)}` : '';
-    // P2.1 — image hero séjour si fournie ET URL validée (guard XSS attribut src)
-    const imageBlock = isSafeImageUrl(data.sejourImageUrl)
-      ? `<img src="${data.sejourImageUrl}" alt="${htmlEscape(data.sejourTitre)}" width="560" style="display:block;width:100%;max-width:560px;height:auto;border:0;outline:none;text-decoration:none;" />`
-      : '';
-    return await resend.emails.send({
-      from: FROM_EMAIL,
-      to: data.educateurEmail,
-      subject: `Nouveau souhait de séjour — ${htmlEscape(data.sejourTitre)}`,
-      html: `
+export async function sendSouhaitNotificationEducateur(data: SouhaitEmailData): Promise<EmailResult> {
+  const prenom = data.educateurPrenom ? ` ${htmlEscape(data.educateurPrenom)}` : '';
+  // P2.1 — image hero séjour si fournie ET URL validée (guard XSS attribut src)
+  const imageBlock = isSafeImageUrl(data.sejourImageUrl)
+    ? `<img src="${data.sejourImageUrl}" alt="${htmlEscape(data.sejourTitre)}" width="560" style="display:block;width:100%;max-width:560px;height:auto;border:0;outline:none;text-decoration:none;" />`
+    : '';
+  return await tryResendSend({
+    from: FROM_EMAIL,
+    to: data.educateurEmail,
+    subject: `Nouveau souhait de séjour — ${htmlEscape(data.sejourTitre)}`,
+    html: `
         <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto;">
           <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
             <h1 style="margin: 0; font-size: 20px;">Groupe &amp; Découverte</h1>
@@ -463,11 +408,7 @@ export async function sendSouhaitNotificationEducateur(data: SouhaitEmailData) {
           </div>
         </div>
       `,
-    });
-  } catch (error) {
-    console.error('[EMAIL] Erreur envoi souhait éducateur:', error);
-    return null;
-  }
+  });
 }
 
 /**
@@ -485,17 +426,12 @@ export async function sendDossierGedAdminNotification(data: {
   sessionDate: string;
   inscriptionId: string;
   adminUrl: string;
-}) {
-  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
-    return null;
-  }
-
-  try {
-    const result = await getResend().emails.send({
-      from: FROM_EMAIL,
-      to: ADMIN_EMAIL,
-      subject: `Nouveau dossier reçu - Réf. ${data.dossierRef || 'en cours'}`,
-      html: `
+}): Promise<EmailResult> {
+  return await tryResendSend({
+    from: FROM_EMAIL,
+    to: ADMIN_EMAIL,
+    subject: `Nouveau dossier reçu - Réf. ${data.dossierRef || 'en cours'}`,
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #166534; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">
             <h2 style="margin: 0; font-size: 18px;">Dossier enfant soumis</h2>
@@ -513,12 +449,7 @@ export async function sendDossierGedAdminNotification(data: {
           </div>
         </div>
       `,
-    });
-    return result;
-  } catch (error) {
-    console.error('[EMAIL] Erreur envoi notification admin GED:', error);
-    return null;
-  }
+  });
 }
 
 /**
@@ -530,21 +461,15 @@ export async function sendRappelDossierIncomplet(data: {
   referentNom: string;
   dossierRef?: string;
   suiviToken: string;
-}) {
-  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
-    console.warn('[EMAIL] Clé API manquante — rappel dossier incomplet non envoyé');
-    return null;
-  }
-
+}): Promise<EmailResult> {
   const suiviUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.groupeetdecouverte.fr'}/suivi/${data.suiviToken}`;
   const refLabel = data.dossierRef ? ` ${data.dossierRef}` : '';
 
-  try {
-    const result = await getResend().emails.send({
-      from: FROM_EMAIL,
-      to: data.referentEmail,
-      subject: `Rappel - Votre dossier${refLabel} est incomplet`,
-      html: `
+  return await tryResendSend({
+    from: FROM_EMAIL,
+    to: data.referentEmail,
+    subject: `Rappel - Votre dossier${refLabel} est incomplet`,
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
             <h1 style="margin: 0; font-size: 24px;">Groupe &amp; Découverte</h1>
@@ -572,13 +497,7 @@ export async function sendRappelDossierIncomplet(data: {
           </div>
         </div>
       `,
-    });
-    console.log('[EMAIL] Rappel dossier incomplet ok');
-    return result;
-  } catch (error) {
-    console.error('[EMAIL] Erreur envoi rappel dossier incomplet:', error);
-    return null;
-  }
+  });
 }
 
 /**
@@ -591,20 +510,15 @@ export async function sendRelanceAdminNotification(data: {
   structureNom?: string;
   dossierRef?: string;
   inscriptionId: string;
-}) {
-  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
-    return null;
-  }
-
+}): Promise<EmailResult> {
   const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.groupeetdecouverte.fr'}/admin/demandes/${data.inscriptionId}`;
   const dateRelance = new Date().toLocaleDateString('fr-FR');
 
-  try {
-    const result = await getResend().emails.send({
-      from: FROM_EMAIL,
-      to: ADMIN_EMAIL,
-      subject: `[Relance envoyée] Dossier ${data.dossierRef || data.inscriptionId} — ${htmlEscape(data.referentNom)}`,
-      html: `
+  return await tryResendSend({
+    from: FROM_EMAIL,
+    to: ADMIN_EMAIL,
+    subject: `[Relance envoyée] Dossier ${data.dossierRef || data.inscriptionId} — ${htmlEscape(data.referentNom)}`,
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #b45309; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">
             <h2 style="margin: 0; font-size: 18px;">Relance dossier incomplet envoyée</h2>
@@ -621,13 +535,7 @@ export async function sendRelanceAdminNotification(data: {
           </div>
         </div>
       `,
-    });
-    console.log('[EMAIL] Notification relance admin ok');
-    return result;
-  } catch (error) {
-    console.error('[EMAIL] Erreur envoi notification relance admin:', error);
-    return null;
-  }
+  });
 }
 
 /**
@@ -645,20 +553,14 @@ export async function sendDossierCompletEmail(data: {
    * comme destinataire principal, mais donne au staff une preuve d'envoi.
    */
   bcc?: string;
-}) {
-  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
-    console.warn('[EMAIL] Clé API manquante — email dossier complet non envoyé');
-    return null;
-  }
-
-  try {
-    const shouldBcc = data.bcc && data.bcc !== data.referentEmail;
-    const result = await getResend().emails.send({
-      from: FROM_EMAIL,
-      to: data.referentEmail,
-      ...(shouldBcc ? { bcc: data.bcc as string } : {}),
-      subject: `Dossier complété - Réf. ${data.dossierRef || 'en cours'}`,
-      html: `
+}): Promise<EmailResult> {
+  const shouldBcc = data.bcc && data.bcc !== data.referentEmail;
+  return await tryResendSend({
+    from: FROM_EMAIL,
+    to: data.referentEmail,
+    ...(shouldBcc ? { bcc: data.bcc as string } : {}),
+    subject: `Dossier complété - Réf. ${data.dossierRef || 'en cours'}`,
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
             <h1 style="margin: 0; font-size: 24px;">Groupe &amp; Découverte</h1>
@@ -682,13 +584,7 @@ export async function sendDossierCompletEmail(data: {
           </div>
         </div>
       `,
-    });
-    console.log('[EMAIL] Dossier complet ok');
-    return result;
-  } catch (error) {
-    console.error('[EMAIL] Erreur envoi dossier complet:', error);
-    return null;
-  }
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -713,20 +609,16 @@ interface NewEducateurAlertData {
   postalCode: string;
 }
 
-export async function sendNewEducateurAlert(data: NewEducateurAlertData) {
-  try {
-    const resend = getResend();
-    if (!process.env.EMAIL_SERVICE_API_KEY) return null;
+export async function sendNewEducateurAlert(data: NewEducateurAlertData): Promise<EmailResult> {
+  const structList = data.existingStructures
+    .map(s => `<li><strong>${s.name}</strong> (${s.city}) — code : <code>${s.code}</code></li>`)
+    .join('');
 
-    const structList = data.existingStructures
-      .map(s => `<li><strong>${s.name}</strong> (${s.city}) — code : <code>${s.code}</code></li>`)
-      .join('');
-
-    const result = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: data.adminEmail || ADMIN_EMAIL,
-      subject: `[Structure] Nouvel éducateur détecté — ${data.postalCode} — ${data.structureDeclaredName}`,
-      html: `
+  return await tryResendSend({
+    from: FROM_EMAIL,
+    to: data.adminEmail || ADMIN_EMAIL,
+    subject: `[Structure] Nouvel éducateur détecté — ${data.postalCode} — ${data.structureDeclaredName}`,
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: #D4AC0D; color: #333; padding: 16px 20px; border-radius: 8px 8px 0 0;">
             <h2 style="margin: 0; font-size: 18px;">Attention :Nouvel éducateur sans code structure</h2>
@@ -744,25 +636,15 @@ export async function sendNewEducateurAlert(data: NewEducateurAlertData) {
           </div>
         </div>
       `,
-    });
-    console.log('[EMAIL] Alerte nouvel éducateur ok');
-    return result;
-  } catch (error) {
-    console.error('[EMAIL] Erreur envoi alerte nouvel éducateur:', error);
-    return null;
-  }
+  });
 }
 
-export async function sendStructureCodeEmail(data: StructureCodeEmailData) {
-  try {
-    const resend = getResend();
-    if (!process.env.EMAIL_SERVICE_API_KEY) return null;
-
-    const result = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: data.recipientEmail,
-      subject: `Votre code structure Groupe & Découverte : ${data.structureCode}`,
-      html: `
+export async function sendStructureCodeEmail(data: StructureCodeEmailData): Promise<EmailResult> {
+  return await tryResendSend({
+    from: FROM_EMAIL,
+    to: data.recipientEmail,
+    subject: `Votre code structure Groupe & Découverte : ${data.structureCode}`,
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: #1A5276; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
             <h1 style="margin: 0; font-size: 22px;">Groupe & Découverte</h1>
@@ -779,13 +661,7 @@ export async function sendStructureCodeEmail(data: StructureCodeEmailData) {
           </div>
         </div>
       `,
-    });
-    console.log('[EMAIL] Code structure envoyé ok');
-    return result;
-  } catch (error) {
-    console.error('[EMAIL] Erreur envoi code structure:', error);
-    return null;
-  }
+  });
 }
 
 // ─── Demande de tarifs sans compte ──────────────────────────────────────────
@@ -802,26 +678,20 @@ interface PriceInquiryData {
 /**
  * Email à l'éducateur avec indication tarifaire et CTA contact
  */
-export async function sendPriceInquiryToEducateur(data: PriceInquiryData): Promise<void> {
-  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
-    console.warn('[EMAIL] Clé API manquante — sendPriceInquiryToEducateur non envoyé');
-    return;
-  }
-  try {
-    const resend = getResend();
-    const prixSection = data.prixFrom
-      ? `<div style="background: #eaf4ec; border-left: 4px solid #2d8a4e; padding: 14px 18px; border-radius: 0 6px 6px 0; margin: 20px 0;">
-           <p style="margin: 0; font-size: 15px; color: #1a5e35;"><strong>À partir de ${data.prixFrom}&nbsp;€</strong> par enfant</p>
-         </div>`
-      : `<div style="background: #f5f5f5; border-left: 4px solid #888; padding: 14px 18px; border-radius: 0 6px 6px 0; margin: 20px 0;">
-           <p style="margin: 0; font-size: 15px; color: #555;">Tarif sur devis selon votre structure</p>
-         </div>`;
+export async function sendPriceInquiryToEducateur(data: PriceInquiryData): Promise<EmailResult> {
+  const prixSection = data.prixFrom
+    ? `<div style="background: #eaf4ec; border-left: 4px solid #2d8a4e; padding: 14px 18px; border-radius: 0 6px 6px 0; margin: 20px 0;">
+         <p style="margin: 0; font-size: 15px; color: #1a5e35;"><strong>À partir de ${data.prixFrom}&nbsp;€</strong> par enfant</p>
+       </div>`
+    : `<div style="background: #f5f5f5; border-left: 4px solid #888; padding: 14px 18px; border-radius: 0 6px 6px 0; margin: 20px 0;">
+         <p style="margin: 0; font-size: 15px; color: #555;">Tarif sur devis selon votre structure</p>
+       </div>`;
 
-    await resend.emails.send({
-      from: FROM_EMAIL,
-      to: data.email,
-      subject: `Tarifs — ${htmlEscape(data.sejourTitle)}`,
-      html: `
+  return await tryResendSend({
+    from: FROM_EMAIL,
+    to: data.email,
+    subject: `Tarifs — ${htmlEscape(data.sejourTitle)}`,
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: #2a383f; color: white; padding: 20px 24px; border-radius: 8px 8px 0 0;">
             <h1 style="margin: 0; font-size: 22px;">Groupe &amp; Découverte</h1>
@@ -848,31 +718,20 @@ export async function sendPriceInquiryToEducateur(data: PriceInquiryData): Promi
           </div>
         </div>
       `,
-    });
-    console.log('[EMAIL] sendPriceInquiryToEducateur ok');
-  } catch (error) {
-    console.error('[EMAIL] Erreur sendPriceInquiryToEducateur:', error);
-    throw error;
-  }
+  });
 }
 
 /**
  * Notification interne GED — warm lead demande tarif sans compte
  */
-export async function sendPriceInquiryAlertGED(data: PriceInquiryData): Promise<void> {
-  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
-    console.warn('[EMAIL] Clé API manquante — sendPriceInquiryAlertGED non envoyé');
-    return;
-  }
-  try {
-    const resend = getResend();
-    const now = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' });
+export async function sendPriceInquiryAlertGED(data: PriceInquiryData): Promise<EmailResult> {
+  const now = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' });
 
-    await resend.emails.send({
-      from: 'contact@groupeetdecouverte.fr',
-      to: 'contact@groupeetdecouverte.fr',
-      subject: `[Lead] Demande tarif — ${htmlEscape(data.structureName)} — ${htmlEscape(data.sejourTitle)}`,
-      html: `
+  return await tryResendSend({
+    from: 'contact@groupeetdecouverte.fr',
+    to: 'contact@groupeetdecouverte.fr',
+    subject: `[Lead] Demande tarif — ${htmlEscape(data.structureName)} — ${htmlEscape(data.sejourTitle)}`,
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: #D4AC0D; color: #333; padding: 16px 20px; border-radius: 8px 8px 0 0;">
             <h2 style="margin: 0; font-size: 18px;">Nouvelle demande de tarif (sans compte)</h2>
@@ -889,12 +748,7 @@ export async function sendPriceInquiryAlertGED(data: PriceInquiryData): Promise<
           </div>
         </div>
       `,
-    });
-    console.log('[EMAIL] sendPriceInquiryAlertGED ok');
-  } catch (error) {
-    console.error('[EMAIL] Erreur sendPriceInquiryAlertGED:', error);
-    throw error;
-  }
+  });
 }
 
 // ─── Invitation chef de service ──────────────────────────────────────────────
@@ -909,16 +763,12 @@ export async function sendChefDeServiceInvitation(data: {
   structureCode: string;
   structureUrl: string;
   nbDossiers?: number;
-}) {
-  try {
-    const resend = getResend();
-    if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') return null;
-
-    const result = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: data.recipientEmail,
-      subject: `Accès à votre tableau de bord structure — Groupe & Découverte`,
-      html: `
+}): Promise<EmailResult> {
+  return await tryResendSend({
+    from: FROM_EMAIL,
+    to: data.recipientEmail,
+    subject: `Accès à votre tableau de bord structure — Groupe & Découverte`,
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: #1A5276; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
             <h1 style="margin: 0; font-size: 22px;">Groupe &amp; Découverte</h1>
@@ -946,13 +796,7 @@ export async function sendChefDeServiceInvitation(data: {
           </div>
         </div>
       `,
-    });
-    console.log('[EMAIL] Invitation chef de service ok');
-    return result;
-  } catch (error) {
-    console.error('[EMAIL] Erreur envoi invitation chef de service:', error);
-    return null;
-  }
+  });
 }
 
 // ============================================================
@@ -972,20 +816,16 @@ interface ProAccessRequestData {
 /**
  * Confirmation à l'éducateur qui demande son accès pro
  */
-export async function sendProAccessConfirmation(data: ProAccessRequestData): Promise<void> {
-  const apiKey = process.env.EMAIL_SERVICE_API_KEY;
-  if (!apiKey || apiKey === 'YOUR_EMAIL_API_KEY_HERE') return;
-
+export async function sendProAccessConfirmation(data: ProAccessRequestData): Promise<EmailResult> {
   const sejourBlock = data.sejourSlug
     ? `<p>Vous pourrez ensuite inscrire un enfant sur le séjour demandé directement depuis votre espace professionnel.</p>`
     : '';
 
-  try {
-    await getResend().emails.send({
-      from: FROM_EMAIL,
-      to: data.email,
-      subject: 'Votre demande d\'accès professionnel — Groupe & Découverte',
-      html: `
+  return await tryResendSend({
+    from: FROM_EMAIL,
+    to: data.email,
+    subject: 'Votre demande d\'accès professionnel — Groupe & Découverte',
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
             <h1 style="margin: 0; font-size: 24px;">Groupe &amp; Découverte</h1>
@@ -1012,19 +852,13 @@ export async function sendProAccessConfirmation(data: ProAccessRequestData): Pro
           </div>
         </div>
       `,
-    });
-  } catch (error) {
-    console.error('[EMAIL] Erreur confirmation accès pro:', error);
-  }
+  });
 }
 
 /**
  * Alerte interne GED — nouvelle demande d'accès pro
  */
-export async function sendProAccessAlertGED(data: ProAccessRequestData): Promise<void> {
-  const apiKey = process.env.EMAIL_SERVICE_API_KEY;
-  if (!apiKey || apiKey === 'YOUR_EMAIL_API_KEY_HERE') return;
-
+export async function sendProAccessAlertGED(data: ProAccessRequestData): Promise<EmailResult> {
   const sejourRow = data.sejourSlug
     ? `<tr><td style="padding: 6px 12px; color: #6b7280;">Séjour demandé</td><td style="padding: 6px 12px; font-weight: 500;">${data.sejourSlug}</td></tr>`
     : '';
@@ -1033,12 +867,11 @@ export async function sendProAccessAlertGED(data: ProAccessRequestData): Promise
     ? `<tr><td style="padding: 6px 12px; color: #6b7280;">Téléphone</td><td style="padding: 6px 12px;">${data.phone}</td></tr>`
     : '';
 
-  try {
-    await getResend().emails.send({
-      from: FROM_EMAIL,
-      to: ADMIN_EMAIL,
-      subject: `[Accès pro] Nouvelle demande — ${htmlEscape(data.structureName)}`,
-      html: `
+  return await tryResendSend({
+    from: FROM_EMAIL,
+    to: ADMIN_EMAIL,
+    subject: `[Accès pro] Nouvelle demande — ${htmlEscape(data.structureName)}`,
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
             <h1 style="margin: 0; font-size: 20px;">Nouvelle demande d'accès professionnel</h1>
@@ -1075,10 +908,7 @@ export async function sendProAccessAlertGED(data: ProAccessRequestData): Promise
           </div>
         </div>
       `,
-    });
-  } catch (error) {
-    console.error('[EMAIL] Erreur alerte accès pro GED:', error);
-  }
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1095,22 +925,16 @@ export async function sendEducatorInviteEmail(
   sejourTitle: string,
   sessionDate: string,
   cityDeparture: string
-): Promise<void> {
-  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
-    console.warn('[EMAIL] Clé API manquante — sendEducatorInviteEmail non envoyé');
-    return;
-  }
-
+): Promise<EmailResult> {
   const dateFormatted = sessionDate
     ? new Date(sessionDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
     : '';
 
-  try {
-    await getResend().emails.send({
-      from: FROM_EMAIL,
-      to: email,
-      subject: `Inscription urgence — ${htmlEscape(sejourTitle)} — Groupe & Découverte`,
-      html: `
+  return await tryResendSend({
+    from: FROM_EMAIL,
+    to: email,
+    subject: `Inscription urgence — ${htmlEscape(sejourTitle)} — Groupe & Découverte`,
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
             <h1 style="margin: 0; font-size: 24px;">Groupe &amp; Découverte</h1>
@@ -1142,11 +966,7 @@ export async function sendEducatorInviteEmail(
           </div>
         </div>
       `,
-    });
-    console.log('[EMAIL] sendEducatorInviteEmail ok');
-  } catch (error) {
-    console.error('[EMAIL] Erreur sendEducatorInviteEmail:', error);
-  }
+  });
 }
 
 /**
@@ -1161,21 +981,16 @@ export async function sendAdminUrgenceNotification(data: {
   cityDeparture: string;
   dossierRef: string;
   priceTotal: number;
-}): Promise<void> {
-  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
-    return;
-  }
-
+}): Promise<EmailResult> {
   const dateFormatted = data.sessionDate
     ? new Date(data.sessionDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
     : data.sessionDate;
 
-  try {
-    await getResend().emails.send({
-      from: FROM_EMAIL,
-      to: ADMIN_EMAIL,
-      subject: `⚡ URGENCE — ${htmlEscape(data.jeunePrenom)} ${htmlEscape(data.jeuneNom)} — À valider`,
-      html: `
+  return await tryResendSend({
+    from: FROM_EMAIL,
+    to: ADMIN_EMAIL,
+    subject: `⚡ URGENCE — ${htmlEscape(data.jeunePrenom)} ${htmlEscape(data.jeuneNom)} — À valider`,
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #dc2626; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
             <h1 style="margin: 0; font-size: 20px;">⚡ Inscription urgence reçue — À valider</h1>
@@ -1198,10 +1013,7 @@ export async function sendAdminUrgenceNotification(data: {
           </div>
         </div>
       `,
-    });
-  } catch (error) {
-    console.error('[EMAIL] Erreur sendAdminUrgenceNotification:', error);
-  }
+  });
 }
 
 /**
@@ -1234,20 +1046,19 @@ const CATEGORY_LABELS: Record<string, string> = {
 export async function sendIncidentNotification(
   emails: string[],
   data: IncidentNotificationData
-): Promise<void> {
-  try {
-    const resend = getResend();
-    if (!process.env.EMAIL_SERVICE_API_KEY || emails.length === 0) return;
+): Promise<EmailResult> {
+  // Guard spécifique — destinataires vides = rien à envoyer (pas un échec provider).
+  if (emails.length === 0) return { sent: false, reason: 'invalid_input' };
 
-    const severityColor = data.severity === 'urgent' ? '#dc2626' : '#f59e0b';
-    const severityLabel = SEVERITY_LABELS[data.severity] || data.severity;
-    const categoryLabel = CATEGORY_LABELS[data.category] || data.category;
+  const severityColor = data.severity === 'urgent' ? '#dc2626' : '#f59e0b';
+  const severityLabel = SEVERITY_LABELS[data.severity] || data.severity;
+  const categoryLabel = CATEGORY_LABELS[data.category] || data.category;
 
-    await resend.emails.send({
-      from: FROM_EMAIL,
-      to: emails,
-      subject: `[${severityLabel}] Incident ${categoryLabel} — ${htmlEscape(data.structureName)}`,
-      html: `
+  return await tryResendSend({
+    from: FROM_EMAIL,
+    to: emails,
+    subject: `[${severityLabel}] Incident ${categoryLabel} — ${htmlEscape(data.structureName)}`,
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: ${severityColor}; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">
             <h2 style="margin: 0; font-size: 18px;">${severityLabel} — Incident signalé</h2>
@@ -1267,10 +1078,7 @@ export async function sendIncidentNotification(
           </div>
         </div>
       `,
-    });
-  } catch (error) {
-    console.error('[EMAIL] Erreur notification incident:', error);
-  }
+  });
 }
 
 // ── Proposition tarifaire : alerte admin (nouvelle demande) ──
@@ -1281,14 +1089,10 @@ export async function sendPropositionAlertGED(data: {
   sessionDate: string;
   villeDepart: string;
   propositionId: string;
-}): Promise<void> {
-  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
-    console.warn('[email] sendPropositionAlertGED: clé manquante');
-    return;
-  }
+}): Promise<EmailResult> {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.groupeetdecouverte.fr';
 
-  await getResend().emails.send({
+  return await tryResendSend({
     from: FROM_EMAIL,
     to: ADMIN_EMAIL,
     subject: `[GED] Nouvelle demande de proposition — ${htmlEscape(data.sejourTitre)}`,
@@ -1319,13 +1123,8 @@ export async function sendPropositionEmail(data: {
   sejourTitre: string;
   dossierRef: string;
   pdfBuffer: Uint8Array;
-}): Promise<void> {
-  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
-    console.warn('[email] sendPropositionEmail: clé manquante');
-    return;
-  }
-
-  await getResend().emails.send({
+}): Promise<EmailResult> {
+  return await tryResendSend({
     from: FROM_EMAIL,
     to: data.to,
     subject: `Votre proposition tarifaire — ${htmlEscape(data.sejourTitre)}`,
@@ -1358,20 +1157,14 @@ interface TeamInviteData {
   invitedBy: string;
 }
 
-export async function sendTeamMemberInvite(data: TeamInviteData) {
-  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
-    console.warn('[EMAIL] Clé API manquante — invitation équipe non envoyée');
-    return null;
-  }
-
+export async function sendTeamMemberInvite(data: TeamInviteData): Promise<EmailResult> {
   const roleLabel = data.role === 'secretariat' ? 'Secrétariat' : 'Éducateur';
 
-  try {
-    const result = await getResend().emails.send({
-      from: FROM_EMAIL,
-      to: data.to,
-      subject: `Invitation ${data.structureName} — activation de votre accès`,
-      html: `
+  return await tryResendSend({
+    from: FROM_EMAIL,
+    to: data.to,
+    subject: `Invitation ${data.structureName} — activation de votre accès`,
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #2a383f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
             <h1 style="margin: 0; font-size: 24px;">Groupe &amp; Découverte</h1>
@@ -1393,12 +1186,7 @@ export async function sendTeamMemberInvite(data: TeamInviteData) {
           </div>
         </div>
       `,
-    });
-    return result;
-  } catch (err) {
-    console.error('[EMAIL] sendTeamMemberInvite error:', err);
-    return null;
-  }
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1430,43 +1218,39 @@ export async function sendStructureArchivageEmail(data: {
    * (auth session cookie — le destinataire doit être connecté).
    */
   pdfLink: string;
-}) {
-  if (!process.env.EMAIL_SERVICE_API_KEY || process.env.EMAIL_SERVICE_API_KEY === 'YOUR_EMAIL_API_KEY_HERE') {
-    console.warn('[EMAIL] Clé API manquante — archivage structure non envoyé');
-    return null;
-  }
+}): Promise<EmailResult> {
+  // Guard spécifique — pas d'email destinataire = rien à envoyer.
   if (!data.structureEmail) {
     console.warn('[EMAIL] structureEmail manquant — archivage structure non envoyé');
-    return null;
+    return { sent: false, reason: 'invalid_input' };
   }
-  try {
-    const refLine = data.dossierRef ? ` (réf. ${data.dossierRef})` : '';
-    const fullName = `${data.jeunePrenom} ${data.jeuneNom}`;
-    const subject = `Dossier ${fullName}${refLine} — récapitulatif PDF disponible pour archivage`;
+  const refLine = data.dossierRef ? ` (réf. ${data.dossierRef})` : '';
+  const fullName = `${data.jeunePrenom} ${data.jeuneNom}`;
+  const subject = `Dossier ${fullName}${refLine} — récapitulatif PDF disponible pour archivage`;
 
-    const text = [
-      `Madame, Monsieur,`,
-      ``,
-      `Le dossier de ${fullName}${refLine} a été transmis à l'équipe Groupe & Découverte.`,
-      ``,
-      `Pour vos registres internes (archivage ASE), vous pouvez télécharger le récapitulatif PDF du dossier à l'adresse suivante :`,
-      data.pdfLink,
-      ``,
-      `Ce document reprend le bulletin d'inscription pré-rempli avec les informations transmises. Aucune donnée médicale n'est incluse dans cet email.`,
-      ``,
-      `Conservation conforme RGPD : 3 mois après le séjour côté Groupe & Découverte. Côté structure, votre durée de conservation suit votre propre politique d'archivage.`,
-      ``,
-      `Cet envoi est automatique. Pour toute question : contact@groupeetdecouverte.fr`,
-      ``,
-      `Groupe & Découverte`,
-    ].join('\n');
+  const text = [
+    `Madame, Monsieur,`,
+    ``,
+    `Le dossier de ${fullName}${refLine} a été transmis à l'équipe Groupe & Découverte.`,
+    ``,
+    `Pour vos registres internes (archivage ASE), vous pouvez télécharger le récapitulatif PDF du dossier à l'adresse suivante :`,
+    data.pdfLink,
+    ``,
+    `Ce document reprend le bulletin d'inscription pré-rempli avec les informations transmises. Aucune donnée médicale n'est incluse dans cet email.`,
+    ``,
+    `Conservation conforme RGPD : 3 mois après le séjour côté Groupe & Découverte. Côté structure, votre durée de conservation suit votre propre politique d'archivage.`,
+    ``,
+    `Cet envoi est automatique. Pour toute question : contact@groupeetdecouverte.fr`,
+    ``,
+    `Groupe & Découverte`,
+  ].join('\n');
 
-    const result = await getResend().emails.send({
-      from: FROM_EMAIL,
-      to: data.structureEmail,
-      subject,
-      text,
-      html: `
+  return await tryResendSend({
+    from: FROM_EMAIL,
+    to: data.structureEmail,
+    subject,
+    text,
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #2a383f;">
           <div style="background: #2a383f; color: white; padding: 18px 22px; border-radius: 8px 8px 0 0;">
             <h1 style="margin: 0; font-size: 20px; font-weight: 600;">Groupe &amp; Découverte</h1>
@@ -1502,11 +1286,5 @@ export async function sendStructureArchivageEmail(data: {
           </div>
         </div>
       `,
-    });
-    console.log('[EMAIL] Archivage structure envoyé ok');
-    return result;
-  } catch (error) {
-    console.error('[EMAIL] Erreur envoi archivage structure:', error);
-    return null;
-  }
+  });
 }

@@ -26,7 +26,7 @@ process.env.NEXT_PUBLIC_SITE_URL = 'http://localhost:3000';
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
 const mockFrom = jest.fn();
-const mockSendSouhaitNotification = jest.fn().mockResolvedValue(undefined);
+const mockSendSouhaitNotification = jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' });
 
 jest.mock('@/lib/supabase-server', () => ({
   getSupabase: () => ({ from: mockFrom }),

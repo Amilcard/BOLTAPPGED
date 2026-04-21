@@ -99,10 +99,15 @@ function StripePaymentForm({ clientSecret, onSuccess, onError }: { clientSecret:
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
   const [cardReady, setCardReady] = useState(false);
+  // B5: un clientSecret Stripe est à usage unique après échec carte_declined.
+  // Dès qu'un échec survient, on verrouille le bouton Payer pour forcer le passage
+  // par "Choisir un autre mode" qui reset le clientSecret et réouvre le parcours
+  // (un nouveau PaymentIntent sera créé si l'user retente en CB).
+  const [paymentFailed, setPaymentFailed] = useState(false);
 
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!stripe || !elements) return;
+    if (!stripe || !elements || paymentFailed) return;
 
     const cardElement = elements.getElement(CardElement);
     if (!cardElement) {
@@ -117,13 +122,16 @@ function StripePaymentForm({ clientSecret, onSuccess, onError }: { clientSecret:
       });
 
       if (error) {
+        setPaymentFailed(true);
         onError(error.message || 'Erreur lors du paiement.');
       } else if (paymentIntent?.status === 'succeeded') {
         onSuccess();
       } else {
+        setPaymentFailed(true);
         onError('Le paiement n\'a pas abouti. Veuillez réessayer.');
       }
     } catch (err: unknown) {
+      setPaymentFailed(true);
       const errorMsg = err instanceof Error ? err.message : 'Erreur inattendue.';
       onError(errorMsg);
     } finally {
@@ -145,11 +153,11 @@ function StripePaymentForm({ clientSecret, onSuccess, onError }: { clientSecret:
       </div>
       <button
         type="submit"
-        disabled={!stripe || !cardReady || processing}
+        disabled={!stripe || !cardReady || processing || paymentFailed}
         className="w-full py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
-        {processing ? 'Paiement en cours...' : 'Payer maintenant'}
+        {processing ? 'Paiement en cours...' : paymentFailed ? 'Paiement refusé' : 'Payer maintenant'}
       </button>
     </form>
   );
@@ -256,7 +264,11 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     }
   }
 
-  const selectedCityData = departureCities.find((dc: DepartureCity) => dc.city === selectedCity);
+  // B3 — comparaison normalisée pour couvrir tout initialCity résiduel non résolu
+  // (ex: séjour sans departureCities chargé au 1er render). Deuxième ligne de défense.
+  const selectedCityData = departureCities.find(
+    (dc: DepartureCity) => normalizeCity(dc.city) === normalizeCity(selectedCity)
+  );
   const extraVille = selectedCityData?.extra_eur ?? 0;
   // Fallback: utiliser stay.priceFrom si enrichmentSessions vide (données manquantes)
   const totalPrice = sessionBasePrice !== null ? sessionBasePrice + extraVille : (stay.priceFrom ? stay.priceFrom + extraVille : null);
@@ -1289,15 +1301,24 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             />
           </Elements>
           {stripeError && (
-            <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" /> {stripeError}
+            <div role="alert" className="p-3 bg-red-50 text-red-700 rounded-xl text-sm border border-red-200 space-y-2">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <span>{stripeError}</span>
+              </div>
+              <p className="text-xs text-red-600 pl-6">
+                Cette tentative est terminée. Choisissez un autre mode de paiement ou retentez avec une autre carte.
+              </p>
             </div>
           )}
           <button
-            onClick={() => { setStripeError(''); setStep(4); setStripeClientSecret(null); }}
-            className="w-full py-2 text-sm text-primary-500 hover:text-primary hover:underline"
+            onClick={() => { setStripeError(''); setStep(4); setStripeClientSecret(null); setPaymentMethod(null); }}
+            className={stripeError
+              ? 'w-full py-3 bg-primary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors'
+              : 'w-full py-2 text-sm text-primary-500 hover:text-primary hover:underline'
+            }
           >
-            ← Choisir un autre mode de paiement
+            <ChevronLeft className="w-4 h-4" /> Choisir un autre mode de paiement
           </button>
         </div>
       )}

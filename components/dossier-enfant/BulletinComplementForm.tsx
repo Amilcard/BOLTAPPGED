@@ -287,8 +287,19 @@ export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeun
         const urgenceTelOk = !!(form.contact_urgence_telephone as string)?.trim();
         const signatureOk = !!(form.signature_image_url as string)?.trim();
         const qualiteOk = !!(form.signer_qualite as string)?.trim();
+
+        // D8 fix (2026-04-21) — au moins 1 financeur obligatoire.
+        // Avant : Thanh pouvait signer le bulletin avec les 4 cases
+        // financement à false → dossier transmis GED sans financeur
+        // déclaré. Impossible pour l'équipe d'arbitrer/facturer.
+        const financementOk =
+          !!form.financement_ase
+          || !!form.financement_etablissement
+          || !!form.financement_famille
+          || !!form.financement_autres;
+
         const canValidate =
-          !!form.autorisation_accepte && urgenceTelOk && signatureOk && qualiteOk;
+          !!form.autorisation_accepte && urgenceTelOk && signatureOk && qualiteOk && financementOk;
         return (
           <>
             <div className="flex flex-wrap gap-3 pt-2">
@@ -306,10 +317,15 @@ export function BulletinComplementForm({ data, saving, onSave, jeunePrenom, jeun
             {form.autorisation_accepte && !urgenceTelOk && (
               <p className="text-xs text-orange-600 mt-1">Renseignez le téléphone du contact d&apos;urgence (champ obligatoire).</p>
             )}
-            {form.autorisation_accepte && urgenceTelOk && !qualiteOk && (
+            {form.autorisation_accepte && urgenceTelOk && !financementOk && (
+              <p className="text-xs text-orange-600 mt-1" role="alert">
+                Cochez au moins un mode de financement (ASE, établissement, famille, ou autres).
+              </p>
+            )}
+            {form.autorisation_accepte && urgenceTelOk && financementOk && !qualiteOk && (
               <p className="text-xs text-orange-600 mt-1">Indiquez la qualité du signataire.</p>
             )}
-            {form.autorisation_accepte && urgenceTelOk && qualiteOk && !signatureOk && (
+            {form.autorisation_accepte && urgenceTelOk && financementOk && qualiteOk && !signatureOk && (
               <p className="text-xs text-orange-600 mt-1">Signez dans le cadre pour valider le bloc.</p>
             )}
           </>

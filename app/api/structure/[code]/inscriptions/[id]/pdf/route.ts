@@ -106,6 +106,29 @@ export async function GET(
     if (!pdfRes.ok) {
       const bodyText = await pdfRes.text().catch(() => '');
       console.error('[structure/pdf] internal error:', pdfRes.status, bodyText.slice(0, 300));
+
+      // Distinguer 404 "dossier pas encore rempli" (cas nominal) vs 502 crash template
+      if (pdfRes.status === 404) {
+        let innerCode = 'NOT_FOUND';
+        try {
+          const parsed = JSON.parse(bodyText) as { error?: { code?: string } };
+          innerCode = parsed?.error?.code || 'NOT_FOUND';
+        } catch { /* body non-JSON, garder NOT_FOUND */ }
+
+        const uxMessages: Record<string, string> = {
+          NO_DATA: "Le dossier enfant n'a pas encore été rempli. Aucun PDF à télécharger pour le moment.",
+          NO_TOKEN: 'Token de suivi manquant sur cette inscription — contactez la GED.',
+          NOT_FOUND: 'Inscription introuvable.',
+          INVALID_TOKEN: 'Lien de suivi invalide ou expiré.',
+          EXPIRED_TOKEN: 'Lien de suivi expiré.',
+        };
+
+        return NextResponse.json(
+          { error: { code: innerCode, message: uxMessages[innerCode] || 'Dossier introuvable.' } },
+          { status: 404 },
+        );
+      }
+
       return NextResponse.json(
         { error: 'Erreur génération PDF.' },
         { status: 502 },

@@ -338,8 +338,21 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
           && !!(form.medecin_tel as string)?.trim();
         const signatureOk = !!(form.signature_image_url as string)?.trim();
         const qualiteOk = !!(form.signer_qualite as string)?.trim();
+
+        // D7 fix (2026-04-21) — validation vaccins bloquante en mode web form.
+        // Décision produit Laïd : si l'utilisateur remplit la fiche sanitaire
+        // en ligne, il doit répondre oui/non à chaque vaccin (les infos
+        // sont présentes dans le carnet de santé). L'alternative légitime
+        // est d'uploader le scan du carnet en PJ via le mode signature
+        // "offline" (SignatureModeSelector parent) — dans ce cas ce formulaire
+        // n'est pas affiché et la validation ne s'applique pas.
+        const vaccinsMissing = VACCINS.filter(
+          v => !['oui', 'non'].includes(form[`vaccin_${v.key}`] as string),
+        );
+        const vaccinsOk = vaccinsMissing.length === 0;
+
         const canValidate =
-          !!form.autorisation_soins_accepte && phonesOk && signatureOk && qualiteOk;
+          !!form.autorisation_soins_accepte && phonesOk && signatureOk && qualiteOk && vaccinsOk;
         return (
           <>
             <div className="flex flex-wrap gap-3 pt-2">
@@ -357,10 +370,16 @@ export function FicheSanitaireForm({ data, saving, onSave, jeunePrenom, jeuneNom
             {form.autorisation_soins_accepte && !phonesOk && (
               <p className="text-xs text-blue-600 mt-1">Renseignez les téléphones obligatoires : responsable légal 1 (portable) et médecin traitant.</p>
             )}
-            {form.autorisation_soins_accepte && phonesOk && !qualiteOk && (
+            {form.autorisation_soins_accepte && phonesOk && !vaccinsOk && (
+              <p className="text-xs text-blue-600 mt-1" role="alert">
+                Renseignez oui ou non pour chaque vaccin ({vaccinsMissing.length} manquant{vaccinsMissing.length > 1 ? 's' : ''} :{' '}
+                {vaccinsMissing.map(v => v.label).join(', ')}). Si vous préférez joindre le carnet de santé scanné, utilisez le mode « Signature hors ligne » ci-dessus.
+              </p>
+            )}
+            {form.autorisation_soins_accepte && phonesOk && vaccinsOk && !qualiteOk && (
               <p className="text-xs text-blue-600 mt-1">Indiquez la qualité du signataire.</p>
             )}
-            {form.autorisation_soins_accepte && phonesOk && qualiteOk && !signatureOk && (
+            {form.autorisation_soins_accepte && phonesOk && vaccinsOk && qualiteOk && !signatureOk && (
               <p className="text-xs text-blue-600 mt-1">Signez dans le cadre pour valider le bloc.</p>
             )}
           </>

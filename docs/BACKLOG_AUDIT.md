@@ -63,7 +63,13 @@ Non corrigés automatiquement dans la vague 2026-04-18 — requièrent validatio
 
 | # | Fichier | Issue | Statut |
 |---|---|---|---|
-| 8 | `lib/structure.ts:117-125` | **Directeur bloqué dès la 1re invitation équipe** : dès qu'une entrée est créée dans `gd_structure_access_codes`, le fallback legacy `code_directeur` est désactivé — mais aucune entrée `direction` n'est créée en parallèle → directeur perd l'accès. Reproduit : Thanh invite secrétariat → ne peut plus se connecter. Workaround DB 2026-04-21 : INSERT direction entry manuelle. | 🔴 OPEN — fix structurel requis : soit créer l'entrée `direction` auto à la 1re invitation, soit ne désactiver le legacy que si une entrée `direction` existe déjà |
+| 8 | `lib/structure.ts:80-91, 117-125` | **Directeur/CDS bloqué dès la 1re invitation équipe** : dès qu'une entrée est créée dans `gd_structure_access_codes`, le fallback legacy était désactivé. Workaround DB manuel appliqué 2026-04-21. | ✅ **RÉSOLU 2026-04-21 (commit b8ecf7d)** — guard restreint à `role='direction'`. Le fallback legacy reste actif tant qu'aucune entrée direction migrée n'existe. Symétrie CDS appliquée. |
+
+## Dettes RGPD — audit 2026-04-21
+
+| # | Zone | Dette | Impact | Urgence |
+|---|---|---|---|---|
+| O2 | `supabase.storage[dossier-documents]` | **Aucune purge automatique** des PJ (vaccins, certificat médical, pass nautique) attachées à inscriptions `refusee` ou inactives depuis >X mois. Cron `/api/cron/rgpd-purge` couvre audit_logs / medical_events / login_attempts / notes / calls, mais PAS le storage. | Art. 5.1.e RGPD (limitation conservation). Taille prévisible si activité en croissance : +500KB/dossier. | 🟠 Medium — définir politique rétention par statut (refusee → 90j ; en_attente inactif > 180j → purge), ajouter handler `purgeAbandonedDossierStorage` au cron, audit log purge. Fix = ~2h (pas une rustine). Tracer en Wave 4. |
 
 ## Carryover audits précédents
 

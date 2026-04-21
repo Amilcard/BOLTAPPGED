@@ -97,6 +97,90 @@ export async function GET(req: NextRequest) {
   const { data: callsResult, error: errCalls } = await supabase.rpc('gd_purge_expired_calls');
   if (errCalls) errors.push(`calls_24m: ${errCalls.message}`);
 
+  // O2 — Purge dossiers enfants abandonnés (migration 076, policy 2026-04-21)
+  //   refusee > 90j, en_attente > 180j (hors paiement en cours), inactif > 180j, soft-deleted > 90j
+  //   Row gd_inscriptions préservée (historique Stripe). Row gd_dossier_enfant + PJ storage purgées.
+  //   Dry-run : CRON_DRY_RUN=true → retourne candidats sans delete.
+  const dryRun = process.env.CRON_DRY_RUN === 'true';
+  let dossiersPurgedCount = 0;
+  let filesPurgedCount = 0;
+  const dossierCandidates: Array<{ dossier_id: string; inscription_id: string; purge_policy: string }> = [];
+
+  // LIMIT 200 par run : cron mensuel (0 3 1 * *), ~200 dossiers × 5 PJ × 200ms = ~200s < 300s Vercel timeout.
+  const { data: candidates, error: errCandidates } = await supabase
+    .rpc('gd_get_dossiers_purge_candidates', { p_limit: 200 });
+
+  if (errCandidates) {
+    errors.push(`dossiers_candidates: ${errCandidates.message}`);
+  } else if (Array.isArray(candidates) && candidates.length > 0) {
+    for (const c of candidates as Array<{
+      dossier_id: string;
+      inscription_id: string;
+      purge_policy: string;
+      documents_joints: unknown;
+    }>) {
+      if (!c.purge_policy) continue;
+
+      const docs = Array.isArray(c.documents_joints) ? c.documents_joints : [];
+      const storagePaths = docs
+        .map((d) => (d && typeof d === 'object' && 'storage_path' in d
+          ? (d as { storage_path?: unknown }).storage_path : null))
+        .filter((p): p is string => typeof p === 'string' && p.length > 0);
+
+      if (dryRun) {
+        dossierCandidates.push({
+          dossier_id: c.dossier_id,
+          inscription_id: c.inscription_id,
+          purge_policy: c.purge_policy,
+        });
+        continue;
+      }
+
+      try {
+        // 1. Supprimer PJ storage AVANT la row (idempotent : remove sur path absent = no-op)
+        if (storagePaths.length > 0) {
+          const { error: errStorage } = await supabase.storage
+            .from('dossier-documents')
+            .remove(storagePaths);
+          if (errStorage) {
+            errors.push(`dossier_storage_${c.inscription_id}: ${errStorage.message}`);
+            continue;
+          }
+          filesPurgedCount += storagePaths.length;
+        }
+
+        // 2. Supprimer row gd_dossier_enfant (PII Art.9 purgée, row gd_inscriptions préservée)
+        const { error: errDel } = await supabase
+          .from('gd_dossier_enfant')
+          .delete()
+          .eq('id', c.dossier_id);
+        if (errDel) {
+          errors.push(`dossier_delete_${c.inscription_id}: ${errDel.message}`);
+          continue;
+        }
+
+        // 3. auditLog obligatoire (resourceId = inscription_id non-PII, dossier_id en metadata)
+        await auditLog(supabase, {
+          action: 'delete',
+          resourceType: 'dossier_enfant',
+          resourceId: c.inscription_id,
+          inscriptionId: c.inscription_id,
+          actorType: 'system',
+          metadata: {
+            reason: 'rgpd_purge',
+            purge_policy: c.purge_policy,
+            dossier_id: c.dossier_id,
+            files_purged_count: storagePaths.length,
+          },
+        });
+
+        dossiersPurgedCount += 1;
+      } catch (e) {
+        errors.push(`dossier_purge_${c.inscription_id}: ${e instanceof Error ? e.message : 'unknown'}`);
+      }
+    }
+  }
+
   // Trace d'exécution CNIL — preuve de passage mensuel
   try {
     await auditLog(supabase, {
@@ -111,6 +195,8 @@ export async function GET(req: NextRequest) {
         medical_events_3m: medEventsDeleted ?? 0,
         notes_12m: notesResult ?? 0,
         calls_24m: callsResult ?? 0,
+        dossiers_purged: dossiersPurgedCount,
+        dossier_files_purged: filesPurgedCount,
         errors_count: errors?.length ?? 0,
         executed_at: new Date().toISOString(),
       },
@@ -124,10 +210,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, errors }, { status: 500 });
   }
 
-  console.log(`[rgpd-purge] audit_logs_12m: ${auditResult ?? 0}, medical_data: ${medicalResult ?? 0}, medical_events: ${medEventsDeleted}, login_attempts: ${loginResult ?? 'ok'}, revoked_tokens: ok, audit_logs_3y: ${auditOldResult ?? 'ok'}, notes_12m: ${notesResult ?? 0}, calls_24m: ${callsResult ?? 0}`);
+  console.log(`[rgpd-purge] audit_logs_12m: ${auditResult ?? 0}, medical_data: ${medicalResult ?? 0}, medical_events: ${medEventsDeleted}, login_attempts: ${loginResult ?? 'ok'}, revoked_tokens: ok, audit_logs_3y: ${auditOldResult ?? 'ok'}, notes_12m: ${notesResult ?? 0}, calls_24m: ${callsResult ?? 0}, dossiers: ${dossiersPurgedCount} (files: ${filesPurgedCount})${dryRun ? ' [DRY-RUN]' : ''}`);
 
   return NextResponse.json({
     ok: true,
+    dryRun,
     purged: {
       audit_logs_12m: auditResult ?? 0,
       medical_data: medicalResult ?? 0,
@@ -137,6 +224,9 @@ export async function GET(req: NextRequest) {
       audit_logs_3y: auditOldResult ?? 'ok',
       notes_12m: notesResult ?? 0,
       calls_24m: callsResult ?? 0,
+      dossiers_abandoned: dossiersPurgedCount,
+      dossier_files: filesPurgedCount,
+      ...(dryRun ? { dossier_candidates: dossierCandidates } : {}),
     },
   });
 }

@@ -217,6 +217,18 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
     };
   }, []);
 
+  // B4 — Tokens Turnstile expirent ~5min côté Cloudflare. Quand l'utilisateur quitte
+  // step 4 (navigation back, retour Stripe échec), le widget est démonté mais le state
+  // React persiste. Au retour sur step 4, le widget se remonte et émet un nouveau token,
+  // mais entre-temps un submit avec le token stale échouerait silencieusement côté serveur.
+  // Reset = forcer l'attente du nouveau token à chaque entrée sur step 4.
+  useEffect(() => {
+    if (stepRaw !== 4 && process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) {
+      setTurnstileReady(false);
+      setTurnstileToken(null);
+    }
+  }, [stepRaw]);
+
   const [error, setError] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'bank_transfer' | 'cheque' | null>(null);
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);

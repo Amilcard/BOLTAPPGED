@@ -617,12 +617,14 @@ export async function POST(request: NextRequest) {
 
     // B3 — Audit RGPD : tracer tout écart silencieux prix front ↔ serveur > 1€.
     // Mutation PII (gd_inscriptions) — auditLog obligatoire (CLAUDE.md §15).
+    // actorType='system' : c'est le serveur qui détecte et corrige l'écart, pas le référent.
+    // actorId reste l'email du référent comme ancre de traçabilité (qui a soumis).
     if (inscription.id && Math.abs(frontPriceTotal - data.priceTotal) > 1) {
       await auditLog(supabase, {
         action: 'update',
         resourceType: 'inscription',
         resourceId: inscription.id as string,
-        actorType: 'referent',
+        actorType: 'system',
         actorId: data.email,
         ipAddress: getClientIp(request),
         metadata: {

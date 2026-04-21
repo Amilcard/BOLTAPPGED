@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Heart, ArrowLeft, Compass, ChevronRight, Clock, Check, MessageCircle, X } from 'lucide-react';
-import { getWishlistItems, type WishlistItem } from '@/lib/utils';
+import { Heart, ArrowLeft, Compass, ChevronRight, Clock, Check, MessageCircle, X, Send, Trash2 } from 'lucide-react';
+import { getWishlistItems, removeFromWishlist, type WishlistItem } from '@/lib/utils';
 
 interface SouhaitServeur {
   id: string;
@@ -58,6 +58,20 @@ export default function EnviesPage() {
     }
   }, []);
 
+  // F06 — Retirer un séjour des favoris locaux (localStorage).
+  // Si le souhait a déjà été envoyé à l'éducateur (présent dans `souhaits`),
+  // on ne touche PAS à la ligne serveur (traçabilité RGPD + audit log).
+  // Le retrait local = préférence utilisateur. L'éducateur gardera une
+  // copie du souhait transmis dans son espace suivi.
+  const handleRemove = (stayId: string, alreadySent: boolean) => {
+    const confirmMsg = alreadySent
+      ? 'Ce souhait a déjà été envoyé à ton éducateur. Il le garde dans son espace. Le retirer de ta liste ici ?'
+      : 'Retirer ce séjour de tes favoris ?';
+    if (!window.confirm(confirmMsg)) return;
+    removeFromWishlist(stayId);
+    setItems(getWishlistItems());
+  };
+
   return (
     <main className="min-h-screen bg-muted pb-24">
       {/* Header */}
@@ -111,52 +125,88 @@ export default function EnviesPage() {
               const stayLabel = item.stayId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
               const souhait = souhaits.find(s => s.sejour_slug === item.stayId);
               const badge = souhait ? STATUT_BADGE[souhait.status] : null;
+              const alreadySent = !!souhait;
               return (
-                <Link
+                // Structure :
+                //   <div card> : conteneur (plus un Link global pour permettre
+                //                les boutons X + Send sans imbrication Link/button).
+                //     <Link> : zone info cliquable (icône + titre + motivation + badge)
+                //     <button Send> (F07) : si pas encore envoyé → routes vers
+                //                  /sejour/[id]/souhait (form existant).
+                //     <button X>    (F06) : retire du localStorage, ne touche
+                //                  PAS au souhait serveur si déjà envoyé.
+                <div
                   key={item.stayId}
-                  href={`/sejour/${item.stayId}`}
-                  className="block bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-secondary/30 transition-all p-4 group"
+                  className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-secondary/30 transition-all p-4 group relative"
                 >
-                  <div className="flex items-start gap-3">
-                    {/* Icône */}
-                    <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-red-100 transition">
-                      <Heart className="w-5 h-5 text-red-400 fill-current" />
-                    </div>
+                  <Link
+                    href={`/sejour/${item.stayId}`}
+                    className="block"
+                    aria-label={`Voir le séjour ${stayLabel}`}
+                  >
+                    <div className="flex items-start gap-3 pr-10">
+                      {/* Icône */}
+                      <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-red-100 transition">
+                        <Heart className="w-5 h-5 text-red-400 fill-current" />
+                      </div>
 
-                    {/* Contenu */}
-                    <div className="flex-1 min-w-0">
-                      <h2 className="font-semibold text-primary text-sm leading-snug mb-1 truncate">
-                        {stayLabel}
-                      </h2>
+                      {/* Contenu */}
+                      <div className="flex-1 min-w-0">
+                        <h2 className="font-semibold text-primary text-sm leading-snug mb-1 truncate">
+                          {stayLabel}
+                        </h2>
 
-                      {item.motivation && (
-                        <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-2">
-                          « {item.motivation} »
-                        </p>
-                      )}
+                        {item.motivation && (
+                          <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-2">
+                            « {item.motivation} »
+                          </p>
+                        )}
 
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <span className="flex items-center gap-1 text-xs text-gray-400">
-                          <Clock className="w-3 h-3" />
-                          {timeAgo(item.addedAt)}
-                        </span>
-                        {badge && (
-                          <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${badge.color}`}>
-                            {badge.icon} {badge.label}
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <span className="flex items-center gap-1 text-xs text-gray-400">
+                            <Clock className="w-3 h-3" />
+                            {timeAgo(item.addedAt)}
                           </span>
+                          {badge && (
+                            <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${badge.color}`}>
+                              {badge.icon} {badge.label}
+                            </span>
+                          )}
+                        </div>
+                        {souhait?.reponse_educateur && (
+                          <p className="text-xs text-gray-500 italic mt-1">
+                            <MessageCircle className="w-3 h-3 inline mr-1" />{souhait.reponse_educateur}
+                          </p>
                         )}
                       </div>
-                      {souhait?.reponse_educateur && (
-                        <p className="text-xs text-gray-500 italic mt-1">
-                          <MessageCircle className="w-3 h-3 inline mr-1" />{souhait.reponse_educateur}
-                        </p>
-                      )}
-                    </div>
 
-                    {/* Flèche */}
-                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-secondary transition flex-shrink-0 mt-3" />
-                  </div>
-                </Link>
+                      {/* Flèche */}
+                      <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-secondary transition flex-shrink-0 mt-3" />
+                    </div>
+                  </Link>
+
+                  {/* F06 — Bouton retirer (positionné en haut à droite) */}
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(item.stayId, alreadySent)}
+                    className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full text-gray-300 hover:text-red-500 hover:bg-red-50 transition"
+                    aria-label={`Retirer ${stayLabel} de mes favoris`}
+                    title={alreadySent ? 'Retirer de ma liste (le souhait envoyé reste chez ton éducateur)' : 'Retirer de mes favoris'}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+
+                  {/* F07 — CTA "Envoyer à éducateur" si pas encore envoyé */}
+                  {!alreadySent && (
+                    <Link
+                      href={`/sejour/${item.stayId}/souhait`}
+                      className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-secondary hover:text-secondary/80 hover:underline"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      Envoyer ce souhait à mon éducateur
+                    </Link>
+                  )}
+                </div>
               );
             })}
 

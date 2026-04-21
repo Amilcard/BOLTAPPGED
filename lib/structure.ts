@@ -77,16 +77,23 @@ export async function resolveCodeToStructure(
     if (data.code_revoked_at) return null;
     if (data.code_expires_at && data.code_expires_at < now) return null;
 
-    // Structure migrée vers gd_structure_access_codes ? → refuser fallback legacy
-    const { count: migratedCount } = await supabase
+    // U2 fix (2026-04-21) — guard migration restreint à role='direction'.
+    // Historique : le check initial `count active > 0` se déclenchait dès
+    // la 1re invitation (secrétariat/éducateur) et bloquait le CDS/direction
+    // legacy — cassait l'usage Thanh (invite secrétariat → ne peut plus se
+    // reconnecter). Seul la présence d'une entrée 'direction' migrée
+    // (compte email+password actif) justifie de désactiver le code legacy.
+    const { count: migratedDirectionCount } = await supabase
       .from('gd_structure_access_codes')
       .select('id', { count: 'exact', head: true })
       .eq('structure_id', data.id)
+      .eq('role', 'direction')
       .eq('active', true);
 
-    if (migratedCount && migratedCount > 0) {
-      // Structure migrée : le code legacy ne doit plus donner accès
-      // L'utilisateur doit utiliser son code personnel depuis gd_structure_access_codes
+    if (migratedDirectionCount && migratedDirectionCount > 0) {
+      // Direction migrée : le code CDS legacy ne doit plus donner accès
+      // (cohérence hiérarchique : si direction a basculé sur compte email+
+      // password, la structure entière passe au mode migré).
       return null;
     }
 
@@ -113,14 +120,19 @@ export async function resolveCodeToStructure(
     if (data.code_directeur_revoked_at) return null;
     if (data.code_directeur_expires_at && data.code_directeur_expires_at < now) return null;
 
-    // Structure migrée vers gd_structure_access_codes ? → refuser fallback legacy
-    const { count: migratedCount } = await supabase
+    // U2 fix (2026-04-21) — guard migration restreint à role='direction'.
+    // Voir commentaire branche CDS ci-dessus : seule une entrée 'direction'
+    // active (compte email+password créé) désactive le code_directeur
+    // legacy. Une ligne 'secretariat' ou 'educateur' seule ne suffit pas
+    // à considérer la direction comme migrée.
+    const { count: migratedDirectionCount } = await supabase
       .from('gd_structure_access_codes')
       .select('id', { count: 'exact', head: true })
       .eq('structure_id', data.id)
+      .eq('role', 'direction')
       .eq('active', true);
 
-    if (migratedCount && migratedCount > 0) {
+    if (migratedDirectionCount && migratedDirectionCount > 0) {
       return null;
     }
 

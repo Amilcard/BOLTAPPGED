@@ -78,6 +78,17 @@ export async function GET(
       );
     }
 
+    // Option C (2026-04-21) : priorité au nom saisi dans le dossier
+    // (bulletin_complement.nom_famille) — fallback colonne inscription si
+    // le responsable légal n'a pas encore rempli cette étape.
+    const bulletinData = (dossier.bulletin_complement || {}) as Record<string, unknown>;
+    const nomFromDossier = typeof bulletinData.nom_famille === 'string'
+      ? bulletinData.nom_famille.trim()
+      : '';
+    const rawFallback = inscription.jeune_nom || '';
+    const jeuneNomDisplay = nomFromDossier
+      || (rawFallback === 'À RENSEIGNER' ? '' : rawFallback);
+
     // Résoudre le nom commercial du séjour (marketing_title > slug)
     const { data: stayRaw } = await supabase
       .from('gd_stays')
@@ -160,7 +171,7 @@ export async function GET(
       writeText(0, 160, 79,  inscription.jeune_prenom);
       writeText(0, 416, 79,  formatDate(inscription.jeune_date_naissance));
 
-      writeText(0, 160, 95,  inscription.jeune_nom);
+      writeText(0, 160, 95,  jeuneNomDisplay);
       writeText(0, 416, 95,  s(san.sexe));                         // sexe → fiche_sanitaire
 
       writeText(0, 160, 111, inscription.referent_nom);
@@ -223,7 +234,7 @@ export async function GET(
 
       // 1. L'ENFANT
       writeText(0, 438, 170, s(d.classe));
-      writeText(0, 140, 183, inscription.jeune_nom);
+      writeText(0, 140, 183, jeuneNomDisplay);
       writeCheck(0, 350, 187, s(d.sexe) === 'garcon');
       writeCheck(0, 412, 187, s(d.sexe) === 'fille');
       writeText(0, 100, 199, inscription.jeune_prenom);
@@ -367,7 +378,7 @@ export async function GET(
       const d = (dossier.fiche_liaison_jeune || {}) as Record<string, unknown>;
 
       // RENSEIGNEMENTS CONCERNANT LE JEUNE
-      writeText(0, 115, 213, inscription.jeune_nom);
+      writeText(0, 115, 213, jeuneNomDisplay);
       writeText(0, 290, 213, inscription.jeune_prenom);
       writeText(0, 494, 213, formatDate(inscription.jeune_date_naissance), { size: smallFontSize });
 
@@ -458,12 +469,12 @@ export async function GET(
     const pdfBytes = await pdfDoc.save();
 
     const fileNames: Record<DocType, string> = {
-      bulletin: `Bulletin_Inscription_${inscription.jeune_prenom}_${inscription.jeune_nom}.pdf`,
-      sanitaire: `Fiche_Sanitaire_${inscription.jeune_prenom}_${inscription.jeune_nom}.pdf`,
-      liaison: `Fiche_Liaison_${inscription.jeune_prenom}_${inscription.jeune_nom}.pdf`,
+      bulletin: `Bulletin_Inscription_${inscription.jeune_prenom}_${jeuneNomDisplay || 'sans-nom'}.pdf`,
+      sanitaire: `Fiche_Sanitaire_${inscription.jeune_prenom}_${jeuneNomDisplay || 'sans-nom'}.pdf`,
+      liaison: `Fiche_Liaison_${inscription.jeune_prenom}_${jeuneNomDisplay || 'sans-nom'}.pdf`,
     };
 
-    const fileName = Object.prototype.hasOwnProperty.call(fileNames, docType) ? fileNames[docType] : `document_${inscription.jeune_prenom}_${inscription.jeune_nom}.pdf`;
+    const fileName = Object.prototype.hasOwnProperty.call(fileNames, docType) ? fileNames[docType] : `document_${inscription.jeune_prenom}_${jeuneNomDisplay || 'sans-nom'}.pdf`;
 
     // Audit RGPD Art. 9 — tracer chaque téléchargement de document contenant des données sensibles
     await auditLog(supabase, {

@@ -55,7 +55,7 @@ export async function GET(
     // Données inscription pour le PDF
     const { data: targetRaw } = await supabase
       .from('gd_inscriptions')
-      .select('referent_email, jeune_prenom, jeune_nom, jeune_date_naissance, sejour_slug, session_date, referent_nom, organisation, city_departure')
+      .select('referent_email, jeune_prenom, jeune_nom, jeune_date_naissance, jeune_sexe, sejour_slug, session_date, referent_nom, organisation, city_departure')
       .eq('id', inscriptionId)
       .single();
     const inscription = targetRaw as Record<string, string> | null;
@@ -159,6 +159,22 @@ export async function GET(
       return `${match[3]}/${match[2]}/${match[1]}`;
     };
 
+    /**
+     * D5 fix (2026-04-21) — normalisation sexe cohérente sur le PDF.
+     * gd_inscriptions.jeune_sexe stocke 'M' | 'F' (code court).
+     * gd_dossier_enfant.fiche_sanitaire.sexe stocke 'garcon' | 'fille' (forme longue).
+     * Le PDF préfère la forme longue (fiche sanitaire = source de vérité
+     * saisie par le responsable légal). Fallback sur le code inscription
+     * normalisé si la fiche sanitaire n'est pas encore remplie.
+     */
+    const mapSexeLong = (short: string | undefined): string => {
+      if (!short) return '';
+      const up = short.toUpperCase();
+      if (up === 'F') return 'fille';
+      if (up === 'M') return 'garcon';
+      return '';
+    };
+
     // ========================================================================
     // BULLETIN D'INSCRIPTION
     // Calibré sur bulletin-inscription-template.pdf (595.276 x 841.89, 1 page)
@@ -172,7 +188,7 @@ export async function GET(
       writeText(0, 416, 79,  formatDate(inscription.jeune_date_naissance));
 
       writeText(0, 160, 95,  jeuneNomDisplay);
-      writeText(0, 416, 95,  s(san.sexe));                         // sexe → fiche_sanitaire
+      writeText(0, 416, 95,  s(san.sexe) || mapSexeLong(inscription.jeune_sexe));  // sexe → fiche_sanitaire (fallback code inscription M/F)
 
       writeText(0, 160, 111, inscription.referent_nom);
       writeText(0, 416, 111, s(san.resp1_tel_portable) || '');     // tél responsable → fiche_sanitaire

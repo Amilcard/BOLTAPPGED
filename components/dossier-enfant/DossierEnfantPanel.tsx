@@ -524,8 +524,10 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
       {open && (
         <div className="px-6 pb-6">
           {/* Bandeau mode dépannage — visible uniquement en staff-fill.
-              Rappelle à l'utilisateur que ses modifications sont tracées
-              (RGPD Art. 9) et que l'envoi final reste à l'éducateur. */}
+              Toutes les actions sont ouvertes au staff (édition, upload, PDF,
+              envoi GED, email PDF) depuis 2026-04-19. Chaque action est tracée
+              RGPD Art. 9 avec actor_role + context dans l'audit log. Le référent
+              reste informé : email de soumission avec BCC du staff qui a agi. */}
           {isStaffFill && (
             <div
               role="status"
@@ -535,10 +537,12 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
                 Mode dépannage {referentNom ? `— absence de ${referentNom}` : ''}
               </p>
               <p className="text-xs text-blue-800 mt-1">
-                Vous remplissez ce dossier en l&apos;absence de l&apos;éducateur référent.
-                Chaque modification est tracée (RGPD Art. 9). L&apos;envoi final du dossier
-                à la GED + téléchargement PDF + upload de pièces jointes restent réservés
-                au référent via son lien de suivi personnel.
+                Vous agissez en tant que staff structure (secrétariat / direction / CDS)
+                à la place du référent. Vous pouvez remplir les formulaires, uploader
+                des pièces jointes, télécharger le PDF, envoyer le dossier à la GED
+                et l&apos;envoyer par email. Chaque action est tracée (RGPD Art. 9) ;
+                le référent reste le destinataire principal des emails, vous êtes
+                en copie invisible (preuve d&apos;envoi).
               </p>
             </div>
           )}

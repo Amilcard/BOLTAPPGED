@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { verifyOwnership } from '@/lib/verify-ownership';
 import { auditLog } from '@/lib/audit-log';
-import { UUID_RE } from '@/lib/validators';
+import { UUID_RE, EMAIL_REGEX } from '@/lib/validators';
 
 const DOC_LABELS: Record<string, string> = {
   bulletin: "Bulletin d'inscription",
@@ -16,7 +16,13 @@ const EMAIL_FROM = 'Groupe & Découverte <noreply@groupeetdecouverte.fr>' as con
 /**
  * POST /api/dossier-enfant/[inscriptionId]/pdf-email
  * Génère le PDF et l'envoie par email au référent.
- * Body : { token, type }
+ * Body : { token, type, bcc? }
+ *
+ * `bcc` (optionnel) : email en copie invisible — utilisé par le staff structure
+ * en dépannage pour avoir une preuve d'envoi côté secrétariat/direction/CDS.
+ * Forwarding depuis `/api/structure/[code]/inscriptions/[id]/pdf-email` qui
+ * a déjà vérifié l'ownership structure + rate-limiting + auditLog staff.
+ * Ignoré si égal à l'email référent (évite doublon).
  */
 export async function POST(
   req: NextRequest,
@@ -24,7 +30,7 @@ export async function POST(
 ) {
   try {
     const { inscriptionId } = await params;
-    const { token, type } = await req.json();
+    const { token, type, bcc } = await req.json();
 
     if (!token || !type || !DOC_LABELS[type]) {
       return NextResponse.json({ error: 'Paramètres manquants.' }, { status: 400 });
@@ -32,6 +38,15 @@ export async function POST(
 
     if (!UUID_RE.test(token) || !UUID_RE.test(inscriptionId)) {
       return NextResponse.json({ error: 'Paramètres invalides.' }, { status: 400 });
+    }
+
+    // BCC optionnel (staff dépannage) : string email ou absent. Refuser si invalide.
+    let bccEmail: string | undefined;
+    if (bcc !== undefined && bcc !== null && bcc !== '') {
+      if (typeof bcc !== 'string' || !EMAIL_REGEX.test(bcc)) {
+        return NextResponse.json({ error: 'Paramètres invalides.' }, { status: 400 });
+      }
+      bccEmail = bcc;
     }
 
     const supabase = getSupabaseAdmin();
@@ -108,6 +123,7 @@ export async function POST(
       body: JSON.stringify({
         from: EMAIL_FROM,
         to: insc.referent_email,
+        ...(bccEmail && bccEmail !== insc.referent_email ? { bcc: bccEmail } : {}),
         subject: `Votre document : ${docLabel} — ${insc.jeune_prenom} ${insc.jeune_nom}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -146,7 +162,12 @@ export async function POST(
       inscriptionId,
       actorType: 'referent',
       actorId: ownership.referentEmail,
-      metadata: { type, sentTo: insc.referent_email, channel: 'email' },
+      metadata: {
+        type,
+        sentTo: insc.referent_email,
+        channel: 'email',
+        ...(bccEmail && bccEmail !== insc.referent_email ? { bcc_staff: true } : {}),
+      },
     }).catch((err) => { console.error('[pdf-email] auditLog failed:', err); });
 
     return NextResponse.json({ ok: true, sentTo: insc.referent_email });

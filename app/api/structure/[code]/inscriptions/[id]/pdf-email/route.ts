@@ -96,12 +96,21 @@ export async function POST(
       INTERNAL_BASE,
     ).toString();
 
+    // BCC staff (preuve d'envoi côté secrétariat/direction/CDS) — forwardé
+    // à la route référent qui gère l'inclusion Resend. Ignoré si email staff
+    // identique au référent (géré côté route référent).
+    const staffBcc = resolved.email || undefined;
+
     let forwardRes: Response;
     try {
       forwardRes = await fetch(targetUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: insc.suivi_token, type: docType }),
+        body: JSON.stringify({
+          token: insc.suivi_token,
+          type: docType,
+          ...(staffBcc ? { bcc: staffBcc } : {}),
+        }),
         signal: AbortSignal.timeout(60000),
       });
     } catch (fetchErr) {
@@ -127,6 +136,7 @@ export async function POST(
         context: 'staff_email_pdf',
         actor_role: resolved.role,
         channel: 'email',
+        bcc_staff: !!staffBcc,
       },
     });
 

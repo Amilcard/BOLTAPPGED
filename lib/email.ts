@@ -8,6 +8,58 @@ function getResend() {
   return _resend;
 }
 
+// ============================================================
+// EmailResult — type discriminé pour les retours des 24 fonctions
+// d'envoi email. Introduction lot L1/6, refactor des fonctions
+// dans lots L2-L5. Ne casse rien en L1 (type non encore utilisé).
+// ============================================================
+export type EmailResult =
+  | { sent: true; messageId: string }
+  | { sent: false; reason: 'missing_api_key' | 'provider_error' | 'invalid_input' | 'rate_limited' };
+
+// Payload générique — aligné sur la forme réelle du SDK Resend v6
+// (from, to, subject, html/text, etc.). Typé ouvert pour accepter
+// tous les champs optionnels du SDK (cc, bcc, reply_to, headers, attachments).
+export type ResendSendPayload = {
+  from: string;
+  to: string | string[];
+  subject: string;
+  html?: string;
+  text?: string;
+  [key: string]: unknown;
+};
+
+/**
+ * Helper interne — JAMAIS throw, JAMAIS de PII dans reason.
+ * Wrapper unique autour de resend.emails.send pour normaliser le retour.
+ * Lecture dynamique de process.env.EMAIL_SERVICE_API_KEY (compatible tests
+ * qui suppriment/restaurent la clé entre appels).
+ *
+ * Usage (dans les lots L2-L5) :
+ *   return await tryResendSend({ from, to, subject, html });
+ */
+export async function tryResendSend(payload: ResendSendPayload): Promise<EmailResult> {
+  const apiKey = process.env.EMAIL_SERVICE_API_KEY;
+  if (!apiKey || apiKey === 'YOUR_EMAIL_API_KEY_HERE') {
+    console.error('[email] EMAIL_SERVICE_API_KEY missing — silent no-op avoided');
+    return { sent: false, reason: 'missing_api_key' };
+  }
+  try {
+    // Cast vers le type attendu par le SDK Resend — ResendSendPayload est un
+    // superset structurel compatible. Évite de dépendre du type interne du SDK
+    // qui peut changer entre versions mineures.
+    const result = await getResend().emails.send(payload as Parameters<ReturnType<typeof getResend>['emails']['send']>[0]);
+    if (result.error || !result.data?.id) {
+      console.error('[email] provider_error', result.error);
+      return { sent: false, reason: 'provider_error' };
+    }
+    return { sent: true, messageId: result.data.id };
+  } catch (err) {
+    console.error('[email] provider_error exception', err);
+    return { sent: false, reason: 'provider_error' };
+  }
+}
+
 // Échappement HTML — prévient injection XSS dans les templates email
 const htmlEscape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 

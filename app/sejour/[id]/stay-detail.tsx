@@ -916,7 +916,7 @@ export function StayDetail({ stay }: { stay: Stay & { sessions: StaySession[], p
                 </div>
               ) : isPro ? (
                 <div className="border-t border-gray-100 pt-3 mb-3">
-                  <PriceInquiryBlock sejourSlug={slug} sejourTitle={(stay?.title as string) || ((stay as unknown as Record<string, unknown>)?.marketing_title as string) || ''} />
+                  <PriceInquiryBlock sejourSlug={slug} sejourTitle={((stay as unknown as Record<string, unknown>)?.marketing_title as string) || (stay?.title as string) || ''} />
                 </div>
               ) : (
                 <div className="border-t border-gray-100 pt-3 mb-3">

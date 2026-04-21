@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { sendStatusChangeEmail } from '@/lib/email';
+import { logEmailFailure } from '@/lib/email-logger';
 import { auditLog } from '@/lib/audit-log';
 
 /**
@@ -134,6 +135,7 @@ export async function performInscriptionUpdate(
     }
 
     // Email non-bloquant si le statut a changé
+    // Lot L3/6 : journalisation centralisée des échecs via logEmailFailure.
     if (status && data.referent_email) {
       sendStatusChangeEmail(
         data.referent_email,
@@ -141,7 +143,13 @@ export async function performInscriptionUpdate(
         data.jeune_prenom,
         data.jeune_nom,
         status
-      ).catch((err) => { console.error('[admin/inscriptions] sendStatusChangeEmail failed', err); });
+      )
+        .then(async (result) => {
+          if (!result.sent) {
+            await logEmailFailure('status_change_notification', result, 'inscription', id);
+          }
+        })
+        .catch((err) => { console.error('[admin/inscriptions] sendStatusChangeEmail failed', err); });
     }
 
     return NextResponse.json(data);

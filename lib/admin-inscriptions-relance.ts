@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendRappelDossierIncomplet, sendRelanceAdminNotification } from '@/lib/email';
+import { logEmailFailure } from '@/lib/email-logger';
 
 /**
  * Shared logic for admin inscription "relance" (rappel dossier incomplet).
@@ -79,14 +80,22 @@ export async function runRelanceInscription(id: string): Promise<RelanceResult> 
 
     // Emails APRÈS persistance du timestamp — fire-and-forget car non critique
     // pour la réponse, et retry ne produira pas de doublon (guard JS ci-dessus).
+    // Lot L3/6 : journalisation centralisée des échecs via logEmailFailure
+    // (auditLog 'email_failed' — pas de PII, reason enum fermé).
     sendRappelDossierIncomplet({
       referentEmail: insc.referent_email,
       referentNom: insc.referent_nom || 'Référent',
       dossierRef: insc.dossier_ref ?? undefined,
       suiviToken: insc.suivi_token,
-    }).catch((err) => {
-      console.error('[relance] sendRappelDossierIncomplet failed:', err);
-    });
+    })
+      .then(async (result) => {
+        if (!result.sent) {
+          await logEmailFailure('relance_inscription_dossier', result, 'inscription', id);
+        }
+      })
+      .catch((err) => {
+        console.error('[relance] sendRappelDossierIncomplet failed:', err);
+      });
 
     sendRelanceAdminNotification({
       referentNom: insc.referent_nom || 'Référent',
@@ -94,9 +103,15 @@ export async function runRelanceInscription(id: string): Promise<RelanceResult> 
       structureNom: insc.organisation ?? undefined,
       dossierRef: insc.dossier_ref ?? undefined,
       inscriptionId: id,
-    }).catch((err) => {
-      console.error('[relance] sendRelanceAdminNotification failed:', err);
-    });
+    })
+      .then(async (result) => {
+        if (!result.sent) {
+          await logEmailFailure('relance_inscription_admin', result, 'inscription', id);
+        }
+      })
+      .catch((err) => {
+        console.error('[relance] sendRelanceAdminNotification failed:', err);
+      });
 
     return { ok: true, relance_at: relanceAt };
   } catch (err) {

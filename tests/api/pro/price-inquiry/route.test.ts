@@ -110,8 +110,11 @@ function mockInsertOk(id = 'lead-uuid-123') {
 describe('POST /api/pro/price-inquiry', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockSendPriceInquiryToEducateur.mockResolvedValue({ ok: true });
-    mockSendPriceInquiryAlertGED.mockResolvedValue({ ok: true });
+    // Lot L3/6 — align mocks avec contrat EmailResult réel (depuis L2/6).
+    // Anciens mocks `{ ok: true }` faisaient sent===undefined (faux positif
+    // passant en happy path mais cassant les tests KO). Maintenant { sent: true }.
+    mockSendPriceInquiryToEducateur.mockResolvedValue({ sent: true, messageId: 'mock-id' });
+    mockSendPriceInquiryAlertGED.mockResolvedValue({ sent: true, messageId: 'mock-id' });
     mockIsRateLimited.mockResolvedValue(false);
     mockSejourFound();
     mockInsertOk();
@@ -312,11 +315,11 @@ describe('POST /api/pro/price-inquiry', () => {
     });
     mockSendPriceInquiryToEducateur.mockImplementation(async () => {
       callOrder.push('email_educ');
-      return { ok: true };
+      return { sent: true, messageId: 'mock-id' };
     });
     mockSendPriceInquiryAlertGED.mockImplementation(async () => {
       callOrder.push('email_ged');
-      return { ok: true };
+      return { sent: true, messageId: 'mock-id' };
     });
 
     await POST(makeRequest(VALID_PAYLOAD));

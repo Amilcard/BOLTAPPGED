@@ -45,6 +45,10 @@ jest.mock('@/lib/email', () => ({
   sendStatusChangeEmail: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
 }));
 
+jest.mock('@/lib/email-logger', () => ({
+  logEmailFailure: jest.fn().mockResolvedValue(undefined),
+}));
+
 import jwt from 'jsonwebtoken';
 import { NextRequest } from 'next/server';
 

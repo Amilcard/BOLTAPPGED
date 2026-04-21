@@ -6,6 +6,7 @@ import { auditLog } from '@/lib/audit-log';
 import { structureRateLimitGuard, getStructureClientIp } from '@/lib/rate-limit-structure';
 import { generateInvitationToken, computeInvitationExpiry } from '@/lib/invitation-token';
 import { sendTeamMemberInvite } from '@/lib/email';
+import { logEmailFailure } from '@/lib/email-logger';
 import { UUID_RE } from '@/lib/validators';
 
 export async function POST(
@@ -60,7 +61,7 @@ export async function POST(
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || 'https://app.groupeetdecouverte.fr';
     const activationUrl = `${baseUrl}/structure/activate?token=${newToken}`;
 
-    await sendTeamMemberInvite({
+    const emailResult = await sendTeamMemberInvite({
       to: member.email as string,
       prenom: (member.prenom as string) || (member.email as string).split('@')[0],
       structureName: (resolved.structure.name as string) || 'votre structure',
@@ -68,6 +69,10 @@ export async function POST(
       activationUrl,
       invitedBy: resolved.email || 'Direction',
     });
+    // Lot L3/6 : journalisation centralisée des échecs via logEmailFailure.
+    if (!emailResult.sent) {
+      await logEmailFailure('team_member_reinvite', emailResult, 'team_member', memberId);
+    }
 
     await auditLog(supabase, {
       action: 'update',

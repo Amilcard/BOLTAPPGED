@@ -27,6 +27,7 @@ process.env.NEXT_PUBLIC_SITE_URL = 'http://localhost:3000';
 
 const mockFrom = jest.fn();
 const mockSendSouhaitNotification = jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' });
+const mockLogEmailFailure = jest.fn().mockResolvedValue(undefined);
 
 jest.mock('@/lib/supabase-server', () => ({
   getSupabase: () => ({ from: mockFrom }),
@@ -35,6 +36,10 @@ jest.mock('@/lib/supabase-server', () => ({
 
 jest.mock('@/lib/email', () => ({
   sendSouhaitNotificationEducateur: (...args: unknown[]) => mockSendSouhaitNotification(...args),
+}));
+
+jest.mock('@/lib/email-logger', () => ({
+  logEmailFailure: (...args: unknown[]) => mockLogEmailFailure(...args),
 }));
 
 import { POST } from '@/app/api/souhaits/route';
@@ -226,6 +231,23 @@ describe('POST /api/souhaits', () => {
     expect(json.id).toBe('souhait_existing');
     expect(json.updated).toBe(true);
     expect(mockSendSouhaitNotification).toHaveBeenCalledTimes(1);
+  });
+
+  // ─── Lot L3/6 — logEmailFailure sur échec email ───────────────────────
+  it('L3/6 — logEmailFailure appelé quand sendSouhaitNotificationEducateur retourne { sent: false }', async () => {
+    setupCreatePath({ structureExists: true });
+    mockSendSouhaitNotification.mockResolvedValue({ sent: false, reason: 'missing_api_key' });
+
+    const req = makeRequest(validBody());
+    const res = await POST(req);
+
+    expect(res.status).toBe(201); // route continue OK
+    expect(mockLogEmailFailure).toHaveBeenCalledWith(
+      'souhait_notification_educateur',
+      { sent: false, reason: 'missing_api_key' },
+      'souhait',
+      'souhait_new_123'
+    );
   });
 
   it('doublon déjà validé → pas de mise à jour', async () => {

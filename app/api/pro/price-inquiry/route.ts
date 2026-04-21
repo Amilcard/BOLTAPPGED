@@ -166,14 +166,33 @@ export async function POST(request: NextRequest) {
     sendPriceInquiryAlertGED(inquiryData),
   ]);
 
-  const educateurKo = educateurResult.status === 'rejected';
-  const gedKo = gedResult.status === 'rejected';
+  // Lot L3/6 : support des 2 formes d'échec possibles :
+  //  - rejected (legacy — throw dans sendXxx ou mock.mockRejectedValue)
+  //  - fulfilled { sent: false } (nouveau EmailResult depuis lot L2/6)
+  // NB : on NE remplace PAS l'auditLog inline par logEmailFailure ici —
+  // la logique dual-severity (high si les 2 KO, medium si 1 seul) et les
+  // métadonnées actor/IP/error dépassent le contrat simple du helper.
+  // logEmailFailure reste utilisé pour les callsites single-email uniformes.
+  const educateurKo =
+    educateurResult.status === 'rejected' ||
+    (educateurResult.status === 'fulfilled' && !educateurResult.value.sent);
+  const gedKo =
+    gedResult.status === 'rejected' ||
+    (gedResult.status === 'fulfilled' && !gedResult.value.sent);
 
   if (educateurKo) {
-    console.error('[price-inquiry] Email éducateur échoué:', educateurResult.reason);
+    const reason =
+      educateurResult.status === 'rejected'
+        ? educateurResult.reason
+        : `reason:${(educateurResult.value as { reason?: string }).reason ?? 'unknown'}`;
+    console.error('[price-inquiry] Email éducateur échoué:', reason);
   }
   if (gedKo) {
-    console.error('[price-inquiry] Email GED échoué:', gedResult.reason);
+    const reason =
+      gedResult.status === 'rejected'
+        ? gedResult.reason
+        : `reason:${(gedResult.value as { reason?: string }).reason ?? 'unknown'}`;
+    console.error('[price-inquiry] Email GED échoué:', reason);
   }
 
   // Fix #5 — Si un email échoue, on NE bloque PAS l'utilisateur :
@@ -192,8 +211,16 @@ export async function POST(request: NextRequest) {
         severity: educateurKo && gedKo ? 'high' : 'medium',
         educateur_email_status: educateurKo ? 'failed' : 'sent',
         ged_email_status: gedKo ? 'failed' : 'sent',
-        educateur_error: educateurKo ? String((educateurResult as PromiseRejectedResult).reason).slice(0, 500) : null,
-        ged_error: gedKo ? String((gedResult as PromiseRejectedResult).reason).slice(0, 500) : null,
+        educateur_error: educateurKo
+          ? educateurResult.status === 'rejected'
+            ? String(educateurResult.reason).slice(0, 500)
+            : `reason:${(educateurResult.value as { reason?: string }).reason ?? 'unknown'}`
+          : null,
+        ged_error: gedKo
+          ? gedResult.status === 'rejected'
+            ? String(gedResult.reason).slice(0, 500)
+            : `reason:${(gedResult.value as { reason?: string }).reason ?? 'unknown'}`
+          : null,
       },
     });
   }

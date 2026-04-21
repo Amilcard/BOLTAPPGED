@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendSouhaitNotificationEducateur } from '@/lib/email';
+import { logEmailFailure } from '@/lib/email-logger';
 import { generateEducateurAggregateToken } from '@/lib/educateur-token';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 import { EMAIL_REGEX, UUID_RE, isSafeImageUrl } from '@/lib/validators';
@@ -130,7 +131,7 @@ export async function POST(req: NextRequest) {
           generateEducateurAggregateToken(safeEmail),
           getSejourHeroImage(supabase, sejourSlug),
         ]);
-        await sendSouhaitNotificationEducateur({
+        const emailResult = await sendSouhaitNotificationEducateur({
           educateurEmail: safeEmail,
           educateurPrenom: educateurPrenom || undefined,
           kidPrenom: typeof kidPrenom === 'string' ? kidPrenom : '',
@@ -139,7 +140,13 @@ export async function POST(req: NextRequest) {
           motivation,
           lienReponse: `${baseUrl}/educateur/souhait/${existing.educateur_token}`,
           lienTousSouhaits: aggregateToken ? `${baseUrl}/educateur/souhaits/${aggregateToken}` : undefined,
-        }).catch((e) => console.error('[EMAIL] Souhait update non envoyé:', e?.message));
+        }).catch((e) => {
+          console.error('[EMAIL] Souhait update non envoyé:', e?.message);
+          return { sent: false, reason: 'provider_error' } as const;
+        });
+        if (!emailResult.sent) {
+          await logEmailFailure('souhait_notification_educateur', emailResult, 'souhait', existing.id);
+        }
       }
 
       return NextResponse.json({ id: existing.id, updated: true });
@@ -198,7 +205,7 @@ export async function POST(req: NextRequest) {
         generateEducateurAggregateToken(safeEmail),
         getSejourHeroImage(supabase, sejourSlug),
       ]);
-      await sendSouhaitNotificationEducateur({
+      const emailResult = await sendSouhaitNotificationEducateur({
         educateurEmail: safeEmail,
         educateurPrenom: typeof educateurPrenom === 'string' ? educateurPrenom : undefined,
         kidPrenom: typeof kidPrenom === 'string' ? kidPrenom : '',
@@ -207,7 +214,13 @@ export async function POST(req: NextRequest) {
         motivation: String(motivation),
         lienReponse: `${baseUrl}/educateur/souhait/${souhait.educateur_token as string}`,
         lienTousSouhaits: aggregateToken ? `${baseUrl}/educateur/souhaits/${aggregateToken}` : undefined,
-      }).catch((e) => console.error('[EMAIL] Souhait non envoyé:', e?.message));
+      }).catch((e) => {
+        console.error('[EMAIL] Souhait non envoyé:', e?.message);
+        return { sent: false, reason: 'provider_error' } as const;
+      });
+      if (!emailResult.sent) {
+        await logEmailFailure('souhait_notification_educateur', emailResult, 'souhait', souhait.id);
+      }
     }
 
     return NextResponse.json({

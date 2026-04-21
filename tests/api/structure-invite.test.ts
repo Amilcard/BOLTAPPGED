@@ -10,6 +10,10 @@ jest.mock('@/lib/supabase-server');
 jest.mock('@/lib/email', () => ({
   sendTeamMemberInvite: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
 }));
+const mockLogEmailFailure = jest.fn().mockResolvedValue(undefined);
+jest.mock('@/lib/email-logger', () => ({
+  logEmailFailure: (...args: unknown[]) => mockLogEmailFailure(...args),
+}));
 jest.mock('@/lib/rate-limit-structure', () => ({
   structureRateLimitGuard: jest.fn().mockResolvedValue(null),
   getStructureClientIp: jest.fn().mockReturnValue('127.0.0.1'),
@@ -69,6 +73,30 @@ describe('POST /api/structure/[code]/invite', () => {
     const res = await POST(makeReq('ABCDEFGHIJ', { email: 'x@y.fr', role: 'secretariat' }),
       { params: Promise.resolve({ code: 'ABCDEFGHIJ' }) });
     expect(res.status).toBe(409);
+  });
+
+  test('L3/6 — logEmailFailure appelé si sendTeamMemberInvite retourne { sent: false }', async () => {
+    (resolveCodeToStructure as jest.Mock).mockResolvedValue({
+      structure: { id: 's1', name: 'MECS Test' }, role: 'direction', roles: ['direction'], email: 'dir@x.fr',
+    });
+    const fromMock = jest.fn();
+    (getSupabaseAdmin as jest.Mock).mockReturnValue({ from: fromMock });
+    fromMock
+      .mockReturnValueOnce({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: null }) }) }) }) })
+      .mockReturnValueOnce({ insert: () => ({ select: () => ({ single: () => Promise.resolve({ data: { id: 'new-id' }, error: null }) }) }) });
+    (sendTeamMemberInvite as jest.Mock).mockResolvedValue({ sent: false, reason: 'missing_api_key' });
+
+    const res = await POST(makeReq('ABCDEFGHIJ', { email: 'marie@x.fr', role: 'secretariat' }),
+      { params: Promise.resolve({ code: 'ABCDEFGHIJ' }) });
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.emailSent).toBe(false);
+    expect(mockLogEmailFailure).toHaveBeenCalledWith(
+      'team_member_invite',
+      { sent: false, reason: 'missing_api_key' },
+      'team_member',
+      'new-id'
+    );
   });
 
   test('201 happy path', async () => {

@@ -7,6 +7,7 @@ import { auditLog } from '@/lib/audit-log';
 import { structureRateLimitGuard, getStructureClientIp } from '@/lib/rate-limit-structure';
 import { generateInvitationToken, computeInvitationExpiry } from '@/lib/invitation-token';
 import { sendTeamMemberInvite } from '@/lib/email';
+import { logEmailFailure } from '@/lib/email-logger';
 import { EMAIL_REGEX } from '@/lib/validators';
 
 const VALID_ROLES = ['secretariat', 'educateur'] as const;
@@ -113,7 +114,13 @@ export async function POST(
       activationUrl,
       invitedBy: resolved.email || 'Direction',
     });
-    const emailSent = emailResult !== null;
+    // Lot L3/6 : sendTeamMemberInvite retourne désormais EmailResult
+    // (jamais null). Ancien test `!== null` toujours truthy → remplacé par
+    // vérification stricte du discriminant `sent`. Journalisation en cas d'échec.
+    const emailSent = emailResult.sent;
+    if (!emailSent) {
+      await logEmailFailure('team_member_invite', emailResult, 'team_member', inserted.id);
+    }
 
     await auditLog(supabase, {
       action: 'create',

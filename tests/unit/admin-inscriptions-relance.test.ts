@@ -30,6 +30,11 @@ jest.mock('@/lib/email', () => ({
   sendRelanceAdminNotification: (...args: unknown[]) => mockSendAdminNotif(...args),
 }));
 
+const mockLogEmailFailure = jest.fn().mockResolvedValue(undefined);
+jest.mock('@/lib/email-logger', () => ({
+  logEmailFailure: (...args: unknown[]) => mockLogEmailFailure(...args),
+}));
+
 import { runRelanceInscription } from '@/lib/admin-inscriptions-relance';
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
@@ -154,6 +159,27 @@ describe('runRelanceInscription — guard idempotence 30 min', () => {
     expect(updateEq).toHaveBeenCalledWith('id', INSCRIPTION_ID);
     expect(mockSendRappel).toHaveBeenCalledTimes(1);
     expect(mockSendAdminNotif).toHaveBeenCalledTimes(1);
+  });
+
+  // ── Lot L3/6 — logEmailFailure sur échec email ──────────────────────────────
+  test('L3/6 — logEmailFailure appelé si sendRappelDossierIncomplet retourne { sent: false }', async () => {
+    setupSupabase({ inscription: inscriptionRow(null), gedSentAt: null });
+    mockSendRappel.mockResolvedValue({ sent: false, reason: 'missing_api_key' });
+    mockSendAdminNotif.mockResolvedValue({ sent: true, messageId: 'mock-id' });
+
+    const res = await runRelanceInscription(INSCRIPTION_ID);
+    expect(res.ok).toBe(true);
+    // Attendre la résolution des `.then` fire-and-forget
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(mockLogEmailFailure).toHaveBeenCalledWith(
+      'relance_inscription_dossier',
+      { sent: false, reason: 'missing_api_key' },
+      'inscription',
+      INSCRIPTION_ID
+    );
+    // restaure pour tests suivants
+    mockSendRappel.mockResolvedValue({ sent: true, messageId: 'mock-id' });
   });
 
   test('4. ged_sent_at déjà défini → 409 prioritaire (pas d\'UPDATE relance)', async () => {

@@ -1,0 +1,65 @@
+name: E2E Smoke (non-blocking)
+
+# Smoke E2E Playwright sur PR + dispatch.
+# Non-bloquant (continue-on-error) tant que la stabilité E2E n'est pas restaurée
+# (cf. TECH_DEBT.md : 85/130 E2E cassés, docs/adr/2026-04-21-e2e-smoke-only.md).
+# Objectif : observabilité des régressions UI/routes sans bloquer les PR.
+# Un job en échec remonte en status check mais n'empêche pas le merge.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Smoke E2E (chromium, non-blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm install --legacy-peer-deps
+
+      - name: Install Playwright browsers (chromium only)
+        run: npx playwright install --with-deps chromium
+
+      - name: Run smoke tests
+        env:
+          # Placeholders Zod-valid (identiques à bundle-check.yml) — ZÉRO vraie donnée
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: PLACEHOLDER_ANON_KEY_FOR_CI_BUILD_ONLY
+          SUPABASE_SERVICE_ROLE_KEY: PLACEHOLDER_SERVICE_ROLE_KEY_CI
+          STRIPE_SECRET_KEY: sk_test_PLACEHOLDER_NOT_A_REAL_KEY
+          STRIPE_WEBHOOK_SECRET: whsec_PLACEHOLDER_NOT_REAL
+          NEXTAUTH_SECRET: placeholder-secret-32-chars-minimum!
+          EMAIL_SERVICE_API_KEY: placeholder-email-key
+          CRON_SECRET: placeholder-cron-secret-32chars!
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_PLACEHOLDER
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+          SENTRY_AUTH_TOKEN: ''
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+        run: npm run test:e2e:smoke
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14

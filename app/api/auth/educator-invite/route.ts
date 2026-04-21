@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SignJWT } from 'jose';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 import { sendEducatorInviteEmail } from '@/lib/email';
+import { logEmailFailure } from '@/lib/email-logger';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { requireEditor } from '@/lib/auth-middleware';
 
@@ -125,7 +126,30 @@ export async function POST(req: NextRequest) {
     const baseUrl = process.env.NEXTAUTH_URL || 'https://app.groupeetdecouverte.fr';
     const inviteUrl = `${baseUrl}/inscription-urgence?token=${token}`;
 
-    await sendEducatorInviteEmail(normalizedEmail, inviteUrl, sejourTitle, normalizedDate, city_departure);
+    // Lot L4/6 — callsite critique : on privilégie 502 (Bad Gateway) plutôt que 500,
+    // car le token JWT a été généré avec succès, seul le provider email a échoué.
+    // L'admin peut retenter l'action sans régénérer la ressource amont.
+    const emailResult = await sendEducatorInviteEmail(
+      normalizedEmail,
+      inviteUrl,
+      sejourTitle,
+      normalizedDate,
+      city_departure
+    );
+    if (!emailResult.sent) {
+      // resourceId = slug + date + city (non-PII) — permet de corréler sans logger l'email.
+      const inviteRef = `${sejour_slug}:${normalizedDate}:${city_departure}`;
+      await logEmailFailure('educator_invite', emailResult, 'educator_invitation', inviteRef);
+      return NextResponse.json(
+        {
+          error: {
+            code: 'EMAIL_FAILED',
+            message: 'Le lien d\'invitation n\'a pas pu être envoyé. Réessayez dans quelques minutes.',
+          },
+        },
+        { status: 502 }
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

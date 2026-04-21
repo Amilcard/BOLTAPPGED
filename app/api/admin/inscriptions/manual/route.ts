@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireEditor } from '@/lib/auth-middleware';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendInscriptionConfirmation, sendChefDeServiceInvitation } from '@/lib/email';
+import { logEmailFailure } from '@/lib/email-logger';
 import { z } from 'zod';
 import { randomBytes } from 'crypto';
 
@@ -242,33 +243,66 @@ export async function POST(request: NextRequest) {
       ? `${appBaseUrl}/suivi/${inscription.suivi_token}`
       : null;
 
+    // Lot L4/6 — on ne bloque JAMAIS la création (201 conservé même email KO),
+    // mais l'admin reçoit la liste des warnings dans la réponse pour les afficher
+    // sans devoir relire les logs serveur.
+    const warnings: Array<{ type: 'email_failed'; context: string; reason: string }> = [];
+
     // Invitation chef de service (vue globale /structure/[code])
     if (data.chefDeServiceEmail && structureCode && structureUrl) {
-      await sendChefDeServiceInvitation({
-        recipientEmail: data.chefDeServiceEmail,
-        structureName:  data.structureName,
-        structureCode,
-        structureUrl,
-      }).catch(err => console.error('[admin/inscriptions/manual] sendChefDeServiceInvitation error:', err));
+      try {
+        const cdsResult = await sendChefDeServiceInvitation({
+          recipientEmail: data.chefDeServiceEmail,
+          structureName:  data.structureName,
+          structureCode,
+          structureUrl,
+        });
+        if (!cdsResult.sent) {
+          await logEmailFailure(
+            'admin_manual_cds_invite',
+            cdsResult,
+            'structure',
+            structureId ?? structureCode
+          );
+          warnings.push({ type: 'email_failed', context: 'cds_invitation', reason: cdsResult.reason });
+        }
+      } catch (err) {
+        console.error('[admin/inscriptions/manual] sendChefDeServiceInvitation exception:', err);
+        warnings.push({ type: 'email_failed', context: 'cds_invitation', reason: 'provider_error' });
+      }
     }
 
     // Envoi optionnel du lien suivi à l'éducateur
     if (data.sendSuiviLink && suiviUrl) {
-      await sendInscriptionConfirmation({
-        referentNom:      data.referentNom,
-        referentEmail:    data.referentEmail,
-        jeunePrenom:      data.childFirstName,
-        jeuneNom:         data.childLastName,
-        sejourSlug:       sejourDisplayName,
-        sessionDate:      normalizedDate,
-        cityDeparture:    data.cityDeparture === 'sans_transport' ? 'Sans transport' : data.cityDeparture,
-        priceTotal:       data.priceTotal,
-        paymentMethod:    data.paymentMethod,
-        paymentReference: String(inscription.id),
-        dossierRef,
-        organisation:     data.structureName,
-        suiviUrl,
-      }).catch(err => console.error('[admin/inscriptions/manual] sendSuiviLink error:', err));
+      try {
+        const suiviResult = await sendInscriptionConfirmation({
+          referentNom:      data.referentNom,
+          referentEmail:    data.referentEmail,
+          jeunePrenom:      data.childFirstName,
+          jeuneNom:         data.childLastName,
+          sejourSlug:       sejourDisplayName,
+          sessionDate:      normalizedDate,
+          cityDeparture:    data.cityDeparture === 'sans_transport' ? 'Sans transport' : data.cityDeparture,
+          priceTotal:       data.priceTotal,
+          paymentMethod:    data.paymentMethod,
+          paymentReference: String(inscription.id),
+          dossierRef,
+          organisation:     data.structureName,
+          suiviUrl,
+        });
+        if (!suiviResult.sent) {
+          await logEmailFailure(
+            'admin_manual_suivi_link',
+            suiviResult,
+            'inscription',
+            String(inscription.id)
+          );
+          warnings.push({ type: 'email_failed', context: 'suivi_link', reason: suiviResult.reason });
+        }
+      } catch (err) {
+        console.error('[admin/inscriptions/manual] sendSuiviLink exception:', err);
+        warnings.push({ type: 'email_failed', context: 'suivi_link', reason: 'provider_error' });
+      }
     }
 
     return NextResponse.json(
@@ -283,6 +317,7 @@ export async function POST(request: NextRequest) {
         structure_code:    structureCode,
         structure_created: structureCreated,
         structure_url:     structureUrl,
+        warnings:         warnings.length > 0 ? warnings : undefined,
       },
       { status: 201 }
     );

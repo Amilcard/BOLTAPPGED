@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin, getSupabaseUser } from '@/lib/supabase-server';
 import { z } from 'zod';
 import { sendInscriptionConfirmation, sendAdminNewInscriptionNotification, sendStructureCodeEmail, sendNewEducateurAlert } from '@/lib/email';
+import { logEmailFailure } from '@/lib/email-logger';
 import { randomBytes } from 'crypto';
 import { auditLog, getClientIp } from '@/lib/audit-log';
 import { isRateLimited } from '@/lib/rate-limit';
@@ -666,11 +667,37 @@ export async function POST(request: NextRequest) {
       organisation: data.organisation,
       suiviUrl,
     };
-    // Await both emails before returning — fire-and-forget is killed by serverless on return
-    await Promise.allSettled([
+    // Lot L4/6 — await les 2 emails, mais sans bloquer la création (201 conservé
+    // même en cas d'échec email — le dossier est en base, on ne le perd pas).
+    // Le nouveau champ `email_status` est backward-compat (le front ignore s'il l'absent).
+    const [confResult, adminResult] = await Promise.allSettled([
       sendInscriptionConfirmation(emailData),
       sendAdminNewInscriptionNotification(emailData),
     ]);
+
+    const emailStatus = {
+      confirmation: confResult.status === 'fulfilled' && confResult.value.sent,
+      admin: adminResult.status === 'fulfilled' && adminResult.value.sent,
+    };
+
+    if (!emailStatus.confirmation || !emailStatus.admin) {
+      if (confResult.status === 'fulfilled' && !confResult.value.sent) {
+        await logEmailFailure(
+          'inscription_confirmation',
+          confResult.value,
+          'inscription',
+          inscription.id as string
+        );
+      }
+      if (adminResult.status === 'fulfilled' && !adminResult.value.sent) {
+        await logEmailFailure(
+          'inscription_admin_new',
+          adminResult.value,
+          'inscription',
+          inscription.id as string
+        );
+      }
+    }
 
     const response = NextResponse.json(
       {
@@ -679,6 +706,7 @@ export async function POST(request: NextRequest) {
         dossier_ref: inscription.dossier_ref,
         suivi_token: inscription.suivi_token,
         status: inscription.status,
+        email_status: emailStatus,
       },
       { status: 201 }
     );

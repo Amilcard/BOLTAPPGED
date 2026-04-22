@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendProAccessConfirmation, sendProAccessAlertGED } from '@/lib/email';
 import { logEmailFailure } from '@/lib/email-logger';
+import { auditLog, getClientIp } from '@/lib/audit-log';
 
 const MAX_REQUESTS = 2;
 const WINDOW_MINUTES = 60;
@@ -136,6 +137,21 @@ export async function POST(request: NextRequest) {
       .select('id')
       .single();
     leadId = (inserted as { id: string } | null)?.id ?? null;
+    if (leadId) {
+      await auditLog(supabase, {
+        action: 'submit',
+        resourceType: 'smart_form_submission',
+        resourceId: leadId,
+        actorType: 'system',
+        actorId: accessData.email,
+        ipAddress: getClientIp(request),
+        metadata: {
+          form_type: 'pro_access_request',
+          structure_type: accessData.structureType,
+          sejour_slug: accessData.sejourSlug ?? null,
+        },
+      });
+    }
   } catch {
     // fail-silently (compat legacy — pas de régression HTTP)
   }

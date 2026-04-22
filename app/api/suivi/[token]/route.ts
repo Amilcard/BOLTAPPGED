@@ -223,6 +223,21 @@ export async function PATCH(
       throw updateErr;
     }
 
+    await auditLog(supabase, {
+      action: 'update',
+      resourceType: 'inscription',
+      resourceId: inscriptionId,
+      inscriptionId,
+      actorType: 'referent',
+      actorId: ownership.referentEmail,
+      ipAddress: getClientIp(req),
+      metadata: {
+        field,
+        actor_role: 'referent',
+        token_prefix: token.slice(0, 8),
+      },
+    });
+
     return NextResponse.json({ ok: true, field, value: sanitizedValue });
   } catch (error) {
     console.error('PATCH /api/suivi/[token] error:', error);

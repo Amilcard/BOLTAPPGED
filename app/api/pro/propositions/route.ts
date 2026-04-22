@@ -5,6 +5,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendPropositionAlertGED } from '@/lib/email';
 import { logEmailFailure } from '@/lib/email-logger';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
+import { auditLog, getClientIp } from '@/lib/audit-log';
 
 export async function POST(req: NextRequest) {
   const auth = await verifyProSession(req);
@@ -111,6 +112,22 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
+
+  await auditLog(supabase, {
+    action: 'create',
+    resourceType: 'proposition',
+    resourceId: proposition.id,
+    actorType: 'admin',
+    actorId: auth.email,
+    ipAddress: getClientIp(req),
+    metadata: {
+      sejour_slug,
+      session_start: pricing.start_date,
+      city_departure,
+      structure_name: auth.structureName ?? null,
+      prix_total: pricing.price_ged_total ?? 0,
+    },
+  });
 
   // L5/6 — refactor EmailResult : await + check sent, mais on NE BLOQUE PAS
   // la réponse 201 (l'insert proposition a réussi côté DB, l'alerte admin est

@@ -1,6 +1,8 @@
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendRappelDossierIncomplet, sendRelanceAdminNotification } from '@/lib/email';
 import { logEmailFailure } from '@/lib/email-logger';
+import { assertUpdatedSingle } from '@/lib/supabase-guards';
+import { auditLog } from '@/lib/audit-log';
 
 /**
  * Shared logic for admin inscription "relance" (rappel dossier incomplet).
@@ -19,7 +21,10 @@ export type RelanceResult =
   | { ok: true; relance_at: string }
   | { ok: false; status: 400 | 404 | 409 | 422 | 500; error: string };
 
-export async function runRelanceInscription(id: string): Promise<RelanceResult> {
+export async function runRelanceInscription(
+  id: string,
+  actorEmail: string,
+): Promise<RelanceResult> {
   try {
     const supabase = getSupabaseAdmin();
 
@@ -68,15 +73,32 @@ export async function runRelanceInscription(id: string): Promise<RelanceResult> 
     }
 
     const relanceAt = new Date().toISOString();
-    const { error: updateErr } = await supabase
+    const { data: updateRow, error: updateErr } = await supabase
       .from('gd_inscriptions')
       .update({ last_relance_at: relanceAt })
-      .eq('id', id);
+      .eq('id', id)
+      .is('deleted_at', null)
+      .select('id')
+      .single();
 
     if (updateErr) {
       console.error('[relance] update last_relance_at failed:', updateErr.message);
+      if ((updateErr as { code?: string }).code === 'PGRST116') {
+        return { ok: false, status: 404, error: 'Inscription introuvable ou supprimée.' };
+      }
       return { ok: false, status: 500, error: 'Erreur mise à jour timestamp.' };
     }
+    assertUpdatedSingle(updateRow, 'admin_relance_inscription');
+
+    // RGPD — tracer relance admin AVANT side-effect email (règle sécurité #15 + Prelude [6])
+    await auditLog(supabase, {
+      action: 'update',
+      resourceType: 'inscription',
+      resourceId: id,
+      actorType: 'admin',
+      actorId: actorEmail,
+      metadata: { operation: 'relance' },
+    });
 
     // Emails APRÈS persistance du timestamp — fire-and-forget car non critique
     // pour la réponse, et retry ne produira pas de doublon (guard JS ci-dessus).

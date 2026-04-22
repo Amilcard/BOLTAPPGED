@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'id requis (UUID)' }, { status: 400 });
     }
 
-    const result = await runRelanceInscription(id);
+    const result = await runRelanceInscription(id, auth.email);
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }

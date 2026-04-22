@@ -26,7 +26,7 @@ export async function POST(
       );
     }
 
-    const result = await runRelanceInscription(id);
+    const result = await runRelanceInscription(id, auth.email);
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }

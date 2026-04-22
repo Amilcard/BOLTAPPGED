@@ -35,11 +35,17 @@ jest.mock('@/lib/email-logger', () => ({
   logEmailFailure: (...args: unknown[]) => mockLogEmailFailure(...args),
 }));
 
+const mockAuditLog = jest.fn().mockResolvedValue(undefined);
+jest.mock('@/lib/audit-log', () => ({
+  auditLog: (...args: unknown[]) => mockAuditLog(...args),
+}));
+
 import { runRelanceInscription } from '@/lib/admin-inscriptions-relance';
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
 const INSCRIPTION_ID = 'aaa00000-0000-0000-0000-000000000099';
+const ADMIN_EMAIL = 'admin@ged.fr';
 
 function inscriptionRow(lastRelanceAt: string | null) {
   return {
@@ -63,7 +69,13 @@ function setupSupabase(opts: {
   inscription: ReturnType<typeof inscriptionRow> | null;
   gedSentAt?: string | null;
 }) {
-  const updateEq = jest.fn().mockResolvedValue({ error: null });
+  // Chain UPDATE : .update().eq().is('deleted_at', null).select('id').single()
+  const updateSingle = jest
+    .fn()
+    .mockResolvedValue({ data: { id: opts.inscription?.id ?? INSCRIPTION_ID }, error: null });
+  const updateSelect = jest.fn().mockReturnValue({ single: updateSingle });
+  const updateIs = jest.fn().mockReturnValue({ select: updateSelect });
+  const updateEq = jest.fn().mockReturnValue({ is: updateIs });
   const updateFn = jest.fn().mockReturnValue({ eq: updateEq });
 
   mockFrom.mockImplementation((table: string) => {
@@ -111,7 +123,7 @@ describe('runRelanceInscription — guard idempotence 30 min', () => {
       gedSentAt: null,
     });
 
-    const res = await runRelanceInscription(INSCRIPTION_ID);
+    const res = await runRelanceInscription(INSCRIPTION_ID, ADMIN_EMAIL);
 
     expect(res.ok).toBe(true);
     if (res.ok) {
@@ -133,7 +145,7 @@ describe('runRelanceInscription — guard idempotence 30 min', () => {
       gedSentAt: null,
     });
 
-    const res = await runRelanceInscription(INSCRIPTION_ID);
+    const res = await runRelanceInscription(INSCRIPTION_ID, ADMIN_EMAIL);
 
     expect(res.ok).toBe(false);
     if (!res.ok) {
@@ -152,7 +164,7 @@ describe('runRelanceInscription — guard idempotence 30 min', () => {
       gedSentAt: null,
     });
 
-    const res = await runRelanceInscription(INSCRIPTION_ID);
+    const res = await runRelanceInscription(INSCRIPTION_ID, ADMIN_EMAIL);
 
     expect(res.ok).toBe(true);
     expect(updateFn).toHaveBeenCalledTimes(1);
@@ -167,7 +179,7 @@ describe('runRelanceInscription — guard idempotence 30 min', () => {
     mockSendRappel.mockResolvedValue({ sent: false, reason: 'missing_api_key' });
     mockSendAdminNotif.mockResolvedValue({ sent: true, messageId: 'mock-id' });
 
-    const res = await runRelanceInscription(INSCRIPTION_ID);
+    const res = await runRelanceInscription(INSCRIPTION_ID, ADMIN_EMAIL);
     expect(res.ok).toBe(true);
     // Attendre la résolution des `.then` fire-and-forget
     await new Promise((resolve) => setImmediate(resolve));
@@ -188,7 +200,7 @@ describe('runRelanceInscription — guard idempotence 30 min', () => {
       gedSentAt: '2026-04-01T10:00:00Z',
     });
 
-    const res = await runRelanceInscription(INSCRIPTION_ID);
+    const res = await runRelanceInscription(INSCRIPTION_ID, ADMIN_EMAIL);
 
     expect(res.ok).toBe(false);
     if (!res.ok) {

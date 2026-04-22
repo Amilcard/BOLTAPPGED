@@ -2,8 +2,10 @@ import {
   assertInserted,
   assertUpdatedOne,
   assertUpdatedAtLeastOne,
+  assertUpdatedSingle,
   assertDeleted,
   assertSelectedOne,
+  assertAuthUser,
   PostActionError,
 } from '@/lib/supabase-guards';
 
@@ -93,6 +95,40 @@ describe('supabase-guards — T1 Success-but-Failed', () => {
     });
   });
 
+  describe('assertUpdatedSingle', () => {
+    test('throws PostActionError on null', () => {
+      expect(() => assertUpdatedSingle(null, 'ctx')).toThrow(PostActionError);
+    });
+
+    test('throws PostActionError on undefined', () => {
+      expect(() => assertUpdatedSingle(undefined, 'ctx')).toThrow(PostActionError);
+    });
+
+    test('returns data when present', () => {
+      const row = { id: 1, name: 'x' };
+      expect(assertUpdatedSingle(row, 'ctx')).toBe(row);
+    });
+
+    test('error carries context + kind metadata', () => {
+      expect.assertions(3);
+      try {
+        assertUpdatedSingle(null, 'update_inscription');
+      } catch (e) {
+        expect(e).toBeInstanceOf(PostActionError);
+        expect((e as PostActionError).context).toBe('update_inscription');
+        expect((e as PostActionError).kind).toBe('update');
+      }
+    });
+
+    test('error message mentions .single() for diagnostic', () => {
+      try {
+        assertUpdatedSingle(null, 'update_inscription');
+      } catch (e) {
+        expect((e as Error).message).toMatch(/single/i);
+      }
+    });
+  });
+
   describe('assertDeleted', () => {
     test('throws on 0 count', () => {
       expect(() => assertDeleted(0, 'ctx')).toThrow(PostActionError);
@@ -139,6 +175,70 @@ describe('supabase-guards — T1 Success-but-Failed', () => {
         assertSelectedOne(null, 'select_structure');
       } catch (e) {
         expect((e as PostActionError).kind).toBe('select');
+      }
+    });
+  });
+
+  describe('assertAuthUser', () => {
+    const user = { id: '00000000-0000-0000-0000-000000000001', email: 'x@y.z' };
+
+    test('throws on null payload', () => {
+      expect(() => assertAuthUser(null, 'ctx')).toThrow(PostActionError);
+    });
+
+    test('throws on undefined payload', () => {
+      expect(() => assertAuthUser(undefined, 'ctx')).toThrow(PostActionError);
+    });
+
+    test('throws when payload.user is null', () => {
+      expect(() => assertAuthUser({ user: null }, 'ctx')).toThrow(PostActionError);
+    });
+
+    test('returns user when present', () => {
+      expect(assertAuthUser({ user }, 'ctx')).toBe(user);
+    });
+
+    test('default kind is "update"', () => {
+      expect.assertions(1);
+      try {
+        assertAuthUser({ user: null }, 'admin_auth_update');
+      } catch (e) {
+        expect((e as PostActionError).kind).toBe('update');
+      }
+    });
+
+    test('respects explicit kind="delete"', () => {
+      expect.assertions(1);
+      try {
+        assertAuthUser({ user: null }, 'admin_auth_delete', 'delete');
+      } catch (e) {
+        expect((e as PostActionError).kind).toBe('delete');
+      }
+    });
+
+    test('respects explicit kind="insert" for create', () => {
+      expect.assertions(1);
+      try {
+        assertAuthUser({ user: null }, 'admin_auth_create', 'insert');
+      } catch (e) {
+        expect((e as PostActionError).kind).toBe('insert');
+      }
+    });
+
+    test('error context preserved from caller', () => {
+      expect.assertions(1);
+      try {
+        assertAuthUser(null, 'admin_auth_update_user');
+      } catch (e) {
+        expect((e as PostActionError).context).toBe('admin_auth_update_user');
+      }
+    });
+
+    test('error message mentions AUTH for diagnostic', () => {
+      try {
+        assertAuthUser(null, 'admin_auth_update');
+      } catch (e) {
+        expect((e as Error).message).toMatch(/AUTH/);
       }
     });
   });

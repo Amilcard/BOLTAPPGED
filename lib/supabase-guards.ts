@@ -71,6 +71,20 @@ export function assertUpdatedAtLeastOne<T>(
   return data;
 }
 
+export function assertUpdatedSingle<T>(
+  data: T | null | undefined,
+  context: string,
+): T {
+  if (data === null || data === undefined) {
+    throw new PostActionError(
+      `UPDATE ${context} returned null via .single() (RLS silent ou WHERE no match ?)`,
+      context,
+      'update',
+    );
+  }
+  return data;
+}
+
 export function assertDeleted(count: number | null | undefined, context: string): void {
   if (count === null || count === undefined || count === 0) {
     throw new PostActionError(
@@ -86,4 +100,19 @@ export function assertSelectedOne<T>(data: T | null | undefined, context: string
     throw new PostActionError(`SELECT ${context} returned null`, context, 'select');
   }
   return data;
+}
+
+export function assertAuthUser<T>(
+  payload: { user: T | null } | null | undefined,
+  context: string,
+  kind: 'insert' | 'update' | 'delete' = 'update',
+): T {
+  if (!payload || payload.user === null || payload.user === undefined) {
+    throw new PostActionError(
+      `AUTH ${kind.toUpperCase()} ${context} returned no user (admin API payload vide)`,
+      context,
+      kind,
+    );
+  }
+  return payload.user;
 }

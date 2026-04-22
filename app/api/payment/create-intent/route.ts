@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { auditLog, getClientIp } from '@/lib/audit-log';
 
 function getStripe() {
   const stripeKey = process.env.STRIPE_SECRET_KEY;
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
     // Vérification ownership : suivi_token doit correspondre à l'inscription
     const { data: inscription, error: fetchError } = await supabase
       .from('gd_inscriptions')
-      .select('id, price_total, stripe_payment_intent_id, suivi_token, jeune_prenom, sejour_slug, payment_status, payment_method')
+      .select('id, price_total, stripe_payment_intent_id, suivi_token, jeune_prenom, sejour_slug, payment_status, payment_method, referent_email')
       .eq('id', inscriptionId)
       .eq('suivi_token', suivi_token)
       .single();
@@ -122,6 +123,21 @@ export async function POST(req: NextRequest) {
       }
       return NextResponse.json({ error: 'Concurrent request conflict' }, { status: 409 });
     }
+
+    await auditLog(supabase, {
+      action: 'create',
+      resourceType: 'paiement',
+      resourceId: paymentIntent.id,
+      inscriptionId,
+      actorType: 'system',
+      actorId: inscription.referent_email ?? undefined,
+      ipAddress: getClientIp(req),
+      metadata: {
+        payment_method: 'stripe',
+        amount_cents: Math.round(verifiedAmount * 100),
+        trigger: 'create-intent',
+      },
+    });
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,

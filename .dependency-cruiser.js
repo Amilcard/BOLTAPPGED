@@ -138,8 +138,6 @@ module.exports = {
           // Middleware & instrumentation Next.js
           '(^|/)middleware\\.(jsx?|tsx?)$',
           '(^|/)instrumentation(-client)?\\.(jsx?|tsx?)$',
-          // Primitives shadcn/ui réutilisables — importées à la demande
-          '(^|/)components/ui/(sonner|collapsible|aspect-ratio|theme-provider)\\.tsx$',
           // Composants Radix installés pour usage futur (feuille)
           '(^|/)components/(transfer-instructions|check-instructions|payment-method-selector)\\.tsx$',
         ],

@@ -415,49 +415,51 @@ Source : `audit-reports/auditlog-coverage.txt:45-74` (commit `ed9f62b`). Split s
 
 **Vague 1 (S1) — Privilège & volume PII élevés : 12 handlers**
 
-| # | Fichier:ligne | Méthode | Zone |
-|---|---|---|---|
-| 1 | `app/api/admin/inscriptions/[id]/relance/route.ts:14` | POST | admin/inscriptions |
-| 2 | `app/api/admin/inscriptions/[id]/route.ts:85` | DELETE | admin/inscriptions |
-| 3 | `app/api/admin/inscriptions/[id]/route.ts:66` | PUT | admin/inscriptions |
-| 4 | `app/api/admin/inscriptions/manual/route.ts:61` | POST | admin/inscriptions |
-| 5 | `app/api/admin/inscriptions/relance/route.ts:15` | POST | admin/inscriptions |
-| 6 | `app/api/admin/inscriptions/route.ts:105` | DELETE | admin/inscriptions |
-| 7 | `app/api/admin/inscriptions/route.ts:72` | PUT | admin/inscriptions |
-| 8 | `app/api/admin/users/[id]/route.ts:39` | DELETE | admin/users |
-| 9 | `app/api/admin/users/[id]/route.ts:11` | PUT | admin/users |
-| 10 | `app/api/admin/users/delete/route.ts:14` | POST | admin/users |
-| 11 | `app/api/admin/users/route.ts:36` | POST | admin/users |
-| 12 | `app/api/admin/users/update/route.ts:14` | POST | admin/users |
+Format : `# | source L{N} = ligne dans audit-reports/auditlog-coverage.txt | handler`
+
+| # | Src L{N} | Fichier:ligne code | Méthode | Zone |
+|---|---|---|---|---|
+| 1 | L48 | `app/api/admin/inscriptions/[id]/relance/route.ts:14` | POST | admin/inscriptions |
+| 2 | L49 | `app/api/admin/inscriptions/[id]/route.ts:85` | DELETE | admin/inscriptions |
+| 3 | L50 | `app/api/admin/inscriptions/[id]/route.ts:66` | PUT | admin/inscriptions |
+| 4 | L51 | `app/api/admin/inscriptions/manual/route.ts:61` | POST | admin/inscriptions |
+| 5 | L52 | `app/api/admin/inscriptions/relance/route.ts:15` | POST | admin/inscriptions |
+| 6 | L53 | `app/api/admin/inscriptions/route.ts:105` | DELETE | admin/inscriptions |
+| 7 | L54 | `app/api/admin/inscriptions/route.ts:72` | PUT | admin/inscriptions |
+| 8 | L66 | `app/api/admin/users/[id]/route.ts:39` | DELETE | admin/users |
+| 9 | L67 | `app/api/admin/users/[id]/route.ts:11` | PUT | admin/users |
+| 10 | L68 | `app/api/admin/users/delete/route.ts:14` | POST | admin/users |
+| 11 | L69 | `app/api/admin/users/route.ts:36` | POST | admin/users |
+| 12 | L70 | `app/api/admin/users/update/route.ts:14` | POST | admin/users |
 
 **Note V1** : `admin/structures/*` cité dans Q8 user mais les 3 routes (`regenerate-code`, `link`, `merge`) sont DÉJÀ COVERED (voir `auditlog-coverage.txt:11-13`). Aucun handler structures en MISSING. V1 = inscriptions + users uniquement.
 
 **Vague 2 (S2) — Financial + Lead : 6 handlers**
 
-| # | Fichier:ligne | Méthode | Zone |
-|---|---|---|---|
-| 13 | `app/api/admin/factures/[id]/paiements/route.ts:46` | POST | admin/factures |
-| 14 | `app/api/admin/factures/paiements/route.ts:12` | POST | admin/factures |
-| 15 | `app/api/admin/propositions/[id]/send/route.ts:12` | POST | admin/propositions |
-| 16 | `app/api/admin/propositions/send/route.ts:12` | POST | admin/propositions |
-| 17 | `app/api/pro/propositions/route.ts:9` | POST | api/pro |
-| 18 | `app/api/pro/request-access/route.ts:52` | POST | api/pro |
+| # | Src L{N} | Fichier:ligne code | Méthode | Zone |
+|---|---|---|---|---|
+| 13 | L46 | `app/api/admin/factures/[id]/paiements/route.ts:46` | POST | admin/factures |
+| 14 | L47 | `app/api/admin/factures/paiements/route.ts:12` | POST | admin/factures |
+| 15 | L55 | `app/api/admin/propositions/[id]/send/route.ts:12` | POST | admin/propositions |
+| 16 | L56 | `app/api/admin/propositions/send/route.ts:12` | POST | admin/propositions |
+| 17 | L71 | `app/api/pro/propositions/route.ts:9` | POST | api/pro |
+| 18 | L72 | `app/api/pro/request-access/route.ts:52` | POST | api/pro |
 
 **Vague 3 (S3) — Reste dispersé : 11 handlers**
 
-| # | Fichier:ligne | Méthode | Zone | Note scope PII |
-|---|---|---|---|---|
-| 19 | `app/api/admin/stays/[id]/notify-waitlist/route.ts:11` | POST | admin/stays | ⚠️ PII indirecte (liste waitlist contient emails) |
-| 20 | `app/api/admin/stays/[id]/route.ts:53` | DELETE | admin/stays | ⚠️ Catalogue séjour, pas PII enfant |
-| 21 | `app/api/admin/stays/[id]/route.ts:14` | PUT | admin/stays | ⚠️ idem |
-| 22 | `app/api/admin/stays/[id]/sessions/[sessionId]/route.ts:13` | DELETE | admin/stays | ⚠️ idem |
-| 23 | `app/api/admin/stays/delete/route.ts:16` | POST | admin/stays | ⚠️ idem |
-| 24 | `app/api/admin/stays/notify-waitlist/route.ts:11` | POST | admin/stays | ⚠️ PII indirecte |
-| 25 | `app/api/admin/stays/route.ts:71` | POST | admin/stays | ⚠️ catalogue |
-| 26 | `app/api/admin/stays/sessions/delete/route.ts:20` | POST | admin/stays | ⚠️ catalogue |
-| 27 | `app/api/admin/stays/update/route.ts:16` | PATCH | admin/stays | ⚠️ catalogue |
-| 28 | `app/api/suivi/[token]/route.ts:152` | PATCH | suivi | ✅ PII directe (dossier enfant) |
-| 29 | `app/api/suivi/resend/route.ts:12` | POST | suivi | ✅ PII directe (email referent) |
+| # | Src L{N} | Fichier:ligne code | Méthode | Zone | Note scope PII |
+|---|---|---|---|---|---|
+| 19 | L57 | `app/api/admin/stays/[id]/notify-waitlist/route.ts:11` | POST | admin/stays | ⚠️ PII indirecte (waitlist emails) |
+| 20 | L58 | `app/api/admin/stays/[id]/route.ts:53` | DELETE | admin/stays | ⚠️ catalogue, pas PII enfant |
+| 21 | L59 | `app/api/admin/stays/[id]/route.ts:14` | PUT | admin/stays | ⚠️ idem |
+| 22 | L60 | `app/api/admin/stays/[id]/sessions/[sessionId]/route.ts:13` | DELETE | admin/stays | ⚠️ idem |
+| 23 | L61 | `app/api/admin/stays/delete/route.ts:16` | POST | admin/stays | ⚠️ idem |
+| 24 | L62 | `app/api/admin/stays/notify-waitlist/route.ts:11` | POST | admin/stays | ⚠️ PII indirecte |
+| 25 | L63 | `app/api/admin/stays/route.ts:71` | POST | admin/stays | ⚠️ catalogue |
+| 26 | L64 | `app/api/admin/stays/sessions/delete/route.ts:20` | POST | admin/stays | ⚠️ catalogue |
+| 27 | L65 | `app/api/admin/stays/update/route.ts:16` | PATCH | admin/stays | ⚠️ catalogue |
+| 28 | L73 | `app/api/suivi/[token]/route.ts:152` | PATCH | suivi | ✅ PII directe (dossier enfant) |
+| 29 | L74 | `app/api/suivi/resend/route.ts:12` | POST | suivi | ✅ PII directe (email referent) |
 
 **Note V3** : 9 handlers admin/stays sont flaggués par `auditlog-coverage.mjs` parce qu'ils mutent des tables tracking (gd_stays, gd_stay_sessions, gd_waitlist). Mais selon CLAUDE.md « Tables PII — liste à jour 2026-04-18 », `gd_stay_sessions` n'y figure QUE « si affecte dossier ». À trier lors S3 : peut-être **4-5 handlers admin/stays légitimement hors scope PII** → à retirer du scope V3 après review case-by-case. Scope V3 strict PII = **2 handlers suivi** + éventuellement `notify-waitlist` (exposition liste). Reste = cleanup opérationnel, pas RGPD.
 

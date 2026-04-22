@@ -235,7 +235,7 @@ npm run lint
 - Client : JS direct, no ORM, no Prisma
 
 ## Tables critiques (Supabase)
-- gd_souhaits (choix_mode, statut, enfant_id, session_id)
+- gd_souhaits — colonnes réelles (MCP Supabase 2026-04-22) : `id`, `kid_prenom`, `kid_prenom_referent`, `sejour_slug`, `sejour_titre`, `motivation`, `educateur_email`, `educateur_prenom`, `educateur_token` (unique, expires), `structure_domain`, `structure_id` (FK), `status` (default `'emis'`), `reponse_educateur`, `reponse_date`, `inscription_id` (FK), `suivi_token_kid`, `kid_session_token`, `choix_mode` CHECK (`'seul'`,`'ami'`,`'educateur'`,`'app'`), `nom_groupe`. **Pas de `enfant_id` ni `session_id`.** Clé idempotence proposée : `(kid_session_token, sejour_slug)`.
 - gd_inscriptions (statut, souhait_id, dossier_id)
 - gd_stay_sessions (session_id, stay_id, capacity)
 - gd_dossier_enfant, gd_structures, gd_stays
@@ -781,3 +781,82 @@ git fetch origin && git log origin/main..main --oneline && git log main..origin/
 - Auto-exclude : node_modules/, .next/, .git/, out/, fichiers générés, caches.
 - Si la tâche ne concerne qu'un sous-dossier, ne pas explorer l'arbre complet.
 - Adapter au profil utilisateur : business owner non-dev pilotant des projets full-stack via IA → réponses niveau senior tech, zéro pédagogie non sollicitée.
+
+---
+
+## ⛔ RÈGLE #0 quater — MATRICE DE LECTURE DOC PAR TÂCHE
+
+**Avant de coder/modifier, lire les sections CLAUDE.md et docs concernées AVANT toute autre action.**
+
+| Type de tâche | Docs à lire EN PREMIER | Checks déterministes préalables |
+|---|---|---|
+| Auth / login / session | § "Rôles structure matrice" + § "Cookie gd_pro_session" + § "Règles sécurité" rules 14, 17-20 | `audit-reports/route-auth.txt` + `role-guards.txt` |
+| Paiement / Stripe | § "Intégrations > Stripe" + § "Règles sécurité" rule 11 + `lib/sentry-capture.ts` | `audit-reports/idempotency.txt` |
+| RGPD / Art.9 / mineurs | § "Danger zones" + § "Règles sécurité" rules 1-10 + § "Règles gouvernance" RÈGLES 3-7 + `docs/PROCEDURE_VIOLATION_DONNEES.md` | `audit-reports/pii-logs.txt` + `auditlog-coverage.txt` |
+| Migration Supabase | § "Règles gouvernance données" RÈGLES 1-7 + `docs/adr/` + `sql/` history tail -20 | MCP `get_advisors(security)` + `list_tables` |
+| Cron / side-effect externe | § "API Architecture > Cron" + § "Prelude anti-pièges" check [4] | `audit-reports/cron-secret.txt` + `silent-catch.txt` |
+| Upload / fichier | § "Règles sécurité" rule 10 + `lib/validators.ts` | `audit-reports/size-caps.txt` |
+| Email / Resend | § "Intégrations > Resend" + § "Pièges sémantiques" T2 + `lib/email-suppress.ts` | `audit-reports/idempotency.txt` |
+| UI / component | `docs/CHARTE_GRAPHIQUE.md` + § "Charte graphique — OBLIGATOIRE" | — |
+| Test / E2E | `docs/TECH_DEBT.md` E2E items + `playwright.config.ts` | `audit-reports/summary.txt` |
+| Audit / review | § "Consultation multi-agents" + `docs/audits/` + `docs/SEMANTIC_GUARDS.md` | Battery complète `scripts/audit/all.mjs` |
+
+**Anti-pattern** : sauter la lecture doc pour "gagner du temps". Le coût d'une modif sans lecture préalable est toujours supérieur au coût des 5 min de lecture (cf. 6 P0 audit 2026-04-18).
+
+---
+
+## ⛔ RÈGLE #0 quinquies — PIÈGES SÉMANTIQUES (angles morts audit déterministe)
+
+**L'audit déterministe (grep + scripts) vérifie la PRÉSENCE des outils. Il ne vérifie PAS la cohérence fonctionnelle du parcours.** Ces 4 pièges subsistent même avec "Sentry + RLS + types OK".
+
+### T1 — Silence de la Réussite (Success-but-Failed)
+
+**Piège** : une mutation Supabase qui échoue silencieusement ou retourne un tableau vide au lieu d'une erreur (fréquent avec RLS). Le code continue comme si tout allait bien → dossier fantôme sans données.
+
+**Garde-fou obligatoire** : après chaque `supabase.insert/update/upsert/delete`, utiliser `lib/supabase-guards.ts` :
+- `assertInserted(data, ctx)` → throw si `null`
+- `assertUpdatedOne(data, ctx)` → throw si 0 ou > 1 lignes
+- `assertDeleted(count, ctx)` → throw si 0 lignes
+
+**Interdit** : `await supabase.from('X').update(...)` sans destructurer `{ data, error }` ET sans check post-action.
+
+### T2 — Fragmentation de l'État (State Desync)
+
+**Piège** : paiement Stripe validé ✅ + UPDATE DB OK ✅ + email Resend KO ❌. L'utilisateur a payé mais n'a pas sa confirmation. Aucun moyen de détecter a posteriori.
+
+**Garde-fou obligatoire** :
+- Toute séquence paiement → DB → email passe par `gd_outbound_emails` (migration 085) avec colonnes `status` + `upstream_ok_at` + `error_text`
+- Cron `/api/cron/email-reconciliation` détecte `status='failed' OR (status='sent' AND upstream_ok_at IS NULL AND created_at < NOW() - 5min)`
+- `idempotency_key` fourni par l'appelant (UUID propagé depuis la route API)
+
+### T3 — Illusion du Grep (Sentry quality)
+
+**Piège** : `captureException(e)` partout sans contexte = 500 alertes "Undefined error" sans savoir quel utilisateur / séjour.
+
+**Garde-fou obligatoire** :
+- Interdit : `Sentry.captureException(e)` sans scope
+- Obligé : `captureServerException(e, { domain, operation }, { sejour_id, user_role })` via `lib/sentry-capture.ts`
+- `domain` ∈ `'payment' | 'rgpd' | 'auth' | 'audit' | 'cron' | 'upload'`
+- `extra` uniquement primitives (`string | number | boolean | null`) — anti-PII
+- Script audit `sentry-coverage.mjs` vérifie qu'aucune route PII n'a ni `auditLog` ni `captureServerException`
+
+### T4 — Décalage de Réalité (Zod ↔ SQL drift)
+
+**Piège** : contrainte CHECK SQL rejette une donnée que Zod TS accepte → erreur 23514 prod invisible au linting.
+
+**Garde-fou obligatoire** :
+- Pour chaque colonne avec `CHECK IN (...)`, un `z.enum([...])` avec les mêmes valeurs
+- Script audit `zod-sql-consistency.mjs` compare les deux et flag divergences
+- Divergence confirmée au 2026-04-22 : `payment_method` Zod `admin/inscriptions/manual` accepte `'stripe'` mais SQL 010 CHECK accepte `('lyra','transfer','check')`
+
+### Protocole — 4 checks sémantiques additionnels aux 7 checks Prelude
+
+```
+[8]  T1 Success : chaque await supabase.mutate() a-t-il un guard post-action (assertInserted/assertUpdatedOne/assertDeleted) ?
+[9]  T2 Desync  : la séquence paiement/email passe-t-elle par gd_outbound_emails ?
+[10] T3 Sentry  : chaque captureException a-t-il domain + operation + extra structuré via captureServerException ?
+[11] T4 Zod/SQL : les enums Zod matchent-ils les CHECK SQL ?
+```
+
+**À exécuter avant toute mutation sur `gd_inscriptions`, `gd_dossier_enfant`, `gd_factures`, `gd_souhaits`, `gd_structure_access_codes`.**
+

@@ -1,0 +1,64 @@
+[pii-logs audit] 2026-04-22T10:05:37.075Z  commit=773b3e8
+scope: app/ + lib/ — 207 fichier(s), 27 console.* suspect(s)
+
+LEAKS DÉTECTÉS — 27 log(s) avec champ PII dans expression  ⚠️ RGPD :
+  app/api/auth/educator-invite/route.ts:156  console.error  hits=[token]
+    console.error('[educator-invite] Erreur génération token:', error)
+  app/api/dossier-enfant/[inscriptionId]/pdf-email/route.ts:89  console.error  hits=[email]
+    console.error('[pdf-email] PDF fetch failed:', msg, 'url:', pdfUrl.toString())
+  app/api/dossier-enfant/[inscriptionId]/pdf-email/route.ts:98  console.error  hits=[email]
+    console.error('[pdf-email] PDF generation error:', pdfRes.status, bodyText.slice(0, 500))
+  app/api/dossier-enfant/[inscriptionId]/pdf-email/route.ts:153  console.error  hits=[email]
+    console.error('[pdf-email] Resend error:', await resendRes.text())
+  app/api/dossier-enfant/[inscriptionId]/pdf-email/route.ts:171  console.error  hits=[email]
+    console.error('[pdf-email] auditLog failed:', err)
+  app/api/dossier-enfant/[inscriptionId]/pdf-email/route.ts:175  console.error  hits=[email]
+    console.error('[pdf-email] Erreur:', err)
+  app/api/dossier-enfant/[inscriptionId]/submit/route.ts:224  console.error  hits=[email]
+    console.error('[GED submit email] inscription non trouvée pour envoi emails', { inscriptionId })
+  app/api/pro/price-inquiry/route.ts:188  console.error  hits=[email]
+    console.error('[price-inquiry] Email éducateur échoué:', reason)
+  app/api/pro/price-inquiry/route.ts:195  console.error  hits=[email]
+    console.error('[price-inquiry] Email GED échoué:', reason)
+  app/api/pro/request-access/route.ts:160  console.error  hits=[email]
+    console.error('[request-access] Email confirmation échoué:', confirmResult.reason)
+  app/api/pro/request-access/route.ts:173  console.error  hits=[email]
+    console.error('[request-access] Email alerte GED échoué:', alertResult.reason)
+  app/api/souhaits/route.ts:152  console.error  hits=[email]
+    console.error('[EMAIL] Souhait update non envoyé:', e?.message)
+  app/api/souhaits/route.ts:227  console.error  hits=[email]
+    console.error('[EMAIL] Souhait non envoyé:', e?.message)
+  app/api/structure/[code]/inscriptions/[id]/pdf-email/route.ts:118  console.error  hits=[email]
+    console.error('[structure/pdf-email] internal forward failed:', msg)
+  app/api/structure/[code]/inscriptions/[id]/pdf-email/route.ts:147  console.error  hits=[email]
+    console.error('POST /api/structure/[code]/inscriptions/[id]/pdf-email error:', err)
+  app/api/structure/[code]/settings/route.ts:81  console.error  hits=[email]
+    console.error('[api/structure/[code]/settings] update email error:', dbErr.message)
+  app/api/suivi/[token]/route.ts:56  console.error  hits=[token]
+    console.error('GET /api/suivi/[token] query error:', dossiersErr)
+  app/api/suivi/[token]/route.ts:137  console.error  hits=[token]
+    console.error('GET /api/suivi/[token] error:', error)
+  app/api/suivi/[token]/route.ts:222  console.error  hits=[token]
+    console.error('PATCH /api/suivi/[token] update error:', updateErr)
+  app/api/suivi/[token]/route.ts:228  console.error  hits=[token]
+    console.error('PATCH /api/suivi/[token] error:', error)
+  app/api/suivi/resend/route.ts:58  console.error  hits=[email]
+    console.error('[suivi/resend] email failed:', (emailErr as Error)?.message)
+  lib/email-logger.ts:47  console.error  hits=[email]
+    console.error(`[email-logger] auditLog failed for ${context}:`, err)
+  lib/email.ts:44  console.error  hits=[email]
+    console.error('[email] EMAIL_SERVICE_API_KEY missing — silent no-op avoided')
+  lib/email.ts:53  console.error  hits=[email]
+    console.error('[email] provider_error', result.error)
+  lib/email.ts:58  console.error  hits=[email]
+    console.error('[email] provider_error exception', err)
+  lib/email.ts:252  console.warn  hits=[email]
+    console.warn('[EMAIL] sendPaymentConfirmedClient: referentEmail manquant')
+  lib/email.ts:1224  console.warn  hits=[email]
+    console.warn('[EMAIL] structureEmail manquant — archivage structure non envoyé')
+
+──────────────────────────────────────────────────────────────────────
+NOTE : faux positifs possibles sur nom de variable qui contient "email" mais ne loggue pas la valeur.
+       À filtrer via LLM après pour juger chaque cas.
+VIOLATIONS candidates: 27
+EXIT: 1

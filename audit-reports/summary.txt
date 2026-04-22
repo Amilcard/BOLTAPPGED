@@ -1,0 +1,15 @@
+[audit summary] 2026-04-22T10:05:36.453Z  commit=773b3e8
+
+Script                          | Exit | Violations
+────────────────────────────────┼──────┼────────────
+auditlog-coverage.mjs           |    1 | 29
+cron-secret.mjs                 |    0 | 0
+idempotency.mjs                 |    1 | 18
+pii-logs.mjs                    |    1 | 27
+role-guards.mjs                 |    1 | 2
+route-auth.mjs                  |    1 | 1
+silent-catch.mjs                |    1 | 34
+size-caps.mjs                   |    1 | 1
+
+TOTAL: 8 scripts, 7 en violation
+EXIT: 1

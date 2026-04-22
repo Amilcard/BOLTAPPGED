@@ -1,0 +1,43 @@
+[role-guards audit] 2026-04-22T10:05:37.214Z  commit=773b3e8
+scope: app/api/structure/[code]/** — 20 fichier(s), 28 handler(s)
+
+STRICT (allowRoles) — 17 handler(s) :
+  app/api/structure/[code]/calls/route.ts:72  POST  allowRoles=[direction,cds,cds_delegated]
+  app/api/structure/[code]/delegation/route.ts:18  PATCH  allowRoles=[direction]
+  app/api/structure/[code]/incidents/route.ts:68  POST  allowRoles=[direction,cds,cds_delegated]
+  app/api/structure/[code]/incidents/route.ts:213  PATCH  allowRoles=[direction,cds,cds_delegated]
+  app/api/structure/[code]/inscriptions/[id]/dossier/route.ts:22  GET  allowRoles=[secretariat,direction,cds,cds_delegated]
+  app/api/structure/[code]/inscriptions/[id]/dossier/route.ts:123  PATCH  allowRoles=[secretariat,direction,cds,cds_delegated]
+  app/api/structure/[code]/inscriptions/[id]/pdf/route.ts:26  GET  allowRoles=[secretariat,direction,cds,cds_delegated]
+  app/api/structure/[code]/inscriptions/[id]/pdf-email/route.ts:26  POST  allowRoles=[secretariat,direction,cds,cds_delegated]
+  app/api/structure/[code]/inscriptions/[id]/submit/route.ts:34  POST  allowRoles=[secretariat,direction,cds,cds_delegated]
+  app/api/structure/[code]/inscriptions/[id]/upload/route.ts:34  POST  allowRoles=[secretariat,direction,cds,cds_delegated]
+  app/api/structure/[code]/inscriptions/[id]/upload/route.ts:149  DELETE  allowRoles=[secretariat,direction,cds,cds_delegated]
+  app/api/structure/[code]/invite/route.ts:16  POST  allowRoles=[direction]
+  app/api/structure/[code]/notes/route.ts:79  POST  allowRoles=[direction,cds,cds_delegated]
+  app/api/structure/[code]/settings/route.ts:13  PATCH  allowRoles=[direction]
+  app/api/structure/[code]/team/[memberId]/reinvite/route.ts:12  POST  allowRoles=[direction]
+  app/api/structure/[code]/team/[memberId]/revoke/route.ts:9  POST  allowRoles=[direction]
+  app/api/structure/[code]/team/route.ts:9  GET  allowRoles=[direction,cds_delegated]
+
+FRAGILE (excludeRoles) — 7 handler(s), 1 sur route write :
+  app/api/structure/[code]/calls/route.ts:17  GET  excludeRoles=[secretariat]
+  app/api/structure/[code]/factures/pdf/route.ts:12  GET  excludeRoles=[educateur,secretariat]
+  app/api/structure/[code]/factures/route.ts:12  GET  excludeRoles=[educateur,secretariat]
+  app/api/structure/[code]/incidents/route.ts:18  GET  excludeRoles=[secretariat]
+  app/api/structure/[code]/medical/route.ts:16  GET  excludeRoles=[secretariat]
+  app/api/structure/[code]/medical/route.ts:90  POST  excludeRoles=[secretariat]  ⚠️ WRITE
+  app/api/structure/[code]/notes/route.ts:14  GET  excludeRoles=[secretariat]
+
+DEFAULT (requireStructureRole sans options) — 2 handler(s) :
+  app/api/structure/[code]/propositions/pdf/route.ts:15  GET  (tous rôles autorisés sauf exclus par défaut)
+  app/api/structure/[code]/propositions/route.ts:25  GET  (tous rôles autorisés sauf exclus par défaut)
+
+MISSING (aucun requireStructureRole) — 2 handler(s), 1 sur route write :
+  app/api/structure/[code]/route.ts:18  GET
+  app/api/structure/[code]/route.ts:158  POST  ⚠️ WRITE
+
+──────────────────────────────────────────────────────────────────────
+TOTAL: strict=17, fragile=7, default=2, missing=2
+VIOLATIONS (write FRAGILE + write MISSING): 2
+EXIT: 1

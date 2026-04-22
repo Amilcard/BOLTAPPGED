@@ -1,0 +1,13 @@
+[size-caps audit] 2026-04-22T10:05:37.643Z  commit=773b3e8
+scope: app/api/**/route.ts avec upload/formData/presign — 2 route(s) détectée(s)
+
+CAPPED (cap de taille détecté) — 1 :
+  app/api/dossier-enfant/[inscriptionId]/upload/route.ts:34
+
+UNCAPPED (upload détecté mais aucun cap) — 1  ⚠️ DoS :
+  app/api/structure/[code]/inscriptions/[id]/upload/route.ts:58
+
+──────────────────────────────────────────────────────────────────────
+TOTAL routes upload: 2 | capped=1 | uncapped=1
+VIOLATIONS: 1
+EXIT: 1

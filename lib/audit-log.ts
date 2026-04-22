@@ -31,7 +31,9 @@ interface AuditLogEntry {
     | 'session'
     | 'smart_form_submission'
     | 'admin_user'
-    | 'structure_access_code';
+    | 'structure_access_code'
+    | 'call'
+    | 'incident';
   resourceId: string;
   inscriptionId?: string;
   actorType: 'referent' | 'admin' | 'system' | 'staff';

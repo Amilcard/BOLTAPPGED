@@ -135,7 +135,7 @@ export async function POST(
 
   await auditLog(supabase, {
     action: 'create',
-    resourceType: 'structure',
+    resourceType: 'incident',
     resourceId: incident.id,
     inscriptionId: inscription_id as string,
     actorType: 'staff',
@@ -185,7 +185,7 @@ export async function POST(
         await logEmailFailure('sendIncidentNotification', notif, 'incident', incident.id);
         await auditLog(supabase, {
           action: 'update',
-          resourceType: 'structure',
+          resourceType: 'incident',
           resourceId: incident.id,
           inscriptionId: inscription_id as string,
           actorType: 'system',
@@ -259,7 +259,7 @@ export async function PATCH(
 
     await auditLog(supabase, {
       action: 'update',
-      resourceType: 'structure',
+      resourceType: 'incident',
       resourceId: incident_id,
       actorType: 'staff',
       actorId: resolved.email || undefined,
@@ -302,7 +302,7 @@ export async function PATCH(
 
   await auditLog(supabase, {
     action: 'update',
-    resourceType: 'structure',
+    resourceType: 'incident',
     resourceId: incident_id as string,
     actorType: 'staff',
     actorId: resolved.email || undefined,

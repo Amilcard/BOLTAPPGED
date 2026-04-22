@@ -149,7 +149,7 @@ export async function POST(
 
   await auditLog(supabase, {
     action: 'create',
-    resourceType: 'structure',
+    resourceType: 'call',
     resourceId: call.id,
     inscriptionId: (inscription_id as string) || undefined,
     actorType: 'staff',

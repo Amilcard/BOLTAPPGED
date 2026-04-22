@@ -381,15 +381,31 @@ Le user a (à juste titre) demandé de ne pas se fier aux docs. Cross-check via 
 
 ### 15.4 Items restants (backlog post-audit, hors dette active)
 
-| Item | Action | Priorité | Sprint |
-|---|---|---|---|
-| Câbler `lib/supabase-guards.ts` sur routes mutation (23 PII handlers prioritaires) | Refacto progressive route par route | P1 | S1-S3 (en même temps que V1-V3 auditLog) |
-| Appliquer migration 085 `gd_outbound_emails` en prod via MCP `apply_migration` | Après câblage `lib/email.ts` avec idempotency_key | P1 | S3a |
-| CI coverage gate seuil ≥ 14 % | Ajouter dans `.github/workflows/ci.yml` étape jest --coverage + check threshold | P0 | S0 |
-| Diagnostic cause régression coverage (Q1) | `npx jest --coverage` + diff commits post-fa53960 avant S0 | P0 | Pré-S0 |
-| Extension audit `tests/api/` (Q4 scope élargi) | Démasquer les 7 skip api en plus des 7 e2e | P1 | S0 |
-| Affiner `zod-sql-consistency.mjs` : support mappings | Comprendre les patterns `PAYMENT_METHOD_MAP` pour réduire faux positifs | P3 | S4+ |
-| Affiner `post-action-assertions.mjs` : éviter faux positifs tests | Exclure `tests/` du scope | P3 | S4+ |
+**Livrés dans cette session branche `audit/topo-2026-04-22`** :
+- ✅ CI coverage gate seuil ≥ 14 % (`.github/workflows/coverage-gate.yml`, commit `474208e`) — actif sur PR futurs
+
+**Backlog effective (non livré — sera traité S0→S4)** :
+
+| # | Item | Action | Priorité | Sprint |
+|---|---|---|---|---|
+| B1 | Câbler `lib/supabase-guards.ts` sur routes mutation (23 PII handlers prioritaires) | Refacto progressive route par route (supprime warning depcruise no-orphans) | P1 | S1-S3 (en tandem V1-V3 auditLog) |
+| B2 | Appliquer migration 085 `gd_outbound_emails` en prod via MCP `apply_migration` | Après câblage helper + `lib/email.ts` avec `idempotency_key` | P1 | S3a |
+| B3 | Diagnostic cause régression coverage (Q1 user) | `npx jest --coverage` + diff commits post-`fa53960` (d05bf5f, ddacebe, 7b111ee, 81738bc) avant S0 | P0 | Pré-S0 |
+| B4 | Extension audit `tests/api/` (Q4 user scope élargi : 14 skip total, pas 13) | Démasquer les 7 skip `tests/api/` (stays ×4, rls-security, parcours-complet, inscriptions) en plus des 7 e2e | P1 | S0 |
+| B5 | Affiner `zod-sql-consistency.mjs` : support mappings | Reconnaître patterns `PAYMENT_METHOD_MAP`-style pour réduire faux positifs | P3 | S4+ |
+| B6 | Affiner `post-action-assertions.mjs` : éviter faux positifs tests | Exclure `tests/` du scope (déjà partiellement fait, à durcir) | P3 | S4+ |
+
+**Gaps détectés par auto-review Q1-Q5 user avant push (2026-04-22 PM)** — honnêtement déclarés en backlog :
+
+| # | Gap | Impact | Priorité | Sprint |
+|---|---|---|---|---|
+| G1 | **Scripts audit non branchés en CI** | `scripts/audit/all.mjs` auto-découvre les 6 nouveaux mais n'est exécuté par aucun workflow GitHub Actions. Violations détectées ne bloquent pas PR | **P0** | S0 (ajouter job `audit-battery` dans `ci-pr-blocking.yml` ou nouveau `audit-deterministic.yml`) |
+| G2 | **`lib/email-outbox.ts` helper absent** | Migration 085 a le schéma SQL, mais aucun helper TS pour `INSERT INTO gd_outbound_emails` avec `idempotency_key = sha256(template + resource_id + date_ymd)` | **P1** | S3a (à co-écrire avec câblage `lib/email.ts` refacto) |
+| G3 | **Aucune règle ESLint/lint forcing `assertUpdatedOne`** | Doc CLAUDE.md + SEMANTIC_GUARDS.md documentent l'usage mais aucune contrainte machine. Un dev peut ajouter une mutation Supabase sans guard sans être alerté automatiquement (sauf à lancer `post-action-assertions.mjs` manuellement) | **P2** | S1-S2 (règle custom ou plugin ESLint) |
+| G4 | **Split nominal V1/V2/V3 des 29 handlers PII manquant** | §15.1 Q8 + §5 partie 2 listent les **catégories** (admin/inscriptions + admin/users + admin/structures…) mais pas la liste nominale par vague. Le brut existe dans `audit-reports/auditlog-coverage.txt:45-74` | **P1** | S0 (addendum rapport ou PRs S1 avec liste exacte dans body) |
+| G5 | **Test intégration RLS silent manquant** | `tests/lib/supabase-guards.test.ts:44` prouve le comportement du helper (throw sur empty array) mais pas de test d'intégration avec vrai Supabase + RLS policy qui renvoie `[]` silencieusement. Test unitaire = proxy pas preuve end-to-end | **P2** | S1 (avec premier câblage B1) |
+
+**Cohérence avec matrice T1-T4 user** (2026-04-22 PM) : G1-G5 confirment que T1 (Success-but-Failed) reste ACTIF au sens « outillé mais pas déployé prod ». Le merge de cette branche livre les outils ; le déploiement effectif est S1+.
 
 ### 15.5 Règles nouvelles documentées
 

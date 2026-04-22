@@ -7,9 +7,7 @@
  *         const now = getDemoNow();
  */
 export function getDemoNow(): Date {
-  const demoDate = typeof window !== 'undefined'
-    ? process.env.NEXT_PUBLIC_DEMO_DATE
-    : process.env.NEXT_PUBLIC_DEMO_DATE;
+  const demoDate = process.env.NEXT_PUBLIC_DEMO_DATE;
   if (demoDate) {
     const d = new Date(demoDate);
     if (!isNaN(d.getTime())) return d;

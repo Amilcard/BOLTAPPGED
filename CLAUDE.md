@@ -848,7 +848,7 @@ git fetch origin && git log origin/main..main --oneline && git log main..origin/
 **Garde-fou obligatoire** :
 - Pour chaque colonne avec `CHECK IN (...)`, un `z.enum([...])` avec les mêmes valeurs
 - Script audit `zod-sql-consistency.mjs` compare les deux et flag divergences
-- Divergence confirmée au 2026-04-22 : `payment_method` Zod `admin/inscriptions/manual` accepte `'stripe'` mais SQL 010 CHECK accepte `('lyra','transfer','check')`
+- **Ground truth = DB via MCP Supabase `execute_sql`**, pas les fichiers `sql/*.sql` (une migration peut exister en repo sans avoir été appliquée en prod — exemple révélé 2026-04-22 : `sql/010_remove_stripe_lyra_migration.sql` supprimé car jamais appliqué, CHECK `payment_method` reste `('stripe', 'transfer', 'check')` depuis 009)
 
 ### Protocole — 4 checks sémantiques additionnels aux 7 checks Prelude
 

@@ -328,4 +328,72 @@ Périmètre recommandé S0 (**2.5 j au lieu de 2 j**) :
 
 ---
 
-**Fin rapport.** Zéro code modifié hors de ce fichier. Aucun commit exécuté. Branche `audit/topo-2026-04-22` isolée de main.
+---
+
+## 15. Addendum — Réponses 8 questions bloquantes + cross-check MCP (2026-04-22 PM)
+
+### 15.1 Décisions user — résolution des 8 questions
+
+| # | Question initiale | Décision user 2026-04-22 | Source verif |
+|---|---|---|---|
+| Q1 | Cause régression coverage 24.71 → 14.29 % Stmts ? | **Hypothèses** : commits post-fa53960 (d05bf5f, ddacebe, 7b111ee, 81738bc) sans tests / scope jest élargi. **Action S0** : seuil CI coverage ≥ 14 % pour stopper la régression. Diagnostic détaillé à faire avant S0. | user diagnostic |
+| Q2 | idempotency_key email | **`sha256(template + resource_id + date_ymd)`** — déterministe, dédup sans coordination, rejouable J+1 | décision |
+| Q3 | Doublons `gd_souhaits` prod ? | **0 doublon** via MCP `execute_sql`. UNIQUE sur `(kid_session_token, sejour_slug)` safe. Note : DB utilise `sejour_slug` pas `session_id` (CLAUDE.md corrigé commit `2d4ee32`) | MCP user |
+| Q4 | 13 vs 6 skip | **14 skip au total** (7 e2e + 7 api). Les 7 api : `tests/api/stays.test.ts (×4)`, `rls-security.test.ts`, `parcours-complet.test.ts`, `inscriptions.test.ts`. TOPO limitait scope à `tests/e2e/`. Dette silencieuse plus large. **S0 ajusté** pour couvrir `tests/api/` | user grep |
+| Q5 | Migration 076 rls_initplan_fix appliquée ? | **Erreur nomenclature TOPO**. `rls_initplan_fix` = version `20260418121325` **appliquée prod**. Migration `076_` actuelle du repo = `smart_form_submissions_rgpd_consent`. Pas de blocage S4 | MCP user |
+| Q6 | Partage KIDS scope | **Séjour uniquement** (URL publique `/sejour/[slug]`). **PAS** wishlist+motivation (PII mineur RGPD Art. 8). Wishlist V2 avec consentement parental explicite | décision RGPD |
+| Q7 | S0 ou S0.5 ? | **Sprint S0.5 dédié 1j** pour gaps E+F+#2. S0 reste atomique sur faux verts + hooks users + static CI | décision |
+| Q8 | 29 PII auditLog | **Tri par risque, 3 vagues** : V1/S1 `admin/inscriptions + admin/users + admin/structures` / V2/S2 `admin/factures + admin/propositions + api/pro` / V3/S3 reste dispersé | décision |
+
+### 15.2 Cross-check MCP post-rapport — 3 découvertes
+
+Le user a (à juste titre) demandé de ne pas se fier aux docs. Cross-check via MCP `list_tables(verbose=true)` sur projet `iirfvndgzutbxwfdwawu` a révélé :
+
+**D1 — CLAUDE.md `gd_inscriptions` drift** : la doc annonçait `(statut, souhait_id, dossier_id)` ; DB réelle contient `status` (pas `statut`), aucun `souhait_id` ni `dossier_id` (relations inverses via `*.inscription_id`). **CHECK prod `payment_method` = `('stripe','transfer','check')`** (et non `('lyra','transfer','check')` comme le laissait croire `sql/010`).
+
+**D2 — CLAUDE.md `gd_structures` manque** : colonne `delegated_to_email` non listée, pourtant présente prod (email du CDS délégué).
+
+**D3 — T4 `payment_method` = faux positif** : mon §6.T4 initial citait une divergence Zod/SQL, mais cross-check code révèle :
+- `app/api/inscriptions/route.ts:41-47` contient `PAYMENT_METHOD_MAP` qui transforme `card→stripe`, `bank_transfer→transfer`, `cheque→check` **avant** l'INSERT. Pattern valide.
+- `app/api/admin/inscriptions/manual/route.ts:54` accepte `['transfer','check','stripe']` — **matche l'état prod réel**.
+- `sql/010_remove_stripe_lyra_migration.sql` (`'lyra','transfer','check'`) **n'est pas l'état prod**. Drift historique potentiellement jamais appliquée ou révertée.
+
+**Conclusion** : pas de divergence Zod/SQL réelle active sur GED_APP au 2026-04-22. Le garde-fou T4 reste valable **à titre préventif** (le script `schema-drift.mjs` v2 détecte 1 drift historique réelle : `gd_structure_access_codes.role` 042→069, évolution volontaire).
+
+### 15.3 Corrections livrées sur branche `audit/topo-2026-04-22`
+
+| Commit | Contenu |
+|---|---|
+| `d9804f6` | Rapport audit principal (ce fichier avant addendum) |
+| `2d4ee32` | CLAUDE.md : règle #0 quater (matrice lecture doc) + #0 quinquies (pièges T1-T4) + fix `gd_souhaits` colonnes |
+| `11b5198` | `lib/supabase-guards.ts` + 23 tests — T1 post-action assertions |
+| `d3e7297` | `docs/SEMANTIC_GUARDS.md` — 4 pièges T1-T4 documentés avec patterns |
+| `a69084a` | 6 scripts audit : `post-action-assertions`, `zod-sql-consistency`, `sentry-coverage`, `state-reconciliation`, `email-outbound-drift`, `schema-drift` |
+| `28b6b06` | Migration `085_gd_outbound_emails.sql` + ROLLBACK |
+| `000379e` | Cross-check MCP : fix CLAUDE.md `gd_inscriptions` / `gd_structures` ; correction faux positif T4 SEMANTIC_GUARDS ; schema-drift v2 (track table + colonne) |
+
+**État branche** : 7 commits au total, zéro merge vers `main`. Pre-commit hook vert sur chaque commit (TSC + ESLint + Jest 150 tests + depcruise 374 modules). 1 warning `no-orphans` sur `lib/supabase-guards.ts` (attendu — pas encore câblé).
+
+### 15.4 Items restants (backlog post-audit, hors dette active)
+
+| Item | Action | Priorité | Sprint |
+|---|---|---|---|
+| Câbler `lib/supabase-guards.ts` sur routes mutation (23 PII handlers prioritaires) | Refacto progressive route par route | P1 | S1-S3 (en même temps que V1-V3 auditLog) |
+| Appliquer migration 085 `gd_outbound_emails` en prod via MCP `apply_migration` | Après câblage `lib/email.ts` avec idempotency_key | P1 | S3a |
+| CI coverage gate seuil ≥ 14 % | Ajouter dans `.github/workflows/ci.yml` étape jest --coverage + check threshold | P0 | S0 |
+| Diagnostic cause régression coverage (Q1) | `npx jest --coverage` + diff commits post-fa53960 avant S0 | P0 | Pré-S0 |
+| Extension audit `tests/api/` (Q4 scope élargi) | Démasquer les 7 skip api en plus des 7 e2e | P1 | S0 |
+| Affiner `zod-sql-consistency.mjs` : support mappings | Comprendre les patterns `PAYMENT_METHOD_MAP` pour réduire faux positifs | P3 | S4+ |
+| Affiner `post-action-assertions.mjs` : éviter faux positifs tests | Exclure `tests/` du scope | P3 | S4+ |
+
+### 15.5 Règles nouvelles documentées
+
+Ajout à `CLAUDE.md` :
+- **Règle #0 quater** — matrice lecture doc par tâche (10 types couverts)
+- **Règle #0 quinquies** — 4 pièges sémantiques T1-T4 + 4 checks additionnels [8]-[11] au Prelude anti-pièges
+
+Nouveau helper `lib/supabase-guards.ts` + doc `docs/SEMANTIC_GUARDS.md` expliquent les 4 patterns avec code snippets.
+
+---
+
+**Fin rapport + addendum.** Branche `audit/topo-2026-04-22` prête pour décision push/merge. Aucun impact prod. Aucune migration appliquée (085 reste fichier SQL non exécuté).

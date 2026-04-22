@@ -383,6 +383,8 @@ Le user a (à juste titre) demandé de ne pas se fier aux docs. Cross-check via 
 
 **Livrés dans cette session branche `audit/topo-2026-04-22`** :
 - ✅ CI coverage gate seuil ≥ 14 % (`.github/workflows/coverage-gate.yml`, commit `474208e`) — actif sur PR futurs
+- ✅ **G1 résolu** : CI audit deterministic battery (`.github/workflows/audit-deterministic.yml`) — non-bloquant initialement (upload artifacts + job summary), bascule bloquant à S4 EXIT 0
+- ✅ **G4 résolu** : split nominal des 29 handlers V1/V2/V3 livré §15.6 ci-dessous
 
 **Backlog effective (non livré — sera traité S0→S4)** :
 
@@ -399,13 +401,67 @@ Le user a (à juste titre) demandé de ne pas se fier aux docs. Cross-check via 
 
 | # | Gap | Impact | Priorité | Sprint |
 |---|---|---|---|---|
-| G1 | **Scripts audit non branchés en CI** | `scripts/audit/all.mjs` auto-découvre les 6 nouveaux mais n'est exécuté par aucun workflow GitHub Actions. Violations détectées ne bloquent pas PR | **P0** | S0 (ajouter job `audit-battery` dans `ci-pr-blocking.yml` ou nouveau `audit-deterministic.yml`) |
+| ~~G1~~ | ~~**Scripts audit non branchés en CI**~~ | **RÉSOLU** — workflow `audit-deterministic.yml` créé (non-bloquant, upload artifacts). À basculer bloquant quand `summary.txt EXIT: 0` (cible S4) | ✅ | S0 |
 | G2 | **`lib/email-outbox.ts` helper absent** | Migration 085 a le schéma SQL, mais aucun helper TS pour `INSERT INTO gd_outbound_emails` avec `idempotency_key = sha256(template + resource_id + date_ymd)` | **P1** | S3a (à co-écrire avec câblage `lib/email.ts` refacto) |
 | G3 | **Aucune règle ESLint/lint forcing `assertUpdatedOne`** | Doc CLAUDE.md + SEMANTIC_GUARDS.md documentent l'usage mais aucune contrainte machine. Un dev peut ajouter une mutation Supabase sans guard sans être alerté automatiquement (sauf à lancer `post-action-assertions.mjs` manuellement) | **P2** | S1-S2 (règle custom ou plugin ESLint) |
-| G4 | **Split nominal V1/V2/V3 des 29 handlers PII manquant** | §15.1 Q8 + §5 partie 2 listent les **catégories** (admin/inscriptions + admin/users + admin/structures…) mais pas la liste nominale par vague. Le brut existe dans `audit-reports/auditlog-coverage.txt:45-74` | **P1** | S0 (addendum rapport ou PRs S1 avec liste exacte dans body) |
+| ~~G4~~ | ~~**Split nominal V1/V2/V3 des 29 handlers PII manquant**~~ | **RÉSOLU** — split nominal livré §15.6 ci-dessous | ✅ | S0 |
 | G5 | **Test intégration RLS silent manquant** | `tests/lib/supabase-guards.test.ts:44` prouve le comportement du helper (throw sur empty array) mais pas de test d'intégration avec vrai Supabase + RLS policy qui renvoie `[]` silencieusement. Test unitaire = proxy pas preuve end-to-end | **P2** | S1 (avec premier câblage B1) |
 
-**Cohérence avec matrice T1-T4 user** (2026-04-22 PM) : G1-G5 confirment que T1 (Success-but-Failed) reste ACTIF au sens « outillé mais pas déployé prod ». Le merge de cette branche livre les outils ; le déploiement effectif est S1+.
+**Cohérence avec matrice T1-T4 user** (2026-04-22 PM) : G1/G4 résolus cette session. G2/G3/G5 restent en backlog sprint (décision A1.5 user). T1 (Success-but-Failed) reste ACTIF au sens « outillé mais pas déployé prod ». Le merge de cette branche livre les outils + 2 workflows CI ; le déploiement effectif (câblage helpers) est S1+.
+
+### 15.6 Split nominal V1/V2/V3 des 29 handlers PII sans `auditLog` (G4 résolu)
+
+Source : `audit-reports/auditlog-coverage.txt:45-74` (commit `ed9f62b`). Split selon décision user Q8 (tri par risque, 3 vagues).
+
+**Vague 1 (S1) — Privilège & volume PII élevés : 12 handlers**
+
+| # | Fichier:ligne | Méthode | Zone |
+|---|---|---|---|
+| 1 | `app/api/admin/inscriptions/[id]/relance/route.ts:14` | POST | admin/inscriptions |
+| 2 | `app/api/admin/inscriptions/[id]/route.ts:85` | DELETE | admin/inscriptions |
+| 3 | `app/api/admin/inscriptions/[id]/route.ts:66` | PUT | admin/inscriptions |
+| 4 | `app/api/admin/inscriptions/manual/route.ts:61` | POST | admin/inscriptions |
+| 5 | `app/api/admin/inscriptions/relance/route.ts:15` | POST | admin/inscriptions |
+| 6 | `app/api/admin/inscriptions/route.ts:105` | DELETE | admin/inscriptions |
+| 7 | `app/api/admin/inscriptions/route.ts:72` | PUT | admin/inscriptions |
+| 8 | `app/api/admin/users/[id]/route.ts:39` | DELETE | admin/users |
+| 9 | `app/api/admin/users/[id]/route.ts:11` | PUT | admin/users |
+| 10 | `app/api/admin/users/delete/route.ts:14` | POST | admin/users |
+| 11 | `app/api/admin/users/route.ts:36` | POST | admin/users |
+| 12 | `app/api/admin/users/update/route.ts:14` | POST | admin/users |
+
+**Note V1** : `admin/structures/*` cité dans Q8 user mais les 3 routes (`regenerate-code`, `link`, `merge`) sont DÉJÀ COVERED (voir `auditlog-coverage.txt:11-13`). Aucun handler structures en MISSING. V1 = inscriptions + users uniquement.
+
+**Vague 2 (S2) — Financial + Lead : 6 handlers**
+
+| # | Fichier:ligne | Méthode | Zone |
+|---|---|---|---|
+| 13 | `app/api/admin/factures/[id]/paiements/route.ts:46` | POST | admin/factures |
+| 14 | `app/api/admin/factures/paiements/route.ts:12` | POST | admin/factures |
+| 15 | `app/api/admin/propositions/[id]/send/route.ts:12` | POST | admin/propositions |
+| 16 | `app/api/admin/propositions/send/route.ts:12` | POST | admin/propositions |
+| 17 | `app/api/pro/propositions/route.ts:9` | POST | api/pro |
+| 18 | `app/api/pro/request-access/route.ts:52` | POST | api/pro |
+
+**Vague 3 (S3) — Reste dispersé : 11 handlers**
+
+| # | Fichier:ligne | Méthode | Zone | Note scope PII |
+|---|---|---|---|---|
+| 19 | `app/api/admin/stays/[id]/notify-waitlist/route.ts:11` | POST | admin/stays | ⚠️ PII indirecte (liste waitlist contient emails) |
+| 20 | `app/api/admin/stays/[id]/route.ts:53` | DELETE | admin/stays | ⚠️ Catalogue séjour, pas PII enfant |
+| 21 | `app/api/admin/stays/[id]/route.ts:14` | PUT | admin/stays | ⚠️ idem |
+| 22 | `app/api/admin/stays/[id]/sessions/[sessionId]/route.ts:13` | DELETE | admin/stays | ⚠️ idem |
+| 23 | `app/api/admin/stays/delete/route.ts:16` | POST | admin/stays | ⚠️ idem |
+| 24 | `app/api/admin/stays/notify-waitlist/route.ts:11` | POST | admin/stays | ⚠️ PII indirecte |
+| 25 | `app/api/admin/stays/route.ts:71` | POST | admin/stays | ⚠️ catalogue |
+| 26 | `app/api/admin/stays/sessions/delete/route.ts:20` | POST | admin/stays | ⚠️ catalogue |
+| 27 | `app/api/admin/stays/update/route.ts:16` | PATCH | admin/stays | ⚠️ catalogue |
+| 28 | `app/api/suivi/[token]/route.ts:152` | PATCH | suivi | ✅ PII directe (dossier enfant) |
+| 29 | `app/api/suivi/resend/route.ts:12` | POST | suivi | ✅ PII directe (email referent) |
+
+**Note V3** : 9 handlers admin/stays sont flaggués par `auditlog-coverage.mjs` parce qu'ils mutent des tables tracking (gd_stays, gd_stay_sessions, gd_waitlist). Mais selon CLAUDE.md « Tables PII — liste à jour 2026-04-18 », `gd_stay_sessions` n'y figure QUE « si affecte dossier ». À trier lors S3 : peut-être **4-5 handlers admin/stays légitimement hors scope PII** → à retirer du scope V3 après review case-by-case. Scope V3 strict PII = **2 handlers suivi** + éventuellement `notify-waitlist` (exposition liste). Reste = cleanup opérationnel, pas RGPD.
+
+**Total splité : 12 V1 + 6 V2 + 11 V3 = 29 ✓ match `auditlog-coverage.txt`**
 
 ### 15.5 Règles nouvelles documentées
 

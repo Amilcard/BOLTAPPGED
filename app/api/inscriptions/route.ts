@@ -8,6 +8,8 @@ import { randomBytes } from 'crypto';
 import { auditLog, getClientIp } from '@/lib/audit-log';
 import { isRateLimited } from '@/lib/rate-limit';
 import { resolveCodeToStructure } from '@/lib/structure';
+import { assertInserted } from '@/lib/supabase-guards';
+import { captureServerException } from '@/lib/sentry-capture';
 const inscriptionSchema = z.object({
   staySlug: z.string().min(1),
   sessionDate: z.string().min(1), // Date de début session
@@ -613,10 +615,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // T1 Success-but-Failed guard — RLS peut retourner [] silencieusement
+    // sans signaler d'erreur. Belt-and-suspenders : le if ci-dessus catch déjà,
+    // ce guard protège contre toute régression future qui retirerait le check.
+    assertInserted(inscription, 'post_inscription_insert');
+
     // INSERT inscription réussi — le seat est définitivement attribué.
     // Neutraliser le flag pour éviter un rollback accidentel depuis le catch global
     // sur une exception ultérieure (email, audit, etc.).
     capacityDecremented = false;
+
+    // RGPD — audit create inscription (table PII gd_inscriptions, CLAUDE.md §15).
+    // Trace obligatoire pour toute création de dossier mineur, indépendamment
+    // du consentement parental (audit séparé ci-dessous pour Art. 9).
+    await auditLog(supabase, {
+      action: 'create',
+      resourceType: 'inscription',
+      resourceId: inscription.id as string,
+      actorType: 'referent',
+      actorId: data.email,
+      ipAddress: getClientIp(request),
+      metadata: {
+        sejour_slug: data.staySlug,
+        session_date: normalizedDate,
+        has_structure_code: !!data.structureCode,
+      },
+    });
 
     // M9 — Audit RGPD : enregistrer le consentement parental si applicable (Art. 9 données mineurs)
     if (data.parentalConsent && inscription.id) {
@@ -759,6 +783,14 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error: unknown) {
     console.error('POST /api/inscriptions error:', error);
+    captureServerException(
+      error,
+      { domain: 'rgpd', operation: 'post_inscription' },
+      {
+        capacity_decremented: capacityDecremented,
+        rollback_slug: rollbackCtx?.slug ?? null,
+      },
+    );
 
     // Exception non-catchée entre la décrémentation RPC et la finalisation INSERT →
     // restaurer le seat pour éviter l'overbooking silencieux.

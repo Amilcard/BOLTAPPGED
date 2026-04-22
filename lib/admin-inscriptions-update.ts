@@ -49,7 +49,7 @@ export async function performInscriptionUpdate(
 
     // Validation des statuts
     const validStatuses = ['en_attente', 'validee', 'refusee', 'annulee'];
-    const validPaymentStatuses = ['pending_payment', 'paid', 'failed', 'pending_transfer', 'pending_check', 'amount_mismatch'];
+    const validPaymentStatuses = ['pending_payment', 'paid', 'failed', 'pending_transfer', 'pending_check', 'amount_mismatch', 'refunded', 'partially_refunded'];
     const validDocStatuses = ['en_attente', 'partiellement_recus', 'complets'];
 
     const updateData: Record<string, unknown> = {};

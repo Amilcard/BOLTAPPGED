@@ -166,7 +166,9 @@ export async function POST(request: NextRequest) {
         structureCode = s.code;
       } else {
         // Création de la structure — génère un code à 6 chars
-        const { data: newStruct } = await supabase
+        // Non-bloquant : si l'INSERT échoue, on log et on continue avec structureId=null
+        // (l'inscription peut exister sans structure attachée côté admin manual).
+        const { data: newStruct, error: structErr } = await supabase
           .from('gd_structures')
           .insert({
             name: data.structureName,
@@ -177,6 +179,9 @@ export async function POST(request: NextRequest) {
           })
           .select('id, code')
           .single();
+        if (structErr) {
+          console.error('[admin/inscriptions/manual] Structure insert error (non-blocking):', structErr);
+        }
         if (newStruct) {
           const s = newStruct as { id: string; code: string };
           structureId     = s.id;
@@ -232,6 +237,16 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (insertError) {
+      const pgCode = (insertError as { code?: string }).code;
+      if (pgCode === '23505') {
+        // Race avec idx_inscriptions_nodouplon : une inscription identique a été
+        // créée entre le pre-check maybeSingle() et l'INSERT. UX-friendly 409.
+        console.warn('[admin/inscriptions/manual] Unique violation (race pre-check):', insertError);
+        return NextResponse.json(
+          { error: { code: 'DUPLICATE', message: 'Une inscription identique existe déjà.' } },
+          { status: 409 }
+        );
+      }
       console.error('[admin/inscriptions/manual] Insert error:', insertError);
       return NextResponse.json(
         { error: { code: 'INSERT_ERROR', message: 'Impossible de créer l\'inscription.' } },

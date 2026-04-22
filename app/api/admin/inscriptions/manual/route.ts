@@ -7,6 +7,7 @@ import { logEmailFailure } from '@/lib/email-logger';
 import { auditLog } from '@/lib/audit-log';
 import { assertInserted } from '@/lib/supabase-guards';
 import { captureServerException } from '@/lib/sentry-capture';
+import { resolveCodeToStructure } from '@/lib/structure';
 import { z } from 'zod';
 import { randomBytes } from 'crypto';
 
@@ -43,7 +44,7 @@ const schema = z.object({
   structureName:       z.string().min(1),
   structurePostalCode: z.string().regex(/^\d{5}$/),
   structureCity:       z.string().min(1),
-  structureCode:       z.string().regex(/^[A-Z0-9]{6}$/).optional(),
+  structureCode:       z.string().regex(/^[A-Z0-9]{6,10}$/).optional(),  // 6 chars CDS ou 10 chars directeur
   structureAddress:    z.string().optional(),
   // Prix figé (montant réellement facturé — pas de validation UFOVAL)
   priceTotal:       z.number().min(0),
@@ -138,16 +139,12 @@ export async function POST(request: NextRequest) {
     let structureCreated = false;
 
     if (data.structureCode) {
-      const { data: struct } = await supabase
-        .from('gd_structures')
-        .select('id, code')
-        .eq('code', data.structureCode.toUpperCase())
-        .eq('status', 'active')
-        .single();
-      if (struct) {
-        const s = struct as { id: string; code: string };
-        structureId   = s.id;
-        structureCode = s.code;
+      // Axe 3.6 — parité avec /api/inscriptions : resolveCodeToStructure() gère
+      // codes CDS (6 chars), directeur (10 chars) et gd_structure_access_codes.
+      const resolved = await resolveCodeToStructure(data.structureCode);
+      if (resolved) {
+        structureId   = resolved.structure.id as string;
+        structureCode = (resolved.structure.code as string) ?? null;
       }
     }
 

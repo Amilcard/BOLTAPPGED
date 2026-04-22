@@ -2,7 +2,19 @@ import { NextResponse } from 'next/server';
 import { sendStatusChangeEmail } from '@/lib/email';
 import { logEmailFailure } from '@/lib/email-logger';
 import { auditLog } from '@/lib/audit-log';
-import { assertUpdatedSingle } from '@/lib/supabase-guards';
+import { assertInserted, assertUpdatedSingle } from '@/lib/supabase-guards';
+
+/**
+ * Matrice de transition STRICTE des statuts d'inscription.
+ * annulee et refusee sont des états terminaux : aucune sortie autorisée.
+ * Décision produit 2026-04-22 (audit Axe 2.1, arbitrage #7 strict).
+ */
+const ALLOWED_TRANSITIONS: Record<string, readonly string[]> = {
+  en_attente: ['validee', 'refusee', 'annulee'],
+  validee: ['annulee'],
+  annulee: [],
+  refusee: [],
+};
 
 /**
  * Shared PUT logic for admin inscriptions.
@@ -89,15 +101,35 @@ export async function performInscriptionUpdate(
       );
     }
 
-    // Lire le statut actuel pour l'audit log (uniquement si status change)
+    // Lire le statut actuel pour l'audit log + validation transition
     let oldStatus: string | null = null;
     if (status) {
       const { data: current } = await supabase
         .from('gd_inscriptions')
         .select('status')
         .eq('id', id)
+        .is('deleted_at', null)
         .single();
       oldStatus = current?.status ?? null;
+
+      // Matrice STRICTE : rejeter avant UPDATE si transition interdite.
+      if (oldStatus && oldStatus !== status) {
+        const allowed = ALLOWED_TRANSITIONS[oldStatus] ?? [];
+        if (!allowed.includes(status)) {
+          const detail = allowed.length === 0
+            ? `État ${oldStatus} terminal.`
+            : `Transitions autorisées depuis ${oldStatus} : ${allowed.join(', ')}.`;
+          return NextResponse.json(
+            {
+              error: {
+                code: 'TRANSITION_FORBIDDEN',
+                message: `Transition ${oldStatus} → ${status} interdite. ${detail}`,
+              },
+            },
+            { status: 409 }
+          );
+        }
+      }
     }
 
     const { data, error } = await supabase
@@ -131,16 +163,24 @@ export async function performInscriptionUpdate(
       metadata: { fields: Object.keys(updateData) },
     });
 
-    // Audit log non-bloquant si le statut a changé
+    // Audit log BLOQUANT (T1 Success-but-Failed) si le statut a changé.
+    // CLAUDE.md Règle #0 quinquies — toute mutation Supabase doit avoir un guard.
     if (status && oldStatus !== status) {
-      supabase.from('gd_inscription_status_logs').insert({
-        inscription_id: id,
-        old_status: oldStatus,
-        new_status: status,
-        changed_by_email: authEmail,
-      }).then(({ error: logError }: { error: unknown }) => {
-        if (logError) console.error('Audit log error:', logError);
-      });
+      const { data: logRow, error: logError } = await supabase
+        .from('gd_inscription_status_logs')
+        .insert({
+          inscription_id: id,
+          old_status: oldStatus,
+          new_status: status,
+          changed_by_email: authEmail,
+        })
+        .select('id')
+        .single();
+      if (logError) {
+        console.error('[admin/inscriptions] status_logs insert failed:', logError);
+        throw logError;
+      }
+      assertInserted(logRow, 'admin_inscription_status_log');
     }
 
     // Email non-bloquant si le statut a changé

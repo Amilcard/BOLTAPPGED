@@ -195,11 +195,20 @@ describe('GET /api/admin/inscriptions/[id]', () => {
 // ── Tests — PUT /api/admin/inscriptions/[id] ─────────────────────────────────
 
 describe('PUT /api/admin/inscriptions/[id]', () => {
-  const mockUpdateChain = (returnData: object) => {
+  // Chaîne réelle :
+  //  - oldStatus read : from('gd_inscriptions').select('status').eq().is().single()
+  //  - UPDATE        : from('gd_inscriptions').update().eq().is().select().single()
+  //  - status_logs   : from('gd_inscription_status_logs').insert().select('id').single()
+  const mockUpdateChain = (returnData: object, currentStatus: string = 'en_attente') => {
     mockFrom.mockReturnValue({
       select: jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
-          single: jest.fn().mockResolvedValue({ data: SAMPLE_INSCRIPTION, error: null }),
+          is: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({
+              data: { ...SAMPLE_INSCRIPTION, status: currentStatus },
+              error: null,
+            }),
+          }),
         }),
       }),
       update: jest.fn().mockReturnValue({
@@ -212,7 +221,9 @@ describe('PUT /api/admin/inscriptions/[id]', () => {
         }),
       }),
       insert: jest.fn().mockReturnValue({
-        then: jest.fn(),
+        select: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({ data: { id: 'log-id-1' }, error: null }),
+        }),
       }),
     });
   };
@@ -250,6 +261,63 @@ describe('PUT /api/admin/inscriptions/[id]', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.status).toBe('validee');
+  });
+
+  // ── Matrice de transition STRICTE (Axe 2.1 — décision produit 2026-04-22) ────
+  it('retourne 409 TRANSITION_FORBIDDEN pour annulee → validee (terminal)', async () => {
+    mockUpdateChain({ status: 'validee' }, 'annulee');
+    const res = await putInscription(
+      req(`/api/admin/inscriptions/${INSCRIPTION_ID}`, {
+        method: 'PUT', token: ADMIN_TOKEN, body: { status: 'validee' },
+      }),
+      { params: Promise.resolve({ id: INSCRIPTION_ID }) }
+    );
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body.error.code).toBe('TRANSITION_FORBIDDEN');
+    expect(body.error.message).toContain('annulee');
+    expect(body.error.message).toContain('terminal');
+  });
+
+  it('retourne 409 TRANSITION_FORBIDDEN pour refusee → en_attente (terminal)', async () => {
+    mockUpdateChain({ status: 'en_attente' }, 'refusee');
+    const res = await putInscription(
+      req(`/api/admin/inscriptions/${INSCRIPTION_ID}`, {
+        method: 'PUT', token: ADMIN_TOKEN, body: { status: 'en_attente' },
+      }),
+      { params: Promise.resolve({ id: INSCRIPTION_ID }) }
+    );
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body.error.code).toBe('TRANSITION_FORBIDDEN');
+    expect(body.error.message).toContain('refusee');
+  });
+
+  it('retourne 409 TRANSITION_FORBIDDEN pour validee → en_attente (non listée)', async () => {
+    mockUpdateChain({ status: 'en_attente' }, 'validee');
+    const res = await putInscription(
+      req(`/api/admin/inscriptions/${INSCRIPTION_ID}`, {
+        method: 'PUT', token: ADMIN_TOKEN, body: { status: 'en_attente' },
+      }),
+      { params: Promise.resolve({ id: INSCRIPTION_ID }) }
+    );
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body.error.code).toBe('TRANSITION_FORBIDDEN');
+    expect(body.error.message).toContain('annulee'); // seule transition depuis validee
+  });
+
+  it('retourne 200 pour validee → annulee (transition autorisée)', async () => {
+    mockUpdateChain({ status: 'annulee' }, 'validee');
+    const res = await putInscription(
+      req(`/api/admin/inscriptions/${INSCRIPTION_ID}`, {
+        method: 'PUT', token: ADMIN_TOKEN, body: { status: 'annulee' },
+      }),
+      { params: Promise.resolve({ id: INSCRIPTION_ID }) }
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.status).toBe('annulee');
   });
 });
 

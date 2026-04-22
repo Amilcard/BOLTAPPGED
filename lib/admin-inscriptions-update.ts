@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { sendStatusChangeEmail } from '@/lib/email';
 import { logEmailFailure } from '@/lib/email-logger';
 import { auditLog } from '@/lib/audit-log';
+import { assertUpdatedSingle } from '@/lib/supabase-guards';
 
 /**
  * Shared PUT logic for admin inscriptions.
@@ -109,8 +110,16 @@ export async function performInscriptionUpdate(
 
     if (error) {
       console.error('performInscriptionUpdate Supabase error:', error);
+      // PGRST116 = .single() n'a trouvé 0 ligne (soft-deleted ou id absent)
+      if ((error as { code?: string }).code === 'PGRST116') {
+        return NextResponse.json(
+          { error: { code: 'NOT_FOUND', message: 'Inscription introuvable ou supprimée.' } },
+          { status: 404 }
+        );
+      }
       throw error;
     }
+    const row = assertUpdatedSingle(data, 'admin_update_inscription');
 
     // RGPD — tracer modification inscription par admin
     await auditLog(supabase, {
@@ -136,12 +145,12 @@ export async function performInscriptionUpdate(
 
     // Email non-bloquant si le statut a changé
     // Lot L3/6 : journalisation centralisée des échecs via logEmailFailure.
-    if (status && data.referent_email) {
+    if (status && row.referent_email) {
       sendStatusChangeEmail(
-        data.referent_email,
-        data.referent_nom,
-        data.jeune_prenom,
-        data.jeune_nom,
+        row.referent_email,
+        row.referent_nom,
+        row.jeune_prenom,
+        row.jeune_nom,
         status
       )
         .then(async (result) => {
@@ -152,7 +161,7 @@ export async function performInscriptionUpdate(
         .catch((err) => { console.error('[admin/inscriptions] sendStatusChangeEmail failed', err); });
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json(row);
   } catch (error) {
     console.error('performInscriptionUpdate error:', error);
     return NextResponse.json(

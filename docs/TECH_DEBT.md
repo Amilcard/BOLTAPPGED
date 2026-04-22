@@ -1,7 +1,7 @@
 # TECH DEBT — GED App
 
 **Budget dette** : max 5 items actifs. Au-delà → sprint résolution avant toute nouvelle feature.
-**⚠️ 2026-04-22 : 7/5 — R1 dépassé** → prochaine revue hebdo (lundi) doit clôturer ou reclasser 2 items (candidats : lockfiles warning P3 cosmétique, RLS audit_log/session_deletion_log INFO déjà cron-resolved, etc.).
+**✅ 2026-04-22 PM : 5/5 R1 OK** (2 items clôturés via ADR — RLS audit_log no-policy + lockfile warning cosmétique).
 
 Format : 1 ligne par item, trié par âge (plus ancien = top priorité).
 
@@ -15,13 +15,12 @@ Format : 1 ligne par item, trié par âge (plus ancien = top priorité).
 - [2026-04-22] `lib/email-suppress.ts` — suppression email temporaire Cordée + Clairière (tag: rustine, operational). Bloque tout envoi vers `o.geoffroy.lce@gmail.com`, `@fondationdiaconesses.org`, `@mecs-laclairiere.fr` pendant résolution des bugs prod. Revert : vider `EMAIL_SUPPRESSION_RULES` + commit → redeploy. **Action** : supprimer dès que les bugs signalés sont clos et que l'utilisateur confirme la reprise.
 - [2026-04-21] `tests/e2e/*` — 85/130 tests E2E en échec depuis run 2026-04-19 (tag: tests). Fichiers 0-passant : `reservation-{kids,pro,virement}`, `dossier-enfant`, `verify-db`, `parcours-staff-fill`, `parcours-inscription-complet`. Décision dans `docs/adr/2026-04-21-e2e-smoke-only.md`. Action : restaurer par lot avant sprint F1 complet.
 - [2026-04-21] Supabase Auth — "Leaked password protection" désactivée (tag: secu). Feature **Pro plan uniquement** ($25/mois), pas activable en Free. Thanh R1 (P14.3) partiellement mitigé par policy actuelle (12+ chars + maj/min/chiffre/spécial). Options : (A) upgrade Pro, (B) implémenter check HIBP custom server-side (k-anonymity API, gratuit, 2-4h dev), (C) accepter WARN. Décision : **C pour l'instant**, B en sprint si besoin fermeture.
-- [2026-04-21] RLS sans policy sur `gd_audit_log` + `gd_session_deletion_log` (tag: secu, level INFO). Risque : lecture anon/authenticated si l'API les expose. Action : ajouter `CREATE POLICY "service_role only"` ou désactiver RLS si tables purement internes.
 - [2026-04-21] 31 structures `status=active` sans email — détecté par `gd_audit_data_integrity()`. Impact : éducateurs non contactables depuis l'admin (tag: data). Action : audit + backfill ou passer statut à `inactive` si vraies orphelines.
-- [2026-04-21] `next build` warning "multiple lockfiles" (`~/package-lock.json` home + `/Dev/GED_APP/package-lock.json`) (tag: rustine, cosmétique). Pas bloquant. Fix = ajouter `outputFileTracingRoot` dans `next.config.mjs` (cross-zone app config → ADR requis). Différé, pas urgent.
 
 ## Résolus
 
-_(archive après clôture)_
+- [2026-04-22] RLS sans policy sur `gd_audit_log` + `gd_session_deletion_log` (ouvert 2026-04-21) — **clôturé** via ADR `docs/adr/2026-04-22-audit-log-rls-no-policy.md` : pattern service_role only + zéro policy = deny-all anon/authenticated + bypass service_role, conforme CLAUDE.md §11. Advisor Supabase INFO = faux positif structurel.
+- [2026-04-22] `next build` warning "multiple lockfiles" (ouvert 2026-04-21) — **clôturé** via ADR `docs/adr/2026-04-22-lockfile-warning-cosmetic.md` : cosmétique, zéro runtime impact, fix cross-zone `next.config.mjs` différé à session config Next.js dédiée.
 
 ---
 

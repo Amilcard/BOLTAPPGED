@@ -1,0 +1,65 @@
+name: Coverage Gate
+
+# Gate coverage sur PR : empêche la régression sous le seuil baseline.
+# Baseline 2026-04-22 : Statements 14.29 % (coverage/coverage-summary.json).
+# Seuil fixé à 14 % pour bloquer la descente (cf. rapport audit 2026-04-22
+# §15.1 Q1).
+#
+# Action si PR dépasse le seuil vers le BAS :
+#   - Ajouter des tests pour couvrir les nouveautés
+#   - OU justifier la baisse par un ADR docs/adr/ et mettre à jour le seuil
+#
+# À remonter progressivement à chaque sprint S1-S4 vers 24.71 % baseline
+# fa53960. Cible long terme : ≥ 40 % statements.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coverage-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage-gate:
+    name: Coverage >= 14 % (blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm install --legacy-peer-deps
+
+      - name: Run Jest with coverage
+        run: npm run test:unit -- --coverage
+
+      - name: Gate statements >= threshold
+        run: |
+          set -euo pipefail
+          THRESHOLD=14
+          SUMMARY=coverage/coverage-summary.json
+          if [ ! -f "$SUMMARY" ]; then
+            echo "::error::$SUMMARY introuvable — Jest --coverage a-t-il tourne ?"
+            exit 1
+          fi
+          STMT=$(jq -r '.total.statements.pct' "$SUMMARY")
+          BRANCH=$(jq -r '.total.branches.pct' "$SUMMARY")
+          FN=$(jq -r '.total.functions.pct' "$SUMMARY")
+          LINES=$(jq -r '.total.lines.pct' "$SUMMARY")
+          echo "Coverage total — Stmts: $STMT% / Branch: $BRANCH% / Func: $FN% / Lines: $LINES%"
+          echo "Threshold (statements): $THRESHOLD%"
+          # awk pour comparaison float (bash int only)
+          if awk "BEGIN { exit !($STMT < $THRESHOLD) }"; then
+            echo "::error::Statements coverage $STMT% < threshold $THRESHOLD%"
+            exit 1
+          fi
+          echo "Coverage gate OK ($STMT% >= $THRESHOLD%)."

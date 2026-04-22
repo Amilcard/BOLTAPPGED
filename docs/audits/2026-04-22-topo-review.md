@@ -202,7 +202,7 @@ Exécution en 2 phases (Q1–Q5 validées en début de session) :
 | **S1** | 3j | OK | 1. D1-D10 (dossier) · 2. Suivi1-Suivi7 · 3. Fix 29 PII auditLog (gap B prio admin/inscriptions + admin/users) · 4. T4 Zod/SQL fix `payment_method` (divergence 009/010 + Zod) · 5. M5 indexes `created_at` + M7 ownership deleted_at + M8 enum methode | S0 terminé | Modif `lib/email.ts` en S3 pourra casser tests S1 | Intégrer gap B (29 PII auditLog) + T4 Zod/SQL fix |
 | **S2** | 3j | À RÉVISER | 1. Créer `tests/integration/` infra (prérequis non listé TOPO) · 2. I1-I5 · 3. Pay1-Pay7 · 4. S7-S12 matrice · 5. Fix 18 idempotency (gap D) · 6. T1 post-action assertions audit script | S0 + S1 | Création dossier integration = dépend config Jest `package.json` (non vérifié) | Infra integration ≠ listée TOPO |
 | **S3** | 2j | **SOUS-ESTIMÉ — SPLIT REQUIS** | **S3a (2j)** : M1 migration `gd_outbound_emails` + câblage `lib/email.ts` + cron réconciliation (T2) · **S3b (1.5j)** : snapshots PDF + route `request-new-code` + M2 UNIQUE gd_souhaits | S1 (tests email peuvent casser) | Modif `lib/email.ts` = cascade 15+ routes. M2 UNIQUE = check doublons prod préalable | **3.5 j au lieu de 2 j** |
-| **S4** | 2j | OK | 1. K1-K7 (envies) · 2. P1-P8 (suivi_token + pro-request) · 3. A1-A10 (admin) · 4. Migration 076 rls_initplan_fix (validation humaine obligatoire) | S3 pour P1 snapshot email | Coverage target explicite à poser fin S4 | OK |
+| **S4** | 2j | OK | 1. K1-K7 (envies) · 2. P1-P8 (suivi_token + pro-request) · 3. A1-A10 (admin) · 4. ~~Migration 076 rls_initplan_fix~~ **résolu** (nomenclature TOPO erronée — `rls_initplan_fix` version `20260418121325` **déjà appliquée** prod, cf §15.1 Q5) | S3 pour P1 snapshot email | Coverage target explicite à poser fin S4 | OK |
 
 **Sprint supplémentaire recommandé — S0.5 sécurité** (0.5j intercalé entre S0 et S1) :
 - Fix payment/create-intent guard (gap E)
@@ -210,7 +210,7 @@ Exécution en 2 phases (Q1–Q5 validées en début de session) :
 - Audit rapide scope 29 PII auditLog (gap B) pour différer le fix S1 si trop lourd
 - Activer Sentry sur preview (gap #13) — 1 ligne
 
-**Effort total TOPO** : 12 j annoncés → **15 j ajustés** (S0 2.5 + S0.5 0.5 + S1 3 + S2 3 + S3a 2 + S3b 1.5 + S4 2.5).
+**Effort total TOPO** : 12 j annoncés → **16 j ajustés** (S0 **3.5** avec tests/api Q4 + CI coverage gate Q1 + S0.5 0.5 + S1 3 + S2 3 + S3a 2 + S3b 1.5 + S4 2.5). S0 passe de 2.5 à 3.5 j suite aux décisions Q1/Q4 user 2026-04-22 PM.
 
 ---
 
@@ -282,8 +282,11 @@ Périmètre recommandé S0 (**2.5 j au lieu de 2 j**) :
 | 5 | `test(e2e): unmask batch 1/3 (parcours-inscription-complet)` | `tests/e2e/parcours-inscription-complet.spec.ts` | après commit 4 | MED — échecs attendus |
 | 6 | `test(e2e): unmask batch 2/3 (parcours-pro + staff-fill)` | idem | après commit 5 | MED |
 | 7 | `test(e2e): unmask batch 3/3 (dossier-enfant + describe.skip verify-db)` | idem | après commit 6 | MED |
-| 8 | `ci(playwright): retries 2→1 + skip gate threshold 3` | `playwright.config.ts` | après commit 7 | LOW |
-| 9 | `chore(tech-debt): close gap #3 (hooks /admin/users = false positive Sonar)` | `docs/TECH_DEBT.md` | après commit 8 | LOW — doc seulement |
+| 8 | `test(api): unmask batch 1/2 (tests/api/stays.test.ts ×4 + inscriptions.test.ts)` — Q4 scope élargi | `tests/api/*.test.ts` | après commit 7 | MED — découvre Q4 extension |
+| 9 | `test(api): unmask batch 2/2 (rls-security + parcours-complet)` — Q4 scope élargi | `tests/api/rls-security.test.ts`, `tests/api/parcours-complet.test.ts` | après commit 8 | MED |
+| 10 | `ci(playwright): retries 2→1 + skip gate threshold 3` | `playwright.config.ts` | après commit 9 | LOW |
+| 11 | `ci(coverage): activate coverage-gate.yml (threshold 14%)` — Q1 | `.github/workflows/coverage-gate.yml` (livré dans même session, commit qui finalise branche) | après commit 10 | LOW — CI seul, actif sur PR futurs uniquement |
+| 12 | `chore(tech-debt): close gap #3 (hooks /admin/users = false positive Sonar)` | `docs/TECH_DEBT.md` | après commit 11 | LOW — doc seulement |
 
 **Commits 2+3+4 (gaps P0) AVANT commits 5+6+7 (démasquage)** : ordre critique pour ne pas exposer failles en preview.
 
@@ -297,7 +300,7 @@ Périmètre recommandé S0 (**2.5 j au lieu de 2 j**) :
 | Q2 | `idempotency_key` pour `gd_outbound_emails` : UUID appelant ou `sha256(recipient + template + DATE)` ? | Bloquant intégration lib/email.ts | 60 % |
 | Q3 | Doublons `gd_souhaits` existants avant UNIQUE constraint ? (4 rows prod, vérif MCP execute_sql à lancer) | Risque ajout contrainte | 85 % — bas risque vu volume |
 | Q4 | TOPO chiffre 13 skip E2E vs grep actuel 6 → autres fichiers hors scope ? | Cadrage S0 | 85 % |
-| Q5 | Migration 076 rls_initplan_fix déjà appliquée prod ? (schéma ≠ repo) | Impact S4 | 70 % — MCP execute_sql à lancer |
+| Q5 | ~~Migration 076 rls_initplan_fix déjà appliquée prod ?~~ | **RÉSOLU §15.1** | 100 % — MCP user confirmé appliquée, nomenclature TOPO erronée (réel version `20260418121325`) |
 | Q6 | Partage KIDS (gap #10) : séjour uniquement ou wishlist avec motivation ? | Bloquant UX #10 + RGPD | 40 % — décision produit |
 | Q7 | Fix gaps E+F+#2 en S0 ou dédier un sprint S0.5 ? | Cadence livraison | 80 % |
 | Q8 | 29 PII auditLog : attaquer les 29 en 1 vague (S1) ou tri par risque (admin/inscriptions + admin/users d'abord) ? | Charge S1 | 70 % |
@@ -372,7 +375,9 @@ Le user a (à juste titre) demandé de ne pas se fier aux docs. Cross-check via 
 | `28b6b06` | Migration `085_gd_outbound_emails.sql` + ROLLBACK |
 | `000379e` | Cross-check MCP : fix CLAUDE.md `gd_inscriptions` / `gd_structures` ; correction faux positif T4 SEMANTIC_GUARDS ; schema-drift v2 (track table + colonne) |
 
-**État branche** : 7 commits au total, zéro merge vers `main`. Pre-commit hook vert sur chaque commit (TSC + ESLint + Jest 150 tests + depcruise 374 modules). 1 warning `no-orphans` sur `lib/supabase-guards.ts` (attendu — pas encore câblé).
+**État branche** : 8+ commits au total, zéro merge vers `main`. Pre-commit hook vert sur chaque commit (TSC + ESLint + Jest 150 tests + depcruise 375 modules). 1 warning `no-orphans` sur `lib/supabase-guards.ts` (attendu — pas encore câblé, décision explicite de laisser en backlog S1-S3 pour traitement en tandem avec les 3 vagues auditLog, voir §15.4). Review architecturale par agent `arch-impact-reviewer` (2026-04-22) = GO MERGE conditionné : placeholders corrigés dans ce commit.
+
+**Note I1** : commit `11b5198` annonçait 23 tests supabase-guards — comptage réel par fichier = 29 tests (6 describe blocks × 2-7 cases). Divergence cosmétique sans impact runtime, relevée par arch-impact-reviewer.
 
 ### 15.4 Items restants (backlog post-audit, hors dette active)
 

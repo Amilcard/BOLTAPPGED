@@ -14,6 +14,7 @@
 import type { NextRequest } from 'next/server';
 import { createHash } from 'crypto';
 import { getClientIpFromHeaders } from '@/lib/rate-limit';
+import { captureServerException, captureServerMessage } from '@/lib/sentry-capture';
 
 interface AuditLogEntry {
   action: 'read' | 'create' | 'update' | 'delete' | 'upload' | 'download' | 'submit';
@@ -105,8 +106,30 @@ export async function auditLog(
         resourceId: entry.resourceId,
         actorId: entry.actorId,
       });
+      captureServerMessage(
+        '[AUDIT-LOG] DB insert failed — legal trace lost',
+        { domain: 'audit', operation: 'audit_log_insert' },
+        'fatal',
+        {
+          error_code: error.code ?? null,
+          error_message: error.message ?? null,
+          action: entry.action,
+          resource_type: entry.resourceType,
+          actor_type: entry.actorType,
+        },
+      );
     }
   } catch (err) {
     console.error('[AUDIT-LOG CRITIQUE] Erreur inattendue:', err);
+    captureServerException(
+      err,
+      { domain: 'audit', operation: 'audit_log_unexpected' },
+      {
+        action: entry.action,
+        resource_type: entry.resourceType,
+        actor_type: entry.actorType,
+      },
+      'fatal',
+    );
   }
 }

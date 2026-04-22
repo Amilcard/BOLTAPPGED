@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { errorResponse, unauthorizedResponse } from '@/lib/auth-middleware';
 import { auditLog } from '@/lib/audit-log';
+import { captureServerException, captureServerMessage } from '@/lib/sentry-capture';
 
 /**
  * GET /api/cron/rgpd-purge
@@ -177,6 +178,15 @@ export async function GET(req: NextRequest) {
         dossiersPurgedCount += 1;
       } catch (e) {
         errors.push(`dossier_purge_${c.inscription_id}: ${e instanceof Error ? e.message : 'unknown'}`);
+        captureServerException(
+          e,
+          { domain: 'rgpd', operation: 'rgpd_dossier_purge' },
+          {
+            inscription_id: c.inscription_id,
+            dossier_id: c.dossier_id,
+            purge_policy: c.purge_policy,
+          },
+        );
       }
     }
   }
@@ -203,10 +213,32 @@ export async function GET(req: NextRequest) {
     });
   } catch (e) {
     console.error('[rgpd-purge] audit log insert failed (non-blocking):', e);
+    captureServerException(
+      e,
+      { domain: 'rgpd', operation: 'rgpd_audit_trace_cnil' },
+      {
+        errors_count: errors.length,
+        dossiers_purged: dossiersPurgedCount,
+        dry_run: dryRun,
+      },
+      'fatal',
+    );
   }
 
   if (errors.length > 0) {
     console.error(`[rgpd-purge] ${errors.length} erreur(s):`, errors.join('; '));
+    captureServerMessage(
+      'RGPD monthly purge completed with errors',
+      { domain: 'rgpd', operation: 'rgpd_purge_monthly' },
+      'error',
+      {
+        errors_count: errors.length,
+        errors_joined: errors.join('; ').slice(0, 1500),
+        dossiers_purged: dossiersPurgedCount,
+        files_purged: filesPurgedCount,
+        dry_run: dryRun,
+      },
+    );
     return NextResponse.json({ ok: false, errors }, { status: 500 });
   }
 

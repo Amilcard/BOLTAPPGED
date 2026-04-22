@@ -84,6 +84,14 @@ prisma/dev.db
 # ── Règles agents IA ──
 .agent/rules/
 
+# ── Rapports dependency-cruiser (générés localement) ──
+deps.svg
+deps-archi.svg
+deps.dot
+deps-archi.dot
+deps.html
+deps.json
+
 # Fixtures de test (contient tokens réels)
 .env.test
 

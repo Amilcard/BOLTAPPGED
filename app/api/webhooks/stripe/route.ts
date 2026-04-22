@@ -6,6 +6,7 @@ import { headers } from 'next/headers';
 import { sendPaymentConfirmedAdminNotification, sendPaymentConfirmedClient } from '@/lib/email';
 import { logEmailFailure } from '@/lib/email-logger';
 import { errorResponse } from '@/lib/auth-middleware';
+import { captureServerException, captureServerMessage } from '@/lib/sentry-capture';
 
 // ── Helpers idempotency ──
 
@@ -109,6 +110,18 @@ export async function POST(req: NextRequest) {
             inscriptionId,
             eventId: event.id,
           });
+          captureServerMessage(
+            'Stripe AMOUNT_MISMATCH — manual intervention required',
+            { domain: 'payment', operation: 'stripe_amount_mismatch' },
+            'error',
+            {
+              inscription_id: inscriptionId,
+              event_id: event.id,
+              stripe_amount_eur: stripeAmountEur,
+              db_amount_eur: dbAmount,
+              delta_eur: stripeAmountEur - dbAmount,
+            },
+          );
           await supabase
             .from('gd_inscriptions')
             .update({ payment_status: 'amount_mismatch' })
@@ -150,6 +163,17 @@ export async function POST(req: NextRequest) {
 
         if (error) {
           console.error('Error updating payment status — rollback claim:', error);
+          captureServerMessage(
+            'Stripe webhook DB update failed (payment succeeded) — claim rolled back',
+            { domain: 'payment', operation: 'stripe_db_update_succeeded' },
+            'error',
+            {
+              inscription_id: inscriptionId,
+              event_id: event.id,
+              error_code: error.code ?? null,
+              error_message: error.message ?? null,
+            },
+          );
           await rollbackClaim(supabase, event.id);
           return errorResponse('DB_UPDATE_FAILED', 'Échec mise à jour paiement.', 500);
         } else {
@@ -238,6 +262,18 @@ export async function POST(req: NextRequest) {
 
         if (updErr) {
           console.error('[webhook/stripe] charge.refunded update failed — rollback claim:', updErr);
+          captureServerMessage(
+            'Stripe webhook DB update failed (refund) — claim rolled back',
+            { domain: 'payment', operation: 'stripe_db_update_refund' },
+            'error',
+            {
+              inscription_id: refundedInsc.id as string,
+              event_id: event.id,
+              payment_intent_id: paymentIntentId,
+              error_code: updErr.code ?? null,
+              error_message: updErr.message ?? null,
+            },
+          );
           await rollbackClaim(supabase, event.id);
           return errorResponse('DB_UPDATE_FAILED', 'Échec mise à jour refund.', 500);
         }
@@ -265,6 +301,16 @@ export async function POST(req: NextRequest) {
                 .eq('seats_left', sess.seats_left); // guard optimiste race
               if (seatErr) {
                 console.error('[webhook/stripe] refund seat rollback failed:', seatErr.message);
+                captureServerMessage(
+                  'Stripe refund seat rollback failed',
+                  { domain: 'payment', operation: 'stripe_seat_rollback_refund' },
+                  'warning',
+                  {
+                    inscription_id: refundedInsc.id as string,
+                    session_id: refundedInsc.session_id as string,
+                    error_message: seatErr.message,
+                  },
+                );
               } else {
                 console.log('[webhook/stripe] refund seat rolled back for session', refundedInsc.session_id);
               }
@@ -300,6 +346,17 @@ export async function POST(req: NextRequest) {
 
         if (error) {
           console.error('Error updating failed payment status — rollback claim:', error);
+          captureServerMessage(
+            'Stripe webhook DB update failed (payment_failed) — claim rolled back',
+            { domain: 'payment', operation: 'stripe_db_update_failed' },
+            'error',
+            {
+              inscription_id: inscriptionId,
+              event_id: event.id,
+              error_code: error.code ?? null,
+              error_message: error.message ?? null,
+            },
+          );
           await rollbackClaim(supabase, event.id);
           return errorResponse('DB_UPDATE_FAILED', 'Échec mise à jour statut paiement.', 500);
         } else {
@@ -319,6 +376,16 @@ export async function POST(req: NextRequest) {
                 .eq('seats_left', sess.seats_left); // guard optimiste contre race
               if (seatErr) {
                 console.error('[webhook/stripe] seat rollback failed:', seatErr.message);
+                captureServerMessage(
+                  'Stripe seat rollback failed (payment_failed)',
+                  { domain: 'payment', operation: 'stripe_seat_rollback_failed' },
+                  'warning',
+                  {
+                    inscription_id: inscriptionId,
+                    session_id: failedInsc.session_id as string,
+                    error_message: seatErr.message,
+                  },
+                );
               } else {
                 console.log('[webhook/stripe] seat rolled back for session', failedInsc.session_id);
               }
@@ -338,6 +405,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   } catch (error: unknown) {
     console.error('Webhook error:', error);
+    captureServerException(error, {
+      domain: 'payment',
+      operation: 'stripe_webhook_root',
+    });
     return errorResponse('INTERNAL_ERROR', 'Erreur lors du traitement du webhook.', 500);
   }
 }

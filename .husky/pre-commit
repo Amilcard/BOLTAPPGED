@@ -1,7 +1,7 @@
 echo "[GED pre-commit] Vérifications en cours..."
 
 # 1. TypeScript
-echo "[1/3] TypeScript..."
+echo "[1/4] TypeScript..."
 npx tsc --noEmit --pretty 2>&1
 if [ $? -ne 0 ]; then
   echo "[FAIL] Erreurs TypeScript. Corriger avant de committer."
@@ -11,7 +11,7 @@ fi
 
 # 2. ESLint sur fichiers staged uniquement
 # --no-ignore : contourne bug ESLint 8.x + brackets Next.js dynamic routes
-echo "[2/3] ESLint..."
+echo "[2/4] ESLint..."
 STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$' || true)
 if [ -n "$STAGED" ]; then
   echo "$STAGED" | xargs npx eslint --no-ignore --max-warnings 0 2>&1
@@ -22,10 +22,20 @@ if [ -n "$STAGED" ]; then
 fi
 
 # 3. Tests unitaires rapides
-echo "[3/3] Tests unitaires..."
+echo "[3/4] Tests unitaires..."
 npx jest 'tests/unit' --passWithNoTests --silent 2>&1
 if [ $? -ne 0 ]; then
   echo "[FAIL] Tests unitaires en échec."
+  exit 1
+fi
+
+# 4. Règles architecturales (dependency-cruiser)
+#    Vérifie : 0 cycle, isolation lib/components/app, server-only isolation,
+#    devDeps jamais importées en prod, pas d'import depuis archives/tests.
+echo "[4/4] Architecture (dependency-cruiser)..."
+npm run deps:check 2>&1
+if [ $? -ne 0 ]; then
+  echo "[FAIL] Violation des règles architecturales. Cf. .dependency-cruiser.js"
   exit 1
 fi
 

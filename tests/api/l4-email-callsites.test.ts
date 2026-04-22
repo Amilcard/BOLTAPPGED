@@ -61,6 +61,11 @@ jest.mock('@/lib/audit-log', () => ({
   getClientIp: jest.fn().mockReturnValue('127.0.0.1'),
 }));
 
+jest.mock('@/lib/sentry-capture', () => ({
+  captureServerException: jest.fn(),
+  captureServerMessage: jest.fn(),
+}));
+
 import { NextRequest } from 'next/server';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

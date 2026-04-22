@@ -4,6 +4,9 @@ import { requireEditor } from '@/lib/auth-middleware';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendInscriptionConfirmation, sendChefDeServiceInvitation } from '@/lib/email';
 import { logEmailFailure } from '@/lib/email-logger';
+import { auditLog } from '@/lib/audit-log';
+import { assertInserted } from '@/lib/supabase-guards';
+import { captureServerException } from '@/lib/sentry-capture';
 import { z } from 'zod';
 import { randomBytes } from 'crypto';
 
@@ -228,7 +231,7 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-    if (insertError || !row) {
+    if (insertError) {
       console.error('[admin/inscriptions/manual] Insert error:', insertError);
       return NextResponse.json(
         { error: { code: 'INSERT_ERROR', message: 'Impossible de créer l\'inscription.' } },
@@ -236,7 +239,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const inscription = row as Record<string, unknown>;
+    const inscription = assertInserted(row, 'admin_manual_create_inscription') as Record<string, unknown>;
+
+    await auditLog(supabase, {
+      action: 'create',
+      resourceType: 'inscription',
+      resourceId: String(inscription.id),
+      actorType: 'admin',
+      actorId: auth.email,
+      metadata: { source: 'manual', dossier_ref: dossierRef, sejour_slug: data.staySlug },
+    });
     const appBaseUrl  = process.env.NEXTAUTH_URL || 'https://app.groupeetdecouverte.fr';
     const structureUrl = structureCode ? `${appBaseUrl}/structure/${structureCode}` : null;
     const suiviUrl = inscription.suivi_token
@@ -285,7 +297,7 @@ export async function POST(request: NextRequest) {
           cityDeparture:    data.cityDeparture === 'sans_transport' ? 'Sans transport' : data.cityDeparture,
           priceTotal:       data.priceTotal,
           paymentMethod:    data.paymentMethod,
-          paymentReference: String(inscription.id),
+          paymentReference: dossierRef,
           dossierRef,
           organisation:     data.structureName,
           suiviUrl,
@@ -322,6 +334,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (err) {
+    captureServerException(err, { domain: 'rgpd', operation: 'admin_manual_create_inscription' });
     console.error('[admin/inscriptions/manual] Error:', err);
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur.' } },

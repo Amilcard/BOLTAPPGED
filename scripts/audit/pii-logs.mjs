@@ -111,11 +111,35 @@ function extractConsoleCalls(src) {
   return calls;
 }
 
+/**
+ * Strip toutes les string literals (single/double quotes) du call — elles contiennent
+ * le "message" du log, pas les valeurs loggées. Pour les template literals, on garde
+ * uniquement le contenu des interpolations ${...} (qui sont du code évalué = risque PII).
+ *
+ * Ex : console.log(`[email] user ${email}`)
+ *   → strings literal stripped, template literal → `email` (interpolation seule)
+ *   → detecte `email` en interpolation, pas le tag `[email]` du message.
+ */
+function extractCodeFromCall(call) {
+  let code = call
+    .replace(/"(?:[^"\\]|\\.)*"/g, '""')
+    .replace(/'(?:[^'\\]|\\.)*'/g, "''");
+  code = code.replace(/`((?:[^`\\]|\\.)*)`/g, (_, inner) => {
+    const exprs = [];
+    const iRe = /\$\{([^}]*)\}/g;
+    let im;
+    while ((im = iRe.exec(inner)) !== null) exprs.push(im[1]);
+    return exprs.length > 0 ? ` ${exprs.join(' ')} ` : ' ';
+  });
+  return code;
+}
+
 function hasPII(call) {
+  const code = extractCodeFromCall(call);
   const hits = [];
   for (const field of PII_FIELDS) {
     const re = new RegExp(`\\b${field}\\b`, 'i');
-    if (re.test(call)) hits.push(field);
+    if (re.test(code)) hits.push(field);
   }
   return hits;
 }

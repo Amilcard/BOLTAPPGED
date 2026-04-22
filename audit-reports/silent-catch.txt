@@ -1,11 +1,7 @@
-[silent-catch audit] 2026-04-22T10:05:37.507Z  commit=773b3e8
-scope: app/api/ + lib/ — 140 fichier(s), 34 catch block(s) suspect(s)
+[silent-catch audit] 2026-04-22T10:09:01.537Z  commit=6af9e4b
+scope: app/api/ + lib/ — 140 fichier(s), 30 catch block(s) suspect(s)
 
-EMPTY (catch vide ou commentaires seulement) — 4  ⚠️ BLOQUANT :
-  app/api/dossier-enfant/[inscriptionId]/pdf/route.ts:489  { // Non-bloquant : signature optionnelle dans le PDF }
-  app/api/inscriptions/route.ts:81  { /* pro session invalide — on continue sans pré-remplissage */ }
-  app/api/pro/request-access/route.ts:139  { // fail-silently (compat legacy — pas de régression HTTP) }
-  app/api/structure/[code]/inscriptions/[id]/pdf/route.ts:116  { /* body non-JSON, garder NOT_FOUND */ }
+EMPTY (catch vide ou commentaires seulement) — 0  ⚠️ BLOQUANT :
 
 CONSOLE_ONLY (catch avec console.* mais pas de return/throw/sentry) — 21  ⚠️ :
   app/api/admin/dossier-enfant/[inscriptionId]/route.ts:119  { // Calcul non-bloquant — on n'empêche pas la lecture du dossier       console.er }
@@ -42,6 +38,6 @@ NO_ACTION (catch sans return/throw/sentry, pas non plus console) — 9  ⚠️ :
   lib/utils.ts:206  { return null; }
 
 ──────────────────────────────────────────────────────────────────────
-TOTAL catch suspects: 34 (empty=4, console-only=21, no-action=9)
-VIOLATIONS: 34
+TOTAL catch suspects: 30 (empty=0, console-only=21, no-action=9)
+VIOLATIONS: 30
 EXIT: 1

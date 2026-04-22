@@ -88,12 +88,27 @@ function analyzeFile(absFile) {
 
   for (const b of blocks) {
     const trimmed = b.body.trim();
-    const isEmpty = trimmed === '' || /^\/\/.*$/.test(trimmed) || /^\/\*[\s\S]*\*\/$/.test(trimmed);
+    // Extrait tous les commentaires (//... et /*...*/, multi-lignes)
+    const comments = [];
+    for (const m of b.body.matchAll(/\/\*[\s\S]*?\*\//g)) comments.push(m[0].slice(2, -2).trim());
+    for (const m of b.body.matchAll(/\/\/[^\n]*/g)) comments.push(m[0].slice(2).trim());
+    const commentTextLen = comments.join(' ').replace(/\s+/g, ' ').trim().length;
+
+    // Le body est "comment-only" si, après suppression de tous les commentaires, rien ne reste.
+    const withoutComments = b.body
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/[^\n]*/g, '')
+      .trim();
+    const isCommentOnly = withoutComments === '';
+    const isTrulyEmpty = trimmed === '';
+
     const hasAction = ACTION_PATTERNS.some((p) => p.test(b.body));
-    const hasOnlyConsole = /console\.(log|warn|error|info)/.test(b.body) && !hasAction;
+    const hasOnlyConsole = /console\.(log|warn|error|info)/.test(withoutComments) && !hasAction;
 
     let classification = 'OK';
-    if (isEmpty) classification = 'EMPTY';
+    if (isTrulyEmpty) classification = 'EMPTY';
+    else if (isCommentOnly && commentTextLen < 10) classification = 'EMPTY'; // commentaire trop court = pas une vraie justification
+    else if (isCommentOnly && commentTextLen >= 10) classification = 'OK'; // catch intentionnel documenté — acceptable
     else if (!hasAction && hasOnlyConsole) classification = 'CONSOLE_ONLY';
     else if (!hasAction) classification = 'NO_ACTION';
 

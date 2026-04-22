@@ -21,6 +21,7 @@ Format : 1 ligne par item, trié par âge (plus ancien = top priorité).
 
 - [2026-04-22] RLS sans policy sur `gd_audit_log` + `gd_session_deletion_log` (ouvert 2026-04-21) — **clôturé** via ADR `docs/adr/2026-04-22-audit-log-rls-no-policy.md` : pattern service_role only + zéro policy = deny-all anon/authenticated + bypass service_role, conforme CLAUDE.md §11. Advisor Supabase INFO = faux positif structurel.
 - [2026-04-22] `next build` warning "multiple lockfiles" (ouvert 2026-04-21) — **clôturé** via ADR `docs/adr/2026-04-22-lockfile-warning-cosmetic.md` : cosmétique, zéro runtime impact, fix cross-zone `next.config.mjs` différé à session config Next.js dédiée.
+- [2026-04-22] Suspicion régression coverage 24.71→14.29 % Stmts — **clôturé** : transcription erronée dans message commit `fa53960` ("baseline coverage 24.71%"). Vérifié 2 fois : `git show fa53960:coverage/coverage-summary.json` = Stmts **14.29 %** + run empirique `jest --coverage` dans worktree propre à `fa53960` (71/73 suites pass, 639 tests) = Stmts **14.29 %** identique. Coverage stable, aucune régression réelle. Seuil CI `coverage-gate.yml` abaissé de 14 → **13 %** (marge 1,3 pt sous baseline actuelle, gap G6 audit topo). Rapport §15.1 Q1 à réconcilier : "cause non diagnostiquée" = mesure initiale 24.71 non reproductible sous config jest actuelle.
 
 ---
 

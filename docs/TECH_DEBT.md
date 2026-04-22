@@ -10,6 +10,7 @@ Format : 1 ligne par item, trié par âge (plus ancien = top priorité).
 
 ## Actifs
 
+- [2026-04-22] `lib/email-suppress.ts` — suppression email temporaire Cordée + Clairière (tag: rustine, operational). Bloque tout envoi vers `o.geoffroy.lce@gmail.com`, `@fondationdiaconesses.org`, `@mecs-laclairiere.fr` pendant résolution des bugs prod. Revert : vider `EMAIL_SUPPRESSION_RULES` + commit → redeploy. **Action** : supprimer dès que les bugs signalés sont clos et que l'utilisateur confirme la reprise.
 - [2026-04-21] `tests/e2e/*` — 85/130 tests E2E en échec depuis run 2026-04-19 (tag: tests). Fichiers 0-passant : `reservation-{kids,pro,virement}`, `dossier-enfant`, `verify-db`, `parcours-staff-fill`, `parcours-inscription-complet`. Décision dans `docs/adr/2026-04-21-e2e-smoke-only.md`. Action : restaurer par lot avant sprint F1 complet.
 - [2026-04-21] Supabase Auth — "Leaked password protection" désactivée (tag: secu). Feature **Pro plan uniquement** ($25/mois), pas activable en Free. Thanh R1 (P14.3) partiellement mitigé par policy actuelle (12+ chars + maj/min/chiffre/spécial). Options : (A) upgrade Pro, (B) implémenter check HIBP custom server-side (k-anonymity API, gratuit, 2-4h dev), (C) accepter WARN. Décision : **C pour l'instant**, B en sprint si besoin fermeture.
 - [2026-04-21] RLS sans policy sur `gd_audit_log` + `gd_session_deletion_log` (tag: secu, level INFO). Risque : lecture anon/authenticated si l'API les expose. Action : ajouter `CREATE POLICY "service_role only"` ou désactiver RLS si tables purement internes.

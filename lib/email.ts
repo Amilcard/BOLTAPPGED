@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { isSafeImageUrl } from '@/lib/validators';
+import { anyRecipientSuppressed } from '@/lib/email-suppress';
 
 // Lazy singleton — prevents top-level crash when EMAIL_SERVICE_API_KEY is absent at build time.
 let _resend: Resend | null = null;
@@ -15,7 +16,7 @@ function getResend() {
 // ============================================================
 export type EmailResult =
   | { sent: true; messageId: string }
-  | { sent: false; reason: 'missing_api_key' | 'provider_error' | 'invalid_input' | 'rate_limited' };
+  | { sent: false; reason: 'missing_api_key' | 'provider_error' | 'invalid_input' | 'rate_limited' | 'suppressed' };
 
 // Payload générique — aligné sur la forme réelle du SDK Resend v6
 // (from, to, subject, html/text, etc.). Typé ouvert pour accepter
@@ -39,6 +40,12 @@ export type ResendSendPayload = {
  *   return await tryResendSend({ from, to, subject, html });
  */
 export async function tryResendSend(payload: ResendSendPayload): Promise<EmailResult> {
+  // Suppression temporaire — structures en pause (voir lib/email-suppress.ts)
+  // RGPD : pas de PII dans les logs — subject peut contenir prénom enfant, on ne logue pas.
+  if (anyRecipientSuppressed(payload)) {
+    console.warn('[email] SUPPRESSED — structure en pause (bugs prod).');
+    return { sent: false, reason: 'suppressed' };
+  }
   const apiKey = process.env.EMAIL_SERVICE_API_KEY;
   if (!apiKey || apiKey === 'YOUR_EMAIL_API_KEY_HERE') {
     console.error('[email] EMAIL_SERVICE_API_KEY missing — silent no-op avoided');

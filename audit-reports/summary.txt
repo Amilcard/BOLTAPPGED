@@ -1,4 +1,4 @@
-[audit summary] 2026-04-22T10:09:00.607Z  commit=6af9e4b
+[audit summary] 2026-04-22T10:27:07.565Z  commit=ed9f62b
 
 Script                          | Exit | Violations
 ────────────────────────────────┼──────┼────────────
@@ -6,10 +6,10 @@ auditlog-coverage.mjs           |    1 | 29
 cron-secret.mjs                 |    0 | 0
 idempotency.mjs                 |    1 | 18
 pii-logs.mjs                    |    0 | 0
-role-guards.mjs                 |    1 | 2
+role-guards.mjs                 |    0 | 0
 route-auth.mjs                  |    1 | 1
 silent-catch.mjs                |    1 | 30
 size-caps.mjs                   |    1 | 1
 
-TOTAL: 8 scripts, 6 en violation
+TOTAL: 8 scripts, 5 en violation
 EXIT: 1

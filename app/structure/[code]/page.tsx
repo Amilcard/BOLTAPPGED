@@ -225,12 +225,52 @@ export default function StructureDashboard() {
 
   // ── Gate consentement RGPD ──
   if (!rgpdAccepted) {
+    // Seule la direction peut accepter l'engagement RGPD (gouvernance).
+    if (role !== 'direction') {
+      return (
+        <div className="min-h-screen bg-muted flex items-center justify-center p-4">
+          <div className="bg-white rounded-brand shadow-brand-lg max-w-lg w-full p-8 text-center">
+            <div className="flex items-center justify-center gap-2 text-primary mb-4">
+              <Building2 size={24} />
+              <h2 className="text-xl font-bold">En attente d&apos;acceptation RGPD</h2>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              La direction de <strong>{structure.name}</strong> n&apos;a pas encore accepté l&apos;engagement de confidentialité.
+            </p>
+            <p className="text-xs text-gray-500 mb-6">
+              L&apos;accès aux données est bloqué tant que la direction n&apos;a pas validé cet engagement. Contactez la direction de votre structure.
+            </p>
+            <button
+              onClick={async () => {
+                try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch {
+                  // logout effectif même en cas d'erreur réseau
+                }
+                router.push('/structure/login');
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm text-primary hover:text-primary/80 transition"
+            >
+              <LogOut size={16} />
+              Se déconnecter
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     const handleAcceptRgpd = async () => {
       setRgpdLoading(true);
       try {
         const res = await fetch(`/api/structure/${code}`, { method: 'POST' });
-        if (res.ok) setRgpdAccepted(true);
-      } catch { /* silencieux */ }
+        if (res.ok) {
+          setRgpdAccepted(true);
+        } else if (res.status === 403) {
+          setError('Accès refusé : l\'acceptation RGPD est réservée à la direction.');
+        } else {
+          setError('Erreur serveur. Réessayez.');
+        }
+      } catch {
+        setError('Erreur réseau. Réessayez.');
+      }
       setRgpdLoading(false);
     };
 
@@ -254,6 +294,11 @@ export default function StructureDashboard() {
             Conformément au RGPD et à la loi Informatique et Libertés, les données sont hébergées en France et supprimées selon la politique de conservation de GED.{' '}
             <Link href="/confidentialite" target="_blank" className="underline">Politique de confidentialité</Link> — DPO : dpo@groupeetdecouverte.fr
           </p>
+          {error && (
+            <div role="alert" className="mb-4 p-3 bg-red-50 border border-red-200 rounded-brand text-sm text-red-700">
+              {error}
+            </div>
+          )}
           <button
             onClick={handleAcceptRgpd}
             disabled={rgpdLoading}

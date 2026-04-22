@@ -1,4 +1,4 @@
-[pii-logs audit] 2026-04-22T10:09:01.181Z  commit=6af9e4b
+[pii-logs audit] 2026-04-22T10:27:08.089Z  commit=ed9f62b
 scope: app/ + lib/ — 207 fichier(s), 0 console.* suspect(s)
 
 LEAKS DÉTECTÉS — 0 log(s) avec champ PII dans expression  ⚠️ RGPD :

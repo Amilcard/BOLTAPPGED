@@ -1,4 +1,4 @@
-[idempotency audit] 2026-04-22T10:05:36.897Z  commit=773b3e8
+[idempotency audit] 2026-04-22T10:27:07.961Z  commit=ed9f62b
 scope: POST handlers dans zones critiques (6) — 32 fichier(s), 19 POST(s)
 
 PROTECTED (idempotence détectée) — 1 :
@@ -20,7 +20,7 @@ UNPROTECTED (aucune idempotence détectée) — 18  ⚠️ DOUBLE-SUBMIT :
   app/api/structure/[code]/invite/route.ts:16  POST
   app/api/structure/[code]/medical/route.ts:90  POST
   app/api/structure/[code]/notes/route.ts:79  POST
-  app/api/structure/[code]/route.ts:158  POST
+  app/api/structure/[code]/route.ts:159  POST
   app/api/structure/[code]/team/[memberId]/reinvite/route.ts:12  POST
   app/api/structure/[code]/team/[memberId]/revoke/route.ts:9  POST
 

@@ -1,4 +1,4 @@
-[silent-catch audit] 2026-04-22T10:09:01.537Z  commit=6af9e4b
+[silent-catch audit] 2026-04-22T10:27:08.474Z  commit=ed9f62b
 scope: app/api/ + lib/ — 140 fichier(s), 30 catch block(s) suspect(s)
 
 EMPTY (catch vide ou commentaires seulement) — 0  ⚠️ BLOQUANT :

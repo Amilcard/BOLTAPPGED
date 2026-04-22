@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { enrichInscriptions, type InscriptionRaw } from '@/lib/inscription-enrichment';
 import { auditLog } from '@/lib/audit-log';
 import { resolveCodeToStructure } from '@/lib/structure';
+import { requireStructureRole } from '@/lib/structure-guard';
 import { structureRateLimitGuard, getStructureClientIp } from '@/lib/rate-limit-structure';
 
 // resolveCodeToStructure et StructureRole déplacés vers @/lib/structure
@@ -169,14 +170,16 @@ export async function POST(
   const rateLimitedPost = await structureRateLimitGuard(_req);
   if (rateLimitedPost) return rateLimitedPost;
 
+  // RGPD accept = décision de gouvernance = direction seulement
+  const guard = await requireStructureRole(_req, code, {
+    allowRoles: ['direction'],
+    forbiddenMessage: 'L\'acceptation RGPD est réservée à la direction.',
+  });
+  if (!guard.ok) return guard.response;
+  const resolved = guard.resolved;
+
   const supabase = getSupabaseAdmin();
   const codeNorm = code.toUpperCase();
-
-  // Résolution via resolveCodeToStructure (gd_structure_access_codes en priorité, fallback legacy)
-  const resolved = await resolveCodeToStructure(codeNorm);
-  if (!resolved) {
-    return NextResponse.json({ error: { code: 'NOT_FOUND' } }, { status: 404 });
-  }
 
   // Récupérer rgpd_accepted_at depuis gd_structures — vérifier status = active
   const { data: structure } = await supabase

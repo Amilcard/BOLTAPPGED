@@ -1,4 +1,4 @@
-[route-auth audit] 2026-04-22T10:05:37.351Z  commit=773b3e8
+[route-auth audit] 2026-04-22T10:27:08.350Z  commit=ed9f62b
 scope: app/api/**/route.ts — 96 fichier(s), 124 handler(s)
 
 GUARDED (auth check détecté) — 104 handler(s) :
@@ -97,8 +97,8 @@ GUARDED (auth check détecté) — 104 handler(s) :
   app/api/structure/[code]/notes/route.ts:79  POST  [requireStructureRole,requireInscriptionOwnership]
   app/api/structure/[code]/propositions/pdf/route.ts:15  GET  [requireStructureRole]
   app/api/structure/[code]/propositions/route.ts:25  GET  [requireStructureRole]
-  app/api/structure/[code]/route.ts:18  GET  [resolveCodeToStructure]
-  app/api/structure/[code]/route.ts:158  POST  [resolveCodeToStructure]
+  app/api/structure/[code]/route.ts:19  GET  [resolveCodeToStructure]
+  app/api/structure/[code]/route.ts:159  POST  [requireStructureRole]
   app/api/structure/[code]/settings/route.ts:13  PATCH  [requireStructureRole]
   app/api/structure/[code]/team/[memberId]/reinvite/route.ts:12  POST  [requireStructureRole]
   app/api/structure/[code]/team/[memberId]/revoke/route.ts:9  POST  [requireStructureRole]

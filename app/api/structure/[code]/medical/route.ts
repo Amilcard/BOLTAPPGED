@@ -97,7 +97,7 @@ export async function POST(
 
   const { code } = await params;
   const guard = await requireStructureRole(req, code, {
-    excludeRoles: ['secretariat'],
+    allowRoles: ['direction', 'cds', 'cds_delegated', 'educateur'],
     forbiddenMessage: 'Accès réservé à la direction, au CDS et aux éducateurs.',
   });
   if (!guard.ok) return guard.response;

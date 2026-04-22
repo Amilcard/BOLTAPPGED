@@ -18,7 +18,20 @@ import { captureServerException, captureServerMessage } from '@/lib/sentry-captu
 
 interface AuditLogEntry {
   action: 'read' | 'create' | 'update' | 'delete' | 'upload' | 'download' | 'submit';
-  resourceType: 'dossier_enfant' | 'inscription' | 'document' | 'structure' | 'facture' | 'team_member' | 'proposition' | 'paiement' | 'delegation' | 'session' | 'smart_form_submission';
+  resourceType:
+    | 'dossier_enfant'
+    | 'inscription'
+    | 'document'
+    | 'structure'
+    | 'facture'
+    | 'team_member'
+    | 'proposition'
+    | 'paiement'
+    | 'delegation'
+    | 'session'
+    | 'smart_form_submission'
+    | 'admin_user'
+    | 'structure_access_code';
   resourceId: string;
   inscriptionId?: string;
   actorType: 'referent' | 'admin' | 'system' | 'staff';

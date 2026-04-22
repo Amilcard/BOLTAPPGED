@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     if (!auth) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     const body = await req.json().catch(() => ({}));
     const id = typeof (body as { id?: unknown }).id === 'string' ? (body as { id: string }).id : '';
-    const result = await runDeleteUser(id, auth.userId);
+    const result = await runDeleteUser(id, auth.userId, auth.email);
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status ?? 500 });
     return NextResponse.json({ success: true });
   } catch (err) {

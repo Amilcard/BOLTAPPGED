@@ -12,7 +12,8 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!await requireAdmin(request)) {
+  const auth = await requireAdmin(request);
+  if (!auth) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
   }
 
@@ -20,7 +21,7 @@ export async function PUT(
 
   try {
     const body = await request.json().catch(() => ({}));
-    const result = await runUpdateUser(id, body as never);
+    const result = await runUpdateUser(id, body as never, auth.email);
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: result.status ?? 500 });
     }
@@ -48,7 +49,7 @@ export async function DELETE(
   const { id } = await params;
 
   try {
-    const result = await runDeleteUser(id, auth.userId);
+    const result = await runDeleteUser(id, auth.userId, auth.email);
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: result.status ?? 500 });
     }

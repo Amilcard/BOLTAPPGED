@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     const id = typeof (body as { id?: unknown }).id === 'string' ? (body as { id: string }).id : '';
     const { id: _unused, ...fields } = body as Record<string, unknown>;
     void _unused;
-    const result = await runUpdateUser(id, fields as never);
+    const result = await runUpdateUser(id, fields as never, auth.email);
     if (result.error) return NextResponse.json({ error: result.error }, { status: result.status ?? 500 });
     return NextResponse.json({ data: result.data });
   } catch (err) {

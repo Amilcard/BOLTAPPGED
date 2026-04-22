@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { requireAdmin } from '@/lib/auth-middleware';
+import { runCreateUser } from '@/lib/admin-users-mutate';
 
 // GET /api/admin/users — liste tous les utilisateurs admin
 export async function GET(request: NextRequest) {
@@ -33,37 +34,25 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/admin/users — créer un utilisateur admin
+// Délègue à runCreateUser (lib/admin-users-mutate.ts) pour cohérence
+// avec update/delete (pattern entonnoir unique + auditLog RGPD).
 export async function POST(request: NextRequest) {
-  if (!await requireAdmin(request)) {
+  const auth = await requireAdmin(request);
+  if (!auth) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
   }
 
   try {
-    const { email, password, role } = await request.json();
-
-    if (!email || !password || !role) {
-      return NextResponse.json({ error: 'email, password et role requis' }, { status: 400 });
+    const body = (await request.json().catch(() => ({}))) as {
+      email?: string;
+      password?: string;
+      role?: string;
+    };
+    const result = await runCreateUser(body, auth.email);
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
     }
-    if (!['ADMIN', 'EDITOR', 'VIEWER'].includes(role)) {
-      return NextResponse.json({ error: 'Rôle invalide' }, { status: 400 });
-    }
-
-    const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      app_metadata: { role },
-      email_confirm: true,
-    });
-
-    if (error) throw error;
-
-    return NextResponse.json({
-      id: data.user.id,
-      email: data.user.email,
-      role,
-      createdAt: data.user.created_at,
-    }, { status: 201 });
+    return NextResponse.json(result.data, { status: result.status });
   } catch (err) {
     console.error('[admin/users] POST error:', err);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });

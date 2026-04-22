@@ -120,12 +120,16 @@ describe('POST /api/admin/users', () => {
   });
 
   it('retourne 201 avec id + role si ADMIN crée un utilisateur', async () => {
+    // Le helper runCreateUser lit le role depuis la réponse Supabase
+    // (source de vérité = DB, pas l'input client). Le mock doit donc
+    // inclure app_metadata.role comme le ferait la vraie API.
     mockCreateUser.mockResolvedValue({
       data: {
         user: {
           id: 'new-user-uuid',
           email: 'nouveau@ged.fr',
           created_at: '2026-03-31T00:00:00Z',
+          app_metadata: { role: 'EDITOR' },
         },
       },
       error: null,

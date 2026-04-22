@@ -50,6 +50,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Anti double-paiement : refus explicite avant toute interaction Stripe
+    // (évite PaymentIntent orphelin + double-débit client).
+    if (inscription.payment_status === 'paid') {
+      return NextResponse.json(
+        { error: 'Cette inscription est déjà payée.', code: 'ALREADY_PAID' },
+        { status: 409 }
+      );
+    }
+
     // SÉCURITÉ : utiliser le price_total de la DB (vérifié par /api/inscriptions)
     // Ne JAMAIS faire confiance au montant envoyé par le frontend
     const verifiedAmount = inscription.price_total;

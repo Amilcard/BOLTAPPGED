@@ -1,0 +1,73 @@
+name: Audit Deterministic Battery
+
+# Lance scripts/audit/all.mjs sur chaque PR et push main.
+# Orchestre les 14 scripts déterministes : role-guards, route-auth, cron-secret,
+# idempotency, pii-logs, silent-catch, size-caps, auditlog-coverage (battery
+# initiale) + post-action-assertions, zod-sql-consistency, sentry-coverage,
+# state-reconciliation, email-outbound-drift, schema-drift (T1-T4 ajoutés
+# 2026-04-22).
+#
+# Mode : non-bloquant (`continue-on-error: true`) tant que les violations
+# connues (T1 28 mutations non guardées, T3 30 routes PII uncovered, etc.)
+# ne sont pas résorbées par les sprints S0-S4. À basculer en bloquant quand
+# summary.txt affiche EXIT: 0 (cible S4).
+#
+# Output : audit-reports/summary.txt + reports individuels uploadés comme
+# artifact GitHub Actions pour review dans chaque PR.
+#
+# Voir : docs/audits/2026-04-22-topo-review.md §15.4 G1
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: audit-deterministic-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit-battery:
+    name: Deterministic audit battery (non-blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Run audit battery
+        id: audit
+        run: |
+          set +e
+          node scripts/audit/all.mjs
+          echo "exit_code=$?" >> $GITHUB_OUTPUT
+          # Exposer le résumé dans le job summary GitHub
+          if [ -f audit-reports/summary.txt ]; then
+            echo "## Audit battery summary" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat audit-reports/summary.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload audit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-reports-${{ github.run_id }}
+          path: audit-reports/*.txt
+          retention-days: 30
+
+      - name: Signal violations (info only)
+        if: steps.audit.outputs.exit_code != '0'
+        run: |
+          echo "::notice::Audit battery detected violations (exit ${{ steps.audit.outputs.exit_code }}). See audit-reports artifact. Non-blocking for now — cible S4 EXIT 0."

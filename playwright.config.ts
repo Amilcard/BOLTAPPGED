@@ -17,11 +17,14 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  reporter: process.env.CI
+    ? [['html'], ['list'], ['json', { outputFile: 'test-results/results.json' }]]
+    : 'html',
 
   use: {
     baseURL,
-    trace: 'on-first-retry',
+    // retain-on-failure > on-first-retry : trace chaque run qui fail, pas juste le 1er retry
+    trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
 

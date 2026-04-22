@@ -56,21 +56,21 @@ test.describe('Inscription — Ouverture formulaire', () => {
 
   test('IC1 — Page reserver accessible après sélection session+ville', async ({ page }) => {
     const opened = await ouvrirPageReserver(page);
-    if (!opened) { test.skip(); return; }
+    expect(opened, 'Pré-requis parcours réservation cassé — homepage/stay-detail/session/ville').toBe(true);
     expect(page.url()).toContain('/reserver');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('IC2 — Formulaire démarre à l\'étape structure (step 3/5)', async ({ page }) => {
     const opened = await ouvrirPageReserver(page);
-    if (!opened) { test.skip(); return; }
+    expect(opened, 'Pré-requis parcours réservation cassé — homepage/stay-detail/session/ville').toBe(true);
     // BookingFlow démarre à step 2 (structure) si session+ville fournis
     await expect(page.locator('text=/Étape 3\\/5/').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('IC3 — Champs obligatoires structure visibles', async ({ page }) => {
     const opened = await ouvrirPageReserver(page);
-    if (!opened) { test.skip(); return; }
+    expect(opened, 'Pré-requis parcours réservation cassé — homepage/stay-detail/session/ville').toBe(true);
     await expect(page.locator('text=/Étape 3\\/5/i')).toBeVisible({ timeout: 10000 });
     await expect(page.getByPlaceholder('Ex: Croix-Rouge du Havre')).toBeVisible();
     await expect(page.getByPlaceholder('76600')).toBeVisible();
@@ -86,7 +86,7 @@ test.describe('Inscription — Étape Structure', () => {
 
   test('IC4 — Code structure invalide affiche erreur', async ({ page }) => {
     const opened = await ouvrirPageReserver(page);
-    if (!opened) { test.skip(); return; }
+    expect(opened, 'Pré-requis parcours réservation cassé — homepage/stay-detail/session/ville').toBe(true);
     await expect(page.locator('text=/Étape 3\\/5/i')).toBeVisible({ timeout: 10000 });
 
     const codeInput = page.getByPlaceholder('Ex: CRF76H');
@@ -99,7 +99,7 @@ test.describe('Inscription — Étape Structure', () => {
 
   test('IC5 — Sans code : remplir structure passe à l\'étape enfant', async ({ page }) => {
     const opened = await ouvrirPageReserver(page);
-    if (!opened) { test.skip(); return; }
+    expect(opened, 'Pré-requis parcours réservation cassé — homepage/stay-detail/session/ville').toBe(true);
     await expect(page.locator('text=/Étape 3\\/5/i')).toBeVisible({ timeout: 10000 });
 
     await page.getByPlaceholder('Ex: Croix-Rouge du Havre').fill('MECS Test Playwright');
@@ -126,7 +126,7 @@ test.describe('Inscription — Étape Structure', () => {
 
   test('IC6 — Recherche CP affiche structures existantes sur même code postal', async ({ page }) => {
     const opened = await ouvrirPageReserver(page);
-    if (!opened) { test.skip(); return; }
+    expect(opened, 'Pré-requis parcours réservation cassé — homepage/stay-detail/session/ville').toBe(true);
     await expect(page.locator('text=/Étape 3\\/5/i')).toBeVisible({ timeout: 10000 });
 
     // Saisir un CP → déclenche la recherche structures existantes
@@ -169,7 +169,7 @@ test.describe('Inscription — Étape Enfant', () => {
 
   test('IC7 — Formulaire enfant : champs présents', async ({ page }) => {
     const ok = await allerEtapeEnfant(page);
-    if (!ok) { test.skip(); return; }
+    expect(ok, 'Pré-requis parcours réservation cassé — étape structure/enfant/récapitulatif').toBe(true);
     await expect(page.getByPlaceholder('Ex: Léa')).toBeVisible();
     await expect(page.locator('input[type="date"]')).toBeVisible();
     await expect(page.locator('select').first()).toBeVisible();
@@ -178,7 +178,7 @@ test.describe('Inscription — Étape Enfant', () => {
 
   test('IC8 — Âge trop jeune bloque la continuation et affiche erreur', async ({ page }) => {
     const ok = await allerEtapeEnfant(page);
-    if (!ok) { test.skip(); return; }
+    expect(ok, 'Pré-requis parcours réservation cassé — étape structure/enfant/récapitulatif').toBe(true);
 
     await page.getByPlaceholder('Ex: Léa').fill('Bébé');
     await page.locator('input[type="date"]').fill('2024-06-01');
@@ -190,7 +190,7 @@ test.describe('Inscription — Étape Enfant', () => {
 
   test('IC9 — Consentement non coché bloque la continuation', async ({ page }) => {
     const ok = await allerEtapeEnfant(page);
-    if (!ok) { test.skip(); return; }
+    expect(ok, 'Pré-requis parcours réservation cassé — étape structure/enfant/récapitulatif').toBe(true);
 
     await page.getByPlaceholder('Ex: Léa').fill('Emma');
     await page.locator('input[type="date"]').fill('2015-05-10');
@@ -236,7 +236,7 @@ test.describe('Inscription — Récapitulatif et Paiement', () => {
 
   test('IC10 — Récapitulatif affiche les infos enfant et structure', async ({ page }) => {
     const ok = await allerRecapitulatif(page);
-    if (!ok) { test.skip(); return; }
+    expect(ok, 'Pré-requis parcours réservation cassé — étape structure/enfant/récapitulatif').toBe(true);
     await expect(page.locator('text=Thomas')).toBeVisible();
     await expect(page.locator('text=/séjour|session|structure/i').first()).toBeVisible();
     // Prix affiché ou mention "indisponible"
@@ -246,7 +246,7 @@ test.describe('Inscription — Récapitulatif et Paiement', () => {
 
   test('IC11 — 3 modes de paiement proposés', async ({ page }) => {
     const ok = await allerRecapitulatif(page);
-    if (!ok) { test.skip(); return; }
+    expect(ok, 'Pré-requis parcours réservation cassé — étape structure/enfant/récapitulatif').toBe(true);
     await expect(page.locator('text=/Virement bancaire/i')).toBeVisible();
     await expect(page.locator('text=/Chèque/i')).toBeVisible();
     await expect(page.locator('text=/Carte bancaire/i')).toBeVisible();
@@ -255,7 +255,7 @@ test.describe('Inscription — Récapitulatif et Paiement', () => {
   test('IC12 — Parcours complet virement → confirmation', async ({ page }) => {
     test.setTimeout(60000);
     const ok = await allerRecapitulatif(page);
-    if (!ok) { test.skip(); return; }
+    expect(ok, 'Pré-requis parcours réservation cassé — étape structure/enfant/récapitulatif').toBe(true);
 
     // Sélectionner virement
     await page.locator('label:has-text("Virement bancaire")').first().click();

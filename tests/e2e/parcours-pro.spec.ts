@@ -68,15 +68,11 @@ test.describe('Parcours Pro — Navigation', () => {
       await page.waitForTimeout(500);
     }
 
-    // Cliquer Réserver si activé
+    // Cliquer Réserver — si disabled = bug prod (données session absentes), test doit failer, pas skip
     const reserverBtn = page.locator('button:has-text("Réserver"):not([disabled])').first();
-    if (await reserverBtn.isVisible({ timeout: 3000 })) {
-      await reserverBtn.click();
-      await expect(page.locator('form, [role="dialog"], input[name="childFirstName"]')).toBeVisible({ timeout: 8000 });
-    } else {
-      // Passer le test si bouton reste disabled (données de session absentes en dev)
-      test.skip();
-    }
+    await expect(reserverBtn, 'Bouton Réserver doit être visible et actif').toBeVisible({ timeout: 3000 });
+    await reserverBtn.click();
+    await expect(page.locator('form, [role="dialog"], input[name="childFirstName"]')).toBeVisible({ timeout: 8000 });
   });
 
 });

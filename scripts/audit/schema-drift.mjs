@@ -3,15 +3,21 @@
  * audit/schema-drift.mjs
  *
  * Audit T4 bis — détecte les divergences de CHECK IN (...) entre migrations SQL
- * successives sur la MÊME colonne (évolution enum non tracée côté Zod).
+ * successives sur la MÊME couple (table, colonne) (évolution enum non tracée
+ * côté Zod).
  *
- * Ex détecté au 2026-04-22 :
- *   - payment_method : sql/009 = (stripe, transfer, check) vs sql/010 = (lyra, transfer, check)
- *   - role : sql/042 = (direction, cds, secretariat, educateur)
- *            vs supabase/migrations/069 = (direction, cds, cds_delegated, secretariat, educateur)
+ * v2 (2026-04-22) : track table context via CREATE TABLE / ALTER TABLE
+ * pour éliminer les faux positifs (même nom de colonne sur plusieurs tables,
+ * ex: `status`).
+ *
+ * Exemples détectés historiquement :
+ *   - gd_inscriptions.payment_method : sql/009 (stripe, transfer, check)
+ *     vs sql/010 (lyra, transfer, check) — drift historique non reflétée prod.
+ *   - gd_structure_access_codes.role : sql/042 (4 valeurs) vs
+ *     supabase/migrations/069 (5 valeurs, ajout cds_delegated) — évolution.
  *
  * Output : audit-reports/schema-drift.txt
- * Exit   : 0 si aucune drift, 1 sinon (warning).
+ * Exit   : 0 si aucune drift, 1 sinon (warning, peut être volontaire).
  */
 import { readdirSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { execSync } from 'node:child_process';
@@ -21,7 +27,9 @@ const ROOT = process.cwd();
 const OUT_DIR = path.join(ROOT, 'audit-reports');
 const OUT_FILE = path.join(OUT_DIR, 'schema-drift.txt');
 
-const CHECK_IN_RE = /CHECK\s*\(\s*(\w+)\s+IN\s*\(\s*([^)]+?)\s*\)\s*\)/gi;
+const CREATE_TABLE_RE = /CREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?\s+(?:public\.)?(\w+)/i;
+const ALTER_TABLE_RE = /ALTER\s+TABLE(?:\s+IF\s+EXISTS)?\s+ONLY\s+(?:public\.)?(\w+)|ALTER\s+TABLE(?:\s+IF\s+EXISTS)?\s+(?:public\.)?(\w+)/i;
+const CHECK_IN_RE = /CHECK\s*\(\s*(\w+)\s+IN\s*\(\s*([^)]+?)\s*\)\s*\)/i;
 
 function walk(dir, acc = []) {
   let entries;
@@ -45,7 +53,8 @@ function parseValues(raw) {
   return raw
     .split(',')
     .map((s) => s.trim().replace(/^['"]|['"]$/g, ''))
-    .filter(Boolean);
+    .filter(Boolean)
+    .sort();
 }
 
 const files = [
@@ -53,27 +62,48 @@ const files = [
   ...walk(path.join(ROOT, 'supabase/migrations')),
 ].sort();
 
-// Map column → [{ file, values, mtime }]
-const checksByCol = {};
+// Map "table.column" → [{ file, values }]
+const checksByKey = {};
+// Pour colonnes sans table trackable (multi-line CHECK, CREATE absent, etc.)
+const orphanChecks = [];
+
 for (const file of files) {
   const content = readFileSync(file, 'utf8');
-  let m;
-  const re = new RegExp(CHECK_IN_RE.source, CHECK_IN_RE.flags);
-  while ((m = re.exec(content)) !== null) {
-    const col = m[1];
-    const values = parseValues(m[2]).sort();
-    if (!checksByCol[col]) checksByCol[col] = [];
-    checksByCol[col].push({ file: path.relative(ROOT, file), values });
+  const lines = content.split('\n');
+  let currentTable = null;
+  for (const line of lines) {
+    const createM = line.match(CREATE_TABLE_RE);
+    if (createM) {
+      currentTable = createM[1];
+      continue;
+    }
+    const alterM = line.match(ALTER_TABLE_RE);
+    if (alterM) {
+      currentTable = alterM[1] || alterM[2];
+      continue;
+    }
+    const checkM = line.match(CHECK_IN_RE);
+    if (checkM) {
+      const col = checkM[1];
+      const values = parseValues(checkM[2]);
+      if (currentTable) {
+        const key = `${currentTable}.${col}`;
+        if (!checksByKey[key]) checksByKey[key] = [];
+        checksByKey[key].push({ file: path.relative(ROOT, file), values });
+      } else {
+        orphanChecks.push({ file: path.relative(ROOT, file), col, values });
+      }
+    }
   }
 }
 
 const drifts = [];
-for (const col of Object.keys(checksByCol)) {
-  const entries = checksByCol[col];
+for (const key of Object.keys(checksByKey)) {
+  const entries = checksByKey[key];
   if (entries.length < 2) continue;
   const signatures = new Set(entries.map((e) => e.values.join('|')));
   if (signatures.size > 1) {
-    drifts.push({ col, entries });
+    drifts.push({ key, entries });
   }
 }
 
@@ -85,21 +115,23 @@ try {
 }
 
 const out = [];
-out.push(`[schema-drift audit] ${new Date().toISOString()}  commit=${sha}`);
+out.push(`[schema-drift audit v2] ${new Date().toISOString()}  commit=${sha}`);
 out.push(`scope: sql/ + supabase/migrations/ — ${files.length} fichier(s)`);
-out.push(`columns with CHECK IN : ${Object.keys(checksByCol).length}`);
+out.push(`(table, column) pairs with CHECK IN : ${Object.keys(checksByKey).length}`);
+out.push(`orphan checks (table non-trackée) : ${orphanChecks.length}`);
 out.push('');
-out.push(`DRIFT (même colonne, valeurs différentes entre migrations) — ${drifts.length} ⚠️ T4 :`);
+out.push(`DRIFT (même table.col, valeurs différentes entre migrations) — ${drifts.length} ⚠️ T4 :`);
 for (const d of drifts) {
-  out.push(`  ${d.col} :`);
+  out.push(`  ${d.key} :`);
   for (const e of d.entries) {
     out.push(`    ${e.file} = [${e.values.join(', ')}]`);
   }
 }
 out.push('');
 out.push(`NOTE : une drift peut être volontaire (migration qui ajoute une valeur).`);
-out.push(`       Vérifier manuellement que la dernière migration chronologique est la bonne`);
-out.push(`       et que le Zod correspondant (scripts/audit/zod-sql-consistency.mjs) matche.`);
+out.push(`       Cross-check état prod via MCP Supabase list_tables(verbose=true) avant`);
+out.push(`       de considérer qu'une des migrations est autoritative.`);
+out.push(`       Aligner Zod (scripts/audit/zod-sql-consistency.mjs) sur l'état prod.`);
 out.push('');
 out.push('──────────────────────────────────────────────────────────────────────');
 out.push(`VIOLATIONS: ${drifts.length}`);

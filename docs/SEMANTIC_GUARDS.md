@@ -187,17 +187,34 @@ captureServerException(
 
 Contrainte CHECK SQL rejette une donnée que Zod TS accepte → erreur 23514 prod invisible au linting.
 
-### Exemple réel confirmé (2026-04-22)
+### Exemple pédagogique (hypothétique)
 
 ```ts
-// Zod accepte 'stripe' :
-paymentMethod: z.enum(['transfer', 'check', 'stripe']).default('transfer')  // admin/inscriptions/manual:54
+// Si Zod accepte 'stripe_new' :
+paymentMethod: z.enum(['transfer', 'check', 'stripe_new']).default('transfer')
 
-// SQL CHECK rejette 'stripe' :
-CHECK (payment_method IN ('lyra', 'transfer', 'check'))  // 010_remove_stripe_lyra_migration.sql:60
+// Mais SQL CHECK rejette 'stripe_new' :
+CHECK (payment_method IN ('stripe', 'transfer', 'check'))
 ```
 
-→ Prod : POST /api/admin/inscriptions/manual avec `paymentMethod: 'stripe'` → INSERT → 23514 → 500 silencieux côté admin.
+→ Prod : INSERT avec `paymentMethod: 'stripe_new'` → code postgres 23514 → 500 silencieux.
+
+### Cas détecté GED_APP 2026-04-22 — faux positif avec mapping explicite
+
+Lors de l'audit initial, 2 divergences Zod/SQL avaient été flagguées puis **requalifiées faux positifs** après cross-check code :
+
+- `app/api/admin/inscriptions/manual/route.ts:54` accepte `['transfer','check','stripe']` → matche l'état prod réel `('stripe','transfer','check')`. **Aligned.**
+- `app/api/inscriptions/route.ts:29` accepte `['card','bank_transfer','cheque','transfer','check']` → les 3 premières sont mappées via `PAYMENT_METHOD_MAP` L41-47 (`card→stripe`, `bank_transfer→transfer`, `cheque→check`) **avant** l'INSERT. Pattern valide.
+
+**Enseignement** : un mapping explicite front→DB est une alternative légitime à l'alignement strict. Ce qui compte = **zéro valeur Zod non mappée n'arrive en INSERT**. Le script `zod-sql-consistency.mjs` doit prendre en compte ces mappings (limite actuelle : détection purement textuelle).
+
+### Drift entre migrations SQL successives (historique)
+
+Le script `schema-drift.mjs` détecte les `CHECK IN (...)` qui divergent sur la même colonne entre migrations chronologiques. Exemples détectés :
+- `payment_method` : `sql/009` = `('stripe','transfer','check')` ↔ `sql/010` = `('lyra','transfer','check')` — **la migration 010 n'est PAS l'état prod réel** (MCP confirme CHECK prod = `'stripe'`). Drift historique potentiellement jamais appliquée.
+- `role` : `sql/042` = 4 valeurs ↔ `supabase/migrations/069` = 5 valeurs (ajout `cds_delegated`) — évolution volontaire, 069 = état prod.
+
+**Règle** : en présence de drift historique, toujours cross-checker l'état prod via MCP `list_tables(verbose=true)` avant de considérer qu'une migration est autoritative.
 
 ### Pattern correct — schéma partagé
 

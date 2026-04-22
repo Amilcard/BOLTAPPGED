@@ -236,7 +236,7 @@ npm run lint
 
 ## Tables critiques (Supabase)
 - gd_souhaits — colonnes réelles (MCP Supabase 2026-04-22) : `id`, `kid_prenom`, `kid_prenom_referent`, `sejour_slug`, `sejour_titre`, `motivation`, `educateur_email`, `educateur_prenom`, `educateur_token` (unique, expires), `structure_domain`, `structure_id` (FK), `status` (default `'emis'`), `reponse_educateur`, `reponse_date`, `inscription_id` (FK), `suivi_token_kid`, `kid_session_token`, `choix_mode` CHECK (`'seul'`,`'ami'`,`'educateur'`,`'app'`), `nom_groupe`. **Pas de `enfant_id` ni `session_id`.** Clé idempotence proposée : `(kid_session_token, sejour_slug)`.
-- gd_inscriptions (statut, souhait_id, dossier_id)
+- gd_inscriptions — colonnes réelles (MCP Supabase 2026-04-22) : `id`, `jeune_prenom`, `jeune_nom`, `jeune_date_naissance`, `jeune_sexe`, `jeune_besoins`, `referent_nom`, `referent_email`, `referent_tel`, `referent_fonction`, `sejour_slug`, `session_date`, `city_departure`, `options_educatives`, `remarques`, `price_total`, `status` (pas `statut`), `payment_method` CHECK (`'stripe'`, `'transfer'`, `'check'`), `payment_status` CHECK (`'pending_payment'`, `'pending_transfer'`, `'pending_check'`, `'paid'`, `'failed'`, `'amount_mismatch'`, `'refunded'`, `'partially_refunded'`), `payment_reference`, `stripe_payment_intent_id`, `payment_validated_at`, `suivi_token`, `suivi_token_expires_at`, `organisation`, `dossier_ref`, `structure_domain`, `structure_id` (FK), `structure_pending_name`, `structure_email/postal_code/city/type/address`, `structure_validation_statut/par/at`, `deleted_at`, `consent_at`, `parental_consent_at`, `parental_consent_version`, `inscription_urgence`, `email_type`, `email_pro_attendu`, `last_relance_at`, `besoins_pris_en_compte`, `equipe_informee`, `note_pro`, `pref_nouvelles_sejour`, `pref_canal_contact`, `pref_bilan_fin_sejour`, `consignes_communication`, `besoins_specifiques`, `documents_status`. **Pas de `souhait_id` ni `dossier_id`** (relation inverse : `gd_dossier_enfant.inscription_id`, `gd_souhaits.inscription_id`).
 - gd_stay_sessions (session_id, stay_id, capacity)
 - gd_dossier_enfant, gd_structures, gd_stays
 - gd_stay_themes, gd_session_prices, gd_waitlist
@@ -499,6 +499,7 @@ Avant d'insérer dans `gd_propositions_tarifaires` :
 - gd_structures — structures partenaires (ASE, MECS, foyers)
   - code (6 chars, CDS) + code_directeur (10 chars) + expiration + révocation
   - delegation_active_from / delegation_active_until (TIMESTAMPTZ) — migration 040
+  - delegated_to_email (TEXT) — email du CDS délégué
   - rgpd_accepted_at + rgpd_accepted_by
 - gd_waitlist, gd_wishes, gd_admin_2fa, gd_audit_log
 - smart_form_submissions — leads price-inquiry + request-access (fail-silently)

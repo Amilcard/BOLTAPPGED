@@ -344,6 +344,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // ── PRE-CHECK is_full UFOVAL (Axe 2.3) ─────────────────────────────
+    // Vérifier is_full AVANT la décrémentation atomique pour éviter de
+    // consommer un seat qu'on va devoir restaurer juste après. UFOVAL est
+    // source de vérité pour les sessions complètes (sync 6h via n8n).
+    const { data: preFullRows } = await supabasePublic
+      .from('gd_session_prices')
+      .select('is_full')
+      .eq('stay_slug', data.staySlug)
+      .eq('start_date', normalizedDate)
+      .eq('city_departure', data.cityDeparture)
+      .limit(1);
+    if (preFullRows?.[0]?.is_full === true) {
+      return NextResponse.json(
+        { error: { code: 'SESSION_FULL', message: 'Cette session est complète.' } },
+        { status: 400 }
+      );
+    }
+
     // ── CAPACITY CHECK + DECREMENT atomique via RPC (SELECT FOR UPDATE + UPDATE) ──
     const { data: capacityCheck, error: rpcError } = await supabase
       .rpc('gd_check_and_decrement_capacity', {

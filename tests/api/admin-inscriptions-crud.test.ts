@@ -257,11 +257,15 @@ describe('PUT /api/admin/inscriptions/[id]', () => {
 
 describe('DELETE /api/admin/inscriptions/[id]', () => {
   const mockDeleteChain = () => {
-    // Soft delete: .update().eq().is()
+    // Soft delete: .update().eq().is().select('id').single()
     mockFrom.mockReturnValue({
       update: jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
-          is: jest.fn().mockResolvedValue({ error: null }),
+          is: jest.fn().mockReturnValue({
+            select: jest.fn().mockReturnValue({
+              single: jest.fn().mockResolvedValue({ data: { id: INSCRIPTION_ID }, error: null }),
+            }),
+          }),
         }),
       }),
     });

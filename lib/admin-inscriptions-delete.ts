@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auditLog } from '@/lib/audit-log';
 import { UUID_RE } from '@/lib/validators';
+import { assertUpdatedSingle } from '@/lib/supabase-guards';
 
 /**
  * Shared DELETE logic for admin inscriptions (soft delete).
@@ -23,6 +24,26 @@ export async function performInscriptionDelete(
     );
   }
   try {
+    // UPDATE d'abord — si deja soft-deleted ou absente, .single() renvoie PGRST116
+    // auditLog vient APRES la persistance pour eviter un log fantome (Prelude [4]).
+    const { data, error } = await supabase
+      .from('gd_inscriptions')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id)
+      .is('deleted_at', null)
+      .select('id')
+      .single();
+    if (error) {
+      if ((error as { code?: string }).code === 'PGRST116') {
+        return NextResponse.json(
+          { error: { code: 'NOT_FOUND', message: 'Inscription introuvable ou deja supprimee.' } },
+          { status: 404 }
+        );
+      }
+      throw error;
+    }
+    assertUpdatedSingle(data, 'admin_delete_inscription');
+
     await auditLog(supabase, {
       action: 'delete',
       resourceType: 'inscription',
@@ -30,12 +51,6 @@ export async function performInscriptionDelete(
       actorType: 'admin',
       actorId: authEmail,
     });
-    const { error } = await supabase
-      .from('gd_inscriptions')
-      .update({ deleted_at: new Date().toISOString() })
-      .eq('id', id)
-      .is('deleted_at', null);
-    if (error) throw error;
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('performInscriptionDelete error:', err);

@@ -1,54 +1,15 @@
-[auditlog-coverage audit] 2026-04-22T10:27:07.718Z  commit=ed9f62b
-scope: app/api/**/route.ts (hors webhooks/cron/waitlist) — 90 fichier(s), 77 handler(s) write
+[auditlog-coverage audit] 2026-04-22T17:33:49.973Z  commit=1c2ad41
+scope: app/api/**/route.ts (hors webhooks/cron/waitlist) — 90 fichier(s)
 
-COVERED (auditLog trouvé) — 39 handler(s) :
-  app/api/admin/demandes-tarifs/[id]/route.ts:77  PATCH
-  app/api/admin/factures/route.ts:42  POST
-  app/api/admin/factures/route.ts:118  PATCH
-  app/api/admin/propositions/route.ts:47  POST
-  app/api/admin/propositions/route.ts:167  PATCH
-  app/api/admin/propositions/route.ts:226  DELETE
-  app/api/admin/structures/[id]/regenerate-code/route.ts:14  POST
-  app/api/admin/structures/link/route.ts:19  PATCH
-  app/api/admin/structures/merge/route.ts:21  POST
-  app/api/auth/activate-invitation/route.ts:10  POST
-  app/api/auth/structure-login/route.ts:10  POST
-  app/api/dossier-enfant/[inscriptionId]/pdf-email/route.ts:27  POST
-  app/api/dossier-enfant/[inscriptionId]/route.ts:142  PATCH
-  app/api/dossier-enfant/[inscriptionId]/submit/route.ts:23  POST
-  app/api/dossier-enfant/[inscriptionId]/upload/route.ts:27  POST
-  app/api/dossier-enfant/[inscriptionId]/upload/route.ts:269  DELETE
-  app/api/educateur/souhait/[token]/route.ts:84  PATCH
-  app/api/inscription-urgence/route.ts:16  POST
-  app/api/inscriptions/route.ts:49  POST
-  app/api/pro/price-inquiry/route.ts:33  POST
-  app/api/souhaits/link-inscription/route.ts:12  POST
-  app/api/souhaits/route.ts:38  POST
-  app/api/structure/[code]/calls/route.ts:72  POST
-  app/api/structure/[code]/delegation/route.ts:18  PATCH
-  app/api/structure/[code]/incidents/route.ts:68  POST
-  app/api/structure/[code]/incidents/route.ts:213  PATCH
-  app/api/structure/[code]/inscriptions/[id]/dossier/route.ts:123  PATCH
-  app/api/structure/[code]/inscriptions/[id]/pdf-email/route.ts:26  POST
-  app/api/structure/[code]/inscriptions/[id]/submit/route.ts:34  POST
-  app/api/structure/[code]/inscriptions/[id]/upload/route.ts:34  POST
-  app/api/structure/[code]/inscriptions/[id]/upload/route.ts:149  DELETE
-  app/api/structure/[code]/invite/route.ts:16  POST
-  app/api/structure/[code]/medical/route.ts:90  POST
-  app/api/structure/[code]/notes/route.ts:79  POST
-  app/api/structure/[code]/route.ts:159  POST
-  app/api/structure/[code]/settings/route.ts:13  PATCH
-  app/api/structure/[code]/team/[memberId]/reinvite/route.ts:12  POST
-  app/api/structure/[code]/team/[memberId]/revoke/route.ts:9  POST
-  app/api/suivi/[token]/structure/route.ts:23  PATCH
+═══ COUCHE 1 — HANDLER-level (handler write sans auditLog dans le corps) ═══
+Handlers write totaux : 77 | covered=44 | missing=33
 
-MISSING (aucun auditLog) sur zone PII — 29 handler(s)  ⚠️ RGPD :
+HANDLER MISSING zone PII — 25 handler(s)  ⚠️ RGPD :
   app/api/admin/factures/[id]/paiements/route.ts:46  POST
   app/api/admin/factures/paiements/route.ts:12  POST
   app/api/admin/inscriptions/[id]/relance/route.ts:14  POST
   app/api/admin/inscriptions/[id]/route.ts:85  DELETE
   app/api/admin/inscriptions/[id]/route.ts:66  PUT
-  app/api/admin/inscriptions/manual/route.ts:61  POST
   app/api/admin/inscriptions/relance/route.ts:15  POST
   app/api/admin/inscriptions/route.ts:105  DELETE
   app/api/admin/inscriptions/route.ts:72  PUT
@@ -63,17 +24,14 @@ MISSING (aucun auditLog) sur zone PII — 29 handler(s)  ⚠️ RGPD :
   app/api/admin/stays/route.ts:71  POST
   app/api/admin/stays/sessions/delete/route.ts:20  POST
   app/api/admin/stays/update/route.ts:16  PATCH
-  app/api/admin/users/[id]/route.ts:39  DELETE
+  app/api/admin/users/[id]/route.ts:40  DELETE
   app/api/admin/users/[id]/route.ts:11  PUT
   app/api/admin/users/delete/route.ts:14  POST
-  app/api/admin/users/route.ts:36  POST
+  app/api/admin/users/route.ts:39  POST
   app/api/admin/users/update/route.ts:14  POST
-  app/api/pro/propositions/route.ts:9  POST
-  app/api/pro/request-access/route.ts:52  POST
-  app/api/suivi/[token]/route.ts:152  PATCH
   app/api/suivi/resend/route.ts:12  POST
 
-MISSING sur zone non-PII (info) — 9 handler(s) :
+HANDLER MISSING zone non-PII (info) — 8 handler(s) :
   app/api/auth/2fa/confirm/route.ts:12  POST
   app/api/auth/2fa/disable/route.ts:12  POST
   app/api/auth/2fa/setup/route.ts:12  POST
@@ -82,9 +40,14 @@ MISSING sur zone non-PII (info) — 9 handler(s) :
   app/api/auth/login/route.ts:9  POST
   app/api/auth/logout/route.ts:34  POST
   app/api/auth/pro-session/route.ts:29  POST
-  app/api/payment/create-intent/route.ts:13  POST
+
+═══ COUCHE 2 — MUTATION-level sur tables PII (handler englobant) ═══
+Tables PII suivies (13) : gd_inscriptions, gd_dossier_enfant, gd_propositions_tarifaires, gd_factures, gd_incidents, gd_medical_events, gd_calls, gd_notes, gd_structure_access_codes, gd_educateur_emails, gd_stay_sessions, gd_souhaits, smart_form_submissions
+Mutations PII totales : 49 | covered=49 | missing=0
+
+MUTATION MISSING (auditLog absent du handler englobant) — 0 mutation(s)  ⚠️ CNIL :
 
 ──────────────────────────────────────────────────────────────────────
-TOTAL write: 77 | covered=39 | missing=38 (PII=29, non-PII=9)
-VIOLATIONS (missing sur zone PII): 29
+TOTAL handler PII missing=25 | mutation missing=0
+VIOLATIONS: 25
 EXIT: 1

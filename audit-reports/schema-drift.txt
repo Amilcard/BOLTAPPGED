@@ -1,0 +1,18 @@
+[schema-drift audit v2] 2026-04-22T11:50:42.117Z  commit=28b6b06
+scope: sql/ + supabase/migrations/ — 155 fichier(s)
+(table, column) pairs with CHECK IN : 16
+orphan checks (table non-trackée) : 0
+
+DRIFT (même table.col, valeurs différentes entre migrations) — 1 ⚠️ T4 :
+  gd_structure_access_codes.role :
+    sql/042_structure_access_codes_roles.sql = [cds, direction, educateur, secretariat]
+    supabase/migrations/069_access_codes_role_check.sql = [cds, cds_delegated, direction, educateur, secretariat]
+
+NOTE : une drift peut être volontaire (migration qui ajoute une valeur).
+       Cross-check état prod via MCP Supabase list_tables(verbose=true) avant
+       de considérer qu'une des migrations est autoritative.
+       Aligner Zod (scripts/audit/zod-sql-consistency.mjs) sur l'état prod.
+
+──────────────────────────────────────────────────────────────────────
+VIOLATIONS: 1
+EXIT: 1

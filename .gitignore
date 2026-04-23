@@ -49,6 +49,9 @@ stay.ageMax
 # ── Documents légaux ──
 Documents_Legaux/
 
+# ── Contenu éditorial Flooow (hors scope GED_APP) ──
+social/
+
 # tooling IA local
 .ai-workspace/
 .claude/agent-memory/

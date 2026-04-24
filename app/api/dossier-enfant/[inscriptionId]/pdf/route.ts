@@ -468,9 +468,9 @@ export async function GET(
         const imgBytes = Buffer.from(base64Data, 'base64');
         const sigImage = await pdfDoc.embedPng(imgBytes);
         const sigCoords: Record<string, { page: number; x: number; y: number; w: number; h: number }> = {
-          bulletin:  { page: 0, x: 350, y: 730, w: 120, h: 25 },
-          sanitaire: { page: 1, x: 350, y: 740, w: 120, h: 25 },
-          liaison:   { page: 0, x: 350, y: 725, w: 120, h: 25 },
+          bulletin:  { page: 0, x: 350, y: 780, w: 120, h: 25 },
+          sanitaire: { page: 1, x: 350, y: 775, w: 120, h: 25 },
+          liaison:   { page: 0, x: 350, y: 780, w: 120, h: 25 },
         };
         const coords = sigCoords[docType];
         if (coords) {

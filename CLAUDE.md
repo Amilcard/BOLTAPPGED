@@ -311,12 +311,12 @@ metadata `actor_role` + `context: staff_<action>_dossier|doc|pdf`.
 | 3. **Sécurité / RGPD** | skill `security-review` + agent `functional-bug-hunter` | auth, credentials, PII, données mineurs |
 | 4. **UI** | agent `ux-ui-reviewer` | nouvel écran, modal, parcours |
 | 5. **Workflow / intégration** | `workflow-integration-reviewer` | webhook, email, n8n, multi-system |
-| 6. **Exécution** | worker `general-purpose` + skill `test-driven-development` | TDD strict, commits atomiques |
+| 6. **Exécution** | worker `general-purpose` + skill `superpowers:test-driven-development` | TDD strict, commits atomiques |
 | 7. **Cross-review final** | `arch-impact-reviewer` + `deploy-safety-reviewer` | avant chaque push prod |
 
 ### Parallélisation
 
-Utiliser la skill `dispatching-parallel-agents` dès que 2+ analyses ou workers sont indépendants. Les agents doivent être briefés de façon auto-suffisante (ils n'héritent pas du contexte de la session).
+Utiliser la skill `superpowers:dispatching-parallel-agents` dès que 2+ analyses ou workers sont indépendants. Les agents doivent être briefés de façon auto-suffisante (ils n'héritent pas du contexte de la session).
 
 ### Interdictions
 
@@ -825,10 +825,11 @@ git fetch origin && git log origin/main..main --oneline && git log main..origin/
 
 **Piège** : paiement Stripe validé ✅ + UPDATE DB OK ✅ + email Resend KO ❌. L'utilisateur a payé mais n'a pas sa confirmation. Aucun moyen de détecter a posteriori.
 
-**Garde-fou obligatoire** :
-- Toute séquence paiement → DB → email passe par `gd_outbound_emails` (migration 085) avec colonnes `status` + `upstream_ok_at` + `error_text`
-- Cron `/api/cron/email-reconciliation` détecte `status='failed' OR (status='sent' AND upstream_ok_at IS NULL AND created_at < NOW() - 5min)`
+**Garde-fou (prévu, non câblé — sprint S4)** :
+- Table `gd_outbound_emails` avec colonnes `status` + `upstream_ok_at` + `error_text` (migration 085 **retirée du repo 2026-04-24** car jamais appliquée prod ; à ré-introduire via preview branch Pro quand plan upgradé)
+- Cron `/api/cron/email-reconciliation` détectera `status='failed' OR (status='sent' AND upstream_ok_at IS NULL AND created_at < NOW() - 5min)`
 - `idempotency_key` fourni par l'appelant (UUID propagé depuis la route API)
+- **État actuel** : T2 non couvert → mitigation = Sentry captures sur webhook Stripe + support manuel. Risque résiduel accepté jusqu'à S4.
 
 ### T3 — Illusion du Grep (Sentry quality)
 
@@ -854,7 +855,7 @@ git fetch origin && git log origin/main..main --oneline && git log main..origin/
 
 ```
 [8]  T1 Success : chaque await supabase.mutate() a-t-il un guard post-action (assertInserted/assertUpdatedOne/assertDeleted) ?
-[9]  T2 Desync  : la séquence paiement/email passe-t-elle par gd_outbound_emails ?
+[9]  T2 Desync  : la séquence paiement/email passe-t-elle par gd_outbound_emails ? (⚠️ prévu S4, non câblé — voir §T2 état actuel)
 [10] T3 Sentry  : chaque captureException a-t-il domain + operation + extra structuré via captureServerException ?
 [11] T4 Zod/SQL : les enums Zod matchent-ils les CHECK SQL ?
 ```

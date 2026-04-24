@@ -283,6 +283,11 @@ export type Database = {
         Row: {
           bulletin_complement: Json | null
           bulletin_completed: boolean | null
+          bulletin_signature_hash: string | null
+          bulletin_signed_at: string | null
+          bulletin_signed_ip: string | null
+          bulletin_signer_qualite: string | null
+          consent_text_version: string | null
           created_at: string | null
           documents_joints: Json | null
           fiche_liaison_jeune: Json | null
@@ -292,14 +297,27 @@ export type Database = {
           id: string
           inscription_id: string
           liaison_completed: boolean | null
+          liaison_signature_hash: string | null
+          liaison_signed_at: string | null
+          liaison_signed_ip: string | null
+          liaison_signer_qualite: string | null
           renseignements_completed: boolean | null
           renseignements_required: boolean | null
           sanitaire_completed: boolean | null
+          sanitaire_signature_hash: string | null
+          sanitaire_signed_at: string | null
+          sanitaire_signed_ip: string | null
+          sanitaire_signer_qualite: string | null
           updated_at: string | null
         }
         Insert: {
           bulletin_complement?: Json | null
           bulletin_completed?: boolean | null
+          bulletin_signature_hash?: string | null
+          bulletin_signed_at?: string | null
+          bulletin_signed_ip?: string | null
+          bulletin_signer_qualite?: string | null
+          consent_text_version?: string | null
           created_at?: string | null
           documents_joints?: Json | null
           fiche_liaison_jeune?: Json | null
@@ -309,14 +327,27 @@ export type Database = {
           id?: string
           inscription_id: string
           liaison_completed?: boolean | null
+          liaison_signature_hash?: string | null
+          liaison_signed_at?: string | null
+          liaison_signed_ip?: string | null
+          liaison_signer_qualite?: string | null
           renseignements_completed?: boolean | null
           renseignements_required?: boolean | null
           sanitaire_completed?: boolean | null
+          sanitaire_signature_hash?: string | null
+          sanitaire_signed_at?: string | null
+          sanitaire_signed_ip?: string | null
+          sanitaire_signer_qualite?: string | null
           updated_at?: string | null
         }
         Update: {
           bulletin_complement?: Json | null
           bulletin_completed?: boolean | null
+          bulletin_signature_hash?: string | null
+          bulletin_signed_at?: string | null
+          bulletin_signed_ip?: string | null
+          bulletin_signer_qualite?: string | null
+          consent_text_version?: string | null
           created_at?: string | null
           documents_joints?: Json | null
           fiche_liaison_jeune?: Json | null
@@ -326,23 +357,31 @@ export type Database = {
           id?: string
           inscription_id?: string
           liaison_completed?: boolean | null
+          liaison_signature_hash?: string | null
+          liaison_signed_at?: string | null
+          liaison_signed_ip?: string | null
+          liaison_signer_qualite?: string | null
           renseignements_completed?: boolean | null
           renseignements_required?: boolean | null
           sanitaire_completed?: boolean | null
+          sanitaire_signature_hash?: string | null
+          sanitaire_signed_at?: string | null
+          sanitaire_signed_ip?: string | null
+          sanitaire_signer_qualite?: string | null
           updated_at?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "gd_dossier_enfant_inscription_id_fkey"
             columns: ["inscription_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "gd_inscriptions"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "gd_dossier_enfant_inscription_id_fkey"
             columns: ["inscription_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "v_inscriptions_production"
             referencedColumns: ["id"]
           },
@@ -726,7 +765,12 @@ export type Database = {
           pref_bilan_fin_sejour: boolean | null
           pref_canal_contact: string | null
           pref_nouvelles_sejour: string | null
+          price_locked: boolean | null
+          price_source: string | null
           price_total: number | null
+          prix_encadrement: number | null
+          prix_sejour: number | null
+          prix_transport: number | null
           referent_email: string | null
           referent_fonction: string | null
           referent_nom: string | null
@@ -784,7 +828,12 @@ export type Database = {
           pref_bilan_fin_sejour?: boolean | null
           pref_canal_contact?: string | null
           pref_nouvelles_sejour?: string | null
+          price_locked?: boolean | null
+          price_source?: string | null
           price_total?: number | null
+          prix_encadrement?: number | null
+          prix_sejour?: number | null
+          prix_transport?: number | null
           referent_email?: string | null
           referent_fonction?: string | null
           referent_nom?: string | null
@@ -842,7 +891,12 @@ export type Database = {
           pref_bilan_fin_sejour?: boolean | null
           pref_canal_contact?: string | null
           pref_nouvelles_sejour?: string | null
+          price_locked?: boolean | null
+          price_source?: string | null
           price_total?: number | null
+          prix_encadrement?: number | null
+          prix_sejour?: number | null
+          prix_transport?: number | null
           referent_email?: string | null
           referent_fonction?: string | null
           referent_nom?: string | null
@@ -1389,6 +1443,7 @@ export type Database = {
           kid_prenom_referent: string | null
           kid_session_token: string | null
           motivation: string | null
+          nom_groupe: string | null
           reponse_date: string | null
           reponse_educateur: string | null
           sejour_slug: string
@@ -1412,6 +1467,7 @@ export type Database = {
           kid_prenom_referent?: string | null
           kid_session_token?: string | null
           motivation?: string | null
+          nom_groupe?: string | null
           reponse_date?: string | null
           reponse_educateur?: string | null
           sejour_slug: string
@@ -1435,6 +1491,7 @@ export type Database = {
           kid_prenom_referent?: string | null
           kid_session_token?: string | null
           motivation?: string | null
+          nom_groupe?: string | null
           reponse_date?: string | null
           reponse_educateur?: string | null
           sejour_slug?: string
@@ -1878,359 +1935,6 @@ export type Database = {
         }
         Relationships: []
       }
-      gd_suivi_appels: {
-        Row: {
-          created_at: string | null
-          direction: string
-          duree_minutes: number | null
-          emetteur: string
-          id: string
-          inscription_id: string | null
-          motif: string | null
-          recepteur: string
-          resume: string | null
-          saisi_par: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          direction: string
-          duree_minutes?: number | null
-          emetteur: string
-          id?: string
-          inscription_id?: string | null
-          motif?: string | null
-          recepteur: string
-          resume?: string | null
-          saisi_par?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          direction?: string
-          duree_minutes?: number | null
-          emetteur?: string
-          id?: string
-          inscription_id?: string | null
-          motif?: string | null
-          recepteur?: string
-          resume?: string | null
-          saisi_par?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gd_suivi_appels_inscription_id_fkey"
-            columns: ["inscription_id"]
-            isOneToOne: false
-            referencedRelation: "gd_inscriptions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gd_suivi_appels_inscription_id_fkey"
-            columns: ["inscription_id"]
-            isOneToOne: false
-            referencedRelation: "v_inscriptions_production"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      gd_suivi_incidents: {
-        Row: {
-          clos: boolean | null
-          clos_at: string | null
-          clos_par: string | null
-          created_at: string | null
-          date_incident: string
-          description: string
-          famille_informee: boolean | null
-          famille_informee_at: string | null
-          gravite: string
-          id: string
-          inscription_id: string | null
-          lieu: string | null
-          mesures_prises: string | null
-          rapatriement_accompagnant: string | null
-          rapatriement_destination: string | null
-          rapatriement_motif: string | null
-          saisi_par: string | null
-          signale_par: string | null
-          signale_par_nom: string | null
-          structure_id: string | null
-          structure_informee: boolean | null
-          structure_informee_at: string | null
-          suite_donnee: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          clos?: boolean | null
-          clos_at?: string | null
-          clos_par?: string | null
-          created_at?: string | null
-          date_incident: string
-          description: string
-          famille_informee?: boolean | null
-          famille_informee_at?: string | null
-          gravite: string
-          id?: string
-          inscription_id?: string | null
-          lieu?: string | null
-          mesures_prises?: string | null
-          rapatriement_accompagnant?: string | null
-          rapatriement_destination?: string | null
-          rapatriement_motif?: string | null
-          saisi_par?: string | null
-          signale_par?: string | null
-          signale_par_nom?: string | null
-          structure_id?: string | null
-          structure_informee?: boolean | null
-          structure_informee_at?: string | null
-          suite_donnee?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          clos?: boolean | null
-          clos_at?: string | null
-          clos_par?: string | null
-          created_at?: string | null
-          date_incident?: string
-          description?: string
-          famille_informee?: boolean | null
-          famille_informee_at?: string | null
-          gravite?: string
-          id?: string
-          inscription_id?: string | null
-          lieu?: string | null
-          mesures_prises?: string | null
-          rapatriement_accompagnant?: string | null
-          rapatriement_destination?: string | null
-          rapatriement_motif?: string | null
-          saisi_par?: string | null
-          signale_par?: string | null
-          signale_par_nom?: string | null
-          structure_id?: string | null
-          structure_informee?: boolean | null
-          structure_informee_at?: string | null
-          suite_donnee?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gd_suivi_incidents_inscription_id_fkey"
-            columns: ["inscription_id"]
-            isOneToOne: false
-            referencedRelation: "gd_inscriptions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gd_suivi_incidents_inscription_id_fkey"
-            columns: ["inscription_id"]
-            isOneToOne: false
-            referencedRelation: "v_inscriptions_production"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gd_suivi_incidents_structure_id_fkey"
-            columns: ["structure_id"]
-            isOneToOne: false
-            referencedRelation: "gd_structures"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      gd_suivi_medical: {
-        Row: {
-          created_at: string | null
-          date_consultation: string
-          famille_informee: boolean | null
-          famille_informee_at: string | null
-          id: string
-          inscription_id: string | null
-          lieu: string | null
-          motif: string
-          praticien: string | null
-          saisi_par: string | null
-          structure_informee: boolean | null
-          suite_donnee: string | null
-          traitement_prescrit: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          date_consultation: string
-          famille_informee?: boolean | null
-          famille_informee_at?: string | null
-          id?: string
-          inscription_id?: string | null
-          lieu?: string | null
-          motif: string
-          praticien?: string | null
-          saisi_par?: string | null
-          structure_informee?: boolean | null
-          suite_donnee?: string | null
-          traitement_prescrit?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          date_consultation?: string
-          famille_informee?: boolean | null
-          famille_informee_at?: string | null
-          id?: string
-          inscription_id?: string | null
-          lieu?: string | null
-          motif?: string
-          praticien?: string | null
-          saisi_par?: string | null
-          structure_informee?: boolean | null
-          suite_donnee?: string | null
-          traitement_prescrit?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gd_suivi_medical_inscription_id_fkey"
-            columns: ["inscription_id"]
-            isOneToOne: false
-            referencedRelation: "gd_inscriptions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gd_suivi_medical_inscription_id_fkey"
-            columns: ["inscription_id"]
-            isOneToOne: false
-            referencedRelation: "v_inscriptions_production"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      gd_suivi_messages: {
-        Row: {
-          auteur: string
-          auteur_nom: string | null
-          auteur_role: string | null
-          created_at: string | null
-          id: string
-          inscription_id: string | null
-          lu: boolean | null
-          lu_at: string | null
-          message: string
-        }
-        Insert: {
-          auteur: string
-          auteur_nom?: string | null
-          auteur_role?: string | null
-          created_at?: string | null
-          id?: string
-          inscription_id?: string | null
-          lu?: boolean | null
-          lu_at?: string | null
-          message: string
-        }
-        Update: {
-          auteur?: string
-          auteur_nom?: string | null
-          auteur_role?: string | null
-          created_at?: string | null
-          id?: string
-          inscription_id?: string | null
-          lu?: boolean | null
-          lu_at?: string | null
-          message?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gd_suivi_messages_inscription_id_fkey"
-            columns: ["inscription_id"]
-            isOneToOne: false
-            referencedRelation: "gd_inscriptions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gd_suivi_messages_inscription_id_fkey"
-            columns: ["inscription_id"]
-            isOneToOne: false
-            referencedRelation: "v_inscriptions_production"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      gd_suivi_sejour: {
-        Row: {
-          bilan_attention: string | null
-          bilan_positifs: string | null
-          consultation_medicale: boolean | null
-          consultation_medicale_date: string | null
-          consultation_medicale_motif: string | null
-          consultation_medicale_suite: string | null
-          created_at: string | null
-          dernier_contact: string | null
-          fiche_liaison_validee: boolean | null
-          fiche_liaison_validee_at: string | null
-          id: string
-          inscription_id: string | null
-          nb_appels: number | null
-          nb_mails: number | null
-          points_attention: string | null
-          structure_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          bilan_attention?: string | null
-          bilan_positifs?: string | null
-          consultation_medicale?: boolean | null
-          consultation_medicale_date?: string | null
-          consultation_medicale_motif?: string | null
-          consultation_medicale_suite?: string | null
-          created_at?: string | null
-          dernier_contact?: string | null
-          fiche_liaison_validee?: boolean | null
-          fiche_liaison_validee_at?: string | null
-          id?: string
-          inscription_id?: string | null
-          nb_appels?: number | null
-          nb_mails?: number | null
-          points_attention?: string | null
-          structure_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          bilan_attention?: string | null
-          bilan_positifs?: string | null
-          consultation_medicale?: boolean | null
-          consultation_medicale_date?: string | null
-          consultation_medicale_motif?: string | null
-          consultation_medicale_suite?: string | null
-          created_at?: string | null
-          dernier_contact?: string | null
-          fiche_liaison_validee?: boolean | null
-          fiche_liaison_validee_at?: string | null
-          id?: string
-          inscription_id?: string | null
-          nb_appels?: number | null
-          nb_mails?: number | null
-          points_attention?: string | null
-          structure_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gd_suivi_sejour_inscription_id_fkey"
-            columns: ["inscription_id"]
-            isOneToOne: true
-            referencedRelation: "gd_inscriptions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gd_suivi_sejour_inscription_id_fkey"
-            columns: ["inscription_id"]
-            isOneToOne: true
-            referencedRelation: "v_inscriptions_production"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gd_suivi_sejour_structure_id_fkey"
-            columns: ["structure_id"]
-            isOneToOne: false
-            referencedRelation: "gd_structures"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       gd_waitlist: {
         Row: {
           created_at: string | null
@@ -2484,6 +2188,7 @@ export type Database = {
         Row: {
           alert_priority: string | null
           child_age: number | null
+          consent_at: string | null
           contact_email: string | null
           contact_phone: string | null
           crm_lead_id: string | null
@@ -2492,16 +2197,19 @@ export type Database = {
           id: string
           inclusion_level: string | null
           interests: string[] | null
+          ip_hash: string | null
           qf: number | null
           qpv: boolean | null
           referent_organization: string | null
           submitted_at: string | null
           suggested_stays: Json | null
           urgence_48h: boolean | null
+          user_agent: string | null
         }
         Insert: {
           alert_priority?: string | null
           child_age?: number | null
+          consent_at?: string | null
           contact_email?: string | null
           contact_phone?: string | null
           crm_lead_id?: string | null
@@ -2510,16 +2218,19 @@ export type Database = {
           id?: string
           inclusion_level?: string | null
           interests?: string[] | null
+          ip_hash?: string | null
           qf?: number | null
           qpv?: boolean | null
           referent_organization?: string | null
           submitted_at?: string | null
           suggested_stays?: Json | null
           urgence_48h?: boolean | null
+          user_agent?: string | null
         }
         Update: {
           alert_priority?: string | null
           child_age?: number | null
+          consent_at?: string | null
           contact_email?: string | null
           contact_phone?: string | null
           crm_lead_id?: string | null
@@ -2528,12 +2239,14 @@ export type Database = {
           id?: string
           inclusion_level?: string | null
           interests?: string[] | null
+          ip_hash?: string | null
           qf?: number | null
           qpv?: boolean | null
           referent_organization?: string | null
           submitted_at?: string | null
           suggested_stays?: Json | null
           urgence_48h?: boolean | null
+          user_agent?: string | null
         }
         Relationships: []
       }
@@ -2551,8 +2264,6 @@ export type Database = {
           invitation_expires_at: string | null
           invited_by_email: string | null
           label: string | null
-          last_jti: string | null
-          last_jti_exp: string | null
           nom: string | null
           prenom: string | null
           role: string | null
@@ -2570,8 +2281,6 @@ export type Database = {
           invitation_expires_at?: string | null
           invited_by_email?: string | null
           label?: string | null
-          last_jti?: string | null
-          last_jti_exp?: string | null
           nom?: string | null
           prenom?: string | null
           role?: string | null
@@ -2589,8 +2298,6 @@ export type Database = {
           invitation_expires_at?: string | null
           invited_by_email?: string | null
           label?: string | null
-          last_jti?: string | null
-          last_jti_exp?: string | null
           nom?: string | null
           prenom?: string | null
           role?: string | null
@@ -2869,6 +2576,16 @@ export type Database = {
           taux_prise_en_charge: number
         }[]
       }
+      gd_audit_data_integrity: {
+        Args: never
+        Returns: {
+          check_name: string
+          count_value: number
+          description: string
+          passed: boolean
+          severity: string
+        }[]
+      }
       gd_check_and_decrement_capacity: {
         Args: { p_slug: string; p_start_date: string }
         Returns: Json
@@ -2876,6 +2593,15 @@ export type Database = {
       gd_check_session_capacity: {
         Args: { p_slug: string; p_start_date: string }
         Returns: Json
+      }
+      gd_get_dossiers_purge_candidates: {
+        Args: { p_limit?: number }
+        Returns: {
+          documents_joints: Json
+          dossier_id: string
+          inscription_id: string
+          purge_policy: string
+        }[]
       }
       gd_get_expired_linked_medical_events: {
         Args: { threshold: string }
@@ -3145,3 +2871,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+

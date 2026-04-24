@@ -1,7 +1,12 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
-import { sendDossierCompletEmail, sendDossierGedAdminNotification, sendStructureArchivageEmail } from '@/lib/email';
+import {
+  sendDossierCompletEmail,
+  sendDossierGedAdminNotification,
+  sendStructureArchivageEmail,
+  sendStructureDocumentsPapierEmail,
+} from '@/lib/email';
 import { REQUIS_TO_JOINT } from '@/lib/dossier-shared';
 import { verifyOwnership } from '@/lib/verify-ownership';
 import { auditLog, getClientIp } from '@/lib/audit-log';
@@ -27,11 +32,21 @@ export async function POST(
   try {
     const { inscriptionId } = await params;
     const body = await req.json();
-    const { token } = body;
+    const { token, email_consent } = body as { token?: string; email_consent?: boolean };
 
     if (!token || !inscriptionId) {
       return NextResponse.json(
         { error: 'Token et inscriptionId requis.' },
+        { status: 400 }
+      );
+    }
+
+    // Consentement mail obligatoire (ADR 2026-04-24) : le parent confirme
+    // qu'il recevra par mail 2 documents (liaison + renseignements) à
+    // compléter et retourner. Traçabilité RGPD dans auditLog.
+    if (email_consent !== true) {
+      return NextResponse.json(
+        { error: { code: 'EMAIL_CONSENT_REQUIRED', message: 'Consentement envoi mail requis.' } },
         { status: 400 }
       );
     }
@@ -217,6 +232,27 @@ export async function POST(
             return null;
           }),
         );
+
+        // ADR 2026-04-24 — envoi à la structure des 2 PDF papier (liaison
+        // pré-remplie + renseignements vierge) à imprimer, faire signer et
+        // retourner via upload. Fire-and-forget comme l'archivage.
+        const pdfLiaisonLink = `${base}/api/dossier-enfant/${inscriptionId}/pdf?token=${encodeURIComponent(token)}&type=liaison`;
+        const pdfRenseignementsLink = `${base}/templates/fiche-renseignements-template.pdf`;
+        const suiviUploadLink = `${base}/suivi/${encodeURIComponent(token)}`;
+        emailPromises.push(
+          sendStructureDocumentsPapierEmail({
+            structureEmail: structureArchiveEmail,
+            jeunePrenom: i.jeune_prenom,
+            jeuneNom: i.jeune_nom,
+            dossierRef: i.dossier_ref ?? undefined,
+            pdfLiaisonLink,
+            pdfRenseignementsLink,
+            suiviUploadLink,
+          }).catch(err => {
+            console.error('[submit] sendStructureDocumentsPapierEmail failed:', err);
+            return null;
+          }),
+        );
       }
 
       await Promise.allSettled(emailPromises);
@@ -240,6 +276,9 @@ export async function POST(
         partial_docs: partialDocsMissing.length > 0,
         docs_missing_count: partialDocsMissing.length,
         structure_archive_sent: !!structureArchiveEmail,
+        // ADR 2026-04-24 — traçabilité consentement mail structure (RGPD)
+        email_consent_given: email_consent === true,
+        structure_docs_papier_sent: !!structureArchiveEmail,
       },
     });
 

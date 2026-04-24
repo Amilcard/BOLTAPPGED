@@ -44,6 +44,7 @@ jest.mock('@/lib/email', () => ({
   sendDossierCompletEmail: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
   sendDossierGedAdminNotification: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
   sendStructureArchivageEmail: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
+  sendStructureDocumentsPapierEmail: jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' }),
 }));
 
 import { POST } from '@/app/api/dossier-enfant/[inscriptionId]/submit/route';
@@ -55,7 +56,11 @@ const VALID_INSCRIPTION_ID = 'b2c3d4e5-f6a7-8901-bcde-f12345678901';
 const REFERENT_EMAIL = 'marie.dupont@test.fr';
 
 function makeRequest(body: Record<string, unknown>) {
-  return { json: () => Promise.resolve(body) } as unknown as NextRequest;
+  // email_consent=true par défaut (ADR 2026-04-24) — la case à cocher
+  // consentement mail est obligatoire côté parent. Les tests peuvent
+  // override via `email_consent: false/undefined` pour tester la gate.
+  const fullBody = { email_consent: true, ...body };
+  return { json: () => Promise.resolve(fullBody) } as unknown as NextRequest;
 }
 
 function makeParams(inscriptionId: string) {

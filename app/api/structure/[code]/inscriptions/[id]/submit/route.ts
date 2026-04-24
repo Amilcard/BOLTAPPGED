@@ -5,7 +5,12 @@ import { requireStructureRole } from '@/lib/structure-guard';
 import { requireInscriptionInStructure } from '@/lib/resource-guard';
 import { auditLog, getClientIp } from '@/lib/audit-log';
 import { structureRateLimitGuard } from '@/lib/rate-limit-structure';
-import { sendDossierCompletEmail, sendDossierGedAdminNotification, sendStructureArchivageEmail } from '@/lib/email';
+import {
+  sendDossierCompletEmail,
+  sendDossierGedAdminNotification,
+  sendStructureArchivageEmail,
+  sendStructureDocumentsPapierEmail,
+} from '@/lib/email';
 import { REQUIS_TO_JOINT } from '@/lib/dossier-shared';
 import { UUID_RE } from '@/lib/validators';
 
@@ -225,6 +230,30 @@ export async function POST(
             return null;
           }),
         );
+
+        // ADR 2026-04-24 — envoi à la structure des 2 PDF papier (liaison
+        // pré-remplie + renseignements vierge) à faire signer et retourner
+        // via upload. Miroir du flux référent. Requiert suivi_token pour
+        // générer le lien PDF liaison (pré-rempli avec données bulletin).
+        if (i.suivi_token) {
+          const pdfLiaisonLink = `${base}/api/dossier-enfant/${inscriptionId}/pdf?token=${encodeURIComponent(i.suivi_token)}&type=liaison`;
+          const pdfRenseignementsLink = `${base}/templates/fiche-renseignements-template.pdf`;
+          const suiviUploadLink = `${base}/suivi/${encodeURIComponent(i.suivi_token)}`;
+          emailPromises.push(
+            sendStructureDocumentsPapierEmail({
+              structureEmail: structureArchiveEmail,
+              jeunePrenom: i.jeune_prenom,
+              jeuneNom: i.jeune_nom,
+              dossierRef: i.dossier_ref ?? undefined,
+              pdfLiaisonLink,
+              pdfRenseignementsLink,
+              suiviUploadLink,
+            }).catch(err => {
+              console.error('[structure/submit] sendStructureDocumentsPapierEmail failed:', err);
+              return null;
+            }),
+          );
+        }
       }
 
       await Promise.allSettled(emailPromises);

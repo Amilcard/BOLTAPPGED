@@ -1213,6 +1213,130 @@ export async function sendTeamMemberInvite(data: TeamInviteData): Promise<EmailR
  * Fire-and-forget : l'échec d'envoi NE BLOQUE PAS la réponse de la route
  * /submit. La route appelante doit utiliser .catch() ou Promise.allSettled.
  */
+/**
+ * Envoi à la structure, à la soumission du dossier, des 2 PDF papier à
+ * compléter et retourner signés par le responsable légal :
+ *  - Fiche de liaison (pré-remplie avec les données bulletin)
+ *  - Fiche de renseignements (vierge — template standard)
+ *
+ * Flux métier (ADR 2026-04-24) : la saisie en ligne de ces 2 documents a
+ * été retirée du parcours parent à cause de bugs d'alignement récurrents.
+ * La structure imprime, fait signer, scanne, et uploade le PDF signé via
+ * le parcours upload existant `/suivi/[token]` (DocumentsJointsUpload).
+ *
+ * Aucune donnée médicale dans le corps de l'email (les liens sont servis
+ * par une route authentifiée par token RGPD ou par template statique).
+ */
+export async function sendStructureDocumentsPapierEmail(data: {
+  structureEmail: string;
+  jeunePrenom: string;
+  jeuneNom: string;
+  dossierRef?: string;
+  /** Lien PDF fiche de liaison (pré-rempli avec données bulletin). */
+  pdfLiaisonLink: string;
+  /** Lien PDF fiche de renseignements (vierge, template standard). */
+  pdfRenseignementsLink: string;
+  /**
+   * Lien direct vers la page suivi du référent — la structure y upload les
+   * PDF signés via DocumentsJointsUpload (onglet Pièces jointes du dossier).
+   */
+  suiviUploadLink: string;
+}): Promise<EmailResult> {
+  if (!data.structureEmail) {
+    console.warn('[EMAIL] structureEmail manquant — docs papier non envoyés');
+    return { sent: false, reason: 'invalid_input' };
+  }
+  const refLine = data.dossierRef ? ` (réf. ${data.dossierRef})` : '';
+  const fullName = `${data.jeunePrenom} ${data.jeuneNom}`;
+  const subject = `Dossier ${fullName}${refLine} — 2 documents à faire signer et retourner`;
+
+  const text = [
+    `Madame, Monsieur,`,
+    ``,
+    `Le dossier d'inscription de ${fullName}${refLine} a été transmis à l'équipe Groupe & Découverte.`,
+    ``,
+    `Deux documents papier doivent être complétés, signés par le responsable légal, puis retournés avant le séjour :`,
+    ``,
+    `1. Fiche de liaison (pré-remplie) : ${data.pdfLiaisonLink}`,
+    `2. Fiche de renseignements (vierge) : ${data.pdfRenseignementsLink}`,
+    ``,
+    `Procédure : imprimer, faire signer par le responsable légal, scanner, puis uploader les PDF signés via le lien suivi du dossier :`,
+    data.suiviUploadLink,
+    ``,
+    `Rubrique « Pièces jointes » du dossier — sélectionner le type de document correspondant à chaque upload.`,
+    ``,
+    `Aucune donnée médicale n'est incluse dans cet email.`,
+    ``,
+    `Conservation conforme RGPD : 3 mois après le séjour côté Groupe & Découverte.`,
+    ``,
+    `Cet envoi est automatique. Pour toute question : contact@groupeetdecouverte.fr`,
+    ``,
+    `Groupe & Découverte`,
+  ].join('\n');
+
+  return await tryResendSend({
+    from: FROM_EMAIL,
+    to: data.structureEmail,
+    subject,
+    text,
+    html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #2a383f;">
+          <div style="background: #2a383f; color: white; padding: 18px 22px; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 20px; font-weight: 600;">Groupe &amp; Découverte</h1>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+            <p style="margin: 0 0 14px 0;">Madame, Monsieur,</p>
+            <p style="margin: 0 0 14px 0;">
+              Le dossier d'inscription de <strong>${htmlEscape(fullName)}</strong>${data.dossierRef ? ` (réf. <span style="font-family: monospace;">${htmlEscape(data.dossierRef)}</span>)` : ''}
+              a été transmis à l'équipe Groupe &amp; Découverte.
+            </p>
+            <p style="margin: 0 0 14px 0;">
+              Deux documents papier doivent être <strong>complétés, signés par le responsable légal, puis retournés avant le séjour</strong> :
+            </p>
+            <div style="margin: 14px 0; padding: 14px; background: #fef9f4; border: 1px solid #f4d6bf; border-radius: 8px;">
+              <p style="margin: 0 0 10px 0; font-weight: 600; font-size: 14px; color: #2a383f;">1. Fiche de liaison <span style="font-weight: 400; color: #6b7280;">(pré-remplie)</span></p>
+              <p style="margin: 0 0 10px 0;">
+                <a href="${data.pdfLiaisonLink}"
+                   style="display: inline-block; background: #de7356; color: white; padding: 9px 18px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 13px;">
+                  Télécharger la fiche de liaison
+                </a>
+              </p>
+              <p style="margin: 0 0 12px 0; padding-top: 8px; border-top: 1px solid #f0dcc9; font-weight: 600; font-size: 14px; color: #2a383f;">2. Fiche de renseignements <span style="font-weight: 400; color: #6b7280;">(vierge)</span></p>
+              <p style="margin: 0;">
+                <a href="${data.pdfRenseignementsLink}"
+                   style="display: inline-block; background: #de7356; color: white; padding: 9px 18px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 13px;">
+                  Télécharger la fiche de renseignements
+                </a>
+              </p>
+            </div>
+            <p style="margin: 14px 0 10px 0; font-weight: 600;">Procédure :</p>
+            <ol style="margin: 0 0 16px 18px; padding: 0; color: #2a383f;">
+              <li style="margin-bottom: 6px;">Imprimer les 2 documents</li>
+              <li style="margin-bottom: 6px;">Faire signer par le responsable légal</li>
+              <li style="margin-bottom: 6px;">Scanner les PDF signés</li>
+              <li>Uploader via le lien suivi du dossier (rubrique « Pièces jointes »)</li>
+            </ol>
+            <p style="margin: 18px 0;">
+              <a href="${data.suiviUploadLink}"
+                 style="display: inline-block; background: #2a383f; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px;">
+                Accéder à la page de suivi du dossier
+              </a>
+            </p>
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
+            <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 12px;">
+              Aucune donnée médicale n'est incluse dans cet email. Conservation conforme RGPD :
+              3 mois après le séjour côté Groupe &amp; Découverte.
+            </p>
+            <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+              Cet envoi est automatique. Pour toute question :
+              <a href="mailto:contact@groupeetdecouverte.fr" style="color: #6b7280;">contact@groupeetdecouverte.fr</a>
+            </p>
+          </div>
+        </div>
+      `,
+  });
+}
+
 export async function sendStructureArchivageEmail(data: {
   structureEmail: string;
   jeunePrenom: string;

@@ -98,8 +98,12 @@ export async function GET(
         documents_joints: [],
         bulletin_completed: false,
         sanitaire_completed: false,
-        liaison_completed: false,
-        renseignements_completed: false,
+        // Liaison + renseignements retirés du parcours en ligne 2026-04-24 :
+        // les 2 PDF sont envoyés par mail sécurisé à la structure, qui les
+        // retourne signés via upload. Flags pré-settés à true pour que
+        // isComplete côté front débloque le submit (cf. ADR 2026-04-24).
+        liaison_completed: true,
+        renseignements_completed: true,
         renseignements_required: renseignementsRequired,
         docs_optionnels_requis,
         docs_optionnels_manquants,
@@ -261,6 +265,20 @@ export async function PATCH(
           const docs = Array.isArray(stay.documents_requis) ? stay.documents_requis : [];
           insertData.renseignements_required = docs.includes('renseignements');
         }
+      }
+
+      // Liaison + renseignements retirés du parcours en ligne 2026-04-24 :
+      // les 2 PDF sont envoyés par mail sécurisé à la structure, qui les
+      // retourne signés via upload. On pré-set les 2 flags à true pour que
+      // la gate submit (bulletin+sanitaire+liaison+renseignements all true)
+      // ne bloque plus sur ces documents (cf. ADR 2026-04-24). Les JSONB
+      // `fiche_liaison_jeune` et `fiche_renseignements` restent éditables
+      // via l'API PATCH (backward-compat admin).
+      if (insertData.liaison_completed === undefined) {
+        insertData.liaison_completed = true;
+      }
+      if (insertData.renseignements_completed === undefined) {
+        insertData.renseignements_completed = true;
       }
 
       const { data: inserted, error: insertErr } = await supabase

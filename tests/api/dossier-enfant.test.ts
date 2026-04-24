@@ -147,7 +147,7 @@ describe('POST /api/dossier-enfant/[inscriptionId]/submit', () => {
     const req = new NextRequest('http://localhost/api/dossier-enfant/aaa00000-0000-0000-0000-000000000001/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: 'bbb00000-0000-0000-0000-000000000001' }),
+      body: JSON.stringify({ token: 'bbb00000-0000-0000-0000-000000000001', email_consent: true }),
     });
 
     const res = await POST(req, { params: Promise.resolve({ inscriptionId: 'aaa00000-0000-0000-0000-000000000001' }) });

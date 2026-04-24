@@ -7,10 +7,9 @@ import { DOC_OPT_LABELS } from '@/lib/dossier-shared';
 import { useDossierEnfant } from './useDossierEnfant';
 import { BulletinComplementForm } from './BulletinComplementForm';
 import { FicheSanitaireForm } from './FicheSanitaireForm';
-import { FicheLiaisonJeuneForm } from './FicheLiaisonJeuneForm';
-import { FicheRenseignementsForm } from './FicheRenseignementsForm';
+import { FichePreview } from './FichePreview';
+import { buildLiaisonPreviewSections, buildRenseignementsPreviewSections } from './preview-sections';
 import { DocumentsJointsUpload } from './DocumentsJointsUpload';
-import { getSharedDataFromBulletin } from './shared-data';
 
 interface DossierInfo {
   id: string;
@@ -348,12 +347,14 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
   const [submitError, setSubmitError] = useState('');
   const [alreadySent, setAlreadySent] = useState(false);
   // signatureModeRef persiste le choix offline entre reloads (useRef survit sans reset)
+  // Liaison retirée 2026-04-24 : le PDF liaison part par mail à la structure,
+  // plus de signature en ligne pour ce document (cf. ADR 2026-04-24).
   const signatureModeRef = useRef<Record<string, 'online' | 'offline'>>({
     bulletin: 'online',
     sanitaire: 'online',
-    liaison: 'online',
   });
   const [signatureMode, setSignatureMode] = useState(signatureModeRef.current);
+  const [emailConsent, setEmailConsent] = useState(false);
 
   const setSignatureModeAndRef = (updates: Record<string, 'online' | 'offline'>) => {
     signatureModeRef.current = { ...signatureModeRef.current, ...updates };
@@ -370,14 +371,6 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
   const {
     dossier, loading, saving, saved, error, saveBloc, reload,
   } = useDossierEnfant(inscription.id, token, hookOptions);
-
-  // Donnees partagees extraites du Bulletin, memoisees pour stabilite
-  // referentielle (sinon les sub-forms verraient une nouvelle ref a
-  // chaque render et ignoreraient initialShared via lazy useState).
-  const sharedFromBulletin = useMemo(
-    () => getSharedDataFromBulletin(dossier?.bulletin_complement),
-    [dossier?.bulletin_complement],
-  );
 
   // Onglets visibles — tous onglets actifs en staff-fill depuis vague 2/4
   // (routes upload staff livrées).
@@ -426,12 +419,17 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
 
   // Envoi GED
   const handleSubmit = async () => {
-    if (!isComplete || submitting) return;
+    if (!isComplete || submitting || !emailConsent) return;
     setSubmitting(true);
     setSubmitError('');
     try {
       // Token dans body uniquement en mode référent ; staff = session cookie.
-      const submitBody = isStaffFill ? {} : { token };
+      // email_consent = case à cocher obligatoire RGPD : le parent confirme
+      // qu'il recevra par mail 2 documents (liaison + renseignements) à
+      // remplir et retourner signés (ADR 2026-04-24).
+      const submitBody = isStaffFill
+        ? { email_consent: emailConsent }
+        : { token, email_consent: emailConsent };
       const res = await fetch(submitUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -643,15 +641,12 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
                       pdfUrl={pdfApiBase}
                       pdfEmailUrl={pdfEmailApiBase}
                     />
-                    <PdfDownloadButton
-                      inscriptionId={inscription.id}
-                      token={token}
-                      docType="liaison"
-                      label={dossier.liaison_completed ? 'Fiche de liaison' : 'Fiche de liaison (à faire signer)'}
-                      pdfUrl={pdfApiBase}
-                      pdfEmailUrl={pdfEmailApiBase}
-                    />
                   </div>
+                  <p className="mt-2 text-[11px] text-gray-500">
+                    La fiche de liaison et la fiche de renseignements vous
+                    seront envoyées par mail sécurisé à la soumission du
+                    dossier, à compléter et retourner signées.
+                  </p>
                 </div>
               )}
 
@@ -722,48 +717,30 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
               )}
 
               {activeTab === 'liaison' && (
-                <>
-                  <SignatureModeSelector
-                    selectorId="sig-liaison"
-                    mode={signatureMode.liaison}
-                    onChange={m => setSignatureModeAndRef({ liaison: m })}
-                    alreadyCompleted={!!dossier?.liaison_completed}
-                  />
-                  {signatureMode.liaison === 'offline' ? (
-                    <OfflineSignatureZone
-                      inscriptionId={inscription.id}
-                      token={token}
-                      docType="liaison"
-                      docLabel="Fiche de liaison"
-                      signedType="liaison_signe"
-                      onUploadSuccess={reload}
-                      pdfUrl={pdfApiBase}
-                      pdfEmailUrl={pdfEmailApiBase}
-                      uploadUrl={uploadApiBase}
-                    />
-                  ) : (
-                    <FicheLiaisonJeuneForm
-                      data={(dossier?.fiche_liaison_jeune || {}) as Record<string, unknown>}
-                      saving={saving}
-                      onSave={(data, completed) => saveBloc('fiche_liaison_jeune', data, completed)}
-                      jeunePrenom={inscription.jeunePrenom}
-                      jeuneNom={inscription.jeuneNom}
-                      sejourNom={inscription.sejourNom}
-                      sessionDate={inscription.sessionDate}
-                      initialShared={sharedFromBulletin}
-                    />
+                <FichePreview
+                  title="Fiche de liaison — Jeune / Éducateur"
+                  color="red"
+                  sections={buildLiaisonPreviewSections(
+                    (dossier?.fiche_liaison_jeune || {}) as Record<string, unknown>,
                   )}
-                </>
+                  alreadyCompleted={
+                    !!dossier?.fiche_liaison_jeune &&
+                    Object.keys(dossier.fiche_liaison_jeune).length > 0
+                  }
+                />
               )}
 
               {activeTab === 'renseignements' && (
-                <FicheRenseignementsForm
-                  data={(dossier?.fiche_renseignements || {}) as Record<string, unknown>}
-                  saving={saving}
-                  onSave={(data, completed) => saveBloc('fiche_renseignements', data, completed)}
-                  jeunePrenom={inscription.jeunePrenom}
-                  jeuneNom={inscription.jeuneNom}
-                  initialShared={sharedFromBulletin}
+                <FichePreview
+                  title={`Fiche de renseignements — ${inscription.jeunePrenom} ${inscription.jeuneNom}`}
+                  color="purple"
+                  sections={buildRenseignementsPreviewSections(
+                    (dossier?.fiche_renseignements || {}) as Record<string, unknown>,
+                  )}
+                  alreadyCompleted={
+                    !!dossier?.fiche_renseignements &&
+                    Object.keys(dossier.fiche_renseignements).length > 0
+                  }
                 />
               )}
 
@@ -814,34 +791,61 @@ export function DossierEnfantPanel({ inscription, token, mode = 'referent', stru
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                      <button
-                        data-testid="btn-envoyer"
-                        onClick={handleSubmit}
-                        disabled={!isComplete || submitting || !!dossier?.ged_sent_at}
-                        className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition ${
-                          isComplete
-                            ? 'bg-green-600 text-white hover:bg-green-700 cursor-pointer'
-                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                        } disabled:opacity-60`}
+                    <div className="flex flex-col gap-3">
+                      {/* Checkbox consentement mail — RGPD (ADR 2026-04-24).
+                          Le parent confirme qu'il recevra 2 documents par mail
+                          à compléter et retourner signés. Trace l'intention
+                          dans auditLog côté submit route. */}
+                      <label
+                        data-testid="checkbox-email-consent"
+                        className="flex items-start gap-2 cursor-pointer text-sm text-gray-700 p-3 bg-amber-50 border border-amber-200 rounded-lg"
                       >
-                        {submitting ? (
-                          <span className="flex items-center gap-2">
-                            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            Envoi en cours...
-                          </span>
-                        ) : (
-                          'Envoyer mon dossier'
+                        <input
+                          type="checkbox"
+                          checked={emailConsent}
+                          onChange={e => setEmailConsent(e.target.checked)}
+                          className="mt-0.5 w-4 h-4 rounded border-gray-300"
+                        />
+                        <span>
+                          J&apos;ai compris — je recevrai par mail sécurisé
+                          2&nbsp;documents à compléter et retourner signés
+                          (fiche de liaison et fiche de renseignements).
+                        </span>
+                      </label>
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                        <button
+                          data-testid="btn-envoyer"
+                          onClick={handleSubmit}
+                          disabled={!isComplete || submitting || !emailConsent || !!dossier?.ged_sent_at}
+                          className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition ${
+                            isComplete && emailConsent
+                              ? 'bg-green-600 text-white hover:bg-green-700 cursor-pointer'
+                              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                          } disabled:opacity-60`}
+                        >
+                          {submitting ? (
+                            <span className="flex items-center gap-2">
+                              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              Envoi en cours...
+                            </span>
+                          ) : (
+                            'Envoyer mon dossier'
+                          )}
+                        </button>
+                        {!isComplete && (
+                          <p className="text-xs text-gray-500">
+                            {totalDocs - completedCount} formulaire{totalDocs - completedCount > 1 ? 's' : ''} à compléter avant envoi
+                          </p>
                         )}
-                      </button>
-                      {!isComplete && (
-                        <p className="text-xs text-gray-500">
-                          {totalDocs - completedCount} formulaire{totalDocs - completedCount > 1 ? 's' : ''} à compléter avant envoi
-                        </p>
-                      )}
-                      {submitError && (
-                        <p className="text-xs text-red-600">{submitError}</p>
-                      )}
+                        {isComplete && !emailConsent && (
+                          <p className="text-xs text-amber-700">
+                            Cochez la case de consentement ci-dessus pour envoyer.
+                          </p>
+                        )}
+                        {submitError && (
+                          <p className="text-xs text-red-600">{submitError}</p>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

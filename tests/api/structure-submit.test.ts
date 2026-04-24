@@ -47,10 +47,13 @@ jest.mock('@/lib/audit-log', () => ({
 const mockSendComplet = jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' });
 const mockSendNotif = jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' });
 const mockSendArchive = jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' });
+const mockSendDocsPapier = jest.fn().mockResolvedValue({ sent: true, messageId: 'mock-id' });
 jest.mock('@/lib/email', () => ({
   sendDossierCompletEmail: (...args: unknown[]) => mockSendComplet(...args),
   sendDossierGedAdminNotification: (...args: unknown[]) => mockSendNotif(...args),
   sendStructureArchivageEmail: (...args: unknown[]) => mockSendArchive(...args),
+  sendStructureDocumentsPapierEmail: (...args: unknown[]) =>
+    Promise.resolve(mockSendDocsPapier(...args)),
 }));
 
 jest.mock('@/lib/rate-limit-structure', () => ({

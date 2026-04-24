@@ -41,6 +41,7 @@ jest.mock('@/lib/email-logger', () => ({
 
 jest.mock('@/lib/audit-log', () => ({
   auditLog: (...args: unknown[]) => auditLogMock(...args),
+  getClientIp: jest.fn().mockReturnValue('203.0.113.5'),
 }));
 
 jest.mock('@/lib/rate-limit', () => ({

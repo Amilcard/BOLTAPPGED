@@ -1,0 +1,37 @@
+-- ═══════════════════════════════════════════════════════════════════════
+-- SNIPPET APPLIQUÉ MANUELLEMENT EN PROD LE 2026-04-24 VIA SQL EDITOR
+-- ═══════════════════════════════════════════════════════════════════════
+--
+-- Motif : migration 083_signature_meta.sql avait été appliquée en prod
+-- le 2026-04-19 via SQL Editor (hors flow `supabase db push`). Les 12
+-- colonnes de signature sont présentes sur gd_dossier_enfant mais
+-- l'entrée correspondante était absente de supabase_migrations.schema_migrations.
+--
+-- Ce snippet INSERT l'entrée manquante pour aligner le registre.
+-- Contexte complet : docs/adr/2026-04-24-exception-sql-editor-083-tracker.md
+--
+-- Suffixe .applied = marqueur que le SQL a été exécuté hors flow CLI.
+-- Ce fichier ne doit PAS être repris par `supabase db push` (suffixe non-.sql).
+-- ═══════════════════════════════════════════════════════════════════════
+
+-- Étape 1 : DRY-RUN (lecture seule, zéro effet)
+SELECT version, name
+FROM supabase_migrations.schema_migrations
+WHERE version LIKE '2026042%' OR name ILIKE '%sign%'
+ORDER BY version DESC
+LIMIT 10;
+
+-- Étape 2 : INSERT idempotent
+INSERT INTO supabase_migrations.schema_migrations (version, name)
+VALUES ('20260422120000', '083_signature_meta_applied_manually')
+ON CONFLICT (version) DO NOTHING;
+
+-- Étape 3 : vérification post-insert
+SELECT version, name
+FROM supabase_migrations.schema_migrations
+WHERE version = '20260422120000';
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- ROLLBACK (si besoin)
+-- ═══════════════════════════════════════════════════════════════════════
+-- DELETE FROM supabase_migrations.schema_migrations WHERE version = '20260422120000';

@@ -1,0 +1,63 @@
+name: Drift Check (weekly)
+
+# Static repo drift check — pur grep, zero secret, zero MCP.
+# Catches regressions on cleanup décisions validées :
+#   - Zombies gd_suivi_* (tables DROPed par migration 086, types purgés commit b0d3f50)
+#   - Migration 085_gd_outbound_emails reverté commit dad71f1 (T2 prévu S4 avec preview branch Pro)
+#
+# Pas de trigger pull_request : quand sprint S4 ré-introduira légitimement
+# gd_outbound_emails, on ne veut pas bloquer la PR. Signal hebdo + manuel dispatch
+# suffisent à détecter une ré-introduction non souhaitée.
+#
+# Ref : docs/TECH_DEBT.md item 2026-04-22 → revert 2026-04-24.
+
+on:
+  schedule:
+    - cron: '17 9 * * 1'  # Monday 9:17 local (off-minute volontaire)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift-check:
+    name: Repo drift check (zombies + 085 revert)
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check zombies gd_suivi_* absent from app code
+        run: |
+          set -euo pipefail
+          echo "::group::Zombies scan (gd_suivi_* dans app/lib/components)"
+          if grep -rn "gd_suivi_" app/ lib/ components/ --include='*.ts' --include='*.tsx' 2>/dev/null; then
+            echo "::error::Zombies gd_suivi_* réapparus dans le code app. Tables DROPed par migration 086 (prod), aucune référence légitime attendue. Revert la PR responsable ou ajouter exception justifiée via ADR."
+            exit 1
+          fi
+          echo "OK — zéro référence gd_suivi_* dans app/lib/components"
+          echo "::endgroup::"
+
+      - name: Check migration 085_gd_outbound_emails absent from repo
+        run: |
+          set -euo pipefail
+          echo "::group::Migration 085 scan (reverté 2026-04-24)"
+          if [ -f "supabase/migrations/085_gd_outbound_emails.sql" ]; then
+            echo "::error::Migration 085_gd_outbound_emails.sql re-surgit dans le repo. Si ré-introduction sprint S4 volontaire : documenter via ADR + update docs/TECH_DEBT.md + câbler consommateur (lib/email-outbox.ts + cron email-reconciliation) avant merge."
+            exit 1
+          fi
+          if [ -f "supabase/migrations/ROLLBACK_085.sql" ]; then
+            echo "::error::ROLLBACK_085.sql re-surgit sans migration 085 → incohérent. Revert ou compléter."
+            exit 1
+          fi
+          echo "OK — migration 085 et son rollback restent retirés"
+          echo "::endgroup::"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Drift check summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Zombies gd_suivi_* : vérifié" >> $GITHUB_STEP_SUMMARY
+          echo "- Migration 085 absent : vérifié" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Ref : docs/TECH_DEBT.md item 2026-04-22 → revert 2026-04-24." >> $GITHUB_STEP_SUMMARY

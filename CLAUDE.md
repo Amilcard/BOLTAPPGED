@@ -743,6 +743,58 @@ git fetch origin && git log origin/main..main --oneline && git log main..origin/
 - **Après chaque commit** → `git push origin main` immédiatement
 - **Ne jamais accumuler** de commits locaux sans les pusher
 
+### Règle anti-branches-orphelines (sessions Claude Cloud) — OBLIGATOIRE
+
+**Pourquoi cette règle existe** : audit 2026-04-24 révélé que plusieurs fix critiques signalés par le tester humain Thanh (overlap signature PDF 3 documents, régressions Stripe, correctifs sécurité) ont été codés dans des sessions Claude Cloud sur branches `claude/*` mais **jamais mergés sur `main`**. Exemples orphelins confirmés : `086eb9f fix(pdf): signature overlap` + `48a364c refactor(pdf): extract lib/pdf-dossier.ts` vivent sur `claude/lucid-leavitt-6aa6a9`, hors `main`. Résultat : bug persiste en prod alors que l'utilisateur pense le fix livré.
+
+Les sessions Claude Cloud créent automatiquement des branches `claude/*`. **Ces branches ne sont PAS la source de vérité — seul `main` l'est** (Vercel auto-deploy main).
+
+### Protocole end-of-session Claude Cloud obligatoire
+
+À la fin de chaque session Claude Cloud qui produit du code :
+1. La session DOIT ouvrir une PR explicite vers `main` (pas seulement push la branche)
+2. L'humain DOIT merger la PR sous 48h OU fermer avec commentaire `abandonné : <raison>`
+3. Toute branche `claude/*` sans PR ouverte depuis > 7 jours = candidate suppression
+
+### Hygiène obligatoire — début de chaque session majeure (coût 30s)
+
+```bash
+git fetch --all --prune
+git branch -a | grep 'claude/' | sed 's|remotes/||' | while read b; do
+  count=$(git log --oneline "$b" ^main 2>/dev/null | wc -l | tr -d ' ')
+  [ "$count" -gt 0 ] && echo "$b : $count commits non mergés"
+done
+```
+
+Si la commande retourne des branches → STOP nouvelle tâche, auditer d'abord `git diff main...<branch>` pour chacune. Jamais démarrer une nouvelle feature en laissant des fix orphelins inconnus dormir.
+
+### Anti-patterns interdits
+
+- ❌ Merger bulk une branche `claude/*` de > 30 jours sans audit diff préalable (conflits quasi garantis après évolution `main`)
+- ❌ Considérer qu'un commit sur `claude/*` est "déployé" ou "fixé en prod" — seul `main` compte
+- ❌ Cherry-pick un commit fix sans auditer ses dépendances (refacto prérequis, fichier disparu, etc.)
+- ❌ Laisser une branche orpheline sans décision tracée (merge / cherry-pick / abandon)
+- ❌ Supprimer une branche `claude/*` sans avoir vérifié qu'elle contient 0 commit unique
+
+### Décision par branche orpheline
+
+Matrice obligatoire avant toute action :
+
+| État diff vs main | Décision |
+|---|---|
+| 0 commit unique (tout absorbé) | `git push origin --delete <branch>` |
+| Commits uniques = fix/feature obsolètes (contournés autrement sur main) | Abandon + supprimer + tracer dans `docs/TECH_DEBT.md` |
+| Commits uniques pertinents + pas de conflit | Cherry-pick ciblé commit par commit |
+| Commits uniques pertinents + conflits massifs | Re-porter manuellement les valeurs/logique sur main, pas merger |
+
+### Hook optionnel — end-of-session
+
+`.claude/hooks/session-end.sh` avec matcher `Stop` peut afficher un rappel si la branche courante n'est pas `main` :
+```bash
+branch=$(git rev-parse --abbrev-ref HEAD)
+[ "$branch" != "main" ] && echo "[SESSION END] Branche $branch — ouvrir PR vers main ou revenir à main"
+```
+
 ## Règles de correction
 
 - Diff minimal — ne toucher qu'aux fichiers strictement nécessaires

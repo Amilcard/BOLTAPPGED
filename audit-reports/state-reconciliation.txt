@@ -1,0 +1,20 @@
+[state-reconciliation audit] 2026-04-25T09:44:52.752Z  commit=e34e1e7
+scope: app/api + lib — 142 fichier(s)
+
+MISSING_RECONCILIATION (mutation + email sans gd_outbound_emails) — 9 ⚠️ T2 :
+  app/api/admin/inscriptions/manual/route.ts
+  app/api/dossier-enfant/[inscriptionId]/submit/route.ts
+  app/api/inscriptions/route.ts
+  app/api/pro/price-inquiry/route.ts
+  app/api/pro/propositions/route.ts
+  app/api/pro/request-access/route.ts
+  app/api/structure/[code]/inscriptions/[id]/submit/route.ts
+  lib/admin-inscriptions-update.ts
+  lib/admin-proposition-send.ts
+
+NOTE : ce check passera quand migration 085 sera déployée ET lib/email.ts
+       câble l'insertion dans gd_outbound_emails. D'ici là : violations attendues.
+
+──────────────────────────────────────────────────────────────────────
+VIOLATIONS: 9
+EXIT: 1

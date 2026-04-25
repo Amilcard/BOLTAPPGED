@@ -1,4 +1,4 @@
-[auditlog-coverage audit] 2026-04-22T17:33:49.973Z  commit=1c2ad41
+[auditlog-coverage audit] 2026-04-25T09:44:51.164Z  commit=e34e1e7
 scope: app/api/**/route.ts (hors webhooks/cron/waitlist) — 90 fichier(s)
 
 ═══ COUCHE 1 — HANDLER-level (handler write sans auditLog dans le corps) ═══

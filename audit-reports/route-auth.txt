@@ -1,4 +1,4 @@
-[route-auth audit] 2026-04-22T10:27:08.350Z  commit=ed9f62b
+[route-auth audit] 2026-04-25T09:45:28.773Z  commit=e34e1e7
 scope: app/api/**/route.ts — 96 fichier(s), 124 handler(s)
 
 GUARDED (auth check détecté) — 104 handler(s) :
@@ -17,7 +17,7 @@ GUARDED (auth check détecté) — 104 handler(s) :
   app/api/admin/inscriptions/[id]/route.ts:13  GET  [requireEditor]
   app/api/admin/inscriptions/[id]/route.ts:85  DELETE  [requireAdmin]
   app/api/admin/inscriptions/[id]/route.ts:66  PUT  [requireEditor]
-  app/api/admin/inscriptions/manual/route.ts:61  POST  [requireEditor]
+  app/api/admin/inscriptions/manual/route.ts:65  POST  [requireEditor,resolveCodeToStructure]
   app/api/admin/inscriptions/relance/route.ts:15  POST  [requireEditor]
   app/api/admin/inscriptions/route.ts:14  GET  [requireEditor]
   app/api/admin/inscriptions/route.ts:105  DELETE  [requireAdmin]
@@ -48,11 +48,11 @@ GUARDED (auth check détecté) — 104 handler(s) :
   app/api/admin/structures/link/route.ts:19  PATCH  [requireEditor]
   app/api/admin/structures/merge/route.ts:21  POST  [requireAdmin]
   app/api/admin/structures/route.ts:15  GET  [requireEditor]
-  app/api/admin/users/[id]/route.ts:39  DELETE  [requireAdmin]
+  app/api/admin/users/[id]/route.ts:40  DELETE  [requireAdmin]
   app/api/admin/users/[id]/route.ts:11  PUT  [requireAdmin]
   app/api/admin/users/delete/route.ts:14  POST  [requireAdmin]
-  app/api/admin/users/route.ts:7  GET  [requireAdmin]
-  app/api/admin/users/route.ts:36  POST  [requireAdmin]
+  app/api/admin/users/route.ts:8  GET  [requireAdmin]
+  app/api/admin/users/route.ts:39  POST  [requireAdmin]
   app/api/admin/users/update/route.ts:14  POST  [requireAdmin]
   app/api/auth/2fa/confirm/route.ts:12  POST  [requireAdmin]
   app/api/auth/2fa/disable/route.ts:12  POST  [requireAdmin]
@@ -66,14 +66,14 @@ GUARDED (auth check détecté) — 104 handler(s) :
   app/api/dossier-enfant/[inscriptionId]/pdf/route.ts:21  GET  [verifyOwnership]
   app/api/dossier-enfant/[inscriptionId]/pdf-email/route.ts:27  POST  [verifyOwnership]
   app/api/dossier-enfant/[inscriptionId]/route.ts:15  GET  [verifyOwnership]
-  app/api/dossier-enfant/[inscriptionId]/route.ts:142  PATCH  [verifyOwnership]
-  app/api/dossier-enfant/[inscriptionId]/submit/route.ts:23  POST  [verifyOwnership]
+  app/api/dossier-enfant/[inscriptionId]/route.ts:146  PATCH  [verifyOwnership]
+  app/api/dossier-enfant/[inscriptionId]/submit/route.ts:28  POST  [verifyOwnership]
   app/api/dossier-enfant/[inscriptionId]/upload/route.ts:231  GET  [verifyOwnership]
   app/api/dossier-enfant/[inscriptionId]/upload/route.ts:27  POST  [verifyOwnership]
   app/api/dossier-enfant/[inscriptionId]/upload/route.ts:269  DELETE  [verifyOwnership]
   app/api/educateur/souhaits/[token]/route.ts:11  GET  [verifyEducateurAggregateToken]
-  app/api/inscriptions/route.ts:49  POST  [resolveCodeToStructure]
-  app/api/pro/propositions/route.ts:9  POST  [verifyProSession]
+  app/api/inscriptions/route.ts:51  POST  [resolveCodeToStructure]
+  app/api/pro/propositions/route.ts:10  POST  [verifyProSession]
   app/api/souhaits/link-inscription/route.ts:12  POST  [requireEditor]
   app/api/structure/[code]/calls/route.ts:17  GET  [requireStructureRole]
   app/api/structure/[code]/calls/route.ts:72  POST  [requireStructureRole,requireInscriptionOwnership]
@@ -87,7 +87,7 @@ GUARDED (auth check détecté) — 104 handler(s) :
   app/api/structure/[code]/inscriptions/[id]/dossier/route.ts:123  PATCH  [requireStructureRole,requireInscriptionInStructure]
   app/api/structure/[code]/inscriptions/[id]/pdf/route.ts:26  GET  [requireStructureRole,requireInscriptionInStructure]
   app/api/structure/[code]/inscriptions/[id]/pdf-email/route.ts:26  POST  [requireStructureRole,requireInscriptionInStructure]
-  app/api/structure/[code]/inscriptions/[id]/submit/route.ts:34  POST  [requireStructureRole,requireInscriptionInStructure]
+  app/api/structure/[code]/inscriptions/[id]/submit/route.ts:39  POST  [requireStructureRole,requireInscriptionInStructure]
   app/api/structure/[code]/inscriptions/[id]/upload/route.ts:34  POST  [requireStructureRole,requireInscriptionInStructure]
   app/api/structure/[code]/inscriptions/[id]/upload/route.ts:149  DELETE  [requireStructureRole,requireInscriptionInStructure]
   app/api/structure/[code]/invite/route.ts:16  POST  [requireStructureRole]
@@ -119,7 +119,7 @@ PUBLIC (whitelisté — public légitime) — 19 handler(s) :
   app/api/inscriptions/[id]/recap-pdf/route.ts:47  GET
   app/api/pdf/[slug]/route.ts:4  GET
   app/api/pro/price-inquiry/route.ts:33  POST
-  app/api/pro/request-access/route.ts:52  POST
+  app/api/pro/request-access/route.ts:53  POST
   app/api/souhaits/kid/[kidToken]/route.ts:11  GET
   app/api/souhaits/route.ts:38  POST
   app/api/structures/search/route.ts:14  GET
@@ -129,7 +129,7 @@ PUBLIC (whitelisté — public légitime) — 19 handler(s) :
   app/api/waitlist/route.ts:11  POST
 
 MISSING (aucun guard détecté, non whitelisté) — 1 handler(s)  ⚠️ :
-  app/api/payment/create-intent/route.ts:13  POST
+  app/api/payment/create-intent/route.ts:14  POST
 
 ──────────────────────────────────────────────────────────────────────
 TOTAL: guarded=104, public=19, missing=1

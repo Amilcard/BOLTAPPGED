@@ -1,4 +1,4 @@
-[idempotency audit] 2026-04-22T10:27:07.961Z  commit=ed9f62b
+[idempotency audit] 2026-04-25T09:44:51.559Z  commit=e34e1e7
 scope: POST handlers dans zones critiques (6) — 32 fichier(s), 19 POST(s)
 
 PROTECTED (idempotence détectée) — 1 :
@@ -6,16 +6,16 @@ PROTECTED (idempotence détectée) — 1 :
 
 UNPROTECTED (aucune idempotence détectée) — 18  ⚠️ DOUBLE-SUBMIT :
   app/api/dossier-enfant/[inscriptionId]/pdf-email/route.ts:27  POST
-  app/api/dossier-enfant/[inscriptionId]/submit/route.ts:23  POST
+  app/api/dossier-enfant/[inscriptionId]/submit/route.ts:28  POST
   app/api/dossier-enfant/[inscriptionId]/upload/route.ts:27  POST
-  app/api/inscriptions/route.ts:49  POST
-  app/api/pro/propositions/route.ts:9  POST
+  app/api/inscriptions/route.ts:51  POST
+  app/api/pro/propositions/route.ts:10  POST
   app/api/souhaits/link-inscription/route.ts:12  POST
   app/api/souhaits/route.ts:38  POST
   app/api/structure/[code]/calls/route.ts:72  POST
   app/api/structure/[code]/incidents/route.ts:68  POST
   app/api/structure/[code]/inscriptions/[id]/pdf-email/route.ts:26  POST
-  app/api/structure/[code]/inscriptions/[id]/submit/route.ts:34  POST
+  app/api/structure/[code]/inscriptions/[id]/submit/route.ts:39  POST
   app/api/structure/[code]/inscriptions/[id]/upload/route.ts:34  POST
   app/api/structure/[code]/invite/route.ts:16  POST
   app/api/structure/[code]/medical/route.ts:90  POST

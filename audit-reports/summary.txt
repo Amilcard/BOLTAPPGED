@@ -1,15 +1,21 @@
-[audit summary] 2026-04-22T10:27:07.565Z  commit=ed9f62b
+[audit summary] 2026-04-25T09:44:51.009Z  commit=e34e1e7
 
 Script                          | Exit | Violations
 ────────────────────────────────┼──────┼────────────
-auditlog-coverage.mjs           |    1 | 29
+auditlog-coverage.mjs           |    1 | 25
 cron-secret.mjs                 |    0 | 0
+email-outbound-drift.mjs        |    1 | 28
 idempotency.mjs                 |    1 | 18
 pii-logs.mjs                    |    0 | 0
+post-action-assertions.mjs      |    0 | 0
 role-guards.mjs                 |    0 | 0
 route-auth.mjs                  |    1 | 1
+schema-drift.mjs                |    1 | 1
+sentry-coverage.mjs             |    0 | 0 (raw_sentry=0, uncovered_pii=0)
 silent-catch.mjs                |    1 | 30
 size-caps.mjs                   |    1 | 1
+state-reconciliation.mjs        |    1 | 9
+zod-sql-consistency.mjs         |    0 | 0
 
-TOTAL: 8 scripts, 5 en violation
+TOTAL: 14 scripts, 8 en violation
 EXIT: 1

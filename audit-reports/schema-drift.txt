@@ -1,6 +1,6 @@
-[schema-drift audit v2] 2026-04-22T11:50:42.117Z  commit=28b6b06
-scope: sql/ + supabase/migrations/ — 155 fichier(s)
-(table, column) pairs with CHECK IN : 16
+[schema-drift audit v2] 2026-04-25T09:44:52.236Z  commit=e34e1e7
+scope: sql/ + supabase/migrations/ — 154 fichier(s)
+(table, column) pairs with CHECK IN : 14
 orphan checks (table non-trackée) : 0
 
 DRIFT (même table.col, valeurs différentes entre migrations) — 1 ⚠️ T4 :

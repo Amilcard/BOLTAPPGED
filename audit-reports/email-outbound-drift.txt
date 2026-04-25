@@ -1,0 +1,40 @@
+[email-outbound-drift audit] 2026-04-25T09:44:51.430Z  commit=e34e1e7
+scope: app/api + lib — 142 fichier(s)
+
+TOTAL tryResendSend calls : 28
+WITHOUT idempotency_key (risque double-envoi) — 28 ⚠️ T2 :
+  lib/email.ts:40  *   return await tryResendSend({ from, to, subject, html });
+  lib/email.ts:42  export async function tryResendSend(payload: ResendSendPayload): Promise<EmailResult> {
+  lib/email.ts:98  * Refactor L2/6 — délègue à tryResendSend (wrapper unique, retour EmailResult).
+  lib/email.ts:102  return await tryResendSend({
+  lib/email.ts:180  return await tryResendSend({
+  lib/email.ts:217  return await tryResendSend({
+  lib/email.ts:262  return await tryResendSend({
+  lib/email.ts:323  return await tryResendSend({
+  lib/email.ts:371  return await tryResendSend({
+  lib/email.ts:437  return await tryResendSend({
+  lib/email.ts:475  return await tryResendSend({
+  lib/email.ts:524  return await tryResendSend({
+  lib/email.ts:565  return await tryResendSend({
+  lib/email.ts:624  return await tryResendSend({
+  lib/email.ts:650  return await tryResendSend({
+  lib/email.ts:697  return await tryResendSend({
+  lib/email.ts:737  return await tryResendSend({
+  lib/email.ts:774  return await tryResendSend({
+  lib/email.ts:831  return await tryResendSend({
+  lib/email.ts:877  return await tryResendSend({
+  lib/email.ts:940  return await tryResendSend({
+  lib/email.ts:996  return await tryResendSend({
+  lib/email.ts:1064  return await tryResendSend({
+  lib/email.ts:1102  return await tryResendSend({
+  lib/email.ts:1134  return await tryResendSend({
+  lib/email.ts:1170  return await tryResendSend({
+  lib/email.ts:1277  return await tryResendSend({
+  lib/email.ts:1379  return await tryResendSend({
+
+NOTE : l'idempotency_key recommandée est sha256(template + resource_id + date_ymd)
+       (voir CLAUDE.md §T2 et docs/SEMANTIC_GUARDS.md). À intégrer dans tryResendSend.
+
+──────────────────────────────────────────────────────────────────────
+VIOLATIONS: 28
+EXIT: 1

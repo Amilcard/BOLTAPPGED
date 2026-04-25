@@ -1,0 +1,12 @@
+[zod-sql-consistency audit] 2026-04-25T09:44:52.913Z  commit=e34e1e7
+scope: Zod=209 files, SQL=154 files
+columns with both Zod + CHECK: 0
+
+MATCH (Zod enum == CHECK IN SQL) — 0 :
+
+DIVERGENCE (Zod accepte valeur que SQL rejette OU inverse) — 0 ⚠️ T4 :
+
+──────────────────────────────────────────────────────────────────────
+TOTAL columns: 0 | match=0 | divergence=0
+VIOLATIONS: 0
+EXIT: 0

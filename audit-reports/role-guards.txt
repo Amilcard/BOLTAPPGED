@@ -1,4 +1,4 @@
-[role-guards audit] 2026-04-22T10:27:08.212Z  commit=ed9f62b
+[role-guards audit] 2026-04-25T09:44:51.957Z  commit=e34e1e7
 scope: app/api/structure/[code]/** — 20 fichier(s), 28 handler(s)
 
 STRICT (allowRoles) — 19 handler(s) :
@@ -10,7 +10,7 @@ STRICT (allowRoles) — 19 handler(s) :
   app/api/structure/[code]/inscriptions/[id]/dossier/route.ts:123  PATCH  allowRoles=[secretariat,direction,cds,cds_delegated]
   app/api/structure/[code]/inscriptions/[id]/pdf/route.ts:26  GET  allowRoles=[secretariat,direction,cds,cds_delegated]
   app/api/structure/[code]/inscriptions/[id]/pdf-email/route.ts:26  POST  allowRoles=[secretariat,direction,cds,cds_delegated]
-  app/api/structure/[code]/inscriptions/[id]/submit/route.ts:34  POST  allowRoles=[secretariat,direction,cds,cds_delegated]
+  app/api/structure/[code]/inscriptions/[id]/submit/route.ts:39  POST  allowRoles=[secretariat,direction,cds,cds_delegated]
   app/api/structure/[code]/inscriptions/[id]/upload/route.ts:34  POST  allowRoles=[secretariat,direction,cds,cds_delegated]
   app/api/structure/[code]/inscriptions/[id]/upload/route.ts:149  DELETE  allowRoles=[secretariat,direction,cds,cds_delegated]
   app/api/structure/[code]/invite/route.ts:16  POST  allowRoles=[direction]

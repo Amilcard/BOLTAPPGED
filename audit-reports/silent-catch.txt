@@ -1,12 +1,12 @@
-[silent-catch audit] 2026-04-22T10:27:08.474Z  commit=ed9f62b
-scope: app/api/ + lib/ — 140 fichier(s), 30 catch block(s) suspect(s)
+[silent-catch audit] 2026-04-25T09:44:52.496Z  commit=e34e1e7
+scope: app/api/ + lib/ — 142 fichier(s), 30 catch block(s) suspect(s)
 
 EMPTY (catch vide ou commentaires seulement) — 0  ⚠️ BLOQUANT :
 
 CONSOLE_ONLY (catch avec console.* mais pas de return/throw/sentry) — 21  ⚠️ :
   app/api/admin/dossier-enfant/[inscriptionId]/route.ts:119  { // Calcul non-bloquant — on n'empêche pas la lecture du dossier       console.er }
-  app/api/admin/inscriptions/manual/route.ts:269  { console.error('[admin/inscriptions/manual] sendChefDeServiceInvitation exception }
-  app/api/admin/inscriptions/manual/route.ts:302  { console.error('[admin/inscriptions/manual] sendSuiviLink exception:', err);      }
+  app/api/admin/inscriptions/manual/route.ts:293  { console.error('[admin/inscriptions/manual] sendChefDeServiceInvitation exception }
+  app/api/admin/inscriptions/manual/route.ts:326  { console.error('[admin/inscriptions/manual] sendSuiviLink exception:', err);      }
   app/api/auth/logout/route.ts:51  { console.error('[auth/logout] unexpected error:', err);     // Logout toujours ré }
   app/api/cron/health-checks/route.ts:60  { alerts.push('HC-1: erreur requête');     console.error('[health-checks] HC-1 err }
   app/api/cron/health-checks/route.ts:79  { alerts.push('HC-2: erreur requête');     console.error('[health-checks] HC-2 err }
@@ -14,21 +14,21 @@ CONSOLE_ONLY (catch avec console.* mais pas de return/throw/sentry) — 21  ⚠�
   app/api/cron/health-checks/route.ts:124  { alerts.push('HC-4: erreur requête');     console.error('[health-checks] HC-4 err }
   app/api/cron/health-checks/route.ts:144  { alerts.push('HC-5: erreur requête');     console.error('[health-checks] HC-5 err }
   app/api/inscription-urgence/route.ts:181  { console.error('[inscription-urgence] Notification admin échouée:', (emailErr as  }
-  app/api/inscriptions/route.ts:107  { // Turnstile timeout ou erreur réseau — log + allow (graceful fallback)          }
-  app/api/inscriptions/route.ts:736  { console.error('[inscriptions] pro session revoke exception:', revokeErr); }
-  app/api/inscriptions/route.ts:757  { console.error('[inscriptions] catch-global capacity rollback exception:', rollba }
-  app/api/payment/create-intent/route.ts:103  { console.error('Failed to cancel orphaned PaymentIntent:', cancelErr); }
+  app/api/inscriptions/route.ts:109  { // Turnstile timeout ou erreur réseau — log + allow (graceful fallback)          }
+  app/api/inscriptions/route.ts:778  { console.error('[inscriptions] pro session revoke exception:', revokeErr); }
+  app/api/inscriptions/route.ts:807  { console.error('[inscriptions] catch-global capacity rollback exception:', rollba }
+  app/api/payment/create-intent/route.ts:113  { console.error('Failed to cancel orphaned PaymentIntent:', cancelErr); }
   app/api/structures/verify/[code]/route.ts:51  { console.error('[structures/verify] error:', err);     return NextResponse.json({ }
   app/api/suivi/resend/route.ts:57  { console.error('[suivi/resend] email failed:', (emailErr as Error)?.message);     }
-  lib/admin-inscriptions-relance.ts:117  { console.error('runRelanceInscription error:', err);     return { ok: false, stat }
+  lib/admin-inscriptions-relance.ts:139  { console.error('runRelanceInscription error:', err);     return { ok: false, stat }
   lib/admin-stays-notify-waitlist.ts:113  { console.error('[notify-waitlist] Erreur envoi entry', entry.id, err); }
   lib/email-logger.ts:46  { console.error(`[email-logger] auditLog failed for ${context}:`, err); }
-  lib/email.ts:57  { console.error('[email] provider_error exception', err);     return { sent: false }
+  lib/email.ts:64  { console.error('[email] provider_error exception', err);     return { sent: false }
   lib/rate-limit.ts:120  { console.error('[rate-limit] resetRateLimit failed:', err); }
 
 NO_ACTION (catch sans return/throw/sentry, pas non plus console) — 9  ⚠️ :
   app/api/auth/2fa/verify/route.ts:38  { return true; // fail-closed — 2FA brute-force doit être bloqué en cas d'erreur D }
-  app/api/pro/request-access/route.ts:46  { // fail-closed : previent spam email si DB inaccessible     return true; }
+  app/api/pro/request-access/route.ts:47  { // fail-closed : previent spam email si DB inaccessible     return true; }
   lib/auth-middleware.ts:38  { return null; }
   lib/auth-middleware.ts:103  { return null; }
   lib/educateur-token.ts:31  { return null; }

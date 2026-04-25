@@ -1,4 +1,4 @@
-[size-caps audit] 2026-04-22T10:27:08.594Z  commit=ed9f62b
+[size-caps audit] 2026-04-25T09:44:52.623Z  commit=e34e1e7
 scope: app/api/**/route.ts avec upload/formData/presign — 2 route(s) détectée(s)
 
 CAPPED (cap de taille détecté) — 1 :

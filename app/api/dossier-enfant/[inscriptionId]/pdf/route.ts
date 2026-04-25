@@ -134,7 +134,13 @@ export async function GET(
      *   - inputs non-string (number, boolean, objet) → coercition sûre via String()
      * Évite l'affichage de "null" / "undefined" dans les PDF dossier enfant (Art.9).
      */
-    const writeText = (pageIndex: number, x: number, y: number, text: unknown, options?: { bold?: boolean; size?: number }) => {
+    const writeText = (
+      pageIndex: number,
+      x: number,
+      y: number,
+      text: unknown,
+      options?: { bold?: boolean; size?: number; maxLength?: number }
+    ) => {
       const page = pdfDoc.getPages()[pageIndex];
       if (!page) return;
       if (text === null || text === undefined) return;
@@ -142,7 +148,8 @@ export async function GET(
       const trimmed = str.trim();
       if (!trimmed || trimmed === 'null' || trimmed === 'undefined') return;
       const { height } = page.getSize();
-      page.drawText(str.slice(0, 120), {
+      const maxLength = options?.maxLength ?? 120;
+      page.drawText(str.slice(0, maxLength), {
         x,
         y: height - y,
         size: options?.size || fontSize,
@@ -167,6 +174,77 @@ export async function GET(
       const match = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
       if (!match) return iso;
       return `${match[3]}/${match[2]}/${match[1]}`;
+    };
+
+    const getDateParts = (value: string): [string, string, string] | null => {
+      const formatted = formatDate(value);
+      const match = formatted.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      return match ? [match[1], match[2], match[3]] : null;
+    };
+
+    const writeDateTriplet = (
+      pageIndex: number,
+      coords: { dayX: number; monthX: number; yearX: number; y: number },
+      value: string
+    ) => {
+      const parts = getDateParts(value);
+      if (!parts) {
+        writeText(pageIndex, coords.dayX, coords.y, value);
+        return;
+      }
+      writeText(pageIndex, coords.dayX, coords.y, parts[0], { maxLength: 2 });
+      writeText(pageIndex, coords.monthX, coords.y, parts[1], { maxLength: 2 });
+      writeText(pageIndex, coords.yearX, coords.y, parts[2], { maxLength: 4 });
+    };
+
+    const measureText = (content: string, size: number, bold = false): number => {
+      const activeFont = bold ? fontBold : font;
+      if (typeof (activeFont as { widthOfTextAtSize?: unknown }).widthOfTextAtSize === 'function') {
+        return (activeFont as { widthOfTextAtSize: (text: string, size: number) => number }).widthOfTextAtSize(content, size);
+      }
+      return content.length * size * 0.55;
+    };
+
+    const splitLinesToWidth = (content: string, maxWidth: number, size: number): string[] => {
+      const trimmed = content.trim();
+      if (!trimmed) return [];
+      const words = trimmed.split(/\s+/);
+      const lines: string[] = [];
+      let current = '';
+
+      for (const word of words) {
+        const candidate = current ? `${current} ${word}` : word;
+        if (!current || measureText(candidate, size) <= maxWidth) {
+          current = candidate;
+          continue;
+        }
+        lines.push(current);
+        current = word;
+      }
+
+      if (current) lines.push(current);
+      return lines;
+    };
+
+    const writeWrappedText = (
+      pageIndex: number,
+      x: number,
+      y: number,
+      text: unknown,
+      options: { size?: number; maxWidth: number; lineHeight?: number; maxLines?: number; bold?: boolean }
+    ) => {
+      const value = s(text).trim();
+      if (!value || value === 'null' || value === 'undefined') return;
+      const size = options.size || fontSize;
+      const lineHeight = options.lineHeight || size + 4;
+      const lines = splitLinesToWidth(value, options.maxWidth, size).slice(0, options.maxLines || 3);
+      lines.forEach((line, index) => {
+        writeText(pageIndex, x, y + index * lineHeight, line, {
+          size,
+          bold: options.bold,
+          maxLength: line.length,
+        });
+      });
     };
 
     /**
@@ -225,9 +303,9 @@ export async function GET(
       // --- ENVOI DE LA FICHE DE LIAISON (choix utilisateur) ---
       // La convocation est gérée par GED après validation du dossier, hors périmètre ici.
       const envoiFicheLiaison = s(d.envoi_fiche_liaison);
-      writeCheck(0, 150, 375, envoiFicheLiaison === 'permanente');
-      writeCheck(0, 150, 397, envoiFicheLiaison === 'depart');
-      writeCheck(0, 150, 419, envoiFicheLiaison === 'retour');
+      writeCheck(0, 265, 375, envoiFicheLiaison === 'permanente');
+      writeCheck(0, 265, 397, envoiFicheLiaison === 'depart');
+      writeCheck(0, 265, 419, envoiFicheLiaison === 'retour');
 
       // --- PERSONNE À CONTACTER EN CAS D'URGENCE ---
       writeText(0, 120, 468, s(d.contact_urgence_nom));
@@ -236,18 +314,26 @@ export async function GET(
       writeText(0, 376, 484, s(d.contact_urgence_telephone));
 
       // --- FINANCEMENT ---
-      writeCheck(0, 35, 580, s(d.financement_ase)           === 'true' || d.financement_ase           === true);
-      writeCheck(0, 35, 596, s(d.financement_etablissement) === 'true' || d.financement_etablissement === true);
-      writeCheck(0, 35, 612, s(d.financement_famille)       === 'true' || d.financement_famille       === true);
-      writeCheck(0, 35, 628, s(d.financement_autres)        === 'true' || d.financement_autres        === true);
+      writeCheck(0, 175, 580, s(d.financement_ase)           === 'true' || d.financement_ase           === true);
+      writeCheck(0, 285, 596, s(d.financement_etablissement) === 'true' || d.financement_etablissement === true);
+      writeCheck(0, 395, 612, s(d.financement_famille)       === 'true' || d.financement_famille       === true);
+      writeCheck(0, 505, 628, s(d.financement_autres)        === 'true' || d.financement_autres        === true);
       if (s(d.financement_montants)) {
-        writeText(0, 100, 628, s(d.financement_montants), { size: smallFontSize });
+        writeText(0, 175, 660, s(d.financement_montants), { size: smallFontSize, maxLength: 20 });
       }
 
       // --- AUTORISATION LÉGALE ---
       writeText(0, 102, 703, s(d.soussigne_nom) || inscription.referent_nom);
+      writeText(0, 370, 703, `${inscription.jeune_prenom || ''} ${jeuneNomDisplay}`.trim(), { maxLength: 40 });
       writeText(0, 56,  743, s(d.autorisation_fait_a));
-      writeText(0, 280, 743, s(d.date_signature) || dossierDate);
+      // Le template a déjà "/ 2026" imprimé → on n'écrit que jour + mois
+      {
+        const parts = getDateParts(s(d.date_signature) || dossierDate);
+        if (parts) {
+          writeText(0, 280, 743, parts[0], { maxLength: 2 });
+          writeText(0, 333, 743, parts[1], { maxLength: 2 });
+        }
+      }
 
     // ========================================================================
     // FICHE SANITAIRE DE LIAISON
@@ -264,7 +350,7 @@ export async function GET(
       writeCheck(0, 350, 187, s(d.sexe) === 'garcon');
       writeCheck(0, 412, 187, s(d.sexe) === 'fille');
       writeText(0, 100, 199, inscription.jeune_prenom);
-      writeText(0, 138, 216, formatDate(inscription.jeune_date_naissance));
+      writeDateTriplet(0, { dayX: 138, monthX: 234, yearX: 332, y: 216 }, inscription.jeune_date_naissance);
 
       writeCheck(0, 457, 200, s(d.sieste) === 'oui');
       writeCheck(0, 497, 218, s(d.sieste) === 'non');
@@ -281,9 +367,7 @@ export async function GET(
       writeText(0, 27,  427, s(d.resp1_cp_ville),       { size: smallFontSize });
       writeText(0, 100, 444, s(d.resp1_profession));
       const email1 = s(d.resp1_email);
-      const emailBreak = 45;
-      writeText(0, 230, 472, email1.slice(0, emailBreak),                    { size: smallFontSize });
-      if (email1.length > emailBreak) writeText(0, 27, 490, email1.slice(emailBreak), { size: smallFontSize });
+      writeWrappedText(0, 230, 472, email1, { size: smallFontSize, maxWidth: 320, lineHeight: 18, maxLines: 2 });
       writeText(0, 98,  507, s(d.resp1_tel_domicile));
       writeText(0, 97,  523, s(d.resp1_tel_portable));
       writeText(0, 100, 540, s(d.resp1_tel_travail));
@@ -296,8 +380,7 @@ export async function GET(
       writeText(0, 309, 420, s(d.resp2_cp_ville),       { size: smallFontSize });
       writeText(0, 380, 448, s(d.resp2_profession));
       const email2 = s(d.resp2_email);
-      writeText(0, 345, 462, email2.slice(0, emailBreak),                    { size: smallFontSize });
-      if (email2.length > emailBreak) writeText(0, 309, 477, email2.slice(emailBreak), { size: smallFontSize });
+      writeWrappedText(0, 345, 462, email2, { size: smallFontSize, maxWidth: 220, lineHeight: 15, maxLines: 2 });
       writeText(0, 382, 493, s(d.resp2_tel_domicile));
       writeText(0, 381, 510, s(d.resp2_tel_portable));
       writeText(0, 395, 526, s(d.resp2_tel_travail));
@@ -344,56 +427,66 @@ export async function GET(
         { key: 'pneumocoque' },
       ];
 
+      const vaccineColumns = {
+        left: { yesX: 150, noX: 165, dateX: 200 },
+        middle: { yesX: 332, noX: 347, dateX: 378 },
+        right: { yesX: 507, noX: 521, dateX: 552 },
+      };
+
+      // Layout 3 colonnes × 3-4 lignes : col gauche (i=0..2), col milieu (i=3..7 incl. ROR x3), col droite (i=8..10)
+      // baseY = première ligne réelle "Diphtérie/Coqueluche/HépatiteB", pitch = hauteur d'une rangée du tableau
+      const VACCINE_BASE_Y = 100;
+      const VACCINE_ROW_PITCH = 18;
       vaccins.forEach((v, i) => {
-        const rowY = 80 + i * 9;
+        const colIndex = i <= 2 ? 0 : i <= 7 ? 1 : 2;
+        const rowInCol = i <= 2 ? i : i <= 7 ? i - 3 : i - 8;
+        const rowY = VACCINE_BASE_Y + rowInCol * VACCINE_ROW_PITCH;
         const val  = v.ror ? rorVal  : s(d[`vaccin_${v.key}`]);
         const date = v.ror ? rorDate : s(d[`vaccin_${v.key}_date`]);
-        writeCheck(1, 260, rowY, val === 'oui');
-        writeCheck(1, 340, rowY, val === 'non');
-        if (date) writeText(1, 430, rowY, date, { size: 7 });
+        const columnSet = colIndex === 0 ? vaccineColumns.left : colIndex === 1 ? vaccineColumns.middle : vaccineColumns.right;
+        writeCheck(1, columnSet.yesX, rowY, val === 'oui');
+        writeCheck(1, columnSet.noX, rowY, val === 'non');
+        if (date) writeText(1, columnSet.dateX, rowY, date, { size: 7, maxLength: 12 });
       });
 
       // 5. RENSEIGNEMENTS MÉDICAUX
       writeText(1, 74, 247, s(d.poids));
       writeText(1, 72, 267, s(d.taille));
 
-      writeCheck(1, 472, 258, s(d.traitement_en_cours) === 'true' || d.traitement_en_cours === true);
-      writeCheck(1, 520, 258, s(d.traitement_en_cours) === 'false' || d.traitement_en_cours === false);
+      writeCheck(1, 520, 258, s(d.traitement_en_cours) === 'true' || d.traitement_en_cours === true);
+      writeCheck(1, 578, 258, s(d.traitement_en_cours) === 'false' || d.traitement_en_cours === false);
       if (s(d.traitement_detail)) {
-        writeText(1, 35, 278, s(d.traitement_detail), { size: smallFontSize });
+        writeWrappedText(1, 35, 278, s(d.traitement_detail), { size: smallFontSize, maxWidth: 520, lineHeight: 13, maxLines: 2 });
       }
 
-      // Allergies — construire depuis les clés distinctes du formulaire
-      const allergiesParts: string[] = [];
-      if (s(d.allergie_asthme)         === 'oui') allergiesParts.push('Asthme');
-      if (s(d.allergie_alimentaire)    === 'oui') allergiesParts.push('Alimentaire');
-      if (s(d.allergie_medicamenteuse) === 'oui') allergiesParts.push('Médicamenteuse');
-      if (s(d.allergie_autres))                   allergiesParts.push(s(d.allergie_autres));
-      if (s(d.allergie_detail))                   allergiesParts.push(s(d.allergie_detail));
-      const allergiesText = allergiesParts.join(' — ');
-      if (allergiesText) {
-        writeText(1, 35, 330, allergiesText, { size: smallFontSize });
-      }
+      writeCheck(1, 181, 398, s(d.allergie_asthme) === 'oui');
+      writeCheck(1, 235, 398, s(d.allergie_asthme) === 'non');
+      writeCheck(1, 181, 420, s(d.allergie_alimentaire) === 'oui');
+      writeCheck(1, 235, 420, s(d.allergie_alimentaire) === 'non');
+      writeCheck(1, 503, 396, s(d.allergie_medicamenteuse) === 'oui');
+      writeCheck(1, 556, 396, s(d.allergie_medicamenteuse) === 'non');
+      writeText(1, 308, 430, s(d.allergie_autres), { size: smallFontSize, maxLength: 60 });
+      writeWrappedText(1, 35, 498, s(d.allergie_detail), { size: smallFontSize, maxWidth: 520, lineHeight: 18, maxLines: 3 });
 
       // Antécédents médicaux / chirurgicaux
       if (s(d.probleme_sante_detail)) {
-        writeText(1, 35, 390, s(d.probleme_sante_detail), { size: smallFontSize });
+        writeWrappedText(1, 35, 560, s(d.probleme_sante_detail), { size: smallFontSize, maxWidth: 500, lineHeight: 18, maxLines: 3 });
       }
 
       // Recommandations des parents
       if (s(d.recommandations_parents)) {
-        writeText(1, 35, 490, s(d.recommandations_parents), { size: smallFontSize });
+        writeWrappedText(1, 35, 648, s(d.recommandations_parents), { size: smallFontSize, maxWidth: 520, lineHeight: 18, maxLines: 3 });
       }
 
       // Remarques complémentaires
       if (s(d.remarques)) {
-        writeText(1, 35, 550, s(d.remarques), { size: smallFontSize });
+        writeWrappedText(1, 35, 704, s(d.remarques), { size: smallFontSize, maxWidth: 520, lineHeight: 16, maxLines: 2 });
       }
 
       // Autorisation de soins
       writeText(1, 102, 727, s(d.autorisation_soins_soussigne));
-      writeText(1, 100, 755, s(d.fait_a));
-      writeText(1, 300, 755, s(d.date_signature) || dossierDate);
+      writeText(1, 86,  793, s(d.fait_a));
+      writeText(1, 145, 793, s(d.date_signature) || dossierDate);
 
     // ========================================================================
     // FICHE DE LIAISON — PAGE 1 (Jeune / Éducateur/trice)
@@ -422,15 +515,15 @@ export async function GET(
       writeText(0, 366, 440, s(d.resp_etablissement_tel2));
 
       // PARTIE À REMPLIR PAR LE JEUNE
-      writeCheck(0, 76,  511, s(d.choix_seul)      === 'oui');
-      writeCheck(0, 106, 511, s(d.choix_seul)      === 'non');
-      writeCheck(0, 245, 511, s(d.choix_ami)       === 'oui');
-      writeCheck(0, 274, 511, s(d.choix_ami)       === 'non');
-      writeCheck(0, 496, 511, s(d.choix_educateur) === 'oui');
-      writeCheck(0, 526, 511, s(d.choix_educateur) === 'non');
+      writeCheck(0, 90,  511, s(d.choix_seul)      === 'oui');
+      writeCheck(0, 118, 511, s(d.choix_seul)      === 'non');
+      writeCheck(0, 262, 511, s(d.choix_ami)       === 'oui');
+      writeCheck(0, 290, 511, s(d.choix_ami)       === 'non');
+      writeCheck(0, 524, 511, s(d.choix_educateur) === 'oui');
+      writeCheck(0, 552, 511, s(d.choix_educateur) === 'non');
 
-      writeCheck(0, 230, 530, s(d.deja_parti) === 'oui');
-      writeCheck(0, 259, 530, s(d.deja_parti) === 'non');
+      writeCheck(0, 244, 530, s(d.deja_parti) === 'oui');
+      writeCheck(0, 273, 530, s(d.deja_parti) === 'non');
 
       if (s(d.deja_parti_detail)) {
         writeText(0, 131, 547, s(d.deja_parti_detail), { size: smallFontSize });
@@ -439,18 +532,15 @@ export async function GET(
       if (s(d.pourquoi_ce_sejour)) {
         const text = s(d.pourquoi_ce_sejour);
         const maxChars = 85;
-        writeText(0, 37, 581, text.slice(0, maxChars),           { size: smallFontSize });
-        if (text.length > maxChars) {
-          writeText(0, 37, 598, text.slice(maxChars, maxChars * 2), { size: smallFontSize });
-        }
+          writeWrappedText(0, 37, 581, text.slice(0, maxChars * 2), { size: smallFontSize, maxWidth: 520, lineHeight: 17, maxLines: 2 });
       }
 
-      writeCheck(0, 303, 617, s(d.fiche_technique_lue) === 'oui');
-      writeCheck(0, 333, 617, s(d.fiche_technique_lue) === 'non');
+      writeCheck(0, 375, 617, s(d.fiche_technique_lue) === 'oui');
+      writeCheck(0, 404, 617, s(d.fiche_technique_lue) === 'non');
 
       // ENGAGEMENT
-      writeText(0, 80,  740, s(d.signature_fait_a));
-      writeText(0, 280, 740, new Date().toLocaleDateString('fr-FR'));
+      writeText(0, 80,  776, s(d.signature_fait_a));
+      writeText(0, 280, 776, s(d.date_signature) || dossierDate);
     }
 
     // Embedding signature parentale (base64 stocké dans le JSONB du formulaire)
@@ -468,9 +558,9 @@ export async function GET(
         const imgBytes = Buffer.from(base64Data, 'base64');
         const sigImage = await pdfDoc.embedPng(imgBytes);
         const sigCoords: Record<string, { page: number; x: number; y: number; w: number; h: number }> = {
-          bulletin:  { page: 0, x: 350, y: 780, w: 120, h: 25 },
-          sanitaire: { page: 1, x: 350, y: 775, w: 120, h: 25 },
-          liaison:   { page: 0, x: 350, y: 780, w: 120, h: 25 },
+          bulletin:  { page: 0, x: 350, y: 795, w: 120, h: 25 },
+          sanitaire: { page: 1, x: 350, y: 800, w: 120, h: 25 },
+          liaison:   { page: 0, x: 410, y: 805, w: 120, h: 25 },
         };
         const coords = sigCoords[docType];
         if (coords) {
@@ -486,8 +576,9 @@ export async function GET(
             });
           }
         }
-      } catch {
+      } catch (sigErr) {
         // Non-bloquant : signature optionnelle dans le PDF
+        console.warn('[pdf GET] signature embed skipped:', (sigErr as Error)?.message || sigErr);
       }
     }
 

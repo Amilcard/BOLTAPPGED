@@ -103,3 +103,15 @@ deps.json
 # Les fichiers n8n exportés contiennent souvent des credentials en dur.
 # Ne commiter que des versions nettoyées (placeholders {{...}}).
 # install_ged_complete.sh exclut aussi pour éviter de ré-exposer un mot de passe.
+
+# ── Outils IA tiers (Codex CLI et co.) — config/conventions personnelles ──
+.codex/
+AGENTS.md
+
+# ── macOS Fuse temp files ──
+.fuse_hidden*
+
+# ── Captures locales (screenshots tester / debug) — jamais commiter ──
+# Garde-fou : éviter qu'un dossier de captures (test ou réelles) parte en
+# repo par accident. Conservation locale pour analyse, jamais en git.
+captures-*/

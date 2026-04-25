@@ -29,21 +29,23 @@ export default function NotesPanel({ code, role, inscriptions }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [loadError, setLoadError] = useState(false);
+  // F3 fix : string au lieu de boolean — symétrique avec submitError + expose le message serveur
+  const [loadError, setLoadError] = useState('');
 
   const canWrite = role === 'direction' || role === 'cds' || role === 'cds_delegated';
 
   const load = useCallback(async () => {
+    setLoadError('');
     try {
       const res = await fetch(`/api/structure/${code}/notes`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setNotes(data.notes ?? []);
-        setLoadError(false);
       } else {
-        setLoadError(true);
+        const data = await res.json().catch(() => ({}));
+        setLoadError(data?.error?.message || data?.error || 'Impossible de charger les notes. Rechargez la page ou contactez GED.');
       }
-    } catch { setLoadError(true); }
+    } catch { setLoadError('Impossible de charger les notes. Vérifiez votre connexion.'); }
     setLoading(false);
   }, [code]);
 
@@ -84,7 +86,7 @@ export default function NotesPanel({ code, role, inscriptions }: Props) {
   };
 
   if (loading) return <div className="p-6 text-center text-gray-400">Chargement...</div>;
-  if (loadError) return <div className="p-4 bg-secondary-50 border border-secondary-200 rounded-xl text-sm text-secondary-700" role="alert">Impossible de charger les notes. Rechargez la page ou contactez GED.</div>;
+  if (loadError) return <div className="p-4 bg-secondary-50 border border-secondary-200 rounded-xl text-sm text-secondary-700" role="alert">{loadError}</div>;
 
   return (
     <div className="space-y-4">
@@ -92,7 +94,11 @@ export default function NotesPanel({ code, role, inscriptions }: Props) {
         <div className="flex justify-end">
           <button
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-pill text-sm font-medium hover:bg-secondary/90 transition"
+            className={`flex items-center gap-2 px-4 py-2 rounded-pill text-sm font-medium transition ${
+              showForm
+                ? 'border border-gray-200 text-gray-700 bg-white hover:bg-gray-50'
+                : 'bg-secondary text-white hover:bg-secondary/90'
+            }`}
           >
             {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
             {showForm ? 'Annuler' : 'Ajouter une note'}

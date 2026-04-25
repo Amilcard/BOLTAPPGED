@@ -398,7 +398,7 @@ export default function StructureEduTab({
         <div className="animate-in fade-in duration-200">
           <div className="flex items-center gap-2 mb-3 text-xs text-gray-400">
             <Lock className="w-3.5 h-3.5" />
-            <span>Donnees Art. 9 RGPD — acces restreint et trace</span>
+            <span>Données Art. 9 RGPD — accès restreint et tracé</span>
           </div>
           <MedicalSummary code={code} role={role || ''} inscriptions={inscriptionsList} />
         </div>

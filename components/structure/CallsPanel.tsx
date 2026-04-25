@@ -46,22 +46,27 @@ const TYPE_LABELS: Record<string, string> = {
 export default function CallsPanel({ code, role, inscriptions }: Props) {
   const [calls, setCalls] = useState<Call[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
+  // F3 fix : string au lieu de boolean — expose le message serveur (rate-limit, validation, ownership)
+  const [loadError, setLoadError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const [callType, setCallType] = useState('ged_colo');
 
   const canWrite = role === 'direction' || role === 'cds' || role === 'cds_delegated';
 
   const load = useCallback(async () => {
+    setLoadError('');
     try {
       const res = await fetch(`/api/structure/${code}/calls`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setCalls(data.calls ?? []);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setLoadError(data?.error?.message || data?.error || 'Impossible de charger les appels. Rechargez la page.');
       }
-    } catch { setLoadError(true); }
+    } catch { setLoadError('Impossible de charger les appels. Vérifiez votre connexion.'); }
     setLoading(false);
   }, [code]);
 
@@ -71,7 +76,7 @@ export default function CallsPanel({ code, role, inscriptions }: Props) {
     e.preventDefault();
     setSubmitting(true);
     const fd = new FormData(e.currentTarget);
-    setSubmitError(false);
+    setSubmitError('');
     try {
       const res = await fetch(`/api/structure/${code}/calls`, {
         method: 'POST',
@@ -90,10 +95,11 @@ export default function CallsPanel({ code, role, inscriptions }: Props) {
         setShowForm(false);
         load();
       } else {
-        setSubmitError(true);
+        const data = await res.json().catch(() => ({}));
+        setSubmitError(data?.error?.message || data?.error || 'Erreur lors de l\'enregistrement. Veuillez réessayer.');
       }
     } catch {
-      setSubmitError(true);
+      setSubmitError('Erreur réseau. Vérifiez votre connexion et réessayez.');
     }
     setSubmitting(false);
   };
@@ -105,7 +111,7 @@ export default function CallsPanel({ code, role, inscriptions }: Props) {
   };
 
   if (loading) return <div className="p-6 text-center text-gray-400">Chargement...</div>;
-  if (loadError) return <div role="alert" className="p-6 text-center text-red-600 text-sm">Impossible de charger les appels. Rechargez la page.</div>;
+  if (loadError) return <div role="alert" className="p-6 text-center text-red-600 text-sm">{loadError}</div>;
 
   return (
     <div className="space-y-4">
@@ -113,7 +119,11 @@ export default function CallsPanel({ code, role, inscriptions }: Props) {
         <div className="flex justify-end">
           <button
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-pill text-sm font-medium hover:bg-secondary/90 transition"
+            className={`flex items-center gap-2 px-4 py-2 rounded-pill text-sm font-medium transition ${
+              showForm
+                ? 'border border-gray-200 text-gray-700 bg-white hover:bg-gray-50'
+                : 'bg-secondary text-white hover:bg-secondary/90'
+            }`}
           >
             {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
             {showForm ? 'Annuler' : 'Tracer un appel'}
@@ -163,7 +173,7 @@ export default function CallsPanel({ code, role, inscriptions }: Props) {
               Accord de la structure obtenu
             </label>
           )}
-          {submitError && <p role="alert" className="text-sm text-red-600">Erreur lors de l&apos;enregistrement. Veuillez réessayer.</p>}
+          {submitError && <p role="alert" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">{submitError}</p>}
           <button type="submit" disabled={submitting} className="px-4 py-2 bg-secondary text-white rounded-lg text-sm font-medium hover:bg-secondary-600 transition disabled:opacity-50">
             {submitting ? 'Envoi...' : 'Enregistrer'}
           </button>

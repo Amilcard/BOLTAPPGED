@@ -58,22 +58,25 @@ export default function IncidentsPanel({ code, role, inscriptions }: Props) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState(false);
-  const [loadError, setLoadError] = useState(false);
+  // F3 fix : passer de boolean à string pour exposer le message serveur (rate-limit,
+  // validation, ownership) au lieu d'un message générique « Erreur lors du signalement ».
+  const [submitError, setSubmitError] = useState('');
+  const [loadError, setLoadError] = useState('');
 
   const canWrite = role === 'direction' || role === 'cds' || role === 'cds_delegated';
 
   const load = useCallback(async () => {
+    setLoadError('');
     try {
       const res = await fetch(`/api/structure/${code}/incidents`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setIncidents(data.incidents ?? []);
-        setLoadError(false);
       } else {
-        setLoadError(true);
+        const data = await res.json().catch(() => ({}));
+        setLoadError(data?.error?.message || data?.error || 'Impossible de charger les faits marquants. Rechargez la page ou contactez GED.');
       }
-    } catch { setLoadError(true); }
+    } catch { setLoadError('Impossible de charger les faits marquants. Vérifiez votre connexion.'); }
     setLoading(false);
   }, [code]);
 
@@ -83,7 +86,7 @@ export default function IncidentsPanel({ code, role, inscriptions }: Props) {
     e.preventDefault();
     setSubmitting(true);
     const fd = new FormData(e.currentTarget);
-    setSubmitError(false);
+    setSubmitError('');
     try {
       const res = await fetch(`/api/structure/${code}/incidents`, {
         method: 'POST',
@@ -100,10 +103,11 @@ export default function IncidentsPanel({ code, role, inscriptions }: Props) {
         setShowForm(false);
         load();
       } else {
-        setSubmitError(true);
+        const data = await res.json().catch(() => ({}));
+        setSubmitError(data?.error?.message || data?.error || 'Erreur lors du signalement. Veuillez réessayer.');
       }
     } catch {
-      setSubmitError(true);
+      setSubmitError('Erreur réseau. Vérifiez votre connexion et réessayez.');
     }
     setSubmitting(false);
   };
@@ -114,7 +118,7 @@ export default function IncidentsPanel({ code, role, inscriptions }: Props) {
   };
 
   if (loading) return <div className="p-6 text-center text-gray-400">Chargement...</div>;
-  if (loadError) return <div className="p-4 bg-secondary-50 border border-secondary-200 rounded-xl text-sm text-secondary-700" role="alert">Impossible de charger les faits marquants. Rechargez la page ou contactez GED.</div>;
+  if (loadError) return <div className="p-4 bg-secondary-50 border border-secondary-200 rounded-xl text-sm text-secondary-700" role="alert">{loadError}</div>;
 
   return (
     <div className="space-y-4">
@@ -122,7 +126,11 @@ export default function IncidentsPanel({ code, role, inscriptions }: Props) {
         <div className="flex justify-end">
           <button
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-pill text-sm font-medium hover:bg-secondary/90 transition"
+            className={`flex items-center gap-2 px-4 py-2 rounded-pill text-sm font-medium transition ${
+              showForm
+                ? 'border border-gray-200 text-gray-700 bg-white hover:bg-gray-50'
+                : 'bg-secondary text-white hover:bg-secondary/90'
+            }`}
           >
             {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
             {showForm ? 'Annuler' : 'Signaler un fait marquant'}
@@ -163,7 +171,7 @@ export default function IncidentsPanel({ code, role, inscriptions }: Props) {
             <label htmlFor="inc-desc" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
             <textarea id="inc-desc" name="description" required minLength={5} rows={3} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Decrire le fait marquant..." />
           </div>
-          {submitError && <p role="alert" className="text-sm text-red-600">Erreur lors du signalement. Veuillez réessayer.</p>}
+          {submitError && <p role="alert" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">{submitError}</p>}
           <button type="submit" disabled={submitting} className="px-4 py-2 bg-secondary text-white rounded-lg text-sm font-medium hover:bg-secondary-600 transition disabled:opacity-50">
             {submitting ? 'Envoi...' : 'Signaler'}
           </button>
@@ -171,7 +179,7 @@ export default function IncidentsPanel({ code, role, inscriptions }: Props) {
       )}
 
       {incidents.length === 0 ? (
-        <div className="p-8 text-center text-gray-400">Aucun fait marquant signal\u00e9.</div>
+        <div className="p-8 text-center text-gray-400">Aucun fait marquant signalé.</div>
       ) : (
         <div className="space-y-3">
           {incidents.map(inc => (

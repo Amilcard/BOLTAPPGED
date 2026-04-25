@@ -107,8 +107,18 @@ export async function POST(request: NextRequest) {
           );
         }
       } catch (tvErr) {
-        // Turnstile timeout ou erreur réseau — log + allow (graceful fallback)
+        // Turnstile timeout ou erreur réseau — log + allow (graceful fallback intentionnel)
+        // Trade-off : disponibilité > sécurité parfaite. Si Cloudflare est down, on n'empêche
+        // pas les inscriptions. Sentry capture le volume de fallbacks pour détecter une
+        // anomalie (vague d'inscriptions sans Turnstile vérifié = suspicion bot).
         console.error('[inscriptions] Turnstile verification timeout/error, allowing:', tvErr instanceof Error ? tvErr.message : tvErr);
+        const { captureServerException } = await import('@/lib/sentry-capture');
+        captureServerException(
+          tvErr instanceof Error ? tvErr : new Error(String(tvErr)),
+          { domain: 'auth', operation: 'turnstile_fallback_allow' },
+          undefined,
+          'warning'
+        );
       }
     }
 

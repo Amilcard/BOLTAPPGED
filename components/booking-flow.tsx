@@ -479,7 +479,16 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
         setLoading(false);
         return;
       }
-      if (!res.ok) throw new Error(data?.error?.message ?? 'Erreur lors de la réservation');
+      if (!res.ok) {
+        // C1 fix : sur échec captcha, reset le widget pour forcer un nouveau token
+        // → bouton "Payer maintenant" se désactive automatiquement (cf. ligne ~1290)
+        // → Cloudflare Turnstile re-émet un token via onTurnstileSuccess
+        if (data?.error?.code === 'CAPTCHA_FAILED' || data?.error?.code === 'CAPTCHA_REQUIRED') {
+          setTurnstileToken(null);
+          setTurnstileReady(false);
+        }
+        throw new Error(data?.error?.message ?? 'Erreur lors de la réservation');
+      }
 
       createdInscriptionId = data?.id ?? '';
       setBookingId(createdInscriptionId);

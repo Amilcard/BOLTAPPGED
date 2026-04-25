@@ -429,7 +429,7 @@ export async function GET(
 
       const vaccineColumns = {
         left: { yesX: 150, noX: 165, dateX: 200 },
-        middle: { yesX: 332, noX: 347, dateX: 378 },
+        middle: { yesX: 380, noX: 395, dateX: 425 }, // Phase2: recalibré estimation visuelle (bbox vectoriel) — à vérifier sur capture
         right: { yesX: 507, noX: 521, dateX: 552 },
       };
 

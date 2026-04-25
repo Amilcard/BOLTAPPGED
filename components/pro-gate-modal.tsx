@@ -96,10 +96,12 @@ export function ProGateModal({ open, onClose, variant, sejourSlug, reserverParam
   };
 
   // ── Variant kids-block (existant) ──
+  // C4 fix : backdrop opaque pour cacher le contenu derrière (charte UX — modal de gating
+  // doit clairement signaler que le contenu est inaccessible, pas teaser à travers).
   if (variant === 'kids-block') {
     return (
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-w-sm text-center">
+        <DialogContent overlayClassName="bg-black/90 backdrop-blur-sm" className="max-w-sm text-center">
           <DialogHeader className="items-center">
             <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-2">
               <Users className="w-6 h-6 text-accent" />
@@ -150,7 +152,7 @@ export function ProGateModal({ open, onClose, variant, sejourSlug, reserverParam
   if (variant === 'pro-verify') {
     return (
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-w-sm">
+        <DialogContent overlayClassName="bg-black/90 backdrop-blur-sm" className="max-w-sm">
           <DialogHeader>
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
               <Mail className="w-6 h-6 text-primary" />
@@ -188,7 +190,7 @@ export function ProGateModal({ open, onClose, variant, sejourSlug, reserverParam
   // ── Variant pro-auth (NOUVEAU — auth par code structure) ──
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent overlayClassName="bg-black/90 backdrop-blur-sm" className="max-w-md">
         <DialogHeader>
           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
             <Building2 className="w-6 h-6 text-primary" />

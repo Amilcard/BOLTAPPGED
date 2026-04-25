@@ -101,13 +101,13 @@ export default function ActivateClient() {
           </div>
           <div>
             <label className="block text-sm font-medium text-primary mb-1">Mot de passe <span className="text-red-500">*</span></label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required autoComplete="new-password"
+            <input type="password" value={password} onChange={e => { setPassword(e.target.value); if (error) setError(''); }} required autoComplete="new-password"
               className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-secondary" />
             <p className="text-xs text-gray-400 mt-1">12 caractères min, 1 majuscule, 1 minuscule, 1 chiffre.</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-primary mb-1">Confirmer <span className="text-red-500">*</span></label>
-            <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} required autoComplete="new-password"
+            <input type="password" value={confirm} onChange={e => { setConfirm(e.target.value); if (error) setError(''); }} required autoComplete="new-password"
               className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-secondary" />
           </div>
 
@@ -117,8 +117,8 @@ export default function ActivateClient() {
             </div>
           )}
 
-          <button type="submit" disabled={loading || !token}
-            className="w-full py-3 bg-secondary text-white rounded-pill font-medium hover:bg-secondary/90 disabled:opacity-50 flex items-center justify-center gap-2">
+          <button type="submit" disabled={loading || !token || !!error}
+            className="w-full py-3 bg-secondary text-white rounded-pill font-medium hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
             {loading ? 'Activation…' : 'Activer mon compte'}
           </button>

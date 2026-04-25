@@ -28,6 +28,10 @@ export default function StructureTeamTab({ code }: Props) {
   const [inviting, setInviting] = useState(false);
   const [error, setError] = useState('');
   const [actionMsg, setActionMsg] = useState('');
+  // C3 fix : rate-limit côté serveur (429) → désactiver le formulaire jusqu'à expiration.
+  // Sécurité : ne révèle pas la durée exacte (5 min par défaut côté back).
+  const [rateLimitedUntil, setRateLimitedUntil] = useState<number | null>(null);
+  const isRateLimited = rateLimitedUntil !== null && Date.now() < rateLimitedUntil;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -46,6 +50,16 @@ export default function StructureTeamTab({ code }: Props) {
 
   useEffect(() => { void load(); }, [load]);
 
+  // C3 fix : forcer re-render à expiration du rate-limit pour réactiver le formulaire sans
+  // que l'utilisateur ait à cliquer ou rafraîchir la page.
+  useEffect(() => {
+    if (rateLimitedUntil === null) return;
+    const remaining = rateLimitedUntil - Date.now();
+    if (remaining <= 0) { setRateLimitedUntil(null); return; }
+    const id = setTimeout(() => setRateLimitedUntil(null), remaining);
+    return () => clearTimeout(id);
+  }, [rateLimitedUntil]);
+
   const invite = async () => {
     setInviting(true);
     setError('');
@@ -58,6 +72,14 @@ export default function StructureTeamTab({ code }: Props) {
       });
       const data = await res.json();
       if (!res.ok) {
+        // C3 fix : sur 429, lire Retry-After si présent (sinon défaut 5 min) et désactiver
+        // le formulaire jusqu'à expiration pour éviter les clics répétés inutiles.
+        if (res.status === 429) {
+          const retryAfterRaw = res.headers.get('Retry-After');
+          const retryAfterSec = retryAfterRaw ? parseInt(retryAfterRaw, 10) : NaN;
+          const cooldownMs = (Number.isFinite(retryAfterSec) && retryAfterSec > 0 ? retryAfterSec : 300) * 1000;
+          setRateLimitedUntil(Date.now() + cooldownMs);
+        }
         setError(data?.error?.message || data?.error?.code || 'Erreur invitation');
         return;
       }
@@ -117,19 +139,22 @@ export default function StructureTeamTab({ code }: Props) {
         <div className="bg-white border border-gray-200 rounded-brand p-4 space-y-3">
           <h3 className="font-semibold text-primary">Nouvelle invitation</h3>
           <input type="email" placeholder="Email pro" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-secondary" />
+            disabled={isRateLimited}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-secondary disabled:opacity-50 disabled:cursor-not-allowed" />
           <input type="text" placeholder="Prénom (optionnel)" value={invitePrenom} onChange={e => setInvitePrenom(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-secondary" />
+            disabled={isRateLimited}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-secondary disabled:opacity-50 disabled:cursor-not-allowed" />
           <select value={inviteRole} onChange={e => setInviteRole(e.target.value as 'secretariat' | 'educateur')}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg">
+            disabled={isRateLimited}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
             <option value="secretariat">Secrétariat</option>
             <option value="educateur">Éducateur</option>
           </select>
           <div className="flex gap-2">
             <button onClick={() => { setInviteOpen(false); setError(''); }} className="flex-1 py-2 border border-gray-200 rounded-lg text-sm">Annuler</button>
-            <button onClick={invite} disabled={inviting || !inviteEmail}
-              className="flex-1 py-2 bg-secondary text-white rounded-lg text-sm font-medium disabled:opacity-50">
-              {inviting ? 'Envoi…' : 'Envoyer l\'invitation'}
+            <button onClick={invite} disabled={inviting || !inviteEmail || isRateLimited}
+              className="flex-1 py-2 bg-secondary text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+              {inviting ? 'Envoi…' : isRateLimited ? 'Patientez…' : 'Envoyer l\'invitation'}
             </button>
           </div>
         </div>

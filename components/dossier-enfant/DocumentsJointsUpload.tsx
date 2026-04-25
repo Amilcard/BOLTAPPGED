@@ -3,6 +3,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Lock, FileText, Check, X as XIcon } from 'lucide-react';
 import { REQUIS_TO_JOINT, DOC_OPT_LABELS } from '@/lib/dossier-shared';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface DocJoint {
   type: string;
@@ -63,6 +73,7 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess, r
   const [selectedType, setSelectedType] = useState('vaccins');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [docToDelete, setDocToDelete] = useState<DocJoint | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const isStaffMode = !!apiBase;
@@ -143,10 +154,7 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess, r
     }
   };
 
-  const handleDelete = async (doc: DocJoint) => {
-    const docLabel = doc.filename || getTypeLabel(doc.type);
-    if (!confirm(`Supprimer "${docLabel}" ?`)) return;
-
+  const performDelete = async (doc: DocJoint) => {
     try {
       const deleteUrl = apiBase || `/api/dossier-enfant/${inscriptionId}/upload`;
       const deleteBody = isStaffMode
@@ -164,6 +172,8 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess, r
       }
     } catch {
       // Silently fail
+    } finally {
+      setDocToDelete(null);
     }
   };
 
@@ -197,12 +207,13 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess, r
             ref={fileRef}
             type="file"
             accept=".pdf,.jpg,.jpeg,.png,.webp"
+            onChange={() => { if (error) setError(''); }}
             className="text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-brand-light file:text-primary hover:file:bg-brand-light/80 flex-1"
           />
           <button
             onClick={handleUpload}
-            disabled={uploading}
-            className="px-4 py-2 bg-secondary text-white rounded-lg text-sm font-medium hover:bg-secondary/90 transition disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+            disabled={uploading || !!error}
+            className="px-4 py-2 bg-secondary text-white rounded-lg text-sm font-medium hover:bg-secondary/90 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
           >
             {uploading ? (
               <>
@@ -250,9 +261,10 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess, r
                 </div>
               </div>
               <button
-                onClick={() => handleDelete(doc)}
+                onClick={() => setDocToDelete(doc)}
                 className="text-gray-400 hover:text-red-500 transition flex-shrink-0 ml-2"
                 title="Supprimer"
+                aria-label={`Supprimer ${doc.filename || getTypeLabel(doc.type)}`}
               >
                 <XIcon className="w-3.5 h-3.5" />
               </button>
@@ -298,6 +310,32 @@ export function DocumentsJointsUpload({ inscriptionId, token, onUploadSuccess, r
           </div>
         )}
       </div>
+
+      {/* Confirmation suppression — Radix AlertDialog (charte graphique CLAUDE.md) */}
+      <AlertDialog open={!!docToDelete} onOpenChange={(open) => { if (!open) setDocToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce document ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {docToDelete && (
+                <>
+                  &laquo; {docToDelete.filename || getTypeLabel(docToDelete.type)} &raquo; sera retiré du dossier.
+                  Cette action est irréversible.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { if (docToDelete) void performDelete(docToDelete); }}
+              className="bg-red-600 hover:bg-red-700 focus-visible:ring-red-600"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

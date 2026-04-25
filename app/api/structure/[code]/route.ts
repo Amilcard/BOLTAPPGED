@@ -24,9 +24,11 @@ export async function GET(
   const { code } = await params;
 
   // Validation format : 6 ou 10 chars alphanum
+  // C4 fix : message UX différencié (email/oral) sans révéler le format exact attendu
+  // (sécurité — éviter de guider le brute-force).
   if (!code || (!/^[A-Z0-9]{6}$/i.test(code) && !/^[A-Z0-9]{10}$/i.test(code))) {
     return NextResponse.json(
-      { error: { code: 'INVALID_CODE', message: 'Format de code invalide.' } },
+      { error: { code: 'INVALID_CODE', message: 'Le code ne semble pas correct. Si vous l’avez reçu par email, vérifiez le lien complet ; s’il vous a été transmis oralement, vérifiez les majuscules et minuscules.' } },
       { status: 400 }
     );
   }

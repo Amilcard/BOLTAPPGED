@@ -217,7 +217,9 @@ describe('GET /api/dossier-enfant/[inscriptionId]/pdf', () => {
     expect(findText('0601020304', 0)).toBeTruthy();
     expect(findText('famille.martin@example.test', 0)).toBeTruthy();
     expect(findText('22/04/2026', 0)).toBeFalsy();
-    expect(findAnyText(['22', '04', '2026'], 0)).toBeTruthy();
+    // L'année "/ 2026" est imprimée par le template PDF (cf. commit 4d6c335).
+    // Le code n'écrit que jour + mois pour éviter le doublon visuel.
+    expect(findAnyText(['22', '04'], 0)).toBeTruthy();
 
     expect(findX(150, 397, 0)).toBeFalsy();
     expect(findX(265, 397, 0)).toBeTruthy();

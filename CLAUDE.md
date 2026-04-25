@@ -821,7 +821,7 @@ branch=$(git rev-parse --abbrev-ref HEAD)
 15. **Toute route admin accédant à des données nominatives doit appeler `auditLog()`** — même en lecture seule.
 16. **Réassurance front obligatoire sur chaque écran collectant ou affichant des données** — qui voit quoi, pourquoi on collecte, combien de temps on garde.
 17. **Multi-codes structure** — éducateur (suivi_token), CDS (6 chars, toute la structure), directeur (10 chars, tout + gestion codes). Expiration + révocation automatique (cron quotidien).
-18. **Délégation directeur→CDS** — `delegation_active_from` / `delegation_active_until` en DB. Max 90 jours. Le CDS délégué voit le code CDS. Supprimable à tout moment par le directeur.
+18. **Délégation directeur→CDS** — `delegation_active_from` / `delegation_active_until` en DB. Max 90 jours. Le CDS délégué voit le code CDS. Supprimable à tout moment par le directeur. **⚠️ Révocation automatique à expiration NON implémentée** (vérifié 2026-04-25 : `app/api/cron/expire-codes/route.ts` ne touche pas `delegation_active_until` ; `lib/structure.ts` lit la colonne mais aucun runtime guard ne compare `< NOW()`). Impact prod 0 aujourd'hui (0/37 structures avec délégation active). Activer la 1ère délégation = penser au cron + à la décision produit (cf. `docs/TECH_DEBT.md` sous-dette d).
 19. **Parcours pro sans compte** — `PriceInquiryBlock` sur la fiche séjour (formulaire inline) → email tarifs → CTA `/acceder-pro`. Ne jamais rediriger vers `/login` sans `?context=pro` depuis un parcours éducateur.
 20. **`/acceder-pro`** — page publique, rate-limitée (2 req/60min par email). Envoie 2 emails (confirmation + alerte GED) + sauvegarde lead dans `smart_form_submissions`.
 

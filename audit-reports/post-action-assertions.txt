@@ -1,0 +1,62 @@
+[post-action-assertions audit] 2026-04-25T09:48:57.183Z  commit=e34e1e7
+scope: app/api + lib — 142 fichier(s) TS
+
+PROTECTED (assert* present) — 0 mutation(s)
+WEAK (error check mais pas d'assert*) — 1 mutation(s)
+UNGUARDED (ni error check ni assert*) — 109 mutation(s) ⚠️ T1 risk :
+  app/api/admin/demandes-tarifs/[id]/route.ts:112  .update(update)
+  app/api/admin/factures/route.ts:63  .insert({
+  app/api/admin/factures/route.ts:101  const { error: lignesErr } = await supabase.from('gd_facture_lignes').insert(lignesRows);
+  app/api/admin/factures/route.ts:105  await supabase.from('gd_factures').delete().eq('id', facture.id);
+  app/api/admin/factures/route.ts:149  .update({ statut })
+  app/api/admin/inscriptions/manual/route.ts:170  .insert({
+  app/api/admin/inscriptions/manual/route.ts:205  .insert({
+  app/api/admin/propositions/route.ts:121  .insert({
+  app/api/admin/propositions/route.ts:199  .update(updates)
+  app/api/admin/propositions/route.ts:242  .delete()
+  app/api/admin/stays/route.ts:101  .insert({
+  app/api/admin/structures/[id]/regenerate-code/route.ts:58  .update({
+  app/api/admin/structures/[id]/regenerate-code/route.ts:89  .update({
+  app/api/admin/structures/link/route.ts:85  .update({
+  app/api/admin/structures/merge/route.ts:95  .update({ structure_id: targetId })
+  app/api/admin/structures/merge/route.ts:102  .update({ structure_id: targetId })
+  app/api/admin/structures/merge/route.ts:109  .delete()
+  app/api/auth/2fa/confirm/route.ts:39  .update({ enabled: true, updated_at: new Date().toISOString() })
+  app/api/auth/2fa/disable/route.ts:37  await supabase.from('gd_admin_2fa').delete().eq('user_id', auth.userId);
+  app/api/auth/2fa/setup/route.ts:21  await getSupabaseAdmin().from('gd_admin_2fa').upsert(
+  app/api/auth/2fa/verify/route.ts:27  .upsert({ ip: key, attempt_count: 1, window_start: now.toISOString() }, { onConflict: 'ip' });
+  app/api/auth/2fa/verify/route.ts:35  .update({ attempt_count: entry.attempt_count + 1 })
+  app/api/auth/activate-invitation/route.ts:78  .update({
+  app/api/auth/logout/route.ts:26  .insert({ jti: payload.jti as string, expires_at: expiresAt });
+  app/api/auth/structure-login/route.ts:93  .update({ last_jti: jti, last_jti_exp: jtiExp })
+  app/api/cron/cleanup-invitations/route.ts:28  .delete()
+  app/api/cron/expire-codes/route.ts:31  .update({ code_revoked_at: now })
+  app/api/cron/expire-codes/route.ts:44  .update({ code_directeur_revoked_at: now })
+  app/api/cron/expire-codes/route.ts:57  .update({ active: false })
+  app/api/cron/rgpd-purge/route.ts:75  .delete()
+  app/api/cron/rgpd-purge/route.ts:85  .delete()
+  app/api/cron/rgpd-purge/route.ts:156  .delete()
+  app/api/dossier-enfant/[inscriptionId]/route.ts:286  .insert(insertData)
+  app/api/dossier-enfant/[inscriptionId]/route.ts:311  .update(updateData)
+  app/api/dossier-enfant/[inscriptionId]/route.ts:334  .update({ jeune_nom: cleaned, updated_at: new Date().toISOString() })
+  app/api/dossier-enfant/[inscriptionId]/submit/route.ts:142  .update({ ged_sent_at: new Date().toISOString() })
+  app/api/dossier-enfant/[inscriptionId]/upload/route.ts:131  .update({ documents_joints: updatedDocs })
+  app/api/dossier-enfant/[inscriptionId]/upload/route.ts:144  .update({ [SIGNED_TO_COMPLETED[docType]]: true })
+  app/api/dossier-enfant/[inscriptionId]/upload/route.ts:172  .insert({
+  app/api/dossier-enfant/[inscriptionId]/upload/route.ts:195  .update({ [SIGNED_TO_COMPLETED[docType]]: true })
+  app/api/dossier-enfant/[inscriptionId]/upload/route.ts:305  .update({ documents_joints: updatedDocs })
+  app/api/educateur/souhait/[token]/route.ts:41  .update({ status: 'vu' })
+  app/api/educateur/souhait/[token]/route.ts:125  .update({
+  app/api/inscription-urgence/route.ts:134  .insert({
+  app/api/inscriptions/route.ts:531  .insert({
+  app/api/inscriptions/route.ts:574  .insert({
+  app/api/inscriptions/route.ts:772  .insert({ jti: payload.jti as string, expires_at: expiresAt });
+  app/api/payment/create-intent/route.ts:99  .update({
+  app/api/pro/price-inquiry/route.ts:90  .insert({
+  app/api/pro/propositions/route.ts:89  .insert({
+  ... et 59 autres
+
+──────────────────────────────────────────────────────────────────────
+TOTAL mutations: 110
+VIOLATIONS (no-guard + weak): 110
+EXIT: 1

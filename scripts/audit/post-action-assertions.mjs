@@ -22,7 +22,18 @@ const ROOT = process.cwd();
 const OUT_DIR = path.join(ROOT, 'audit-reports');
 const OUT_FILE = path.join(OUT_DIR, 'post-action-assertions.txt');
 
-const MUTATION_RE = /await\s+[\w.]*supabase[\w.]*\.(insert|update|upsert|delete)\s*\(/;
+// Regex élargi 2026-04-25 : matche `await supabase.from('X').update(...)` et
+// `await getSupabaseAdmin().from('Y').upsert(...)` — le pattern précédent
+// `[\w.]*supabase[\w.]*` ne traversait pas `.from('...')` (parenthèses non-\w),
+// résultant en 0 mutation détectée sur 142 fichiers (faux 0 violation).
+// Single-line uniquement — les mutations multi-line (chain sur 2-5 lignes)
+// sont détectées via MUTATION_CHAIN_RE ci-dessous.
+const MUTATION_RE = /await\s+[^;]*?(?:supabase|getSupabase\w*\(\))[^;]*?\.(insert|update|upsert|delete)\s*\(/;
+// Détection de la fin de chain `.insert/update/upsert/delete(` — pour les
+// mutations multi-line on cherche le mot-clé sur sa ligne et on regarde 6
+// lignes en arrière pour confirmer qu'un `await supabase` ouvre la chain.
+const MUTATION_TAIL_RE = /^\s*\.(insert|update|upsert|delete)\s*\(/;
+const AWAIT_SUPABASE_RE = /await\s+(?:supabase|getSupabase\w*\(\))/;
 const ASSERT_RE = /\bassert(Inserted|UpdatedOne|UpdatedAtLeastOne|Deleted|SelectedOne)\s*\(/;
 const DATA_ERROR_RE = /\{\s*data\s*(?::\s*\w+)?\s*,\s*error\s*\}\s*=\s*await/;
 const ERROR_CHECK_RE = /if\s*\(\s*error\b/;
@@ -58,9 +69,18 @@ for (const file of files) {
   const content = readFileSync(file, 'utf8');
   const lines = content.split('\n');
   for (let i = 0; i < lines.length; i++) {
-    if (!MUTATION_RE.test(lines[i])) continue;
+    let isMutation = MUTATION_RE.test(lines[i]);
+    // Détection multi-line : mot-clé `.insert/update/upsert/delete(` en tête
+    // de ligne avec `await supabase` dans les 6 lignes précédentes.
+    if (!isMutation && MUTATION_TAIL_RE.test(lines[i])) {
+      const lookback = lines.slice(Math.max(0, i - 6), i).join('\n');
+      if (AWAIT_SUPABASE_RE.test(lookback)) {
+        isMutation = true;
+      }
+    }
+    if (!isMutation) continue;
     // Scan 8 lignes suivantes pour un guard
-    const window = lines.slice(i, Math.min(i + 8, lines.length)).join('\n');
+    const window = lines.slice(i, Math.min(i + 10, lines.length)).join('\n');
     const hasAssert = ASSERT_RE.test(window);
     const hasDataError = DATA_ERROR_RE.test(window) && ERROR_CHECK_RE.test(window);
     if (hasAssert) {

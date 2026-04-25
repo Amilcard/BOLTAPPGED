@@ -314,10 +314,10 @@ export async function GET(
       writeText(0, 376, 484, s(d.contact_urgence_telephone));
 
       // --- FINANCEMENT ---
-      writeCheck(0, 175, 580, s(d.financement_ase)           === 'true' || d.financement_ase           === true);
-      writeCheck(0, 285, 596, s(d.financement_etablissement) === 'true' || d.financement_etablissement === true);
-      writeCheck(0, 395, 612, s(d.financement_famille)       === 'true' || d.financement_famille       === true);
-      writeCheck(0, 505, 628, s(d.financement_autres)        === 'true' || d.financement_autres        === true);
+      writeCheck(0, 175, 636, s(d.financement_ase)           === 'true' || d.financement_ase           === true);
+      writeCheck(0, 285, 636, s(d.financement_etablissement) === 'true' || d.financement_etablissement === true);
+      writeCheck(0, 395, 636, s(d.financement_famille)       === 'true' || d.financement_famille       === true);
+      writeCheck(0, 505, 636, s(d.financement_autres)        === 'true' || d.financement_autres        === true);
       if (s(d.financement_montants)) {
         writeText(0, 175, 660, s(d.financement_montants), { size: smallFontSize, maxLength: 20 });
       }
@@ -453,8 +453,8 @@ export async function GET(
       writeText(1, 74, 247, s(d.poids));
       writeText(1, 72, 267, s(d.taille));
 
-      writeCheck(1, 520, 258, s(d.traitement_en_cours) === 'true' || d.traitement_en_cours === true);
-      writeCheck(1, 578, 258, s(d.traitement_en_cours) === 'false' || d.traitement_en_cours === false);
+      writeCheck(1, 437, 258, s(d.traitement_en_cours) === 'true' || d.traitement_en_cours === true);
+      writeCheck(1, 505, 258, s(d.traitement_en_cours) === 'false' || d.traitement_en_cours === false);
       if (s(d.traitement_detail)) {
         writeWrappedText(1, 35, 278, s(d.traitement_detail), { size: smallFontSize, maxWidth: 520, lineHeight: 13, maxLines: 2 });
       }

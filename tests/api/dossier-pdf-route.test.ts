@@ -225,7 +225,7 @@ describe('GET /api/dossier-enfant/[inscriptionId]/pdf', () => {
     expect(findX(265, 397, 0)).toBeTruthy();
     expect(findX(150, 375, 0)).toBeFalsy();
     expect(findX(35, 580, 0)).toBeFalsy();
-    expect(findX(175, 580, 0)).toBeTruthy();
+    expect(findX(175, 636, 0)).toBeTruthy();
     expect(findX(35, 612, 0)).toBeFalsy();
   });
 
@@ -273,7 +273,7 @@ describe('GET /api/dossier-enfant/[inscriptionId]/pdf', () => {
     expect(findX(350, 187, 0)).toBeFalsy();
     expect(findX(166, 250, 0)).toBeTruthy();
     expect(findX(472, 258, 1)).toBeFalsy();
-    expect(findX(520, 258, 1)).toBeTruthy();
+    expect(findX(437, 258, 1)).toBeTruthy();
   });
 
   it('liaison: coche les bonnes cases, respecte la date fournie et conserve un nom de fichier liaison', async () => {

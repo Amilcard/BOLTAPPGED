@@ -61,6 +61,7 @@ interface Step1Data {
 
 interface Step2Data {
   childFirstName: string;
+  childLastName: string;
   childBirthDate: string;
   childSex?: string;
   consent: boolean;
@@ -306,6 +307,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
 
   const [step2, setStep2] = useState<Step2Data>({
     childFirstName: prefillPrenom || '',
+    childLastName: '',
     childBirthDate: '',
     consent: false,
     parentalConsent: false,
@@ -370,7 +372,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
   const childAge = step2.childBirthDate ? calculateAge(step2.childBirthDate, sessionRef) : null;
   const needsParentalConsent = childAge !== null && childAge < 15;
 
-  const isStep2Valid = step2.childSex && step2.childFirstName?.trim().length >= 2 && step2.childBirthDate && step2.consent && ageError === '' && (!needsParentalConsent || step2.parentalConsent);
+  const isStep2Valid = step2.childSex && step2.childFirstName?.trim().length >= 2 && step2.childLastName?.trim().length >= 1 && step2.childBirthDate && step2.consent && ageError === '' && (!needsParentalConsent || step2.parentalConsent);
 
   const currentYear = new Date().getFullYear();
 
@@ -452,7 +454,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
           email: step1.email,
           phone: step1.phone,
           childFirstName: step2.childFirstName,
-          childLastName: '',
+          childLastName: step2.childLastName,
           childBirthDate: step2.childBirthDate,
           childSex: step2.childSex || undefined,
           remarques,
@@ -1012,6 +1014,18 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               />
             </div>
             <div>
+              <label htmlFor="child-lastname" className="text-sm text-primary-600 mb-1 block">Nom de famille *</label>
+              <input
+                id="child-lastname"
+                type="text"
+                placeholder="Nom de famille"
+                value={step2.childLastName}
+                onChange={e => setStep2({ ...step2, childLastName: e.target.value })}
+                autoComplete="family-name"
+                className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
+              />
+            </div>
+            <div>
               <label htmlFor="child-birthdate" className="text-sm text-primary-600 mb-1 block">Date de naissance *</label>
               {stay.ageMin && stay.ageMax && selectedSession?.startDate && (
                 <p className="text-xs text-primary-500 mb-1">
@@ -1181,7 +1195,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               <p><span className="font-medium text-primary-500">Session :</span> {formatDateLong(selectedSession?.startDate ?? '')} - {formatDateLong(selectedSession?.endDate ?? '')}</p>
               <p><span className="font-medium text-primary-500">Ville de départ :</span> {selectedCity === 'sans_transport' ? 'Sans transport' : selectedCity} {extraVille > 0 ? `(+${extraVille}€)` : '(Inclus)'}</p>
               <div className="border-t border-primary-200 my-2 pt-2">
-                <p><span className="font-medium text-primary-500">Enfant :</span> {step2.childFirstName} ({calculateAge(step2.childBirthDate, selectedSession?.startDate ? new Date(selectedSession.startDate) : undefined)} ans)</p>
+                <p><span className="font-medium text-primary-500">Enfant :</span> {`${step2.childFirstName} ${step2.childLastName}`.trim()} ({calculateAge(step2.childBirthDate, selectedSession?.startDate ? new Date(selectedSession.startDate) : undefined)} ans)</p>
                 <p><span className="font-medium text-primary-500">Structure :</span> {step1.organisation} ({step1.socialWorkerName})</p>
               </div>
             </div>
@@ -1377,7 +1391,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             <p><strong>Référence :</strong> {bookingId.slice(0, 8).toUpperCase() || bookingId}</p>
             <p><strong>Session :</strong> {formatDateLong(selectedSession?.startDate ?? '')} - {formatDateLong(selectedSession?.endDate ?? '')}</p>
             <p><strong>Ville :</strong> {selectedCity === 'sans_transport' ? 'Sans transport (par vos soins)' : selectedCity}</p>
-            <p><strong>Enfant :</strong> {step2.childFirstName} (né le {new Date(step2.childBirthDate).toLocaleDateString('fr-FR')})</p>
+            <p><strong>Enfant :</strong> {`${step2.childFirstName} ${step2.childLastName}`.trim()} (né le {new Date(step2.childBirthDate).toLocaleDateString('fr-FR')})</p>
             <p><strong>Contact :</strong> {step1.email}</p>
             <p><strong>Mode de paiement :</strong> {paymentMethod === 'bank_transfer' ? 'Virement bancaire' : paymentMethod === 'cheque' ? 'Chèque' : 'Carte bancaire'}</p>
           </div>

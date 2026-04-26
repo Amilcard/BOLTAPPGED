@@ -132,7 +132,7 @@ export interface BuildProSessionTokenInput {
   structureName: string;
   structureRole: ProStructureRole;
   structureId: string;
-  expiresIn: '30m' | '8h';
+  expiresIn: '30m' | '2h' | '8h';
 }
 
 export interface BuildProSessionTokenOutput {
@@ -155,7 +155,7 @@ export async function buildProSessionToken(
   }
   const encodedSecret = new TextEncoder().encode(secret);
   const jti = crypto.randomUUID();
-  const ttlMs = input.expiresIn === '8h' ? 8 * 3600 * 1000 : 30 * 60 * 1000;
+  const ttlMs = input.expiresIn === '8h' ? 8 * 3600 * 1000 : input.expiresIn === '2h' ? 2 * 3600 * 1000 : 30 * 60 * 1000;
   const expiresAt = new Date(Date.now() + ttlMs).toISOString();
   const token = await new SignJWT({
     role: 'pro',

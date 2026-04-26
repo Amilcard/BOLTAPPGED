@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       structureName: structure.name,
       structureRole: resolved.role as ProStructureRole,
       structureId: resolved.structure.id as string,
-      expiresIn: '30m',
+      expiresIn: '2h',
     });
     if (!jwtResult) {
       return NextResponse.json(
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       path: '/',
-      maxAge: 1800, // 30 min
+      maxAge: 7200, // 2h
     });
 
     // 6. Reset rate limit après succès.

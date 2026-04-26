@@ -66,7 +66,7 @@ export function ProGateModal({ open, onClose, variant, sejourSlug, reserverParam
 
       if (!res.ok) {
         if (data?.error?.code === 'CODE_INVALIDE') {
-          setError('Code structure invalide. Vérifiez auprès de votre responsable.');
+          setError('Code invalide, expiré ou révoqué. Vérifiez auprès de votre responsable ou contactez l\'équipe GED.');
         } else if (data?.error?.code === 'CODE_EXPIRED') {
           setError('Ce code a expiré. Contactez votre référent GED.');
         } else if (data?.error?.code === 'RATE_LIMITED') {
@@ -287,7 +287,7 @@ export function ProGateModal({ open, onClose, variant, sejourSlug, reserverParam
                 Votre structure n&apos;est pas encore enregistrée ?
               </p>
               <p className="text-xs text-blue-700">
-                Faites une demande d&apos;accès — nous vous recontactons sous 24h avec vos identifiants.
+                Faites une demande d&apos;accès — un responsable GED vous enverra vos identifiants par email (sous 24-48h ouvrés).
               </p>
             </div>
             <Button

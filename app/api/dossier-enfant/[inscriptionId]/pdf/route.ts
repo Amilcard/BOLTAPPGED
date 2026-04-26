@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { verifyOwnership } from '@/lib/verify-ownership';
 import { auditLog } from '@/lib/audit-log';
+import { captureServerException } from '@/lib/sentry-capture';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { readFile } from 'fs/promises';
 import path from 'path';
@@ -618,6 +619,7 @@ export async function GET(
       },
     });
   } catch (error) {
+    captureServerException(error, { domain: 'audit', operation: 'dossier_pdf_generation' });
     console.error('PDF generation error:', error);
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Erreur de génération PDF.' } },

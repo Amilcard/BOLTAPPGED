@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { captureServerException } from '@/lib/sentry-capture';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 import { UUID_RE } from '@/lib/validators';
 import { auditLog } from '@/lib/audit-log';
@@ -265,6 +266,7 @@ export async function GET(
       },
     });
   } catch (error) {
+    captureServerException(error, { domain: 'audit', operation: 'recap_pdf_get' });
     console.error('GET /api/inscriptions/[id]/recap-pdf error:', error);
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Erreur generation PDF.' } },

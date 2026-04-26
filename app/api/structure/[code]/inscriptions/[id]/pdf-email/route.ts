@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { requireStructureRole } from '@/lib/structure-guard';
 import { requireInscriptionInStructure } from '@/lib/resource-guard';
 import { auditLog, getClientIp } from '@/lib/audit-log';
+import { captureServerException } from '@/lib/sentry-capture';
 import { structureRateLimitGuard } from '@/lib/rate-limit-structure';
 import { UUID_RE } from '@/lib/validators';
 
@@ -115,6 +116,7 @@ export async function POST(
       });
     } catch (fetchErr) {
       const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+      captureServerException(fetchErr, { domain: 'email', operation: 'structure_pdf_email_fetch' });
       console.error('[structure/pdf-email] internal forward failed:', msg);
       return NextResponse.json(
         { error: 'Service email indisponible — réessayez.' },
@@ -144,6 +146,7 @@ export async function POST(
     const respBody = await forwardRes.json().catch(() => ({}));
     return NextResponse.json(respBody, { status: forwardRes.status });
   } catch (err) {
+    captureServerException(err, { domain: 'email', operation: 'structure_pdf_email' });
     console.error('POST /api/structure/[code]/inscriptions/[id]/pdf-email error:', err);
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur' } },

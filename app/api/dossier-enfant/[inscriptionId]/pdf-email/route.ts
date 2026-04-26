@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { verifyOwnership } from '@/lib/verify-ownership';
 import { auditLog } from '@/lib/audit-log';
+import { captureServerException } from '@/lib/sentry-capture';
 import { UUID_RE, EMAIL_REGEX } from '@/lib/validators';
 
 const DOC_LABELS: Record<string, string> = {
@@ -86,6 +87,7 @@ export async function POST(
       });
     } catch (fetchErr) {
       const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+      captureServerException(fetchErr, { domain: 'email', operation: 'pdf_email_fetch' });
       console.error('[pdf-email] PDF fetch failed:', msg, 'url:', pdfUrl.toString());
       return NextResponse.json(
         { error: 'Service PDF indisponible — réessayez dans quelques minutes.' },
@@ -172,6 +174,7 @@ export async function POST(
 
     return NextResponse.json({ ok: true, sentTo: insc.referent_email });
   } catch (err) {
+    captureServerException(err, { domain: 'email', operation: 'dossier_pdf_email' });
     console.error('[pdf-email] Erreur:', err);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }

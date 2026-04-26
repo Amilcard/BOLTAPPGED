@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { requireStructureRole } from '@/lib/structure-guard';
 import { requireInscriptionInStructure } from '@/lib/resource-guard';
 import { auditLog, getClientIp } from '@/lib/audit-log';
+import { captureServerException } from '@/lib/sentry-capture';
 import { structureRateLimitGuard } from '@/lib/rate-limit-structure';
 import { UUID_RE } from '@/lib/validators';
 
@@ -96,6 +97,7 @@ export async function GET(
       pdfRes = await fetch(pdfUrl.toString(), { signal: AbortSignal.timeout(60000) });
     } catch (fetchErr) {
       const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+      captureServerException(fetchErr, { domain: 'audit', operation: 'structure_pdf_fetch' });
       console.error('[structure/pdf] internal fetch failed:', msg);
       return NextResponse.json(
         { error: 'Service PDF indisponible — réessayez dans quelques minutes.' },
@@ -164,6 +166,7 @@ export async function GET(
       },
     });
   } catch (err) {
+    captureServerException(err, { domain: 'audit', operation: 'structure_pdf_get' });
     console.error('GET /api/structure/[code]/inscriptions/[id]/pdf error:', err);
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur' } },

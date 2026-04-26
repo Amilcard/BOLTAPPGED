@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { requireEditor } from '@/lib/auth-middleware';
 import { auditLog } from '@/lib/audit-log';
+import { captureServerException } from '@/lib/sentry-capture';
 
 /**
  * POST /api/souhaits/link-inscription
@@ -64,6 +65,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (err) {
+    captureServerException(err, { domain: 'audit', operation: 'souhait_link_inscription' });
     console.error('POST /api/souhaits/link-inscription error:', err);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }

@@ -7,6 +7,7 @@ import { generateEducateurAggregateToken } from '@/lib/educateur-token';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 import { EMAIL_REGEX, UUID_RE, isSafeImageUrl } from '@/lib/validators';
 import { auditLog } from '@/lib/audit-log';
+import { captureServerException } from '@/lib/sentry-capture';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
@@ -149,6 +150,7 @@ export async function POST(req: NextRequest) {
           lienReponse: `${baseUrl}/educateur/souhait/${existing.educateur_token}`,
           lienTousSouhaits: aggregateToken ? `${baseUrl}/educateur/souhaits/${aggregateToken}` : undefined,
         }).catch((e) => {
+          captureServerException(e, { domain: 'email', operation: 'souhait_update_email' });
           console.error('[EMAIL] Souhait update non envoyé:', e?.message);
           return { sent: false, reason: 'provider_error' } as const;
         });
@@ -224,6 +226,7 @@ export async function POST(req: NextRequest) {
         lienReponse: `${baseUrl}/educateur/souhait/${souhait.educateur_token as string}`,
         lienTousSouhaits: aggregateToken ? `${baseUrl}/educateur/souhaits/${aggregateToken}` : undefined,
       }).catch((e) => {
+        captureServerException(e, { domain: 'email', operation: 'souhait_create_email' });
         console.error('[EMAIL] Souhait non envoyé:', e?.message);
         return { sent: false, reason: 'provider_error' } as const;
       });
@@ -238,6 +241,7 @@ export async function POST(req: NextRequest) {
     }, { status: 201 });
 
   } catch (err) {
+    captureServerException(err, { domain: 'audit', operation: 'souhait_post' });
     console.error('POST /api/souhaits error:', err);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }

@@ -26,6 +26,7 @@ export type CaptureDomain =
   | 'auth'
   | 'audit'
   | 'cron'
+  | 'email'
   | 'upload';
 
 export interface CaptureTags {

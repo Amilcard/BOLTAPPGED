@@ -4,6 +4,7 @@ import { requireEditor } from '@/lib/auth-middleware';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { auditLog } from '@/lib/audit-log';
 import { REQUIS_TO_JOINT, DOC_OPT_LABELS } from '@/lib/dossier-shared';
+import { captureServerException } from '@/lib/sentry-capture';
 
 type SignedBloc = { signature_image_url?: string | null } | null | undefined;
 
@@ -128,6 +129,7 @@ export async function GET(
       partial_docs_missing,
     });
   } catch (error) {
+    captureServerException(error, { domain: 'audit', operation: 'admin_dossier_get' });
     console.error('Admin GET /api/admin/dossier-enfant error:', error);
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur' } },

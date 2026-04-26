@@ -8,6 +8,7 @@ import { structureRateLimitGuard } from '@/lib/rate-limit-structure';
 import { EDITABLE_BLOCS, getCompletedColumn, type EditableBloc } from '@/lib/dossier-shared';
 import { validateBase64Image, UUID_RE } from '@/lib/validators';
 import { buildSignatureMeta, CONSENT_TEXT_VERSION } from '@/lib/signature-meta';
+import { captureServerException } from '@/lib/sentry-capture';
 
 /**
  * GET /api/structure/[code]/inscriptions/[id]/dossier
@@ -90,6 +91,7 @@ export async function GET(
 
     return NextResponse.json({ exists: true, ...dossier });
   } catch (err) {
+    captureServerException(err, { domain: 'audit', operation: 'structure_dossier_get' });
     console.error('GET /api/structure/[code]/inscriptions/[id]/dossier error:', err);
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur' } },
@@ -370,6 +372,7 @@ export async function PATCH(
     });
     return NextResponse.json({ ok: true, dossier: updated });
   } catch (err) {
+    captureServerException(err, { domain: 'audit', operation: 'structure_dossier_patch' });
     console.error('PATCH /api/structure/[code]/inscriptions/[id]/dossier error:', err);
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur' } },

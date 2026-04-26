@@ -13,6 +13,7 @@ import {
 } from '@/lib/email';
 import { REQUIS_TO_JOINT } from '@/lib/dossier-shared';
 import { UUID_RE } from '@/lib/validators';
+import { captureServerException } from '@/lib/sentry-capture';
 
 /**
  * POST /api/structure/[code]/inscriptions/[id]/submit
@@ -226,6 +227,7 @@ export async function POST(
             dossierRef: i.dossier_ref ?? undefined,
             pdfLink: pdfArchiveLink,
           }).catch(err => {
+            captureServerException(err, { domain: 'email', operation: 'structure_submit_archivage_email' });
             console.error('[structure/submit] sendStructureArchivageEmail failed:', err);
             return null;
           }),
@@ -249,6 +251,7 @@ export async function POST(
               pdfRenseignementsLink,
               suiviUploadLink,
             }).catch(err => {
+              captureServerException(err, { domain: 'email', operation: 'structure_submit_documents_papier_email' });
               console.error('[structure/submit] sendStructureDocumentsPapierEmail failed:', err);
               return null;
             }),
@@ -289,6 +292,7 @@ export async function POST(
       partial_docs_missing: partialDocsMissing,
     });
   } catch (err) {
+    captureServerException(err, { domain: 'audit', operation: 'structure_submit' });
     console.error('POST /api/structure/[code]/inscriptions/[id]/submit error:', err);
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur' } },

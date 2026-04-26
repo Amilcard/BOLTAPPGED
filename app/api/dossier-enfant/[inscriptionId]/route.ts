@@ -6,6 +6,7 @@ import { verifyOwnership } from '@/lib/verify-ownership';
 import { auditLog, getClientIp } from '@/lib/audit-log';
 import { validateBase64Image } from '@/lib/validators';
 import { buildSignatureMeta, CONSENT_TEXT_VERSION } from '@/lib/signature-meta';
+import { captureServerException } from '@/lib/sentry-capture';
 
 /**
  * GET /api/dossier-enfant/[inscriptionId]?token=xxx
@@ -123,6 +124,7 @@ export async function GET(
       docs_optionnels_manquants,
     });
   } catch (error) {
+    captureServerException(error, { domain: 'audit', operation: 'dossier_get' });
     console.error('GET /api/dossier-enfant error:', error);
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur' } },
@@ -362,6 +364,7 @@ export async function PATCH(
     });
     return NextResponse.json({ ok: true, dossier: result });
   } catch (error) {
+    captureServerException(error, { domain: 'audit', operation: 'dossier_patch' });
     console.error('PATCH /api/dossier-enfant error:', error);
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur' } },

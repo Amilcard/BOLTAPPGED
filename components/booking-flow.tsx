@@ -954,6 +954,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
             <div>
               <label className="text-sm text-primary-600 mb-1 block">Votre email personnel (référent) *</label>
               <input
+                data-testid="input-referent-email"
                 type="email"
                 placeholder="nom@structure.fr"
                 value={step1.email}
@@ -987,6 +988,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               <ChevronLeft className="w-4 h-4" /> Retour
             </button>
             <button
+              data-testid="btn-next-step1"
               onClick={() => setStep(3)}
               disabled={!isStep1Valid}
               className="flex-1 py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1006,6 +1008,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               <label htmlFor="child-firstname" className="text-sm text-primary-600 mb-1 block">Prénom de l'enfant *</label>
               <input
                 id="child-firstname"
+                data-testid="input-child-firstname"
                 type="text"
                 placeholder="Ex: Léa"
                 value={step2.childFirstName}
@@ -1017,6 +1020,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               <label htmlFor="child-lastname" className="text-sm text-primary-600 mb-1 block">Nom de famille *</label>
               <input
                 id="child-lastname"
+                data-testid="input-child-lastname"
                 type="text"
                 placeholder="Nom de famille"
                 value={step2.childLastName}
@@ -1034,6 +1038,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               )}
               <input
                 id="child-birthdate"
+                data-testid="input-child-birthdate"
                 ref={firstInputRef}
                 type="date"
                 value={step2.childBirthDate}
@@ -1062,6 +1067,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               <label htmlFor="child-sex" className="text-sm text-primary-600 mb-1 block">Sexe *</label>
               <select
                 id="child-sex"
+                data-testid="select-child-sex"
                 value={step2.childSex || ''}
                 onChange={e => setStep2({ ...step2, childSex: e.target.value })}
                 className="w-full px-4 py-3 border border-primary-200 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent"
@@ -1155,6 +1161,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               <ChevronLeft className="w-4 h-4" /> Retour
             </button>
             <button
+              data-testid="btn-next-step2"
               onClick={() => setStep(4)}
               disabled={!isStep2Valid}
               className="flex-1 py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1309,6 +1316,7 @@ export function BookingFlow({ stay, sessions, initialSessionId = '', initialCity
               <ChevronLeft className="w-4 h-4" /> Retour
             </button>
             <button
+              data-testid="btn-submit-inscription"
               onClick={handleSubmit}
               disabled={loading || totalPrice === null || ageError !== '' || !paymentMethod || !!stripeFailedInscriptionId || (!!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (!turnstileReady || !turnstileToken))}
               className="flex-1 py-3 bg-secondary text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-secondary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

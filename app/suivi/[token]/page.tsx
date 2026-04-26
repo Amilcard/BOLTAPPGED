@@ -233,7 +233,7 @@ export default function SuiviProPage() {
                 {/* En-tête dossier */}
                 <div className="px-6 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <h2 className="font-bold text-gray-800">
+                    <h2 className="font-bold text-gray-800" data-testid="enfant-prenom">
                       {d.jeunePrenom} {d.jeuneNom}
                     </h2>
                     <p className="text-sm text-gray-500">{d.sejourNom}</p>
@@ -336,6 +336,7 @@ export default function SuiviProPage() {
                     href={`/api/inscriptions/${d.id}/recap-pdf?token=${token}`}
                     target="_blank"
                     rel="noopener noreferrer"
+                    data-testid="btn-download-pdf"
                     className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
                   >
                     <Download className="w-3.5 h-3.5" />

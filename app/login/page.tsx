@@ -193,6 +193,7 @@ function LoginForm() {
                 <label htmlFor="login-email" className="block text-sm font-medium text-primary-600 mb-1">Email</label>
                 <input
                   id="login-email"
+                  data-testid="input-login-email"
                   type="email"
                   autoComplete="email"
                   value={email}
@@ -205,6 +206,7 @@ function LoginForm() {
                 <label htmlFor="login-password" className="block text-sm font-medium text-primary-600 mb-1">Mot de passe</label>
                 <input
                   id="login-password"
+                  data-testid="input-login-password"
                   type="password"
                   autoComplete="current-password"
                   value={password}
@@ -220,6 +222,7 @@ function LoginForm() {
 
               <button
                 type="submit"
+                data-testid="btn-login-submit"
                 disabled={loading}
                 className="w-full py-3 bg-secondary text-white rounded-pill font-medium hover:bg-secondary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
               >

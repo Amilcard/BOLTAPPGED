@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { verifyOwnership } from '@/lib/verify-ownership';
 import { auditLog, getClientIp } from '@/lib/audit-log';
 import { validateUploadSize } from '@/lib/validators';
+import { captureServerException } from '@/lib/sentry-capture';
 const ALLOWED_TYPES = [
   'vaccins', 'ordonnance', 'pass_nautique', 'certificat_plongee',
   'certificat_medical', 'attestation_assurance', 'signature_parentale',
@@ -219,6 +220,7 @@ export async function POST(
       document: { ...newDoc, url: signedData?.signedUrl ?? null },
     }, { status: 201 });
   } catch (error: unknown) {
+    captureServerException(error, { domain: 'upload', operation: 'dossier_upload_post' });
     console.error('Upload error:', error);
     return NextResponse.json({ error: 'Erreur serveur lors de l\'upload.' }, { status: 500 });
   }
@@ -256,6 +258,7 @@ export async function GET(
 
     return NextResponse.json({ documents: Array.isArray(docs) ? docs : [] });
   } catch (error: unknown) {
+    captureServerException(error, { domain: 'upload', operation: 'dossier_upload_get' });
     console.error('Upload route error:', error);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }
@@ -325,6 +328,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
+    captureServerException(error, { domain: 'upload', operation: 'dossier_upload_delete' });
     console.error('Upload route error:', error);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }

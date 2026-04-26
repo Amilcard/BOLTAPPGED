@@ -6,6 +6,7 @@ import { requireInscriptionInStructure } from '@/lib/resource-guard';
 import { auditLog, getClientIp } from '@/lib/audit-log';
 import { structureRateLimitGuard } from '@/lib/rate-limit-structure';
 import { UUID_RE } from '@/lib/validators';
+import { captureServerException } from '@/lib/sentry-capture';
 import {
   ALLOWED_DOC_TYPES,
   validateUploadedDocument,
@@ -131,6 +132,7 @@ export async function POST(
       { status: 201 },
     );
   } catch (err) {
+    captureServerException(err, { domain: 'upload', operation: 'structure_upload_post' });
     console.error('POST /api/structure/[code]/inscriptions/[id]/upload error:', err);
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: "Erreur serveur lors de l'upload." } },
@@ -216,6 +218,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (err) {
+    captureServerException(err, { domain: 'upload', operation: 'structure_upload_delete' });
     console.error('DELETE /api/structure/[code]/inscriptions/[id]/upload error:', err);
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur' } },

@@ -279,7 +279,7 @@ export async function GET(
       writeText(0, 160, 95,  jeuneNomDisplay);
       writeText(0, 416, 95,  s(san.sexe) || mapSexeLong(inscription.jeune_sexe));  // sexe → fiche_sanitaire (fallback code inscription M/F)
 
-      writeText(0, 160, 111, inscription.referent_nom);
+      writeText(0, 160, 111, inscription.referent_nom || '');
       writeText(0, 416, 111, s(san.resp1_tel_portable) || '');     // tél responsable → fiche_sanitaire
 
       writeText(0, 160, 127, s(d.adresse_permanente));
@@ -481,7 +481,7 @@ export async function GET(
 
       // Remarques complémentaires
       if (s(d.remarques)) {
-        writeWrappedText(1, 35, 704, s(d.remarques), { size: smallFontSize, maxWidth: 520, lineHeight: 16, maxLines: 2 });
+        writeWrappedText(1, 35, 704, s(d.remarques), { size: smallFontSize, maxWidth: 520, lineHeight: 16, maxLines: 3 });
       }
 
       // Autorisation de soins

@@ -560,7 +560,10 @@ export async function POST(request: NextRequest) {
             structureName: data.structureName,
             structureCode: newStruct.code,
             educateurPrenom: data.socialWorkerName,
-          }).catch((err) => console.error('[inscriptions] sendStructureCodeEmail failed:', err));
+          }).catch((err) => {
+            console.error('[inscriptions] sendStructureCodeEmail failed:', err);
+            captureServerException(err, { domain: 'cron', operation: 'sendStructureCodeEmail' }, { structureName: data.structureName });
+          });
 
           // Si des structures existaient déjà sur ce CP → alerte admin
           if (existingOnCP && existingOnCP.length > 0) {
@@ -570,7 +573,10 @@ export async function POST(request: NextRequest) {
               newEducateurEmail: data.email,
               structureDeclaredName: data.structureName,
               postalCode: data.structurePostalCode,
-            }).catch((err) => console.error('[inscriptions] sendNewEducateurAlert failed:', err));
+            }).catch((err) => {
+              console.error('[inscriptions] sendNewEducateurAlert failed:', err);
+              captureServerException(err, { domain: 'cron', operation: 'sendNewEducateurAlert' }, { postalCode: data.structurePostalCode });
+            });
           }
         } else {
           console.error('[inscriptions] Erreur création structure:', structErr);

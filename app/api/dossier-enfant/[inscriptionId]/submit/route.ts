@@ -10,6 +10,7 @@ import {
 import { REQUIS_TO_JOINT } from '@/lib/dossier-shared';
 import { verifyOwnership } from '@/lib/verify-ownership';
 import { auditLog, getClientIp } from '@/lib/audit-log';
+import { captureServerException } from '@/lib/sentry-capture';
 /**
  * POST /api/dossier-enfant/[inscriptionId]/submit
  * Soumet le dossier enfant complet à l'équipe GED.
@@ -229,6 +230,7 @@ export async function POST(
             pdfLink: pdfArchiveLink,
           }).catch(err => {
             console.error('[submit] sendStructureArchivageEmail failed:', err);
+            captureServerException(err, { domain: 'email', operation: 'sendStructureArchivageEmail' }, { inscriptionId });
             return null;
           }),
         );
@@ -250,6 +252,7 @@ export async function POST(
             suiviUploadLink,
           }).catch(err => {
             console.error('[submit] sendStructureDocumentsPapierEmail failed:', err);
+            captureServerException(err, { domain: 'email', operation: 'sendStructureDocumentsPapierEmail' }, { inscriptionId });
             return null;
           }),
         );

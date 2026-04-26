@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { auditLog, getClientIp } from '@/lib/audit-log';
+import { captureServerException } from '@/lib/sentry-capture';
 
 function getStripe() {
   const stripeKey = process.env.STRIPE_SECRET_KEY;
@@ -153,6 +154,7 @@ export async function POST(req: NextRequest) {
       paymentIntentId: paymentIntent.id,
     });
   } catch (error: unknown) {
+    captureServerException(error, { domain: 'payment', operation: 'create_intent' });
     console.error('Error creating payment intent:', error);
     console.error('Payment intent error detail:', error instanceof Error ? error.message : error);
     return NextResponse.json(

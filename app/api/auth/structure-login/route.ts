@@ -6,6 +6,7 @@ import { auditLog } from '@/lib/audit-log';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 import { buildProSessionToken, type ProStructureRole } from '@/lib/auth-middleware';
 import { EMAIL_REGEX } from '@/lib/validators';
+import { captureServerException } from '@/lib/sentry-capture';
 
 export async function POST(req: NextRequest) {
   try {
@@ -120,6 +121,7 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (err) {
+    captureServerException(err, { domain: 'auth', operation: 'structure_login' });
     console.error('POST structure-login error:', err);
     return NextResponse.json({ error: { code: 'INTERNAL_ERROR' } }, { status: 500 });
   }

@@ -6,6 +6,7 @@ import { isInvitationExpired } from '@/lib/invitation-token';
 import { auditLog } from '@/lib/audit-log';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 import { UUID_RE } from '@/lib/validators';
+import { captureServerException } from '@/lib/sentry-capture';
 
 export async function POST(req: NextRequest) {
   try {
@@ -111,6 +112,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, email: member.email });
   } catch (err) {
+    captureServerException(err, { domain: 'auth', operation: 'activate_invitation' });
     console.error('POST activate-invitation error:', err);
     return NextResponse.json({ error: { code: 'INTERNAL_ERROR' } }, { status: 500 });
   }

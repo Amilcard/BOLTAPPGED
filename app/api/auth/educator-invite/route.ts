@@ -6,6 +6,7 @@ import { sendEducatorInviteEmail } from '@/lib/email';
 import { logEmailFailure } from '@/lib/email-logger';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { requireEditor } from '@/lib/auth-middleware';
+import { captureServerException } from '@/lib/sentry-capture';
 
 /**
  * POST /api/auth/educator-invite
@@ -153,6 +154,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    captureServerException(error, { domain: 'auth', operation: 'educator_invite' });
     console.error('[educator-invite] Erreur génération token:', error);
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Erreur serveur.' } },

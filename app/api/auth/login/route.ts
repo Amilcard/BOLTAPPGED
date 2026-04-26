@@ -5,6 +5,7 @@ import { setSessionCookie } from '@/lib/auth-cookies';
 import { SignJWT } from 'jose';
 import { isRateLimited, getClientIpFromHeaders } from '@/lib/rate-limit';
 import { EMAIL_REGEX } from '@/lib/validators';
+import { captureServerException } from '@/lib/sentry-capture';
 
 export async function POST(req: NextRequest) {
   try {
@@ -120,6 +121,7 @@ export async function POST(req: NextRequest) {
       token
     );
   } catch (error) {
+    captureServerException(error, { domain: 'auth', operation: 'login' });
     console.error('[auth/login] Erreur:', error);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }

@@ -118,6 +118,7 @@ export default function StructureDashboard() {
   const [callsCount, setCallsCount] = useState(0);
   const [notesCount, setNotesCount] = useState(0);
   const [medicalCount, setMedicalCount] = useState(0);
+  const [kpiError, setKpiError] = useState(false);
   const [rgpdLoading, setRgpdLoading] = useState(false);
 
   useEffect(() => {
@@ -161,7 +162,7 @@ export default function StructureDashboard() {
           }
           setIncidentCounts(counts);
         })
-        .catch(() => {});
+        .catch(() => { setKpiError(true); });
 
       void Promise.all([
         fetch(`/api/structure/${code}/calls`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
@@ -171,7 +172,7 @@ export default function StructureDashboard() {
         setCallsCount(callsData?.calls?.length ?? 0);
         setNotesCount(notesData?.notes?.length ?? 0);
         setMedicalCount(medData?.count ?? 0);
-      }).catch(() => {});
+      }).catch(() => { setKpiError(true); });
     };
 
     loadKpiData();
@@ -449,6 +450,15 @@ export default function StructureDashboard() {
                 Équipe
               </button>
             )}
+          </div>
+        )}
+
+        {/* ── Indicateur erreur KPI ── */}
+        {kpiError && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <p className="text-sm text-amber-800">
+              <strong>Attention :</strong> Les données de suivi (incidents, appels, notes) sont temporairement indisponibles. Veuillez réessayer dans quelques instants.
+            </p>
           </div>
         )}
 

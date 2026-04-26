@@ -567,9 +567,11 @@ export async function GET(
           const targetPage = pdfDoc.getPages()[coords.page];
           if (targetPage) {
             const { height } = targetPage.getSize();
+            const rawY = height - coords.y - coords.h;
+            const safeY = Math.max(rawY, 30); // min 30pt (~10mm) du bord bas — évite clipping imprimante
             targetPage.drawImage(sigImage, {
               x: coords.x,
-              y: height - coords.y - coords.h,
+              y: safeY,
               width: coords.w,
               height: coords.h,
               opacity: 1,
